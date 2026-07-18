@@ -1,0 +1,113 @@
+name: bootstrap repository v2
+
+on:
+  push:
+    branches:
+      - feat/seg-000-repository-bootstrap
+    paths:
+      - .bootstrap/READY-2
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct repository archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .bootstrap/chunks/part-* > /tmp/repository.tar.gz.b64
+          base64 --decode /tmp/repository.tar.gz.b64 > /tmp/repository.tar.gz
+          echo "$(cat .bootstrap/archive.sha256)  /tmp/repository.tar.gz" | sha256sum --check --strict
+          tar -xzf /tmp/repository.tar.gz -C .
+          rm -rf .bootstrap .github/workflows/bootstrap.yml .github/workflows/bootstrap-v2.yml
+
+      - name: Commit reconstructed repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: bootstrap secure CRM vertical slice"
+          git push origin HEAD:feat/seg-000-repository-bootstrap
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate reconstructed repository
+        id: validation
+        shell: bash
+        run: |
+          set +e
+          (cd backend && mvn -B verify) > /tmp/backend.log 2>&1
+          BACKEND=$?
+          (cd frontend && npm install --no-audit --no-fund && npm run build) > /tmp/frontend.log 2>&1
+          FRONTEND=$?
+          docker compose config > /tmp/compose.log 2>&1
+          COMPOSE=$?
+          docker build -t gestudio-crm:bootstrap . > /tmp/docker.log 2>&1
+          DOCKER=$?
+          echo "backend=$BACKEND" >> "$GITHUB_OUTPUT"
+          echo "frontend=$FRONTEND" >> "$GITHUB_OUTPUT"
+          echo "compose=$COMPOSE" >> "$GITHUB_OUTPUT"
+          echo "docker=$DOCKER" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Record validation result
+        shell: bash
+        env:
+          BACKEND: ${{ steps.validation.outputs.backend }}
+          FRONTEND: ${{ steps.validation.outputs.frontend }}
+          COMPOSE: ${{ steps.validation.outputs.compose }}
+          DOCKER: ${{ steps.validation.outputs.docker }}
+        run: |
+          set -euo pipefail
+          {
+            echo "# Bootstrap validation"
+            echo
+            echo "Commit reconstructed by GitHub Actions. Exit code 0 means success."
+            echo
+            echo "| Validation | Exit code |"
+            echo "|---|---:|"
+            echo "| Backend mvn verify | $BACKEND |"
+            echo "| Frontend npm build | $FRONTEND |"
+            echo "| Docker Compose config | $COMPOSE |"
+            echo "| Docker image build | $DOCKER |"
+          } > docs/bootstrap-validation.md
+
+          if [ "$BACKEND" != "0" ] || [ "$FRONTEND" != "0" ] || [ "$COMPOSE" != "0" ] || [ "$DOCKER" != "0" ]; then
+            {
+              echo "# Validation failure tails"
+              for name in backend frontend compose docker; do
+                echo
+                echo "## $name"
+                echo '```text'
+                tail -n 120 "/tmp/$name.log"
+                echo '```'
+              done
+            } > docs/bootstrap-validation-failures.md
+          else
+            rm -f docs/bootstrap-validation-failures.md
+          fi
+
+          git add docs/bootstrap-validation.md docs/bootstrap-validation-failures.md 2>/dev/null || true
+          git commit -m "test: record bootstrap validation results" || true
+          git push origin HEAD:feat/seg-000-repository-bootstrap
+
+          if [ "$BACKEND" != "0" ] || [ "$FRONTEND" != "0" ] || [ "$COMPOSE" != "0" ] || [ "$DOCKER" != "0" ]; then
+            exit 1
+          fi
