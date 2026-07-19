@@ -1,7 +1,9 @@
 package com.gestudio.crm.imports;
 
+import com.gestudio.crm.audit.AuditEventWriter;
 import com.gestudio.crm.common.ResourceNotFoundException;
 import com.gestudio.crm.imports.ImportJob.SourceType;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -11,9 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ImportJobLifecycleService {
 
   private final ImportJobRepository importJobRepository;
+  private final AuditEventWriter auditEventWriter;
 
-  public ImportJobLifecycleService(ImportJobRepository importJobRepository) {
+  public ImportJobLifecycleService(
+      ImportJobRepository importJobRepository, AuditEventWriter auditEventWriter) {
     this.importJobRepository = importJobRepository;
+    this.auditEventWriter = auditEventWriter;
   }
 
   @Transactional
@@ -31,6 +36,15 @@ public class ImportJobLifecycleService {
         importJobRepository.save(
             ImportJob.create(fileName, fileSha256, idempotencyKey, sourceType, dryRun));
     job.start();
+    auditEventWriter.record(
+        "IMPORT_STARTED",
+        "ImportJob",
+        job.getId(),
+        Map.of(
+            "fileName", fileName,
+            "fileSha256", fileSha256,
+            "sourceType", sourceType.name(),
+            "dryRun", dryRun));
     return new StartResult(job.getId(), false, toSummary(job));
   }
 
@@ -43,13 +57,30 @@ public class ImportJobLifecycleService {
         counters.rejectedRows(),
         counters.duplicateRows(),
         counters.reviewRows());
+    auditEventWriter.record(
+        "IMPORT_COMPLETED",
+        "ImportJob",
+        job.getId(),
+        Map.of(
+            "totalRows", counters.totalRows(),
+            "acceptedRows", counters.acceptedRows(),
+            "rejectedRows", counters.rejectedRows(),
+            "duplicateRows", counters.duplicateRows(),
+            "reviewRows", counters.reviewRows(),
+            "dryRun", job.isDryRun()));
     return toSummary(job);
   }
 
   @Transactional
   public void fail(UUID jobId, String message) {
     ImportJob job = get(jobId);
-    job.fail(message == null ? "Unexpected import failure" : message);
+    String failureMessage = message == null ? "Unexpected import failure" : message;
+    job.fail(failureMessage);
+    auditEventWriter.record(
+        "IMPORT_FAILED",
+        "ImportJob",
+        job.getId(),
+        Map.of("error", failureMessage, "dryRun", job.isDryRun()));
   }
 
   @Transactional(readOnly = true)
