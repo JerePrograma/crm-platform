@@ -1,5 +1,6 @@
 package com.gestudio.crm.prospect;
 
+import com.gestudio.crm.audit.AuditEventWriter;
 import com.gestudio.crm.common.DuplicateResourceException;
 import com.gestudio.crm.common.NormalizationService;
 import com.gestudio.crm.common.ResourceNotFoundException;
@@ -14,7 +15,9 @@ import com.gestudio.crm.institution.Institution;
 import com.gestudio.crm.institution.InstitutionRepository;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +35,7 @@ public class ProspectApplicationService {
   private final ProspectRepository prospectRepository;
   private final ContactEligibilityService contactEligibilityService;
   private final NormalizationService normalizationService;
+  private final AuditEventWriter auditEventWriter;
 
   public ProspectApplicationService(
       InstitutionRepository institutionRepository,
@@ -39,13 +43,15 @@ public class ProspectApplicationService {
       ContactChannelRepository contactChannelRepository,
       ProspectRepository prospectRepository,
       ContactEligibilityService contactEligibilityService,
-      NormalizationService normalizationService) {
+      NormalizationService normalizationService,
+      AuditEventWriter auditEventWriter) {
     this.institutionRepository = institutionRepository;
     this.contactRepository = contactRepository;
     this.contactChannelRepository = contactChannelRepository;
     this.prospectRepository = prospectRepository;
     this.contactEligibilityService = contactEligibilityService;
     this.normalizationService = normalizationService;
+    this.auditEventWriter = auditEventWriter;
   }
 
   @Transactional
@@ -53,7 +59,8 @@ public class ProspectApplicationService {
     Objects.requireNonNull(command, "Create prospect command is required");
 
     String externalSourceId = normalizationService.trimToNull(command.externalSourceId());
-    if (externalSourceId != null && prospectRepository.findByExternalSourceId(externalSourceId).isPresent()) {
+    if (externalSourceId != null
+        && prospectRepository.findByExternalSourceId(externalSourceId).isPresent()) {
       throw new DuplicateResourceException(
           "A prospect already exists for external source id " + externalSourceId);
     }
@@ -110,6 +117,17 @@ public class ProspectApplicationService {
                 command.verifiedAt(),
                 command.owner(),
                 eligible));
+
+    Map<String, Object> auditPayload = new LinkedHashMap<>();
+    auditPayload.put("institutionId", institution.getId());
+    auditPayload.put("status", prospect.getStatus().name());
+    auditPayload.put("contactEligible", prospect.isContactEligible());
+    auditPayload.put(
+        "channelTypes", preparedChannels.stream().map(channel -> channel.type().name()).toList());
+    if (command.source() != null && !command.source().isBlank()) {
+      auditPayload.put("source", command.source().trim());
+    }
+    auditEventWriter.record("PROSPECT_CREATED", "Prospect", prospect.getId(), auditPayload);
 
     return toView(prospect);
   }
