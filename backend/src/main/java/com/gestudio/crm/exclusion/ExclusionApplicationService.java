@@ -54,8 +54,7 @@ public class ExclusionApplicationService {
     if (normalizedValue == null) {
       throw new IllegalArgumentException("A valid exclusion channel value is required");
     }
-    if (exclusionRepository.existsByChannelTypeAndNormalizedValue(
-        channelType, normalizedValue)) {
+    if (isAlreadyExcluded(channelType, normalizedValue)) {
       throw new DuplicateResourceException("The channel is already excluded");
     }
 
@@ -89,6 +88,23 @@ public class ExclusionApplicationService {
     return exclusionRepository.findAll(pageable).map(this::toView);
   }
 
+  private boolean isAlreadyExcluded(
+      ContactChannelType channelType, String normalizedValue) {
+    if (exclusionRepository.existsByChannelTypeAndNormalizedValue(
+        channelType, normalizedValue)) {
+      return true;
+    }
+    if (channelType == ContactChannelType.PHONE) {
+      return exclusionRepository.existsByChannelTypeAndNormalizedValue(
+          ContactChannelType.WHATSAPP, normalizedValue);
+    }
+    if (channelType == ContactChannelType.WHATSAPP) {
+      return exclusionRepository.existsByChannelTypeAndNormalizedValue(
+          ContactChannelType.PHONE, normalizedValue);
+    }
+    return false;
+  }
+
   private Optional<Prospect> existingProspect(
       ContactChannelType channelType, String normalizedValue) {
     if (channelType == ContactChannelType.WEBSITE) {
@@ -96,6 +112,21 @@ public class ExclusionApplicationService {
           .findFirstByWebsiteDomain(normalizedValue)
           .flatMap(institution -> prospectRepository.findFirstByInstitutionId(institution.getId()));
     }
+    Optional<Prospect> exact = existingProspectForChannel(channelType, normalizedValue);
+    if (exact.isPresent()) {
+      return exact;
+    }
+    if (channelType == ContactChannelType.PHONE) {
+      return existingProspectForChannel(ContactChannelType.WHATSAPP, normalizedValue);
+    }
+    if (channelType == ContactChannelType.WHATSAPP) {
+      return existingProspectForChannel(ContactChannelType.PHONE, normalizedValue);
+    }
+    return Optional.empty();
+  }
+
+  private Optional<Prospect> existingProspectForChannel(
+      ContactChannelType channelType, String normalizedValue) {
     return contactChannelRepository
         .findByTypeAndNormalizedValue(channelType, normalizedValue)
         .flatMap(
