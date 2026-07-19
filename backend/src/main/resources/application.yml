@@ -38,6 +38,11 @@ management:
         enabled: true
       show-details: never
 
+security:
+  bootstrap:
+    username: ${CRM_BOOTSTRAP_USERNAME:}
+    password: ${CRM_BOOTSTRAP_PASSWORD:}
+
 sending:
   enabled: ${SENDING_ENABLED:false}
   dry-run: ${SENDING_DRY_RUN:true}
