@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: gestudio_crm
+      POSTGRES_USER: gestudio
+      POSTGRES_PASSWORD: gestudio_local_only
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gestudio -d gestudio_crm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    volumes:
+      - crm_postgres:/var/lib/postgresql/data
+
+volumes:
+  crm_postgres:
