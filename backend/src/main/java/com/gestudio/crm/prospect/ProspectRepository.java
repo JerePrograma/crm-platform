@@ -12,5 +12,7 @@ public interface ProspectRepository
 
   Optional<Prospect> findByExternalSourceId(String externalSourceId);
 
+  Optional<Prospect> findFirstByInstitutionId(UUID institutionId);
+
   Page<Prospect> findAllByStatus(ProspectStatus status, Pageable pageable);
 }
