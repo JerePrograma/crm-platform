@@ -94,6 +94,7 @@ public class DuplicateReview extends BaseEntity {
   }
 
   public enum MatchType {
+    EXTERNAL_SOURCE_ID,
     EMAIL,
     PHONE,
     DOMAIN,
