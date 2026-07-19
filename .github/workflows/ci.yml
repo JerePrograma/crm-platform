@@ -23,8 +23,7 @@ jobs:
           java-version: "21"
           cache: maven
       - name: Verify backend
-        working-directory: backend
-        run: mvn -B verify
+        run: sh ./mvnw -B -f backend/pom.xml verify
 
   frontend:
     runs-on: ubuntu-latest
