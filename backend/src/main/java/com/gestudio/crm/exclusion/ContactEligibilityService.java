@@ -4,6 +4,7 @@ import com.gestudio.crm.contact.ContactChannelType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,9 +28,7 @@ public class ContactEligibilityService {
             || candidate.normalizedValue().isBlank()) {
           continue;
         }
-        exclusionRepository
-            .findByChannelTypeAndNormalizedValue(
-                candidate.type(), candidate.normalizedValue())
+        findExclusion(candidate)
             .ifPresent(
                 exclusion ->
                     exclusions.add(
@@ -38,6 +37,24 @@ public class ContactEligibilityService {
       }
     }
     return new EligibilityDecision(exclusions.isEmpty(), List.copyOf(exclusions));
+  }
+
+  private Optional<Exclusion> findExclusion(ChannelCandidate candidate) {
+    Optional<Exclusion> exact =
+        exclusionRepository.findByChannelTypeAndNormalizedValue(
+            candidate.type(), candidate.normalizedValue());
+    if (exact.isPresent()) {
+      return exact;
+    }
+    if (candidate.type() == ContactChannelType.PHONE) {
+      return exclusionRepository.findByChannelTypeAndNormalizedValue(
+          ContactChannelType.WHATSAPP, candidate.normalizedValue());
+    }
+    if (candidate.type() == ContactChannelType.WHATSAPP) {
+      return exclusionRepository.findByChannelTypeAndNormalizedValue(
+          ContactChannelType.PHONE, candidate.normalizedValue());
+    }
+    return Optional.empty();
   }
 
   public record ChannelCandidate(ContactChannelType type, String normalizedValue) {}
