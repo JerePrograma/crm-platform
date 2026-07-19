@@ -41,6 +41,7 @@ public class SecurityConfig {
   SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http.sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
         .authorizeHttpRequests(
             authorization ->
                 authorization
