@@ -101,4 +101,12 @@ public class ImportJobLifecycleService {
       String errorMessage,
       java.time.Instant startedAt,
       java.time.Instant completedAt) {}
+
+  public enum RowOutcome {
+    ACCEPTED,
+    EXCLUDED,
+    REJECTED,
+    DUPLICATE,
+    REVIEW_REQUIRED
+  }
 }
