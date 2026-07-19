@@ -20,6 +20,9 @@ public class ImportRow extends BaseEntity {
   private ImportJob importJob;
 
   @Column(nullable = false)
+  private String sourceSheet;
+
+  @Column(nullable = false)
   private int rowNumber;
 
   @Column(nullable = false)
@@ -42,11 +45,13 @@ public class ImportRow extends BaseEntity {
 
   private ImportRow(
       ImportJob importJob,
+      String sourceSheet,
       int rowNumber,
       String rawData,
       String normalizedEmail,
       String normalizedPhone) {
     this.importJob = importJob;
+    this.sourceSheet = sourceSheet;
     this.rowNumber = rowNumber;
     this.rawData = rawData;
     this.normalizedEmail = normalizedEmail;
@@ -56,14 +61,26 @@ public class ImportRow extends BaseEntity {
 
   public static ImportRow create(
       ImportJob importJob,
+      String sourceSheet,
       int rowNumber,
       String rawData,
       String normalizedEmail,
       String normalizedPhone) {
-    if (importJob == null || rowNumber <= 0 || rawData == null) {
-      throw new IllegalArgumentException("Import job, positive row number and raw data are required");
+    if (importJob == null
+        || sourceSheet == null
+        || sourceSheet.isBlank()
+        || rowNumber <= 0
+        || rawData == null) {
+      throw new IllegalArgumentException(
+          "Import job, source sheet, positive row number and raw data are required");
     }
-    return new ImportRow(importJob, rowNumber, rawData, normalizedEmail, normalizedPhone);
+    return new ImportRow(
+        importJob,
+        sourceSheet,
+        rowNumber,
+        rawData,
+        normalizedEmail,
+        normalizedPhone);
   }
 
   public void accept(Prospect prospect) {
@@ -95,6 +112,10 @@ public class ImportRow extends BaseEntity {
 
   public ImportJob getImportJob() {
     return importJob;
+  }
+
+  public String getSourceSheet() {
+    return sourceSheet;
   }
 
   public int getRowNumber() {
