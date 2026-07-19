@@ -1,0 +1,36 @@
+# Java and Maven
+**/target/
+.mvn/timing.properties
+
+# Node
+**/node_modules/
+**/dist/
+
+# Editors and operating systems
+*.iml
+.idea/
+.vscode/
+.DS_Store
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*credentials*.json
+*service-account*.json
+*client_secret*.json
+
+# Runtime and uploads
+backend/uploads/
+
+# Operational commercial data must never be committed
+/data/import/private/*
+!/data/import/private/README.md
+/data/export/private/*
+*.operational.xlsx
+*.operational.csv
+gestudio_lote_*_prospectos.xlsx
