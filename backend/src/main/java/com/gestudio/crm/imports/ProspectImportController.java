@@ -1,9 +1,12 @@
 package com.gestudio.crm.imports;
 
 import com.gestudio.crm.imports.ImportJobLifecycleService.ImportSummary;
+import com.gestudio.crm.imports.ImportOperationsQueryService.DuplicateReviewView;
+import com.gestudio.crm.imports.ImportOperationsQueryService.ImportRowView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,9 +26,13 @@ public class ProspectImportController {
   private static final String EXECUTION_CONFIRMATION = "EXECUTE_PROSPECT_IMPORT";
 
   private final ProspectImportService prospectImportService;
+  private final ImportOperationsQueryService operationsQueryService;
 
-  public ProspectImportController(ProspectImportService prospectImportService) {
+  public ProspectImportController(
+      ProspectImportService prospectImportService,
+      ImportOperationsQueryService operationsQueryService) {
     this.prospectImportService = prospectImportService;
+    this.operationsQueryService = operationsQueryService;
   }
 
   @PostMapping(path = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -50,6 +57,18 @@ public class ProspectImportController {
   @Operation(summary = "Get a persisted prospect import summary")
   public ImportSummary get(@PathVariable UUID jobId) {
     return prospectImportService.getSummary(jobId);
+  }
+
+  @GetMapping("/{jobId}/rows")
+  @Operation(summary = "List persisted row outcomes for an import job")
+  public List<ImportRowView> rows(@PathVariable UUID jobId) {
+    return operationsQueryService.rows(jobId);
+  }
+
+  @GetMapping("/duplicate-reviews/pending")
+  @Operation(summary = "List ambiguous duplicate matches awaiting human review")
+  public List<DuplicateReviewView> pendingDuplicateReviews() {
+    return operationsQueryService.pendingReviews();
   }
 
   private byte[] bytes(MultipartFile file) {
