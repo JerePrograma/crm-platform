@@ -6,5 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InstitutionRepository extends JpaRepository<Institution, UUID> {
 
-  Optional<Institution> findByNormalizedNameAndLocality(String normalizedName, String locality);
+  Optional<Institution> findByNormalizedNameAndNormalizedLocality(
+      String normalizedName, String normalizedLocality);
+
+  Optional<Institution> findFirstByWebsiteDomain(String websiteDomain);
 }
