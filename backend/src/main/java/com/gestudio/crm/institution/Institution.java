@@ -17,9 +17,11 @@ public class Institution extends BaseEntity {
 
   private String category;
   private String locality;
+  private String normalizedLocality;
   private String province;
   private String country;
   private String website;
+  private String websiteDomain;
 
   protected Institution() {}
 
@@ -28,16 +30,20 @@ public class Institution extends BaseEntity {
       String normalizedName,
       String category,
       String locality,
+      String normalizedLocality,
       String province,
       String country,
-      String website) {
+      String website,
+      String websiteDomain) {
     this.name = name;
     this.normalizedName = normalizedName;
     this.category = category;
     this.locality = locality;
+    this.normalizedLocality = normalizedLocality;
     this.province = province;
     this.country = country;
     this.website = website;
+    this.websiteDomain = websiteDomain;
   }
 
   public static Institution create(
@@ -45,9 +51,11 @@ public class Institution extends BaseEntity {
       String normalizedName,
       String category,
       String locality,
+      String normalizedLocality,
       String province,
       String country,
-      String website) {
+      String website,
+      String websiteDomain) {
     if (name == null || name.isBlank()) {
       throw new IllegalArgumentException("Institution name is required");
     }
@@ -55,7 +63,15 @@ public class Institution extends BaseEntity {
       throw new IllegalArgumentException("Normalized institution name is required");
     }
     return new Institution(
-        name.trim(), normalizedName, category, locality, province, country, website);
+        name.trim(),
+        normalizedName,
+        category,
+        locality,
+        normalizedLocality,
+        province,
+        country,
+        website,
+        websiteDomain);
   }
 
   public String getName() {
@@ -74,6 +90,10 @@ public class Institution extends BaseEntity {
     return locality;
   }
 
+  public String getNormalizedLocality() {
+    return normalizedLocality;
+  }
+
   public String getProvince() {
     return province;
   }
@@ -84,5 +104,9 @@ public class Institution extends BaseEntity {
 
   public String getWebsite() {
     return website;
+  }
+
+  public String getWebsiteDomain() {
+    return websiteDomain;
   }
 }
