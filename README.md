@@ -1,45 +1,159 @@
 # Gestudio CRM Platform
 
-Monolito modular para prospección, campañas, conversaciones y operación comercial de Gestudio.
+CRM comercial especializado en la prospección, revisión, importación y gestión segura de prospectos para Gestudio.
 
-## Estado de seguridad
+El diseño objetivo es un monolito modular que permita separar workers e integraciones sin reescribir el dominio. PostgreSQL es la fuente de verdad. Google Sheets será una interfaz auxiliar en segmentos posteriores.
 
-La configuración inicial es deliberadamente no operativa:
+## Estado actual
 
-- `sending.enabled=false`;
-- `sending.dry-run=true`;
-- `sending.daily-limit=0`;
-- kill switch ambiental activo;
-- kill switch persistente inicializado en PostgreSQL.
+La rama activa `feat/seg-001-prospect-vertical-slice` contiene:
 
-El repositorio no contiene un adaptador capaz de enviar correos reales.
+- backend Java 21 y Spring Boot;
+- PostgreSQL y migraciones Flyway;
+- instituciones, contactos, canales, prospectos y exclusiones;
+- normalización y deduplicación exacta/ambigua;
+- importaciones CSV/XLSX persistentes e idempotentes;
+- preview y ejecución con confirmación explícita;
+- cola de revisión humana de duplicados;
+- auditoría estructurada;
+- API REST y RFC 7807;
+- interfaz React + TypeScript + Vite;
+- Docker, Docker Compose y GitHub Actions;
+- pruebas unitarias y de integración con Testcontainers.
 
-## Stack inicial
+El segmento sigue abierto hasta obtener una ejecución CI verde y corregir cualquier fallo real de compilación o migración.
 
-- Java 21 y Spring Boot 4.1;
-- Maven;
-- PostgreSQL y Flyway;
-- Spring Web, Security, Data JPA, Validation y Actuator;
-- Testcontainers, JUnit 5 y ArchUnit;
-- Docker y Docker Compose.
+## Seguridad de envío
 
-Spring Boot 4.1.0 es la línea estable seleccionada para el proyecto y Java 21 es la versión de ejecución obligatoria.
+No existe ningún adaptador de envío real. La configuración obligatoria es:
 
-## Inicio local
+```text
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
+```
+
+PostgreSQL inicializa además un kill switch persistente. Ningún cambio de este segmento puede habilitar correo.
+
+## Requisitos locales
+
+- Java 21;
+- Docker con Docker Compose;
+- Node.js 22 para el frontend;
+- `curl` o `wget`, `unzip` y una herramienta SHA-512 si Maven no está instalado.
+
+El repositorio incluye lanzadores Maven que descargan Maven 3.9.16 y verifican su SHA-512 antes de ejecutarlo.
+
+## Inicio local — Linux/macOS
 
 ```bash
+cp .env.example .env
+# Editar .env y definir credenciales locales no compartidas.
+
 docker compose up -d postgres
-mvn -f backend/pom.xml spring-boot:run
+set -a && . ./.env && set +a
+sh ./mvnw -f backend/pom.xml spring-boot:run
 ```
 
-PowerShell:
+En otra terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Abrir `http://localhost:5173`.
+
+## Inicio local — Windows PowerShell
 
 ```powershell
+Copy-Item .env.example .env
+# Editar .env y definir credenciales locales no compartidas.
+
 docker compose up -d postgres
-mvn -f backend/pom.xml spring-boot:run
+Get-Content .env | ForEach-Object {
+  if ($_ -match '^(?<name>[^#][^=]*)=(?<value>.*)$') {
+    [Environment]::SetEnvironmentVariable($matches.name.Trim(), $matches.value, 'Process')
+  }
+}
+.\mvnw.cmd -f backend\pom.xml spring-boot:run
 ```
 
-La primera ejecución aplica las migraciones Flyway y valida el esquema mediante Hibernate.
+En otra terminal:
+
+```powershell
+Set-Location frontend
+npm install
+npm run dev
+```
+
+## Validaciones
+
+Linux/macOS:
+
+```bash
+sh ./mvnw -B -f backend/pom.xml verify
+(cd frontend && npm install && npm run build)
+docker compose config
+docker build -t gestudio-crm:local .
+```
+
+Windows PowerShell:
+
+```powershell
+.\mvnw.cmd -B -f backend\pom.xml verify
+Push-Location frontend
+npm install
+npm run build
+Pop-Location
+docker compose config
+docker build -t gestudio-crm:local .
+```
+
+Las pruebas de integración requieren Docker porque utilizan PostgreSQL mediante Testcontainers.
+
+## API implementada
+
+```text
+GET  /actuator/health
+GET  /api/v1/prospects
+POST /api/v1/prospects
+GET  /api/v1/prospects/{id}
+
+POST /api/v1/imports/prospects/preview
+POST /api/v1/imports/prospects/execute
+GET  /api/v1/imports/prospects/{jobId}
+GET  /api/v1/imports/prospects/{jobId}/rows
+GET  /api/v1/imports/prospects/duplicate-reviews/pending
+
+GET  /api/v1/exclusions
+POST /api/v1/exclusions
+GET  /api/v1/exclusions/{id}
+
+GET  /api/v1/audit
+```
+
+`POST /api/v1/imports/prospects/execute` exige:
+
+```text
+X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
+```
+
+## Datos operativos
+
+El repositorio es público. No se versionan:
+
+- lotes reales de prospectos;
+- correos o teléfonos comerciales;
+- exportaciones de Gmail o Sheets;
+- tokens OAuth;
+- claves privadas;
+- cuentas de servicio;
+- secretos de infraestructura.
+
+Las pruebas generan un workbook ficticio con la misma estructura de encabezados y los mismos conteos de referencia: 100 prospectos y 16 exclusiones.
 
 ## Continuidad
 
@@ -48,6 +162,8 @@ Antes de modificar el proyecto, leer:
 1. `AGENTS.md`;
 2. `docs/status.md`;
 3. `docs/next-step.md`;
-4. `docs/backlog.md`.
+4. `docs/backlog.md`;
+5. `docs/segments/SEG-001.md`;
+6. ADR y documentación del módulo afectado.
 
-La instrucción `continuar` ejecuta el lote definido en `docs/next-step.md`.
+La instrucción `continuar` ejecuta el trabajo indicado en `docs/next-step.md` y actualiza el estado al terminar.
