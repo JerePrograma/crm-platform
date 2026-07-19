@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ProspectDeduplicationService {
 
-  private static final double REVIEW_THRESHOLD = 0.82d;
+  private static final double REVIEW_THRESHOLD = 0.80d;
 
   private final ProspectRepository prospectRepository;
   private final InstitutionRepository institutionRepository;
@@ -47,7 +47,8 @@ public class ProspectDeduplicationService {
             ? Optional.empty()
             : prospectRepository.findByExternalSourceId(normalized.externalId());
     if (byExternalId.isPresent()) {
-      return DeduplicationOutcome.exact(MatchType.NAME_LOCATION, byExternalId.get(), normalized);
+      return DeduplicationOutcome.exact(
+          MatchType.EXTERNAL_SOURCE_ID, byExternalId.get(), normalized);
     }
 
     Optional<Prospect> byEmail =
