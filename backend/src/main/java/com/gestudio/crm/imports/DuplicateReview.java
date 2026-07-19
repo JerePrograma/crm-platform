@@ -8,6 +8,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
@@ -20,7 +21,7 @@ public class DuplicateReview extends BaseEntity {
   @JoinColumn(name = "import_row_id", nullable = false, unique = true)
   private ImportRow importRow;
 
-  @OneToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "existing_prospect_id")
   private Prospect existingProspect;
 
