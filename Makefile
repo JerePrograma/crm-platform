@@ -1,10 +1,13 @@
-.PHONY: preflight preflight-container db-up db-down app-up app-down app-logs backend frontend frontend-lock verify smoke smoke-container reset-db
+.PHONY: preflight preflight-container postgres-port db-up db-down app-up app-down app-logs backend frontend frontend-lock verify smoke smoke-container reset-db
 
 preflight:
 	sh scripts/preflight.sh --local
 
 preflight-container:
 	sh scripts/preflight.sh --container-only
+
+postgres-port:
+	sh scripts/set-postgres-host-port.sh 55432
 
 db-up:
 	docker compose up -d postgres
@@ -34,8 +37,8 @@ verify:
 	sh ./mvnw -B -f backend/pom.xml verify
 	cd frontend && npm install && npm run typecheck && npm run build
 	docker compose --profile app --profile smoke config
-	docker build -t gestudio-crm:local .
-	docker build -f frontend/Dockerfile -t gestudio-crm-frontend:local frontend
+	docker compose --progress plain --profile app build --no-cache frontend
+	docker compose --progress plain --profile app build --no-cache backend
 
 smoke:
 	sh scripts/smoke-test.sh
