@@ -118,13 +118,15 @@ public class ProspectImportService {
   private static final class MutableCounters {
     private int total;
     private int accepted;
+    private int excluded;
     private int rejected;
     private int duplicate;
     private int review;
 
     void add(RowOutcome outcome) {
       switch (outcome) {
-        case ACCEPTED, EXCLUDED -> accepted++;
+        case ACCEPTED -> accepted++;
+        case EXCLUDED -> excluded++;
         case REJECTED -> rejected++;
         case DUPLICATE -> duplicate++;
         case REVIEW_REQUIRED -> review++;
@@ -132,7 +134,7 @@ public class ProspectImportService {
     }
 
     ImportCounters toRecord() {
-      return new ImportCounters(total, accepted, rejected, duplicate, review);
+      return new ImportCounters(total, accepted, excluded, rejected, duplicate, review);
     }
   }
 }
