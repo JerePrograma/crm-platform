@@ -19,7 +19,10 @@ Python + PyYAML: disponible
 PowerShell/pwsh: no disponible
 Docker/Compose: no disponible
 Maven: no disponible
+red hacia GitHub: no disponible
 ```
+
+El intento de clonar el repositorio mediante Git falló por resolución DNS. Los archivos críticos se verificaron mediante read-back del conector GitHub y reproducciones exactas en un directorio temporal.
 
 ## Controles ejecutados
 
@@ -37,7 +40,7 @@ smoke -> frontend healthy: presente
 
 Resultado: `PASS_STRUCTURE`.
 
-Esto no equivale a `docker compose config` real.
+No equivale a `docker compose config` real.
 
 ### GitHub Actions
 
@@ -46,35 +49,91 @@ Estructura comprobada:
 ```text
 jobs: backend, frontend, scripts, compose-images-and-smoke
 install condicional npm ci/npm install: presente
-scripts de puertos en validación Unix: presentes
-scripts de puertos/orquestador en parser PowerShell: presentes
-preflight container-only en job E2E: presente
+scripts de puertos: presentes
+backend verify container: presente en shell/parser
+validador integral: presente en parser PowerShell
+seguridad centralizada: presente
+preflight container-only en E2E: presente
 smoke contenedorizado: presente
 cleanup: presente
 ```
 
-Resultado: `PASS_STRUCTURE`.
+Resultado: `PASS_PARSE / PASS_STRUCTURE`.
 
-### Shell inicial
+PyYAML cargó el workflow y se verificaron los cuatro jobs y el paso de seguridad.
+
+### Scripts shell iniciales
 
 ```bash
 sh -n scripts/preflight.sh
 sh -n scripts/smoke-test.sh
-sh -n scripts/generate-frontend-lock.sh
 sh -n scripts/set-postgres-host-port.sh
+sh -n scripts/set-local-host-ports.sh
 ```
 
-Resultado registrado previamente: `PASS_SYNTAX`.
+Resultado: `PASS_SYNTAX`.
 
-### Configurador conjunto Unix
+### Backend verify contenedorizado Unix
 
-Archivo:
+```bash
+sh -n scripts/verify-backend-container.sh
+```
+
+Resultado: `PASS_SYNTAX`.
+
+Validado estructuralmente:
+
+- imagen Maven 3.9.16/Java 21;
+- repositorio read-only;
+- volumen Maven cache;
+- volumen target efímero;
+- socket Docker;
+- Testcontainers host override;
+- cleanup.
+
+No se ejecutó Docker.
+
+### Generador lockfile seguro Unix
+
+```bash
+sh -n scripts/generate-frontend-lock.sh
+```
+
+Resultado: `PASS_SYNTAX`.
+
+Validado estructuralmente:
 
 ```text
-scripts/set-local-host-ports.sh
+--package-lock-only
+--ignore-scripts
+--no-audit
+--no-fund
+fallo si node_modules existe
 ```
 
-Control:
+No se ejecutó npm/Docker.
+
+### Seguridad del repositorio Unix
+
+```bash
+sh -n scripts/check-repository-safety.sh
+```
+
+Resultado: `PASS_SYNTAX`.
+
+Cobertura estructural:
+
+- `.env`;
+- validation-output;
+- import/export private;
+- lote operativo en cualquier subdirectorio;
+- claves/certificados;
+- JSON de credenciales;
+- `git diff --check`.
+
+No se ejecutó contra un checkout completo por falta de clon de red.
+
+### Configurador conjunto Unix
 
 ```bash
 sh -n scripts/set-local-host-ports.sh
@@ -84,11 +143,11 @@ Resultado: `PASS_SYNTAX`.
 
 ### Prueba funcional aislada del configurador Unix
 
-Se ejecutó sobre un `.env` temporal con:
+Se ejecutó sobre `.env` temporal con:
 
-- contraseña DB ficticia con carácter UTF-8;
+- contraseña DB ficticia UTF-8;
 - contraseña bootstrap ficticia;
-- cuatro guardas de envío cerradas;
+- guardas cerradas;
 - URL PostgreSQL inicial en 5432;
 - puertos backend/frontend ausentes.
 
@@ -115,18 +174,40 @@ Estado: `PASS_FUNCTIONAL_ISOLATED`.
 
 ### Makefile
 
-Controles acumulados:
+Controles:
 
 ```bash
-make -n preflight-container
-make -n frontend-lock
-make -n smoke-container
-make -n postgres-port
-make -n local-ports
-make -n verify
+make -n backend-verify-container
+make -n verify-container
 ```
 
-Resultado: `PASS_SYNTAX`.
+Primer intento:
+
+```text
+FAIL_HARNESS
+```
+
+Causa: el comando se lanzó con `-f /tmp/.../Makefile` desde otro directorio y la invocación recursiva `$(MAKE) smoke-container` no encontró el Makefile.
+
+Repetición desde la raíz temporal correcta:
+
+```text
+backend-verify-container: PASS_PARSE
+verify-container: PASS_PARSE
+smoke-container recursion: PASS_PARSE
+```
+
+Recetas expandidas:
+
+- backend verify contenedorizado;
+- preflight container-only;
+- lockfile;
+- Compose config;
+- builds limpios;
+- smoke contenedorizado;
+- cleanup.
+
+El primer fallo fue del harness estático, no del Makefile versionado.
 
 ### Read-back remoto
 
@@ -135,8 +216,13 @@ Se releyeron desde `main`:
 ```text
 docker-compose.yml
 .github/workflows/ci.yml
+Makefile
 scripts/set-local-host-ports.sh
 scripts/validate-docker-stack.ps1
+scripts/verify-backend-container.sh
+scripts/generate-frontend-lock.sh
+scripts/check-repository-safety.sh
+scripts/validate-seg001.ps1
 frontend/Dockerfile
 ```
 
@@ -146,37 +232,51 @@ Resultado: `PASS`.
 
 - tres puertos host configurables;
 - preflight exige enteros válidos y distintos;
-- `DATABASE_URL` coordinada con PostgreSQL;
+- `DATABASE_URL` coordinada;
 - smoke deriva URLs desde `.env`;
 - configuradores preservan credenciales;
 - PowerShell escribe UTF-8 sin BOM por diseño;
-- wrappers históricos conservan compatibilidad;
-- Dockerfile/CI/Makefile adoptan npm ci cuando exista lockfile;
-- transcript local fuera de Git;
-- orquestador Docker Windows usa clean builds por defecto.
+- wrappers históricos compatibles;
+- Dockerfile/CI/Makefile adoptan npm ci con lockfile;
+- lockfile-only sin lifecycle scripts;
+- evidencia JSON y transcript;
+- backend verify sin Java local;
+- repositorio backend read-only;
+- socket Docker documentado como privilegiado;
+- seguridad centralizada;
+- orquestador integral exige main y árbol limpio;
+- único cambio esperado: package-lock.
 
-## Controles no ejecutados en este entorno
+## Controles no ejecutados
 
 - parser PowerShell;
-- configurador conjunto PowerShell;
-- orquestador Docker PowerShell;
-- `docker compose config` semántico;
+- configuradores PowerShell;
+- seguridad PowerShell;
+- validador Docker PowerShell;
+- backend verify PowerShell;
+- validador integral PowerShell;
+- Docker Compose config semántico;
 - builds frontend/backend;
 - stack completo;
 - smoke host/contenedor;
 - Maven/Spotless/tests;
 - Flyway/Hibernate/Testcontainers;
-- generación real de package-lock;
-- npm ci real.
+- package-lock real;
+- npm ci real;
+- seguridad contra checkout completo;
+- CI real.
 
-## Evidencia real separada
+## Evidencias relacionadas
 
 ```text
 docs/validation/SEG-001-container-build-2026-07-20.md
 docs/validation/SEG-001-rerun-2026-07-20.md
 docs/validation/SEG-001-local-orchestration-2026-07-20.md
+docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 ```
 
 ## Conclusión
 
-Compose, CI, shell, Makefile y el configurador Unix coordinado superaron los controles disponibles. La automatización está preparada para una reejecución Windows reproducible, pero SEG-001 continúa pendiente hasta completar builds limpios, health, smoke, Maven, Testcontainers, Flyway, Hibernate y lockfile.
+Compose, CI, shell, Makefile, configuración de puertos, backend verify, lockfile seguro y seguridad del repositorio superaron los controles estáticos disponibles.
+
+SEG-001 continúa pendiente hasta ejecutar `scripts/validate-seg001.ps1`, generar/versionar package-lock, repetir npm ci y observar evidencia funcional verde.
