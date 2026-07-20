@@ -8,6 +8,13 @@ function Fail([string]$Message) {
   throw "Preflight failed: $Message"
 }
 
+function Invoke-External([string]$Command, [string[]]$Arguments) {
+  & $Command @Arguments | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    Fail "$Command $($Arguments -join ' ') exited with code $LASTEXITCODE"
+  }
+}
+
 function Read-Port([string]$Name) {
   $rawValue = [Environment]::GetEnvironmentVariable($Name, 'Process')
   $parsedValue = 0
@@ -80,8 +87,9 @@ if ($env:SENDING_DRY_RUN -ne 'true') { Fail 'SENDING_DRY_RUN must remain true' }
 if ($env:SENDING_DAILY_LIMIT -ne '0') { Fail 'SENDING_DAILY_LIMIT must remain 0' }
 if ($env:SENDING_KILL_SWITCH -ne 'true') { Fail 'SENDING_KILL_SWITCH must remain true' }
 
-& docker compose version | Out-Null
-& docker compose --profile app --profile smoke config | Out-Null
+Invoke-External 'docker' @('info')
+Invoke-External 'docker' @('compose', 'version')
+Invoke-External 'docker' @('compose', '--profile', 'app', '--profile', 'smoke', 'config', '--quiet')
 
 Write-Host 'Preflight passed.'
 Write-Host "Mode: $(if ($ContainerOnly) { 'container-only' } else { 'local-tools' })"
@@ -96,4 +104,5 @@ Write-Host "Backend host port: $backendHostPort"
 Write-Host "Frontend host port: $frontendHostPort"
 Write-Host "Database URL: $env:DATABASE_URL"
 Write-Host 'Bootstrap user configured: yes'
+Write-Host 'Docker daemon: reachable'
 Write-Host 'Sending controls: enabled=false dry-run=true daily-limit=0 kill-switch=true'
