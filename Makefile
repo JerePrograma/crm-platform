@@ -1,4 +1,4 @@
-.PHONY: preflight preflight-container postgres-port local-ports db-up db-down app-up app-down app-logs backend frontend frontend-lock verify smoke smoke-container reset-db
+.PHONY: preflight preflight-container postgres-port local-ports db-up db-down app-up app-down app-logs backend backend-verify-container frontend frontend-lock verify verify-container smoke smoke-container reset-db
 
 preflight:
 	sh scripts/preflight.sh --local
@@ -30,6 +30,9 @@ app-logs:
 backend:
 	sh ./mvnw -f backend/pom.xml spring-boot:run
 
+backend-verify-container:
+	sh scripts/verify-backend-container.sh
+
 frontend:
 	cd frontend && if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run dev
 
@@ -42,6 +45,12 @@ verify:
 	docker compose --profile app --profile smoke config
 	docker compose --progress plain --profile app build --no-cache frontend
 	docker compose --progress plain --profile app build --no-cache backend
+
+verify-container: preflight-container backend-verify-container frontend-lock
+	docker compose --profile app --profile smoke config
+	docker compose --progress plain --profile app build --no-cache frontend
+	docker compose --progress plain --profile app build --no-cache backend
+	$(MAKE) smoke-container
 
 smoke:
 	sh scripts/smoke-test.sh
