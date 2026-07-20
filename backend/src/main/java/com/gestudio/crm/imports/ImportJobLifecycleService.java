@@ -54,6 +54,7 @@ public class ImportJobLifecycleService {
     job.complete(
         counters.totalRows(),
         counters.acceptedRows(),
+        counters.excludedRows(),
         counters.rejectedRows(),
         counters.duplicateRows(),
         counters.reviewRows());
@@ -64,6 +65,7 @@ public class ImportJobLifecycleService {
         Map.of(
             "totalRows", counters.totalRows(),
             "acceptedRows", counters.acceptedRows(),
+            "excludedRows", counters.excludedRows(),
             "rejectedRows", counters.rejectedRows(),
             "duplicateRows", counters.duplicateRows(),
             "reviewRows", counters.reviewRows(),
@@ -104,6 +106,7 @@ public class ImportJobLifecycleService {
         job.getStatus(),
         job.getTotalRows(),
         job.getAcceptedRows(),
+        job.getExcludedRows(),
         job.getRejectedRows(),
         job.getDuplicateRows(),
         job.getReviewRows(),
@@ -115,7 +118,12 @@ public class ImportJobLifecycleService {
   public record StartResult(UUID jobId, boolean existing, ImportSummary summary) {}
 
   public record ImportCounters(
-      int totalRows, int acceptedRows, int rejectedRows, int duplicateRows, int reviewRows) {}
+      int totalRows,
+      int acceptedRows,
+      int excludedRows,
+      int rejectedRows,
+      int duplicateRows,
+      int reviewRows) {}
 
   public record ImportSummary(
       UUID id,
@@ -126,6 +134,7 @@ public class ImportJobLifecycleService {
       ImportJob.Status status,
       int totalRows,
       int acceptedRows,
+      int excludedRows,
       int rejectedRows,
       int duplicateRows,
       int reviewRows,
