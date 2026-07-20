@@ -56,26 +56,31 @@ jobs:
         with:
           node-version: "22"
       - name: Validate Unix script syntax
-        run: sh -n scripts/preflight.sh scripts/smoke-test.sh
+        run: >-
+          sh -n
+          scripts/preflight.sh
+          scripts/smoke-test.sh
+          scripts/generate-frontend-lock.sh
       - name: Validate PowerShell script syntax
         shell: pwsh
         run: |
-          $tokens = $null
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
+          $scriptPaths = @(
             'scripts/preflight.ps1',
-            [ref]$tokens,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors -and $errors.Count -gt 0) { throw ($errors | Out-String) }
-          $tokens = $null
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
             'scripts/smoke-test.ps1',
-            [ref]$tokens,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors -and $errors.Count -gt 0) { throw ($errors | Out-String) }
+            'scripts/generate-frontend-lock.ps1'
+          )
+          foreach ($scriptPath in $scriptPaths) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $scriptPath,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors -and $errors.Count -gt 0) {
+              throw "$scriptPath`n$($errors | Out-String)"
+            }
+          }
       - name: Run fail-closed preflight
         run: |
           cp .env.example .env
