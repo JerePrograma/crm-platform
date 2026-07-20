@@ -3,7 +3,10 @@ package com.gestudio.crm.imports;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.gestudio.crm.contact.ContactChannelRepository;
+import com.gestudio.crm.contact.ContactChannelType;
 import com.gestudio.crm.contact.ContactRepository;
+import com.gestudio.crm.exclusion.ExclusionApplicationService;
+import com.gestudio.crm.exclusion.ExclusionReason;
 import com.gestudio.crm.exclusion.ExclusionRepository;
 import com.gestudio.crm.imports.ImportJobLifecycleService.ImportSummary;
 import com.gestudio.crm.institution.InstitutionRepository;
@@ -40,6 +43,7 @@ class ProspectImportIntegrationTest {
 
   @Autowired private ProspectImportService prospectImportService;
   @Autowired private ProspectApplicationService prospectApplicationService;
+  @Autowired private ExclusionApplicationService exclusionApplicationService;
   @Autowired private DuplicateReviewRepository duplicateReviewRepository;
   @Autowired private ImportRowRepository importRowRepository;
   @Autowired private ImportJobRepository importJobRepository;
@@ -97,6 +101,27 @@ class ProspectImportIntegrationTest {
     assertThat(institutionRepository.count()).isZero();
     assertThat(exclusionRepository.count()).isZero();
     assertThat(importRowRepository.count()).isEqualTo(3);
+  }
+
+  @Test
+  void dryRunMarksExcludedProspectRowsWithoutWritingDomainData() {
+    exclusionApplicationService.create(
+        ContactChannelType.EMAIL, "blocked@example.test", ExclusionReason.MANUAL);
+    byte[] csv =
+        ("Institución,Correo publicado,Localidad\n"
+                + "Academia bloqueada,blocked@example.test,Salta\n")
+            .getBytes(StandardCharsets.UTF_8);
+
+    ImportSummary summary = prospectImportService.importFile("blocked-preview.csv", csv, true);
+
+    ImportRow row = importRowRepository.findAll().getFirst();
+    assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
+    assertThat(summary.totalRows()).isEqualTo(1);
+    assertThat(summary.acceptedRows()).isEqualTo(1);
+    assertThat(row.getStatus()).isEqualTo(ImportRow.Status.EXCLUDED);
+    assertThat(prospectRepository.count()).isZero();
+    assertThat(institutionRepository.count()).isZero();
+    assertThat(exclusionRepository.count()).isEqualTo(1);
   }
 
   @Test
