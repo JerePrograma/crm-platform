@@ -15,6 +15,56 @@ services:
       start_period: 5s
     volumes:
       - crm_postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-gestudio_crm}
+      DATABASE_USER: ${DATABASE_USER:-gestudio}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-gestudio_local_only}
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-10}
+      DATABASE_MIN_IDLE: ${DATABASE_MIN_IDLE:-1}
+      CRM_BOOTSTRAP_USERNAME: ${CRM_BOOTSTRAP_USERNAME:-}
+      CRM_BOOTSTRAP_PASSWORD: ${CRM_BOOTSTRAP_PASSWORD:-}
+      SENDING_ENABLED: ${SENDING_ENABLED:-false}
+      SENDING_DRY_RUN: ${SENDING_DRY_RUN:-true}
+      SENDING_DAILY_LIMIT: ${SENDING_DAILY_LIMIT:-0}
+      SENDING_KILL_SWITCH: ${SENDING_KILL_SWITCH:-true}
+      PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    profiles: ["app"]
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5173:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
 
 volumes:
   crm_postgres:
