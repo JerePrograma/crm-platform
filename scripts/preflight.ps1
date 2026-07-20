@@ -8,6 +8,18 @@ function Fail([string]$Message) {
   throw "Preflight failed: $Message"
 }
 
+function Read-Port([string]$Name) {
+  $rawValue = [Environment]::GetEnvironmentVariable($Name, 'Process')
+  $parsedValue = 0
+  if (-not [int]::TryParse($rawValue, [ref]$parsedValue)) {
+    Fail "$Name must be an integer"
+  }
+  if ($parsedValue -lt 1 -or $parsedValue -gt 65535) {
+    Fail "$Name must be between 1 and 65535"
+  }
+  return $parsedValue
+}
+
 foreach ($commandName in @('git', 'docker')) {
   if (-not (Get-Command $commandName -ErrorAction SilentlyContinue)) {
     Fail "Required command not found: $commandName"
@@ -36,6 +48,8 @@ Get-Content .env | ForEach-Object {
 foreach ($name in @(
   'POSTGRES_DB',
   'POSTGRES_HOST_PORT',
+  'BACKEND_HOST_PORT',
+  'FRONTEND_HOST_PORT',
   'DATABASE_URL',
   'DATABASE_USER',
   'DATABASE_PASSWORD',
@@ -48,13 +62,15 @@ foreach ($name in @(
   }
 }
 
-$postgresHostPort = 0
-if (-not [int]::TryParse($env:POSTGRES_HOST_PORT, [ref]$postgresHostPort)) {
-  Fail 'POSTGRES_HOST_PORT must be an integer'
+$postgresHostPort = Read-Port 'POSTGRES_HOST_PORT'
+$backendHostPort = Read-Port 'BACKEND_HOST_PORT'
+$frontendHostPort = Read-Port 'FRONTEND_HOST_PORT'
+
+$portValues = @($postgresHostPort, $backendHostPort, $frontendHostPort)
+if (($portValues | Select-Object -Unique).Count -ne $portValues.Count) {
+  Fail 'POSTGRES_HOST_PORT, BACKEND_HOST_PORT and FRONTEND_HOST_PORT must be different'
 }
-if ($postgresHostPort -lt 1 -or $postgresHostPort -gt 65535) {
-  Fail 'POSTGRES_HOST_PORT must be between 1 and 65535'
-}
+
 if ($env:DATABASE_URL -notmatch ":$postgresHostPort/") {
   Fail 'DATABASE_URL must use the same port as POSTGRES_HOST_PORT for host-based development'
 }
@@ -65,7 +81,7 @@ if ($env:SENDING_DAILY_LIMIT -ne '0') { Fail 'SENDING_DAILY_LIMIT must remain 0'
 if ($env:SENDING_KILL_SWITCH -ne 'true') { Fail 'SENDING_KILL_SWITCH must remain true' }
 
 & docker compose version | Out-Null
-& docker compose --profile app config | Out-Null
+& docker compose --profile app --profile smoke config | Out-Null
 
 Write-Host 'Preflight passed.'
 Write-Host "Mode: $(if ($ContainerOnly) { 'container-only' } else { 'local-tools' })"
@@ -75,7 +91,9 @@ if (-not $ContainerOnly) {
   Write-Host "Node: $(& node --version)"
   Write-Host "npm: $(& npm --version)"
 }
-Write-Host "PostgreSQL host port: $env:POSTGRES_HOST_PORT"
+Write-Host "PostgreSQL host port: $postgresHostPort"
+Write-Host "Backend host port: $backendHostPort"
+Write-Host "Frontend host port: $frontendHostPort"
 Write-Host "Database URL: $env:DATABASE_URL"
 Write-Host 'Bootstrap user configured: yes'
 Write-Host 'Sending controls: enabled=false dry-run=true daily-limit=0 kill-switch=true'
