@@ -9,7 +9,8 @@ param(
   [int]$FrontendPort = 5173,
 
   [switch]$KeepRunning,
-  [switch]$UseBuildCache
+  [switch]$UseBuildCache,
+  [switch]$NoTranscript
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,7 +37,7 @@ function Wait-ServiceHealth([string]$Service, [int]$Attempts = 60) {
       }
       Write-Host "$Service health: $status"
       if ($status -eq 'healthy') {
-        return
+        return $status
       }
       if ($status -in @('exited', 'dead', 'unhealthy')) {
         throw "$Service entered terminal state: $status"
@@ -54,13 +55,53 @@ $outputDirectory = Join-Path $repoRoot 'validation-output'
 New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $transcriptPath = Join-Path $outputDirectory "seg001-docker-$timestamp.log"
+$summaryPath = Join-Path $outputDirectory "seg001-docker-$timestamp.json"
+$transcriptStarted = $false
+$startedAt = (Get-Date).ToUniversalTime()
+
+$summary = [ordered]@{
+  schemaVersion = 1
+  validation = 'SEG-001 Docker stack'
+  status = 'RUNNING'
+  startedAtUtc = $startedAt.ToString('o')
+  finishedAtUtc = $null
+  commit = $null
+  dockerVersion = $null
+  composeVersion = $null
+  ports = [ordered]@{
+    postgres = $PostgresPort
+    backend = $BackendPort
+    frontend = $FrontendPort
+  }
+  cleanBuilds = (-not $UseBuildCache)
+  services = [ordered]@{
+    postgres = 'NOT_RUN'
+    backend = 'NOT_RUN'
+    frontend = 'NOT_RUN'
+  }
+  smokeHost = 'NOT_RUN'
+  smokeContainer = 'NOT_RUN'
+  stackKeptRunning = $false
+  transcript = $(if ($NoTranscript) { $null } else { $transcriptPath })
+  error = $null
+}
 
 Push-Location $repoRoot
-Start-Transcript -Path $transcriptPath -Force | Out-Null
+if (-not $NoTranscript) {
+  Start-Transcript -Path $transcriptPath -Force | Out-Null
+  $transcriptStarted = $true
+}
 
 try {
+  $summary.commit = (& git rev-parse HEAD).Trim()
+  $summary.dockerVersion = (& docker --version).Trim()
+  $summary.composeVersion = (& docker compose version).Trim()
+
   Write-Host 'SEG-001 Docker validation started.'
-  Write-Host "Evidence file: $transcriptPath"
+  Write-Host "Structured evidence: $summaryPath"
+  if (-not $NoTranscript) {
+    Write-Host "Transcript: $transcriptPath"
+  }
 
   & (Join-Path $PSScriptRoot 'set-local-host-ports.ps1') `
     -PostgresPort $PostgresPort `
@@ -68,7 +109,7 @@ try {
     -FrontendPort $FrontendPort
 
   & (Join-Path $PSScriptRoot 'preflight.ps1') -ContainerOnly
-
+  Invoke-Checked 'docker' @('compose', '--profile', 'app', '--profile', 'smoke', 'config', '--quiet')
   Invoke-Checked 'docker' @('compose', '--profile', 'app', '--profile', 'smoke', 'down', '--remove-orphans')
 
   $buildArguments = @('compose', '--progress', 'plain', '--profile', 'app', 'build')
@@ -78,22 +119,27 @@ try {
 
   Invoke-Checked 'docker' ($buildArguments + 'frontend')
   Invoke-Checked 'docker' ($buildArguments + 'backend')
-
   Invoke-Checked 'docker' @('compose', '--profile', 'app', 'up', '-d')
 
-  Wait-ServiceHealth 'postgres'
-  Wait-ServiceHealth 'backend'
-  Wait-ServiceHealth 'frontend'
+  $summary.services.postgres = Wait-ServiceHealth 'postgres'
+  $summary.services.backend = Wait-ServiceHealth 'backend'
+  $summary.services.frontend = Wait-ServiceHealth 'frontend'
 
   Invoke-Checked 'docker' @('compose', '--profile', 'app', 'ps')
 
   & (Join-Path $PSScriptRoot 'smoke-test.ps1')
+  $summary.smokeHost = 'PASS'
+
   Invoke-Checked 'docker' @('compose', '--profile', 'app', '--profile', 'smoke', 'run', '--rm', 'smoke')
+  $summary.smokeContainer = 'PASS'
+  $summary.status = 'PASS'
 
   Write-Host 'SEG-001 Docker validation passed.'
-  Write-Host 'This result covers clean image builds, stack health and smoke tests.'
-  Write-Host 'Maven verify, Testcontainers and package-lock validation remain separate controls.'
+  Write-Host 'Covered: image builds, Compose config, stack health and smoke tests.'
+  Write-Host 'Backend Maven verify/Testcontainers and package-lock validation remain separate controls.'
 } catch {
+  $summary.status = 'FAIL'
+  $summary.error = $_.Exception.Message
   Write-Host 'SEG-001 Docker validation failed.' -ForegroundColor Red
   Write-Host $_.Exception.Message -ForegroundColor Red
   & docker compose --profile app --profile smoke ps
@@ -103,8 +149,18 @@ try {
   if (-not $KeepRunning) {
     & docker compose --profile app --profile smoke down --remove-orphans
   } else {
+    $summary.stackKeptRunning = $true
     Write-Host 'Stack left running because -KeepRunning was specified.'
   }
-  Stop-Transcript | Out-Null
+
+  $summary.finishedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
+  $json = $summary | ConvertTo-Json -Depth 8
+  $utf8NoBom = New-Object -TypeName System.Text.UTF8Encoding -ArgumentList $false
+  [System.IO.File]::WriteAllText($summaryPath, $json, $utf8NoBom)
+  Write-Host "Structured evidence written: $summaryPath"
+
+  if ($transcriptStarted) {
+    Stop-Transcript | Out-Null
+  }
   Pop-Location
 }
