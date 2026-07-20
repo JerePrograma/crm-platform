@@ -61,13 +61,15 @@ jobs:
           scripts/preflight.sh
           scripts/smoke-test.sh
           scripts/generate-frontend-lock.sh
+          scripts/set-postgres-host-port.sh
       - name: Validate PowerShell script syntax
         shell: pwsh
         run: |
           $scriptPaths = @(
             'scripts/preflight.ps1',
             'scripts/smoke-test.ps1',
-            'scripts/generate-frontend-lock.ps1'
+            'scripts/generate-frontend-lock.ps1',
+            'scripts/set-postgres-host-port.ps1'
           )
           foreach ($scriptPath in $scriptPaths) {
             $tokens = $null
@@ -86,6 +88,7 @@ jobs:
           cp .env.example .env
           sed -i 's/^CRM_BOOTSTRAP_USERNAME=.*/CRM_BOOTSTRAP_USERNAME=ci-user/' .env
           sed -i 's/^CRM_BOOTSTRAP_PASSWORD=.*/CRM_BOOTSTRAP_PASSWORD=ci-local-only/' .env
+          sh scripts/set-postgres-host-port.sh 55432
           sh scripts/preflight.sh --local
           rm .env
 
