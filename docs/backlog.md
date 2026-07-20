@@ -9,7 +9,7 @@ La rama canónica es `main`.
 | ID | Segmento | Estado | Dependencia | Resultado verificable |
 |---|---|---|---|---|
 | SEG-000 | Repositorio y continuidad | COMPLETE | — | `main`, AGENTS, estado, backlog y puntero canónicos |
-| SEG-001 | Vertical slice persistente de prospectos | ACTIVE | SEG-000 | Importación, deduplicación, exclusiones y UI con matriz verde |
+| SEG-001 | Vertical slice persistente de prospectos | ACTIVE | SEG-000 | Importación, deduplicación, exclusiones, UI y stack local con matriz verde |
 | SEG-002 | Identidad, usuarios y RBAC | PLANNED | SEG-001 | Usuarios persistentes y matriz de permisos probada |
 | SEG-003 | Ficha integral, contactos, búsqueda y tags | PLANNED | SEG-002 | CRUD completo, filtros combinables y trazabilidad |
 | SEG-004 | Campañas, plantillas y adjuntos | PLANNED | SEG-003 | Borrador aprobado, preview y hashes, sin envío |
@@ -51,11 +51,8 @@ La rama canónica es `main`.
 - [x] cola de revisión humana;
 - [x] auditoría;
 - [x] seguridad bootstrap fail-closed;
-- [x] API REST y OpenAPI;
-- [x] RFC 7807;
+- [x] API REST, OpenAPI y RFC 7807;
 - [x] frontend operativo;
-- [x] Dockerfile y Compose;
-- [x] CI versionado;
 - [x] pruebas unitarias e integración implementadas;
 - [x] documentación técnica y operativa.
 
@@ -67,7 +64,7 @@ La rama canónica es `main`.
 - [x] revisión ambigua persistida en preview;
 - [x] duplicado exacto enlazado al existente;
 - [x] validación de correo;
-- [x] recuperación segura de errores por fila;
+- [x] recuperación segura por fila;
 - [x] CSV con coma/punto y coma y comillas;
 - [x] rechazo de encabezados duplicados;
 - [x] fechas Excel UTC;
@@ -75,35 +72,63 @@ La rama canónica es `main`.
 - [x] saneamiento de nombres de archivo;
 - [x] Basic Auth UTF-8.
 
-### Consolidación y operación finalizadas
+### Consolidación finalizada
 
 - [x] consolidar toda la rama temática en `main` por fast-forward;
-- [x] confirmar igualdad de ramas al momento de consolidar;
-- [x] convertir `main` en fuente canónica;
-- [x] alinear `.env.example` y Docker Compose;
+- [x] confirmar igualdad al momento de consolidar;
+- [x] convertir `main` en única fuente canónica;
+- [x] alinear `.env.example`, Compose y backend;
+- [x] documentar evidencia de consolidación.
+
+### Operación local finalizada
+
 - [x] documentar instalación Linux/macOS;
 - [x] documentar instalación Windows;
-- [x] documentar arranque, health, Swagger y autenticación;
-- [x] documentar flujo Dashboard → Exclusiones → Preview → Ejecución → Prospectos → Auditoría;
-- [x] documentar detención, reinicio y borrado de volumen;
-- [x] documentar troubleshooting;
-- [x] documentar consolidación en `docs/main-consolidation.md`.
+- [x] documentar procesos separados;
+- [x] añadir perfil Compose `app` con PostgreSQL, backend y frontend;
+- [x] añadir imagen backend con health check;
+- [x] añadir imagen frontend con Nginx y proxy;
+- [x] publicar servicios solo en loopback;
+- [x] encadenar health checks entre servicios;
+- [x] añadir preflight Unix y PowerShell;
+- [x] añadir modo local y container-only;
+- [x] añadir smoke tests Unix y PowerShell;
+- [x] añadir Makefile;
+- [x] documentar comandos y advertencias destructivas;
+- [x] añadir `.dockerignore` raíz y frontend;
+- [x] añadir `.gitattributes` multiplataforma;
+- [x] actualizar README e índice.
+
+### CI finalizado a nivel de implementación
+
+- [x] job backend con Maven verify;
+- [x] job frontend con install, typecheck y build;
+- [x] job de sintaxis Unix y PowerShell;
+- [x] preflight fail-closed en CI;
+- [x] validación del perfil Compose completo;
+- [x] build de imagen backend;
+- [x] build de imagen frontend;
+- [x] evitar caché npm hasta tener lockfile.
 
 ### Bloqueantes para cierre
 
-- [ ] obtener una ejecución CI visible o checkout local con red;
+- [ ] obtener ejecución CI visible o checkout con red y Docker;
+- [ ] registrar SHA exacto;
+- [ ] ejecutar preflight real;
 - [ ] ejecutar `mvn verify`;
-- [ ] corregir compilación backend si falla;
-- [ ] corregir Spotless si falla;
-- [ ] validar Testcontainers/Flyway/Hibernate;
+- [ ] corregir compilación y Spotless si fallan;
+- [ ] validar Testcontainers, Flyway y Hibernate;
 - [ ] ejecutar `npm install`;
 - [ ] generar y versionar `package-lock.json`;
 - [ ] ejecutar typecheck y build frontend;
-- [ ] validar `docker compose config`;
-- [ ] construir imagen backend;
-- [ ] ejecutar smoke test manual;
+- [ ] validar `docker compose --profile app config`;
+- [ ] construir imágenes backend y frontend;
+- [ ] levantar el stack completo;
+- [ ] ejecutar smoke test;
 - [ ] ejecutar escaneo local de secretos/datos;
-- [ ] registrar evidencia completa en `docs/validation/SEG-001.md`;
+- [ ] corregir todos los fallos observados;
+- [ ] repetir la matriz completa;
+- [ ] registrar evidencia en `docs/validation/SEG-001.md`;
 - [ ] marcar SEG-001 `COMPLETE`;
 - [ ] activar SEG-002.
 
@@ -112,12 +137,13 @@ La rama canónica es `main`.
 - [ ] mostrar `excludedRows` en la UI;
 - [ ] resolución auditada de `DuplicateReview`;
 - [ ] retry explícito de `ImportJob`;
-- [ ] filtros combinables adicionales;
-- [ ] exportación de resultados de importación;
-- [ ] contenedor o distribución estática del frontend;
+- [ ] filtros combinables;
+- [ ] exportación de resultados;
 - [ ] pruebas HTTP adicionales;
 - [ ] prueba de concurrencia de idempotencia;
-- [ ] accesibilidad básica.
+- [ ] accesibilidad básica;
+- [ ] política de retención;
+- [ ] actor persistente en auditoría.
 
 ## SEG-002 — alcance preparado, no iniciado
 
@@ -136,13 +162,13 @@ Cuando SEG-001 cierre:
 
 ## Reglas de priorización
 
-1. fallos de seguridad;
+1. seguridad;
 2. pérdida o corrupción de datos;
 3. idempotencia y exclusiones;
 4. compilación y migraciones;
-5. pruebas;
+5. pruebas y reproducibilidad;
 6. operación comercial;
 7. UX;
 8. optimización.
 
-No comenzar SEG-002 mientras SEG-001 tenga un fallo bloqueante sin resolución o sin una decisión explícita de aplazamiento documentada.
+No comenzar SEG-002 mientras SEG-001 tenga un control bloqueante pendiente o una falla sin resolución documentada.
