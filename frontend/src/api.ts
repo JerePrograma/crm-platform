@@ -11,7 +11,12 @@ import type {
 } from "./types";
 
 function authorization(credentials: Credentials): string {
-  return `Basic ${btoa(`${credentials.username}:${credentials.password}`)}`;
+  const bytes = new TextEncoder().encode(`${credentials.username}:${credentials.password}`);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return `Basic ${btoa(binary)}`;
 }
 
 async function request<T>(
