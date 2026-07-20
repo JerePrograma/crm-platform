@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Guía para levantar Gestudio CRM desde `main`, comprobar componentes y utilizar el vertical slice disponible.
+Describe cómo levantar Gestudio CRM desde `main` con procesos separados, comprobar cada componente y utilizar el vertical slice disponible.
 
 El sistema administra prospectos, exclusiones, importaciones y auditoría. No existe adaptador de envío.
 
@@ -10,24 +10,32 @@ El sistema administra prospectos, exclusiones, importaciones y auditoría. No ex
 
 Procesos:
 
-1. PostgreSQL 17 en Docker, publicado por defecto en `127.0.0.1:55432`;
-2. backend Spring Boot en `8080`;
-3. frontend Vite en `5173`;
+1. PostgreSQL 17 en Docker;
+2. backend Spring Boot;
+3. frontend Vite;
 4. proxy Vite de `/api` y `/actuator` al backend.
 
-PostgreSQL es la fuente de verdad. El frontend no guarda credenciales en almacenamiento persistente del navegador.
+Puertos predeterminados:
 
-Dentro de Compose, PostgreSQL conserva el puerto `5432`. `POSTGRES_HOST_PORT` solo controla el puerto publicado en el host.
+```text
+POSTGRES_HOST_PORT=55432
+BACKEND_HOST_PORT=8080
+FRONTEND_HOST_PORT=5173
+PORT=8080
+```
+
+`PORT` se usa cuando el backend corre directamente en el host. `BACKEND_HOST_PORT` se usa cuando el backend corre mediante Compose.
 
 ## Requisitos
 
 - Git;
-- Docker con Compose v2;
+- Docker Desktop o Docker Engine con Compose v2;
 - Java 21;
 - Node.js 22 y npm;
-- curl o wget y SHA-512 para Maven Wrapper.
+- curl o wget;
+- herramienta SHA-512 para el primer uso del Maven Wrapper.
 
-Maven global no es necesario. `mvnw` y `mvnw.cmd` descargan Maven 3.9.16 y verifican SHA-512.
+Maven global no es necesario.
 
 ## Obtener el código
 
@@ -36,49 +44,34 @@ git clone https://github.com/JerePrograma/crm-platform.git
 cd crm-platform
 git switch main
 git pull --ff-only
-```
-
-Comprobar:
-
-```bash
 git status
-git rev-parse --abbrev-ref HEAD
 git rev-parse HEAD
 ```
 
-Si `mvnw.cmd` aparece modificado sin una edición intencional:
-
-```bash
-git diff -- mvnw.cmd
-git restore -- mvnw.cmd
-```
-
-## Configurar variables
+## Configurar `.env`
 
 Linux/macOS:
 
 ```bash
-cp .env.example .env
+[ -f .env ] || cp .env.example .env
 ```
 
 Windows:
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
-
-No sobrescribir un `.env` ya configurado.
 
 Valores mínimos:
 
 ```dotenv
-POSTGRES_DB=gestudio_crm
 POSTGRES_HOST_PORT=55432
+BACKEND_HOST_PORT=8080
+FRONTEND_HOST_PORT=5173
+POSTGRES_DB=gestudio_crm
 DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
 DATABASE_USER=gestudio
 DATABASE_PASSWORD=gestudio_local_only
-DATABASE_POOL_SIZE=10
-DATABASE_MIN_IDLE=1
 CRM_BOOTSTRAP_USERNAME=gestudio-admin
 CRM_BOOTSTRAP_PASSWORD=change-this-local-password
 SENDING_ENABLED=false
@@ -88,26 +81,26 @@ SENDING_KILL_SWITCH=true
 PORT=8080
 ```
 
-Cambiar `CRM_BOOTSTRAP_PASSWORD`. `POSTGRES_HOST_PORT` y el puerto de `DATABASE_URL` deben coincidir.
+Cambiar la contraseña bootstrap. No modificar `SENDING_*`.
 
-No modificar:
+Configurar puertos de forma segura:
 
-```text
-SENDING_ENABLED=false
-SENDING_DRY_RUN=true
-SENDING_DAILY_LIMIT=0
-SENDING_KILL_SWITCH=true
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173
 ```
 
-`.env` está ignorado por Git.
-
-## Preflight
-
-Linux/macOS:
+Unix:
 
 ```bash
-sh scripts/preflight.sh --local
+sh scripts/set-local-host-ports.sh 55432 8080 5173
 ```
+
+## Preflight local
 
 Windows:
 
@@ -115,7 +108,13 @@ Windows:
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1
 ```
 
-Valida herramientas, puerto PostgreSQL, URL, credenciales, Compose y guardas.
+Unix:
+
+```bash
+sh scripts/preflight.sh --local
+```
+
+Valida Java, Node, npm, Docker, tres puertos, credenciales y guardas.
 
 ## Levantar PostgreSQL
 
@@ -132,22 +131,17 @@ Logs:
 docker compose logs -f postgres
 ```
 
-Puerto host predeterminado:
+PostgreSQL queda disponible en:
 
 ```text
-127.0.0.1:55432
+localhost:${POSTGRES_HOST_PORT}
 ```
 
-El contenedor escucha internamente en `5432`.
+Con valor predeterminado:
 
-Si se cambia la contraseña después de crear el volumen:
-
-```bash
-docker compose down -v
-docker compose up -d postgres
+```text
+localhost:55432
 ```
-
-`down -v` elimina los datos locales.
 
 ## Cargar variables
 
@@ -159,7 +153,7 @@ set -a
 set +a
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 Get-Content .env | ForEach-Object {
@@ -168,15 +162,6 @@ Get-Content .env | ForEach-Object {
     [Environment]::SetEnvironmentVariable($matches.name.Trim(), $matches.value, 'Process')
   }
 }
-```
-
-Comprobar sin imprimir secretos:
-
-```powershell
-$env:POSTGRES_HOST_PORT
-$env:DATABASE_URL
-$env:DATABASE_USER
-$env:PORT
 ```
 
 ## Levantar backend
@@ -197,31 +182,24 @@ Durante el arranque:
 
 - Flyway aplica V1–V5;
 - Hibernate valida el esquema;
-- Spring Security crea el usuario bootstrap si ambas credenciales existen;
-- backend queda en `http://localhost:8080`.
+- Spring Security configura bootstrap si ambas credenciales existen;
+- backend responde en `http://localhost:${PORT}`.
+
+Con valor predeterminado:
+
+```text
+http://localhost:8080
+```
 
 ## Comprobar backend
 
 Health:
 
-```bash
-curl http://localhost:8080/actuator/health
+```text
+http://localhost:8080/actuator/health
 ```
 
-Esperado:
-
-```json
-{"status":"UP"}
-```
-
-API autenticada:
-
-```bash
-curl -u "$CRM_BOOTSTRAP_USERNAME:$CRM_BOOTSTRAP_PASSWORD" \
-  "http://localhost:8080/api/v1/prospects?size=5"
-```
-
-PowerShell:
+PowerShell autenticado:
 
 ```powershell
 $pair = "$($env:CRM_BOOTSTRAP_USERNAME):$($env:CRM_BOOTSTRAP_PASSWORD)"
@@ -235,16 +213,15 @@ Swagger:
 
 ```text
 http://localhost:8080/swagger-ui/index.html
-http://localhost:8080/v3/api-docs
 ```
 
-Sin credenciales, API, Swagger y OpenAPI deben responder 401. Health permanece público.
+Sin credenciales, API/Swagger/OpenAPI deben responder 401; health permanece público.
 
 ## Levantar frontend
 
 ```bash
 cd frontend
-npm install
+if [ -f package-lock.json ]; then npm ci; else npm install; fi
 npm run dev
 ```
 
@@ -254,20 +231,23 @@ Abrir:
 http://localhost:5173
 ```
 
-Vite redirige `/api` y `/actuator` a `http://localhost:8080`.
+Las credenciales permanecen solo en memoria.
 
-## Build frontend limpio
+## Generar package-lock
 
-```bash
-npm run typecheck
-npm run build
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
 ```
 
-Mediante Docker:
+Unix:
 
 ```bash
-docker compose --progress plain --profile app build --no-cache frontend
+sh scripts/generate-frontend-lock.sh
 ```
+
+Después, frontend, Dockerfile, Makefile y CI utilizarán `npm ci` automáticamente.
 
 ## Flujo funcional
 
@@ -276,171 +256,129 @@ docker compose --progress plain --profile app build --no-cache frontend
 Comprobar:
 
 - prospectos visibles;
-- interés o pipeline;
 - contactos bloqueados;
 - exclusiones;
-- revisiones pendientes;
+- revisiones ambiguas;
 - envíos bloqueados.
 
 ### 2. Exclusiones
 
 Canales:
 
-- EMAIL;
-- PHONE;
-- WHATSAPP;
-- WEBSITE;
-- SOCIAL.
+```text
+EMAIL
+PHONE
+WHATSAPP
+WEBSITE
+SOCIAL
+```
 
-Motivos:
+Motivos incluyen baja, respuesta negativa, bounce, contacto inválido, cliente existente y conversación existente.
 
-- manual;
-- baja;
-- respuesta negativa;
-- rebote permanente;
-- contacto inválido;
-- cliente existente;
-- conversación existente;
-- institución no pertinente.
-
-Una exclusión domina la elegibilidad. Teléfono y WhatsApp son equivalentes al normalizar al mismo número.
+Una exclusión es dominante. Si coincide con un prospecto, queda no elegible y pasa a `DO_NOT_CONTACT`.
 
 ### 3. Archivo
 
-Admite:
-
-- CSV con coma o punto y coma;
-- XLSX hasta 10 MB;
+- CSV UTF-8 con coma o punto y coma;
+- XLSX de hasta 10 MB;
 - hoja `Prospectos`;
-- hoja opcional `Exclusiones`.
-
-CSV requiere `Institución`. El parser usa encabezados normalizados.
+- hoja opcional `Exclusiones`;
+- CSV requiere `Institución`.
 
 No versionar datos reales.
 
 ### 4. Preview
 
-El preview:
-
-- persiste ImportJob, ImportRow y evidencia;
-- calcula SHA-256;
-- valida filas;
-- detecta duplicados;
-- genera revisiones ambiguas;
-- aplica exclusiones;
-- no crea dominio desde el archivo.
-
 Estados:
 
-- ACCEPTED;
-- EXCLUDED;
-- REJECTED;
-- DUPLICATE;
-- REVIEW_REQUIRED.
+```text
+ACCEPTED
+EXCLUDED
+REJECTED
+DUPLICATE
+REVIEW_REQUIRED
+```
 
-La UI muestra Aceptadas, Bloqueadas, Rechazadas, Duplicadas y A revisión.
+El preview persiste evidencia, pero no crea instituciones, contactos, prospectos ni exclusiones procedentes del archivo.
 
-### 5. Duplicados ambiguos
+### 5. Revisiones ambiguas
 
-No existe resolución automática. Corregir o revisar el archivo antes de ejecutar.
+No existe fusión automática ni resolución UI. Corregir el archivo antes de ejecutar.
 
 ### 6. Ejecución
 
-Pulsar `Importar con confirmación`.
+Usar `Importar con confirmación`.
 
-Cabecera exigida:
+Cabecera API:
 
 ```text
 X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
 ```
 
-La ejecución procesa cada fila de forma independiente, crea elegibles, conserva bloqueados, importa exclusiones y audita.
+La ejecución procesa por fila, crea prospectos elegibles, conserva bloqueados, importa exclusiones y registra auditoría.
 
 ### 7. Prospectos
 
-Revisar estado, elegibilidad, prioridad, puntuación, alumnos estimados, fuente y propietario.
+Revisar institución, localidad, estado, elegibilidad, prioridad, puntuación, alumnos estimados, fuente y propietario.
 
 ### 8. Auditoría
 
 Eventos principales:
 
-- PROSPECT_CREATED;
-- EXCLUSION_CREATED;
-- IMPORT_STARTED;
-- IMPORT_COMPLETED;
-- IMPORT_FAILED.
-
-## API principal
-
 ```text
-GET  /actuator/health
-GET  /api/v1/prospects
-POST /api/v1/prospects
-GET  /api/v1/prospects/{id}
-POST /api/v1/imports/prospects/preview
-POST /api/v1/imports/prospects/execute
-GET  /api/v1/imports/prospects/{jobId}
-GET  /api/v1/imports/prospects/{jobId}/rows
-GET  /api/v1/imports/prospects/duplicate-reviews/pending
-GET  /api/v1/exclusions
-POST /api/v1/exclusions
-GET  /api/v1/exclusions/{id}
-GET  /api/v1/audit
+PROSPECT_CREATED
+EXCLUSION_CREATED
+IMPORT_STARTED
+IMPORT_COMPLETED
+IMPORT_FAILED
 ```
+
+## Smoke local
+
+Con procesos activos:
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
+```
+
+Unix:
+
+```bash
+sh scripts/smoke-test.sh
+```
+
+Los URLs se derivan de `BACKEND_HOST_PORT` y `FRONTEND_HOST_PORT`, o de overrides explícitos.
 
 ## Validar proyecto
 
 Backend:
 
-```bash
-sh ./mvnw -B -f backend/pom.xml verify
-```
-
-Windows:
-
 ```powershell
 .\mvnw.cmd -B -f backend\pom.xml verify
 ```
 
-Testcontainers requiere Docker.
+```bash
+sh ./mvnw -B -f backend/pom.xml verify
+```
 
 Frontend:
 
 ```bash
 cd frontend
-npm install
+if [ -f package-lock.json ]; then npm ci; else npm install; fi
 npm run typecheck
 npm run build
-cd ..
 ```
 
-Infraestructura:
-
-```bash
-docker compose --profile app --profile smoke config
-docker compose --progress plain --profile app build --no-cache frontend
-docker compose --progress plain --profile app build --no-cache backend
-```
-
-## Generar lockfile
-
-Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
-```
-
-Linux/macOS:
-
-```bash
-sh scripts/generate-frontend-lock.sh
-```
+Testcontainers requiere Docker.
 
 ## Detener
 
-Backend/frontend: Ctrl+C.
+Backend/frontend: `Ctrl+C`.
 
-PostgreSQL conservando datos:
+PostgreSQL conservando volumen:
 
 ```bash
 docker compose stop postgres
@@ -452,55 +390,42 @@ Retirar contenedor conservando volumen:
 docker compose down
 ```
 
-Eliminar base:
+Eliminar base local:
 
 ```bash
 docker compose down -v
 ```
 
+La última operación es destructiva.
+
 ## Problemas frecuentes
+
+### Puerto ocupado
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
+  -PostgresPort 55433 `
+  -BackendPort 18080 `
+  -FrontendPort 15173
+```
 
 ### 401
 
-- credenciales bootstrap no vacías;
-- backend reiniciado tras modificar `.env`;
-- terminal con variables cargadas;
-- credenciales UI idénticas.
+- comprobar credenciales no vacías;
+- reiniciar backend después de cambiar `.env`;
+- cargar variables en la terminal;
+- usar las mismas credenciales en UI.
 
 ### Contraseña PostgreSQL
 
-Recrear volumen solo en entorno descartable:
+Si cambió después de crear el volumen:
 
 ```bash
 docker compose down -v
 docker compose up -d postgres
 ```
 
-### Puerto PostgreSQL ocupado
-
-Usar:
-
-```dotenv
-POSTGRES_HOST_PORT=55432
-DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
-```
-
-Windows:
-
-```powershell
-Get-NetTCPConnection -LocalPort 5432 -ErrorAction SilentlyContinue |
-  Select-Object LocalAddress, LocalPort, State, OwningProcess
-```
-
-No es necesario detener otro PostgreSQL si se usa un puerto host alternativo.
-
-### Puerto 8080
-
-Cambiar PORT y actualizar proxy si corresponde.
-
-### Puerto 5173
-
-Abrir la URL informada por Vite.
+Esto destruye la base anterior.
 
 ### Maven Wrapper
 
@@ -508,7 +433,7 @@ El primer uso requiere red, curl/wget y SHA-512.
 
 ### Testcontainers
 
-Confirmar Docker y `docker ps`.
+Confirmar Docker activo y `docker ps` funcional.
 
 ### HTTP 413
 
@@ -516,20 +441,20 @@ El archivo supera 10 MB. Dividir el lote.
 
 ### CSV incorrecto
 
-- UTF-8;
-- coma o punto y coma;
-- comillas cerradas;
-- encabezados no duplicados tras normalización.
+- guardar UTF-8;
+- usar coma o punto y coma;
+- cerrar campos entre comillas;
+- evitar encabezados duplicados normalizados.
 
 ## Seguridad y límites
 
-- sin envío;
-- sin Gmail, SMTP, campañas o cloud;
-- HTTP Basic temporal;
-- sin RBAC persistente;
-- datos reales fuera de pruebas/CI;
-- PostgreSQL solo en localhost;
-- no desplegar sin cerrar SEG-001.
+- no existe envío de correo;
+- no existen Gmail, SMTP, Cloud Tasks ni campañas;
+- HTTP Basic es temporal;
+- no existe RBAC persistente;
+- no usar datos reales en pruebas o CI;
+- no exponer servicios fuera de localhost;
+- no desplegar sin cerrar `docs/validation/SEG-001.md`.
 
 ## Documentación relacionada
 
@@ -539,4 +464,6 @@ El archivo supera 10 MB. Dividir el lote.
 - `docs/containerized-quickstart.md`;
 - `docs/import-existing-data.md`;
 - `docs/import-hardening.md`;
+- `docs/testing.md`;
+- `docs/security.md`;
 - `docs/validation/SEG-001.md`.
