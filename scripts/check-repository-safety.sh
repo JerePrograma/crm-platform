@@ -10,7 +10,7 @@ command -v git >/dev/null 2>&1 || fail "Git is required"
 
 git diff --check
 
-for path in $(git ls-files); do
+git ls-files | while IFS= read -r path; do
   case "$path" in
     .env|*/.env)
       fail "Local environment file is tracked: $path"
