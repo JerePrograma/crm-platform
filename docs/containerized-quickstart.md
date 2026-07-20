@@ -67,9 +67,9 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
 ```
 
-El preflight comprueba Git, Docker, Compose, `.env`, PostgreSQL, credenciales bootstrap y las guardas de envío. No requiere Java, Node ni npm instalados en el host.
+El preflight comprueba Git, Docker, Compose, `.env`, PostgreSQL, credenciales bootstrap y guardas de envío. No requiere Java, Node ni npm en el host.
 
-## 4. Construir e iniciar el stack
+## 4. Construir e iniciar el stack persistente
 
 ```bash
 docker compose --profile app up -d --build
@@ -83,16 +83,16 @@ make app-up
 
 Servicios:
 
-| Servicio | Contenedor | Puerto host | Función |
-|---|---|---:|---|
-| PostgreSQL | `postgres` | `127.0.0.1:5432` | fuente de verdad |
-| Backend | `backend` | `127.0.0.1:8080` | API, Flyway y seguridad |
-| Frontend | `frontend` | `127.0.0.1:5173` | interfaz y proxy hacia backend |
+| Servicio | Puerto host | Función |
+|---|---:|---|
+| PostgreSQL | `127.0.0.1:5432` | fuente de verdad |
+| Backend | `127.0.0.1:8080` | API, Flyway y seguridad |
+| Frontend | `127.0.0.1:5173` | SPA y proxy hacia backend |
 
 Los servicios se inician en orden:
 
-1. PostgreSQL debe quedar saludable;
-2. backend aplica Flyway y debe responder health;
+1. PostgreSQL saludable;
+2. backend aplica Flyway y responde health;
 3. frontend inicia después del backend saludable.
 
 ## 5. Comprobar estado
@@ -123,7 +123,7 @@ docker compose logs -f frontend
 http://localhost:5173
 ```
 
-Ingresar con los valores de:
+Ingresar con:
 
 ```text
 CRM_BOOTSTRAP_USERNAME
@@ -142,9 +142,9 @@ Swagger autenticado:
 http://localhost:8080/swagger-ui/index.html
 ```
 
-## 7. Ejecutar smoke test
+## 7. Smoke test contra stack activo
 
-Linux/macOS con `curl`:
+Linux/macOS:
 
 ```bash
 sh scripts/smoke-test.sh
@@ -162,9 +162,43 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
 ```
 
-El smoke test solo lee health, una página vacía o existente de prospectos y el documento raíz del frontend. No crea datos.
+Comprueba health, API autenticada y documento raíz del frontend. No crea datos.
 
-## 8. Flujo funcional
+## 8. Smoke test efímero completamente contenedorizado
+
+Esta modalidad construye el stack, espera health checks, ejecuta un contenedor `smoke` y retira los contenedores al finalizar.
+
+Con Make:
+
+```bash
+make smoke-container
+```
+
+Comando directo:
+
+```bash
+docker compose --profile app --profile smoke up \
+  --build \
+  --abort-on-container-exit \
+  --exit-code-from smoke \
+  smoke
+```
+
+Después del comando directo, retirar contenedores conservando el volumen:
+
+```bash
+docker compose --profile app --profile smoke down --remove-orphans
+```
+
+El servicio `smoke` verifica desde la red interna de Compose:
+
+- health del backend;
+- autenticación Basic contra prospectos;
+- entrega del frontend mediante Nginx.
+
+Este es también el recorrido preparado para CI.
+
+## 9. Flujo funcional
 
 1. ingresar al dashboard;
 2. registrar exclusiones conocidas;
@@ -178,7 +212,7 @@ El smoke test solo lee health, una página vacía o existente de prospectos y el
 
 La descripción completa está en `docs/local-development-and-usage.md`.
 
-## 9. Detener conservando datos
+## 10. Detener conservando datos
 
 ```bash
 docker compose --profile app down
@@ -192,10 +226,10 @@ make app-down
 
 El volumen `crm_postgres` se conserva.
 
-## 10. Eliminar también la base local
+## 11. Eliminar también la base local
 
 ```bash
-docker compose --profile app down -v
+docker compose --profile app --profile smoke down -v --remove-orphans
 ```
 
 Con Make:
@@ -206,7 +240,7 @@ make reset-db
 
 Esta operación es destructiva.
 
-## 11. Reconstruir después de cambios
+## 12. Reconstruir después de cambios
 
 ```bash
 git pull --ff-only
@@ -220,7 +254,7 @@ docker compose --profile app build --no-cache
 docker compose --profile app up -d
 ```
 
-## 12. Diagnóstico
+## 13. Diagnóstico
 
 ### Backend no queda saludable
 
@@ -237,34 +271,49 @@ Revisar:
 
 ### Frontend devuelve 502
 
-El proxy no alcanza al backend. Comprobar:
-
 ```bash
 docker compose --profile app ps
 docker compose logs backend
 docker compose logs frontend
 ```
 
-### Cambio de contraseña PostgreSQL
+El frontend Nginx necesita resolver `backend:8080` dentro de la red Compose.
 
-La contraseña se fija al crear el volumen. Para un entorno local descartable:
+### Smoke falla
 
 ```bash
-docker compose --profile app down -v
+docker compose --profile app --profile smoke logs --no-color
+```
+
+Revisar:
+
+- credenciales bootstrap no vacías;
+- backend y frontend saludables;
+- respuesta de `/api/v1/prospects`;
+- documento raíz del frontend.
+
+### Cambio de contraseña PostgreSQL
+
+La contraseña se fija al crear el volumen. Para un entorno descartable:
+
+```bash
+docker compose --profile app --profile smoke down -v --remove-orphans
 docker compose --profile app up -d --build
 ```
 
 ### Puertos ocupados
 
-Los puertos predeterminados son 5432, 8080 y 5173. Cambiar los mapeos y cualquier URL de host relacionada de manera consistente.
+Los puertos predeterminados son 5432, 8080 y 5173. Cambiar mapeos y URLs relacionadas de manera consistente.
 
-## 13. Seguridad
+## 14. Seguridad
 
 - todos los puertos se publican solo en `127.0.0.1`;
 - `.env` no debe versionarse;
 - las credenciales bootstrap son temporales y locales;
-- las cuatro guardas de envío deben conservar sus valores seguros;
-- no incorporar el XLSX real al repositorio ni a una imagen;
+- las cuatro guardas de envío deben conservar valores seguros;
+- no incorporar XLSX real al repositorio o imágenes;
+- `.dockerignore` excluye secretos, planillas, claves y cachés;
+- el servicio smoke solo realiza lecturas;
 - no utilizar este stack como despliegue de producción.
 
 ## Limitación actual
