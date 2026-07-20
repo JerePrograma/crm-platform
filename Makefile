@@ -1,7 +1,10 @@
-.PHONY: preflight db-up db-down app-up app-down app-logs backend frontend verify smoke reset-db
+.PHONY: preflight preflight-container db-up db-down app-up app-down app-logs backend frontend verify smoke reset-db
 
 preflight:
-	sh scripts/preflight.sh
+	sh scripts/preflight.sh --local
+
+preflight-container:
+	sh scripts/preflight.sh --container-only
 
 db-up:
 	docker compose up -d postgres
