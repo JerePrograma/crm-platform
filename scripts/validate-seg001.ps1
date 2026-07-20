@@ -159,16 +159,7 @@ try {
   Invoke-Checked 'docker' @('compose', '--profile', 'app', '--profile', 'smoke', 'run', '--rm', 'smoke')
   $summary.phases.finalSmokeContainer = 'PASS'
 
-  Invoke-Checked 'git' @('diff', '--check')
-  $trackedFiles = @(& git ls-files)
-  $forbiddenTracked = @($trackedFiles | Where-Object {
-    $_ -eq '.env' -or
-    $_ -like 'validation-output/*' -or
-    $_ -match '^gestudio_lote_.*_prospectos\.xlsx$'
-  })
-  if ($forbiddenTracked.Count -gt 0) {
-    throw "Forbidden local or operational files are tracked:`n$($forbiddenTracked -join "`n")"
-  }
+  & (Join-Path $PSScriptRoot 'check-repository-safety.ps1')
 
   $unexpectedChanges = @(& git status --porcelain | Where-Object {
     $_ -notmatch '^\?\? frontend/package-lock\.json$' -and
