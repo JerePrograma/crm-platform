@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Esta carpeta contiene controles reproducibles para preparar y comprobar un entorno local de Gestudio CRM. Los scripts no despliegan, no importan datos y no realizan comunicaciones.
+Esta carpeta contiene controles reproducibles para preparar, construir y comprobar un entorno local de Gestudio CRM. Los scripts no despliegan, no importan datos y no realizan comunicaciones.
 
 ## Preflight
 
@@ -94,6 +94,46 @@ docker compose --profile app --profile smoke up \
 
 El target Make retira los contenedores al finalizar y conserva el volumen PostgreSQL. En CI se imprime el log completo si el smoke falla y luego se elimina también el volumen de CI.
 
+## Generar `package-lock.json` mediante Docker
+
+Este recorrido permite generar el lockfile sin instalar Node o npm en el host.
+
+### Linux/macOS
+
+```bash
+sh scripts/generate-frontend-lock.sh
+```
+
+Con Make:
+
+```bash
+make frontend-lock
+```
+
+### Windows PowerShell
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
+```
+
+Los scripts:
+
+1. comprueban Docker;
+2. localizan `frontend/package.json` desde la raíz real del repositorio;
+3. ejecutan `node:22-alpine` con el directorio frontend montado;
+4. ejecutan `npm install --no-audit --no-fund`;
+5. verifican que exista `frontend/package-lock.json`;
+6. no realizan commits automáticamente.
+
+Después:
+
+```bash
+git status --short
+git diff -- frontend/package-lock.json
+```
+
+Revisar y versionar el archivo. Una vez disponible, Dockerfile y CI deben migrarse de `npm install` a `npm ci` y repetir toda la matriz.
+
 ## Variables opcionales del smoke test de host
 
 Por defecto:
@@ -113,6 +153,7 @@ make preflight-container
 make db-up
 make app-up
 make app-logs
+make frontend-lock
 make smoke
 make smoke-container
 make verify
@@ -132,10 +173,26 @@ make app-down
 | `app-logs` | sigue logs de todo el perfil `app` |
 | `backend` | ejecuta Spring Boot desde Maven Wrapper |
 | `frontend` | instala dependencias y ejecuta Vite |
+| `frontend-lock` | genera `package-lock.json` mediante Node en Docker |
 | `verify` | ejecuta backend, frontend, Compose y builds de imágenes |
 | `smoke` | prueba servicios ya activos desde el host |
 | `smoke-container` | construye, levanta, prueba y retira stack efímero |
 | `reset-db` | elimina contenedores y volumen local |
+
+## Primer build real registrado
+
+El 20 de julio de 2026, el preflight PowerShell en modo container-only pasó y el build frontend llegó a ejecutar TypeScript. Se reprodujeron y corrigieron:
+
+- credenciales anulables dentro de callbacks;
+- declaración ausente para imports CSS/Vite.
+
+Evidencia:
+
+```text
+docs/validation/SEG-001-container-build-2026-07-20.md
+```
+
+La próxima operación debe reconstruir frontend desde `main`, después backend y finalmente smoke.
 
 ## Advertencia destructiva
 
@@ -168,11 +225,14 @@ El preflight falla si cualquiera de estos valores cambia.
 
 CI valida:
 
-- sintaxis `sh` de ambos scripts Unix;
-- sintaxis PowerShell de ambos scripts Windows;
+- sintaxis `sh` de preflight, smoke y generación de lockfile;
+- sintaxis PowerShell de preflight, smoke y generación de lockfile;
 - preflight fail-closed con credenciales ficticias;
+- frontend typecheck y build;
 - Compose con perfiles `app` y `smoke`;
 - imágenes backend y frontend;
 - arranque de PostgreSQL, backend y frontend;
 - smoke test contenedorizado;
 - logs en fallo y limpieza obligatoria.
+
+Hasta versionar `package-lock.json`, CI usa `npm install` sin caché npm.
