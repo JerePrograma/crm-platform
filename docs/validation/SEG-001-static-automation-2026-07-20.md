@@ -6,7 +6,9 @@
 
 ## Alcance
 
-Controles ejecutados sobre representaciones exactas de archivos versionados. No sustituyen Docker, compilación, tests o smoke real.
+Controles ejecutados sobre representaciones exactas o releídas de la automatización y configuración versionadas.
+
+No sustituyen Docker, compilación, tests, migraciones o smoke real.
 
 ## Entorno disponible
 
@@ -19,37 +21,41 @@ Docker/Compose: no disponible
 Maven: no disponible
 ```
 
-## Docker Compose
+## Controles ejecutados
 
-Se cargó el contenido actualizado con PyYAML.
+### Docker Compose
+
+Estructura comprobada:
 
 ```text
-PASS
 services: postgres, backend, frontend, smoke
-postgres port: 127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432
-backend database: postgres:5432
-smoke depende de frontend healthy
+postgres host port variable: presente
+backend host port variable: presente
+frontend host port variable: presente
+smoke -> frontend healthy: presente
 ```
 
-Confirma estructura YAML, no `docker compose config` semántico.
+Resultado: `PASS_STRUCTURE`.
 
-## GitHub Actions
+Esto no equivale a `docker compose config` real.
 
-Se cargó el workflow y se verificaron jobs y pasos.
+### GitHub Actions
+
+Estructura comprobada:
 
 ```text
-PASS
 jobs: backend, frontend, scripts, compose-images-and-smoke
-smoke E2E: presente
-scripts lockfile: presentes
-scripts PostgreSQL port: presentes
+install condicional npm ci/npm install: presente
+scripts de puertos en validación Unix: presentes
+scripts de puertos/orquestador en parser PowerShell: presentes
+preflight container-only en job E2E: presente
+smoke contenedorizado: presente
+cleanup: presente
 ```
 
-No confirma ejecución de actions externas.
+Resultado: `PASS_STRUCTURE`.
 
-## Scripts Unix
-
-Sintaxis ejecutada:
+### Shell inicial
 
 ```bash
 sh -n scripts/preflight.sh
@@ -58,78 +64,119 @@ sh -n scripts/generate-frontend-lock.sh
 sh -n scripts/set-postgres-host-port.sh
 ```
 
-Resultado:
+Resultado registrado previamente: `PASS_SYNTAX`.
+
+### Configurador conjunto Unix
+
+Archivo:
 
 ```text
-PASS
+scripts/set-local-host-ports.sh
 ```
 
-## Prueba funcional del actualizador Unix
+Control:
 
-Se ejecutó `set-postgres-host-port.sh 55432` sobre un `.env` temporal con:
+```bash
+sh -n scripts/set-local-host-ports.sh
+```
 
-- contraseña de base ficticia;
-- contraseña bootstrap con caracteres no ASCII;
-- cuatro guardas de envío.
+Resultado: `PASS_SYNTAX`.
+
+### Prueba funcional aislada del configurador Unix
+
+Se ejecutó sobre un `.env` temporal con:
+
+- contraseña DB ficticia con carácter UTF-8;
+- contraseña bootstrap ficticia;
+- cuatro guardas de envío cerradas;
+- URL PostgreSQL inicial en 5432;
+- puertos backend/frontend ausentes.
+
+Comando equivalente:
+
+```bash
+sh scripts/set-local-host-ports.sh 55432 18080 15173
+```
 
 Resultado:
 
 ```text
-POSTGRES_HOST_PORT añadido: PASS
-DATABASE_URL actualizado: PASS
-POSTGRES_DB preservado: PASS
-DATABASE_PASSWORD preservada: PASS
-CRM_BOOTSTRAP_PASSWORD preservada: PASS
-SENDING_* preservadas: PASS
+POSTGRES_HOST_PORT=55432: PASS
+BACKEND_HOST_PORT=18080: PASS
+FRONTEND_HOST_PORT=15173: PASS
+DATABASE_URL coordinada: PASS
+contraseña DB preservada: PASS
+contraseña bootstrap preservada: PASS
+guardas SENDING_* preservadas: PASS
 UTF-8 preservado: PASS
 ```
 
-## Makefile
+Estado: `PASS_FUNCTIONAL_ISOLATED`.
 
-Comando:
+### Makefile
+
+Controles acumulados:
 
 ```bash
-make -n postgres-port verify smoke-container
+make -n preflight-container
+make -n frontend-lock
+make -n smoke-container
+make -n postgres-port
+make -n local-ports
+make -n verify
 ```
 
-Resultado:
+Resultado: `PASS_SYNTAX`.
+
+### Read-back remoto
+
+Se releyeron desde `main`:
 
 ```text
-PASS
+docker-compose.yml
+.github/workflows/ci.yml
+scripts/set-local-host-ports.sh
+scripts/validate-docker-stack.ps1
+frontend/Dockerfile
 ```
 
-Recetas expandidas:
+Resultado: `PASS`.
 
-```text
-sh scripts/set-postgres-host-port.sh 55432
-mvn verify
-frontend install/typecheck/build
-Compose config
-frontend clean build
-backend clean build
-smoke contenedorizado con cleanup
-```
+## Hardening observado
+
+- tres puertos host configurables;
+- preflight exige enteros válidos y distintos;
+- `DATABASE_URL` coordinada con PostgreSQL;
+- smoke deriva URLs desde `.env`;
+- configuradores preservan credenciales;
+- PowerShell escribe UTF-8 sin BOM por diseño;
+- wrappers históricos conservan compatibilidad;
+- Dockerfile/CI/Makefile adoptan npm ci cuando exista lockfile;
+- transcript local fuera de Git;
+- orquestador Docker Windows usa clean builds por defecto.
+
+## Controles no ejecutados en este entorno
+
+- parser PowerShell;
+- configurador conjunto PowerShell;
+- orquestador Docker PowerShell;
+- `docker compose config` semántico;
+- builds frontend/backend;
+- stack completo;
+- smoke host/contenedor;
+- Maven/Spotless/tests;
+- Flyway/Hibernate/Testcontainers;
+- generación real de package-lock;
+- npm ci real.
 
 ## Evidencia real separada
 
 ```text
 docs/validation/SEG-001-container-build-2026-07-20.md
 docs/validation/SEG-001-rerun-2026-07-20.md
+docs/validation/SEG-001-local-orchestration-2026-07-20.md
 ```
-
-La evidencia real confirma preflight, npm install, fallo TypeScript, imágenes cacheadas y conflicto del puerto 5432.
-
-## Controles no ejecutados en este entorno
-
-- parser PowerShell de los scripts nuevos;
-- ejecución real de `set-postgres-host-port.ps1`;
-- preflight con puerto 55432 en Windows;
-- Docker Compose config semántico;
-- builds sin caché;
-- Maven/Spotless/tests;
-- Flyway/Hibernate/Testcontainers;
-- stack y smoke.
 
 ## Conclusión
 
-La estructura Compose/CI, shell, Makefile y el actualizador Unix superaron los controles disponibles. El puerto PostgreSQL configurable y la preservación de secretos/guardas están demostrados en Unix. Windows y la matriz funcional completa continúan pendientes de reejecución.
+Compose, CI, shell, Makefile y el configurador Unix coordinado superaron los controles disponibles. La automatización está preparada para una reejecución Windows reproducible, pero SEG-001 continúa pendiente hasta completar builds limpios, health, smoke, Maven, Testcontainers, Flyway, Hibernate y lockfile.
