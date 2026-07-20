@@ -6,23 +6,42 @@ Esta carpeta contiene controles reproducibles para preparar y comprobar un entor
 
 ## Preflight
 
-### Linux y macOS
+### Modo de herramientas locales
+
+Comprueba Git, Docker, Compose, Java, Node, npm, `.env`, variables y guardas.
+
+Linux/macOS:
 
 ```bash
-sh scripts/preflight.sh
+sh scripts/preflight.sh --local
 ```
 
-### Windows PowerShell
+Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1
 ```
 
-El preflight comprueba:
+### Modo completamente contenedorizado
 
-- Git, Docker, Compose, Java, Node y npm;
+Comprueba Git, Docker, Compose, `.env`, variables y guardas. No requiere Java, Node o npm en el host.
+
+Linux/macOS:
+
+```bash
+sh scripts/preflight.sh --container-only
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
+```
+
+El preflight comprueba siempre:
+
 - existencia de `.env`;
-- variables de PostgreSQL;
+- `POSTGRES_DB`, URL, usuario y contraseña de base;
 - credenciales bootstrap locales;
 - las cuatro guardas de envío cerradas;
 - parseo del perfil completo de Docker Compose.
@@ -70,6 +89,7 @@ En sistemas con `make`:
 
 ```bash
 make preflight
+make preflight-container
 make db-up
 make app-up
 make app-logs
@@ -82,7 +102,8 @@ make app-down
 
 | Target | Acción |
 |---|---|
-| `preflight` | valida herramientas, variables y Compose |
+| `preflight` | valida herramientas locales, variables y Compose |
+| `preflight-container` | valida modalidad solo Docker |
 | `db-up` | inicia únicamente PostgreSQL |
 | `db-down` | detiene PostgreSQL conservando el volumen |
 | `app-up` | construye e inicia PostgreSQL, backend y frontend |
@@ -120,3 +141,15 @@ SENDING_KILL_SWITCH=true
 ```
 
 El preflight falla si cualquiera de estos valores cambia.
+
+## Integración continua
+
+CI valida:
+
+- sintaxis `sh` de ambos scripts Unix;
+- sintaxis PowerShell de ambos scripts Windows;
+- preflight fail-closed con credenciales ficticias;
+- Compose con perfil `app`;
+- imágenes backend y frontend.
+
+Los smoke tests no se ejecutan en CI todavía porque requieren levantar y esperar el stack completo; siguen siendo un control de cierre manual de SEG-001.
