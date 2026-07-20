@@ -82,8 +82,9 @@ esac
 [ "${SENDING_DAILY_LIMIT:-}" = "0" ] || fail "SENDING_DAILY_LIMIT must remain 0"
 [ "${SENDING_KILL_SWITCH:-}" = "true" ] || fail "SENDING_KILL_SWITCH must remain true"
 
+docker info >/dev/null
 docker compose version >/dev/null
-docker compose --profile app --profile smoke config >/dev/null
+docker compose --profile app --profile smoke config --quiet
 
 printf 'Preflight passed.\n'
 printf 'Mode: %s\n' "$( [ "$container_only" = "true" ] && printf 'container-only' || printf 'local-tools' )"
@@ -98,4 +99,5 @@ printf 'Backend host port: %s\n' "$BACKEND_HOST_PORT"
 printf 'Frontend host port: %s\n' "$FRONTEND_HOST_PORT"
 printf 'Database URL: %s\n' "$DATABASE_URL"
 printf 'Bootstrap user configured: yes\n'
+printf 'Docker daemon: reachable\n'
 printf 'Sending controls: enabled=false dry-run=true daily-limit=0 kill-switch=true\n'
