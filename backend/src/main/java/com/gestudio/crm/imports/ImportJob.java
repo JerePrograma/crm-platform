@@ -39,6 +39,9 @@ public class ImportJob extends BaseEntity {
   private int acceptedRows;
 
   @Column(nullable = false)
+  private int excludedRows;
+
+  @Column(nullable = false)
   private int rejectedRows;
 
   @Column(nullable = false)
@@ -94,11 +97,13 @@ public class ImportJob extends BaseEntity {
   public void complete(
       int totalRows,
       int acceptedRows,
+      int excludedRows,
       int rejectedRows,
       int duplicateRows,
       int reviewRows) {
     this.totalRows = totalRows;
     this.acceptedRows = acceptedRows;
+    this.excludedRows = excludedRows;
     this.rejectedRows = rejectedRows;
     this.duplicateRows = duplicateRows;
     this.reviewRows = reviewRows;
@@ -142,6 +147,10 @@ public class ImportJob extends BaseEntity {
 
   public int getAcceptedRows() {
     return acceptedRows;
+  }
+
+  public int getExcludedRows() {
+    return excludedRows;
   }
 
   public int getRejectedRows() {
