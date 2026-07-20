@@ -111,17 +111,17 @@ try {
   Write-Host "Transcript: $transcriptPath"
   Write-Host "Structured evidence: $summaryPath"
 
-  $dockerArguments = @(
-    '-PostgresPort', $PostgresPort,
-    '-BackendPort', $BackendPort,
-    '-FrontendPort', $FrontendPort,
-    '-KeepRunning',
-    '-NoTranscript'
-  )
-  if ($UseBuildCache) {
-    $dockerArguments += '-UseBuildCache'
+  $dockerParameters = @{
+    PostgresPort = $PostgresPort
+    BackendPort = $BackendPort
+    FrontendPort = $FrontendPort
+    KeepRunning = $true
+    NoTranscript = $true
   }
-  & (Join-Path $PSScriptRoot 'validate-docker-stack.ps1') @dockerArguments
+  if ($UseBuildCache) {
+    $dockerParameters.UseBuildCache = $true
+  }
+  & (Join-Path $PSScriptRoot 'validate-docker-stack.ps1') @dockerParameters
   $summary.phases.dockerStack = 'PASS'
 
   $dockerEvidence = Get-ChildItem -Path $outputDirectory -Filter 'seg001-docker-*.json' |
