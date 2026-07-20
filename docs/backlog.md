@@ -33,9 +33,7 @@ Rama canónica: `main`.
 | SEG-022 | Piloto controlado | PLANNED | SEG-021 | aprobación humana y límite bajo |
 | SEG-023 | Producción | PLANNED | SEG-022 | DR, SLO y despliegue aprobado |
 
-## SEG-001 — finalizado
-
-### Producto
+## SEG-001 — producto finalizado
 
 - [x] backend Java/Spring Boot/PostgreSQL/Flyway;
 - [x] instituciones, contactos, canales y prospectos;
@@ -51,7 +49,7 @@ Rama canónica: `main`.
 - [x] pruebas implementadas;
 - [x] documentación técnica.
 
-### Hardening
+## SEG-001 — hardening finalizado
 
 - [x] parser CSV/XLSX endurecido;
 - [x] validación y recuperación por fila;
@@ -67,74 +65,100 @@ Rama canónica: `main`.
 - [x] tipos Vite/CSS;
 - [x] TypeScript strict conservado.
 
-### Consolidación
+## SEG-001 — consolidación finalizada
 
 - [x] todo en `main`;
 - [x] historia conservada;
 - [x] rama histórica sin cambios exclusivos;
-- [x] README, estado, backlog, segmento, validación y puntero canónicos;
-- [x] evidencias reales fechadas.
+- [x] fuentes canónicas sincronizadas;
+- [x] evidencias reales fechadas;
+- [x] datos operativos reales fuera del repositorio.
 
-### Infraestructura y operación
+## SEG-001 — infraestructura y operación finalizadas
 
 - [x] perfiles Compose `app` y `smoke`;
 - [x] imágenes backend/frontend;
 - [x] health checks encadenados;
-- [x] Nginx/proxy;
-- [x] puertos publicados en loopback;
-- [x] PostgreSQL, backend y frontend con puertos host configurables;
+- [x] Nginx y proxy;
+- [x] puertos en loopback;
+- [x] tres puertos host configurables;
 - [x] preflight Unix/PowerShell;
-- [x] puertos válidos, distintos y coherentes;
+- [x] validación de puertos y URL;
 - [x] configurador conjunto de puertos;
 - [x] wrappers retrocompatibles;
 - [x] smoke host Unix/PowerShell;
 - [x] smoke contenedorizado;
-- [x] orquestador Docker Windows;
-- [x] transcripts fuera de Git;
+- [x] validador Docker Windows;
+- [x] transcripts y JSON fuera de Git;
 - [x] Makefile;
-- [x] CI E2E preparado;
-- [x] generadores de package-lock;
-- [x] npm ci automático cuando exista lockfile.
+- [x] CI E2E preparado.
+
+## SEG-001 — automatización completa finalizada
+
+- [x] backend Maven verify/Testcontainers en Docker;
+- [x] código backend montado en solo lectura;
+- [x] target Maven efímero;
+- [x] caché Maven reutilizable;
+- [x] generación package-lock-only;
+- [x] lifecycle scripts npm deshabilitados durante lockfile;
+- [x] verificación de ausencia de node_modules;
+- [x] npm ci automático con lockfile;
+- [x] validador integral `validate-seg001.ps1`;
+- [x] rama main y árbol rastreado limpio como precondiciones;
+- [x] SHA-256 del lockfile;
+- [x] repetición smoke después de npm ci;
+- [x] evidencia JSON estructurada;
+- [x] escaneo centralizado de seguridad Unix/PowerShell;
+- [x] bloqueo de `.env`, evidencia, datos privados, lote, claves y credenciales;
+- [x] targets `repository-safety`, `backend-verify-container` y `verify-container`;
+- [x] CI con parser de todos los scripts nuevos.
 
 ## SEG-001 — evidencia ejecutada
 
+### Real
+
 - [x] preflight Windows inicial;
-- [x] guardas de envío reales;
+- [x] guardas de envío;
 - [x] descarga de imágenes base;
-- [x] npm install real;
+- [x] npm install;
 - [x] fallo TypeScript reproducido;
 - [x] correcciones aplicadas;
 - [x] imágenes exportadas desde caché;
-- [x] conflicto 5432 reproducido;
-- [x] YAML Compose/CI revisado;
-- [x] shell y Make revisados;
-- [x] configurador Unix probado preservando secretos ficticios, UTF-8 y guardas;
+- [x] conflicto 5432 reproducido.
+
+### Estática o funcional aislada
+
+- [x] YAML Compose/CI;
+- [x] shell y Make;
+- [x] configurador Unix preservando secretos ficticios, UTF-8 y guardas;
+- [x] sintaxis backend verify Unix;
+- [x] sintaxis lockfile seguro Unix;
+- [x] Make backend-verify-container;
+- [x] Make verify-container;
 - [x] read-back remoto de scripts críticos.
 
 ## SEG-001 — bloqueantes de cierre
 
 - [ ] actualizar checkout local al último `main`;
 - [ ] restaurar cambio accidental de `mvnw.cmd`;
-- [ ] ejecutar `validate-docker-stack.ps1`;
-- [ ] confirmar preflight con tres puertos;
-- [ ] confirmar clean build frontend;
-- [ ] confirmar clean build backend;
-- [ ] confirmar PostgreSQL healthy;
-- [ ] confirmar backend healthy;
-- [ ] confirmar frontend healthy;
+- [ ] ejecutar `scripts/validate-seg001.ps1`;
+- [ ] confirmar build limpio frontend;
+- [ ] confirmar build limpio backend;
+- [ ] confirmar PostgreSQL/backend/frontend healthy;
 - [ ] confirmar Flyway V1–V5;
 - [ ] confirmar Hibernate validate;
-- [ ] ejecutar smoke PowerShell;
-- [ ] ejecutar smoke contenedorizado;
-- [ ] ejecutar Maven verify;
-- [ ] ejecutar Spotless;
-- [ ] ejecutar unit tests;
-- [ ] ejecutar ArchUnit;
-- [ ] ejecutar Testcontainers;
-- [ ] generar y revisar `frontend/package-lock.json`;
-- [ ] confirmar ejecución `npm ci`;
-- [ ] repetir frontend/imágenes/smoke con lockfile;
-- [ ] escanear secretos y datos operativos;
+- [ ] confirmar smoke host y contenedor;
+- [ ] confirmar Maven verify;
+- [ ] confirmar Spotless;
+- [ ] confirmar unit tests;
+- [ ] confirmar ArchUnit;
+- [ ] confirmar Testcontainers;
+- [ ] revisar JSON y transcript;
+- [ ] revisar y versionar `frontend/package-lock.json`;
+- [ ] repetir desde árbol limpio con lockfile versionado;
+- [ ] confirmar npm ci desde el inicio;
+- [ ] confirmar seguridad del repositorio;
+- [ ] observar CI verde o documentar su indisponibilidad;
 - [ ] registrar evidencia final;
 - [ ] marcar SEG-001 `COMPLETE`;
 - [ ] activar SEG-002.
