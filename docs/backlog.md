@@ -35,140 +35,128 @@ La rama canónica es `main`.
 
 ## SEG-001 — tareas activas
 
-### Implementación finalizada
+### Producto finalizado
 
-- [x] stack backend Java 21/Spring Boot;
-- [x] PostgreSQL y Flyway V1–V5;
-- [x] institución, contacto, canal y prospecto;
-- [x] estados comerciales;
-- [x] exclusiones dominantes y retroactivas;
-- [x] normalización y elegibilidad;
+- [x] backend Java/Spring Boot/PostgreSQL/Flyway;
+- [x] dominio de instituciones, contactos, canales, prospectos y exclusiones;
 - [x] importaciones CSV/XLSX persistentes;
-- [x] preview y ejecución confirmada;
-- [x] transacción y evidencia por fila;
-- [x] idempotencia;
-- [x] deduplicación exacta y ambigua;
-- [x] cola de revisión humana;
+- [x] preview, ejecución confirmada y evidencia por fila;
+- [x] idempotencia, deduplicación exacta y ambigua;
+- [x] exclusiones dominantes y retroactivas;
 - [x] auditoría;
-- [x] seguridad bootstrap fail-closed;
-- [x] API REST, OpenAPI y RFC 7807;
+- [x] API/OpenAPI/RFC 7807;
 - [x] frontend operativo;
-- [x] pruebas unitarias e integración implementadas;
-- [x] documentación técnica y operativa.
+- [x] pruebas implementadas;
+- [x] documentación técnica.
 
 ### Hardening finalizado
 
-- [x] exclusiones importadas retroactivas y auditadas;
-- [x] preview con paridad de elegibilidad;
-- [x] métricas separadas para filas bloqueadas;
-- [x] revisión ambigua persistida en preview;
-- [x] duplicado exacto enlazado al existente;
-- [x] validación de correo;
-- [x] recuperación segura por fila;
-- [x] CSV con coma/punto y coma y comillas;
-- [x] rechazo de encabezados duplicados;
-- [x] fechas Excel UTC;
-- [x] límite multipart y HTTP 413;
-- [x] saneamiento de nombres de archivo;
+- [x] exclusiones importadas auditadas;
+- [x] preview con elegibilidad real;
+- [x] métricas de bloqueados separadas;
+- [x] revisiones ambiguas persistentes;
+- [x] duplicados exactos enlazados;
+- [x] validación y recuperación por fila;
+- [x] parser CSV/XLSX endurecido;
+- [x] UTC, límites, HTTP 413 y filenames seguros;
 - [x] Basic Auth UTF-8.
 
-### Consolidación finalizada
+### Consolidación y operación finalizadas
 
-- [x] consolidar toda la rama temática en `main` por fast-forward;
-- [x] confirmar igualdad al momento de consolidar;
-- [x] convertir `main` en única fuente canónica;
-- [x] alinear `.env.example`, Compose y backend;
-- [x] documentar evidencia de consolidación.
-
-### Operación local finalizada
-
-- [x] documentar instalación Linux/macOS;
-- [x] documentar instalación Windows;
-- [x] documentar procesos separados;
-- [x] añadir perfil Compose `app` con PostgreSQL, backend y frontend;
-- [x] añadir imagen backend con health check;
-- [x] añadir imagen frontend con Nginx y proxy;
-- [x] publicar servicios solo en loopback;
-- [x] encadenar health checks entre servicios;
-- [x] añadir preflight Unix y PowerShell;
-- [x] añadir modo local y container-only;
-- [x] añadir smoke tests Unix y PowerShell;
-- [x] añadir Makefile;
-- [x] documentar comandos y advertencias destructivas;
-- [x] añadir `.dockerignore` raíz y frontend;
-- [x] añadir `.gitattributes` multiplataforma;
-- [x] actualizar README e índice.
+- [x] todo consolidado en `main` por fast-forward;
+- [x] `main` como única fuente canónica;
+- [x] entorno DB coherente;
+- [x] documentación Windows/Linux/Docker-only;
+- [x] perfil `app` PostgreSQL/backend/frontend;
+- [x] perfil `smoke` efímero;
+- [x] imágenes backend/frontend;
+- [x] health checks encadenados;
+- [x] proxy Nginx;
+- [x] preflight Unix/PowerShell;
+- [x] smoke de host Unix/PowerShell;
+- [x] smoke E2E contenedorizado;
+- [x] Makefile con `smoke-container`;
+- [x] `.dockerignore` y `.gitattributes`;
+- [x] README, quickstarts y scripts documentados.
 
 ### CI finalizado a nivel de implementación
 
-- [x] job backend con Maven verify;
-- [x] job frontend con install, typecheck y build;
-- [x] job de sintaxis Unix y PowerShell;
-- [x] preflight fail-closed en CI;
-- [x] validación del perfil Compose completo;
-- [x] build de imagen backend;
-- [x] build de imagen frontend;
-- [x] evitar caché npm hasta tener lockfile.
+- [x] backend verify;
+- [x] frontend install/typecheck/build;
+- [x] sintaxis Unix/PowerShell;
+- [x] preflight fail-closed;
+- [x] perfiles Compose app/smoke;
+- [x] build de ambas imágenes;
+- [x] arranque completo;
+- [x] smoke E2E;
+- [x] logs en fallo;
+- [x] cleanup obligatorio;
+- [x] sin caché npm hasta lockfile.
+
+### Evidencia estática ejecutada
+
+- [x] YAML Compose parsea con servicios esperados;
+- [x] YAML CI parsea con job E2E;
+- [x] scripts Unix pasan `sh -n`;
+- [x] Makefile pasa `make -n`, incluido smoke-container;
+- [x] evidencia documentada.
 
 ### Bloqueantes para cierre
 
-- [ ] obtener ejecución CI visible o checkout con red y Docker;
+- [ ] obtener ejecución CI visible o checkout con red/Docker;
 - [ ] registrar SHA exacto;
 - [ ] ejecutar preflight real;
 - [ ] ejecutar `mvn verify`;
-- [ ] corregir compilación y Spotless si fallan;
-- [ ] validar Testcontainers, Flyway y Hibernate;
+- [ ] corregir compilación/Spotless/tests;
+- [ ] validar Testcontainers/Flyway/Hibernate;
 - [ ] ejecutar `npm install`;
 - [ ] generar y versionar `package-lock.json`;
-- [ ] ejecutar typecheck y build frontend;
-- [ ] validar `docker compose --profile app config`;
-- [ ] construir imágenes backend y frontend;
-- [ ] levantar el stack completo;
-- [ ] ejecutar smoke test;
-- [ ] ejecutar escaneo local de secretos/datos;
-- [ ] corregir todos los fallos observados;
-- [ ] repetir la matriz completa;
-- [ ] registrar evidencia en `docs/validation/SEG-001.md`;
+- [ ] migrar a `npm ci` y caché npm;
+- [ ] ejecutar typecheck/build;
+- [ ] validar Compose semántico;
+- [ ] construir/pullar imágenes;
+- [ ] ejecutar smoke contenedorizado real;
+- [ ] escanear secretos/datos;
+- [ ] corregir fallos y repetir matriz;
+- [ ] registrar evidencia completa;
 - [ ] marcar SEG-001 `COMPLETE`;
 - [ ] activar SEG-002.
 
-### Mejoras no bloqueantes candidatas
+### Mejoras no bloqueantes
 
-- [ ] mostrar `excludedRows` en la UI;
-- [ ] resolución auditada de `DuplicateReview`;
-- [ ] retry explícito de `ImportJob`;
-- [ ] filtros combinables;
-- [ ] exportación de resultados;
+- [ ] mostrar `excludedRows` en UI;
+- [ ] resolución auditada de DuplicateReview;
+- [ ] retry de ImportJob;
+- [ ] filtros/exportación;
 - [ ] pruebas HTTP adicionales;
-- [ ] prueba de concurrencia de idempotencia;
-- [ ] accesibilidad básica;
-- [ ] política de retención;
-- [ ] actor persistente en auditoría.
+- [ ] concurrencia de idempotencia;
+- [ ] accesibilidad;
+- [ ] actor/retención de auditoría.
 
-## SEG-002 — alcance preparado, no iniciado
+## SEG-002 — preparado, no iniciado
 
 Cuando SEG-001 cierre:
 
 - organización/tenant;
-- usuario persistente;
+- usuarios persistentes;
 - roles `OWNER`, `ADMIN`, `SALES`, `REVIEWER`, `READ_ONLY`;
-- password hashing y lifecycle de credenciales;
+- hashing y lifecycle de credenciales;
 - actor de auditoría;
-- autorización por endpoint y método;
-- restricciones específicas sobre exclusiones, auditoría e importación;
-- migración segura desde bootstrap;
-- pruebas de matriz de permisos;
-- documentación de administración de usuarios.
+- autorización por endpoint/método;
+- restricciones de exclusiones, auditoría e importación;
+- migración desde bootstrap;
+- matriz de permisos;
+- administración de usuarios.
 
-## Reglas de priorización
+## Priorización
 
 1. seguridad;
-2. pérdida o corrupción de datos;
-3. idempotencia y exclusiones;
-4. compilación y migraciones;
-5. pruebas y reproducibilidad;
-6. operación comercial;
+2. datos;
+3. idempotencia/exclusiones;
+4. compilación/migraciones;
+5. pruebas/reproducibilidad;
+6. operación;
 7. UX;
 8. optimización.
 
-No comenzar SEG-002 mientras SEG-001 tenga un control bloqueante pendiente o una falla sin resolución documentada.
+No comenzar SEG-002 mientras SEG-001 tenga controles bloqueantes pendientes.
