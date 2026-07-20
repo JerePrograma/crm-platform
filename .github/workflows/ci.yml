@@ -35,7 +35,12 @@ jobs:
           node-version: "22"
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm install --no-audit --no-fund
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
       - name: Typecheck frontend
         working-directory: frontend
         run: npm run typecheck
@@ -62,6 +67,7 @@ jobs:
           scripts/smoke-test.sh
           scripts/generate-frontend-lock.sh
           scripts/set-postgres-host-port.sh
+          scripts/set-local-host-ports.sh
       - name: Validate PowerShell script syntax
         shell: pwsh
         run: |
@@ -69,7 +75,9 @@ jobs:
             'scripts/preflight.ps1',
             'scripts/smoke-test.ps1',
             'scripts/generate-frontend-lock.ps1',
-            'scripts/set-postgres-host-port.ps1'
+            'scripts/set-postgres-host-port.ps1',
+            'scripts/set-local-host-ports.ps1',
+            'scripts/validate-docker-stack.ps1'
           )
           foreach ($scriptPath in $scriptPaths) {
             $tokens = $null
@@ -88,7 +96,7 @@ jobs:
           cp .env.example .env
           sed -i 's/^CRM_BOOTSTRAP_USERNAME=.*/CRM_BOOTSTRAP_USERNAME=ci-user/' .env
           sed -i 's/^CRM_BOOTSTRAP_PASSWORD=.*/CRM_BOOTSTRAP_PASSWORD=ci-local-only/' .env
-          sh scripts/set-postgres-host-port.sh 55432
+          sh scripts/set-local-host-ports.sh 55432 18080 15173
           sh scripts/preflight.sh --local
           rm .env
 
@@ -102,6 +110,8 @@ jobs:
           cp .env.example .env
           sed -i 's/^CRM_BOOTSTRAP_USERNAME=.*/CRM_BOOTSTRAP_USERNAME=ci-user/' .env
           sed -i 's/^CRM_BOOTSTRAP_PASSWORD=.*/CRM_BOOTSTRAP_PASSWORD=ci-local-only/' .env
+          sh scripts/set-local-host-ports.sh 55432 18080 15173
+          sh scripts/preflight.sh --container-only
       - name: Validate Docker Compose profiles
         run: docker compose --profile app --profile smoke config
       - name: Build backend image
