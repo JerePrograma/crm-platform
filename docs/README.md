@@ -12,7 +12,9 @@
 
 ## Inicio y operación
 
-- `local-development-and-usage.md` — instalación, variables, arranque, health, UI, flujo operativo, detención y troubleshooting;
+- `containerized-quickstart.md` — PostgreSQL, backend y frontend con Docker Compose;
+- `local-development-and-usage.md` — procesos separados, variables, health, UI, flujo y troubleshooting;
+- `../scripts/README.md` — preflight, smoke tests y Makefile;
 - `manual-operations.md` — procedimientos operativos diarios;
 - `runbook.md` — respuesta ante incidentes;
 - `disaster-recovery.md` — backups y restauración;
@@ -48,16 +50,25 @@
 ## Entrada principal
 
 - `../README.md` — inicio rápido desde `main`;
+- `../Makefile` — comandos repetibles para entornos Unix con Make;
 - `../CONTRIBUTING.md` — reglas de contribución;
 - `../CHANGELOG.md` — cambios acumulados.
 
 ## Lectura recomendada por tarea
 
-### Levantar el sistema
+### Levantar todo con Docker
+
+1. `../README.md`;
+2. `containerized-quickstart.md`;
+3. `../scripts/README.md`;
+4. `status.md`.
+
+### Levantar procesos separados
 
 1. `../README.md`;
 2. `local-development-and-usage.md`;
-3. `status.md`.
+3. `../scripts/README.md`;
+4. `status.md`.
 
 ### Continuar desarrollo
 
@@ -91,7 +102,7 @@ Cuando exista contradicción:
 3. `next-step.md`;
 4. documentación de segmento y validación;
 5. contratos normativos de módulo;
-6. guía operativa;
+6. guías operativas;
 7. resto de documentos.
 
 Actualizar referencias cruzadas al mover, crear o reemplazar documentos.
