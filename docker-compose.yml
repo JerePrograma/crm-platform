@@ -66,5 +66,25 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  smoke:
+    profiles: ["smoke"]
+    image: curlimages/curl:8.10.1
+    depends_on:
+      frontend:
+        condition: service_healthy
+    environment:
+      CRM_BOOTSTRAP_USERNAME: ${CRM_BOOTSTRAP_USERNAME:-}
+      CRM_BOOTSTRAP_PASSWORD: ${CRM_BOOTSTRAP_PASSWORD:-}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        test -n "$$CRM_BOOTSTRAP_USERNAME"
+        test -n "$$CRM_BOOTSTRAP_PASSWORD"
+        curl --fail --silent http://backend:8080/actuator/health | grep -q '"status":"UP"'
+        curl --fail --silent --user "$$CRM_BOOTSTRAP_USERNAME:$$CRM_BOOTSTRAP_PASSWORD" \
+          "http://backend:8080/api/v1/prospects?size=1" | grep -q '"content"'
+        curl --fail --silent http://frontend:8080/ | grep -qi '<div id="root"></div>'
+        printf 'Container smoke test passed.\n'
+
 volumes:
   crm_postgres:
