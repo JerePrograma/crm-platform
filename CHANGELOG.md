@@ -16,115 +16,110 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - API REST, OpenAPI, RFC 7807 y auditoría JSONB;
 - autenticación bootstrap fail-closed;
 - frontend React/TypeScript/Vite;
-- `frontend/src/vite-env.d.ts` para tipos Vite e imports CSS;
+- tipos Vite/CSS;
 - visualización `Bloqueadas` para `excludedRows`;
-- perfil Compose `app` con PostgreSQL/backend/frontend;
-- perfil Compose `smoke` con verificación E2E efímera;
-- imagen backend multi-stage con health;
-- imagen frontend multi-stage con Nginx/proxy;
-- preflight Unix/PowerShell local y container-only;
-- smoke de host Unix/PowerShell;
-- smoke E2E contenedorizado;
-- scripts Docker para generar `package-lock.json` en Windows y Unix;
-- target Make `frontend-lock`;
-- Makefile incluido `smoke-container`;
-- `.dockerignore` raíz/frontend;
-- `.gitattributes` multiplataforma;
-- CI con backend, frontend, scripts y compose-images-and-smoke;
-- validación sintáctica CI de scripts de lockfile;
-- fixtures/Testcontainers/ArchUnit;
-- documentación técnica y operativa;
-- quickstarts Docker y procesos separados;
-- evidencia estática de automatización;
-- evidencia del primer build contenedorizado real;
-- evidencia de consolidación en main.
+- perfiles Compose `app` y `smoke`;
+- imágenes backend/frontend multi-stage;
+- Nginx y proxy;
+- preflight Unix/PowerShell;
+- validación de `POSTGRES_HOST_PORT`;
+- smoke host y contenedorizado;
+- scripts Docker para generar `package-lock.json`;
+- Makefile;
+- `.dockerignore` y `.gitattributes`;
+- CI backend/frontend/scripts/E2E;
+- fixtures, Testcontainers y ArchUnit;
+- documentación técnica, operativa y evidencia fechada.
 
 ### Changed
 
 - `main` es la única rama canónica;
-- SEG-001 se consolidó por fast-forward sin force;
-- README presenta dos modalidades;
-- DB local consume variables coherentes desde `.env`;
-- puertos publicados solo en loopback;
-- CI valida perfiles app/smoke y ejecuta smoke E2E;
-- CI imprime logs en fallo y limpia siempre;
-- caché npm desactivada hasta lockfile;
-- contextos Docker excluyen secretos/datos/cachés;
-- resultados de importación ordenados por hoja/fila;
-- Basic Auth frontend usa UTF-8;
-- CSV admite coma/punto y coma;
-- fechas Excel en UTC;
-- el puntero canónico ahora exige reconstruir frontend corregido antes de continuar con backend;
-- validación diferencia `FAIL`, `FIXED_PENDING_RERUN`, `CANCELED` y `NOT_RUN`.
+- SEG-001 se consolidó por fast-forward;
+- PostgreSQL host utiliza puerto configurable;
+- puerto recomendado cambiado a `55432`;
+- `DATABASE_URL` local debe coincidir con `POSTGRES_HOST_PORT`;
+- backend contenedorizado conserva `postgres:5432`;
+- README y guías usan builds `--no-cache` para evidencia limpia;
+- opción `--progress` documentada como flag global de Compose;
+- preflight PowerShell tolera UTF-8 BOM;
+- CI mantiene caché npm desactivada hasta lockfile;
+- validación distingue PASS_FROM_CACHE, clean build, FAIL_FIXED y NOT_RUN.
 
 ### Fixed — hardening 2026-07-20
 
-- exclusiones importadas usan el caso de uso manual, suprimen y auditan;
+- exclusiones importadas suprimen y auditan;
 - preview conserva revisiones ambiguas y aplica exclusiones;
-- duplicados exactos enlazan prospecto existente;
-- `EXCLUDED` separado de accepted;
+- duplicados exactos enlazan prospecto;
+- EXCLUDED separado de accepted;
 - correo inválido se rechaza por fila;
-- recuperación no vuelve a fallar;
-- límites multipart/funcional 10 MB y HTTP 413;
-- CSV/headers inválidos se rechazan;
-- filenames se saneán;
+- recuperación de filas inválidas;
+- límite 10 MB y HTTP 413;
+- CSV/headers inválidos rechazados;
+- filenames saneados;
 - backend/PostgreSQL comparten credenciales;
-- smoke PowerShell corregido;
-- CI evita configuración npm incompatible sin lockfile;
-- callbacks autenticados ya no reciben `Credentials | null`;
-- TypeScript reconoce imports CSS mediante tipos Vite;
-- la corrección conserva `strict: true` y no desactiva `strictNullChecks`.
+- smoke PowerShell;
+- CI sin caché npm prematura;
+- credenciales frontend no anulables;
+- imports CSS reconocidos;
+- conflicto de puerto host 5432 resuelto mediante `POSTGRES_HOST_PORT`;
+- parser `.env` PowerShell tolera BOM.
 
 ### Documentation
 
-- estado/backlog/puntero/segmento/validación sincronizados;
+- estado, backlog, puntero, segmento y validación sincronizados;
 - instalación Linux/macOS/Windows/Docker-only;
-- health/Swagger/autenticación;
+- health, Swagger y autenticación;
 - flujo Dashboard → Exclusiones → Preview → Ejecución → Prospectos → Auditoría;
-- formatos/estados de importación;
-- Make/preflight/smoke host y container;
-- generación de lockfile sin Node en el host;
-- logs, cleanup, reset y troubleshooting;
-- tareas finalizadas, pendientes y riesgos;
-- primer build real documentado en `docs/validation/SEG-001-container-build-2026-07-20.md`.
+- formatos y estados de importación;
+- Make, preflight, smoke y lockfile;
+- builds limpios y diferencia con caché;
+- troubleshooting de puertos Windows;
+- evidencia del primer build;
+- evidencia de reejecución con imágenes cacheadas y conflicto 5432.
 
 ### Security
 
 - sin credenciales bootstrap no hay API de negocio;
 - sin adaptador de envío;
-- cuatro guardas `SENDING_*` cerradas;
+- cuatro guardas SENDING cerradas;
 - Maven verificado con SHA-512;
 - datos reales fuera de Git/CI/imágenes;
-- contextos Docker sin `.env`, planillas o claves;
 - servicios solo en localhost;
-- smoke realiza lecturas;
-- CI usa credenciales ficticias y elimina volumen;
-- scripts de lockfile no realizan commits ni imprimen secretos.
+- smoke solo lectura;
+- scripts no imprimen secretos ni realizan commits.
 
 ### Validation
 
-- Compose YAML con cuatro servicios: `PASS_SYNTAX`;
-- CI YAML con job E2E: `PASS_SYNTAX`;
-- scripts Unix `sh -n`: `PASS`;
-- Makefile `make -n`, incluido smoke-container: `PASS`;
-- preflight PowerShell container-only real: `PASS`;
-- guardas de envío reales: `PASS`;
-- pull de PostgreSQL y capas base: `PASS/PARTIAL_PASS`;
-- npm install frontend real: `PASS`, 24 paquetes;
-- frontend TypeScript inicial: `FAIL` reproducido;
-- tres errores frontend: corregidos y pendientes de reejecución;
-- backend: `CANCELED`, todavía sin resultado;
-- evidencia estática: `docs/validation/SEG-001-static-automation-2026-07-20.md`;
-- evidencia real: `docs/validation/SEG-001-container-build-2026-07-20.md`.
+- Compose/CI YAML: PASS_SYNTAX;
+- scripts Unix y Make: PASS_SYNTAX;
+- preflight PowerShell real: PASS;
+- guardas de envío: PASS;
+- npm install frontend: PASS;
+- TypeScript inicial: FAIL reproducido;
+- errores TypeScript: corregidos;
+- frontend image: PASS_FROM_CACHE;
+- backend image: PASS_FROM_CACHE;
+- stack: FAIL por 5432;
+- corrección de puerto: versionada;
+- clean builds, stack, Flyway, Hibernate, tests y smoke: pendientes.
+
+Evidencias:
+
+```text
+docs/validation/SEG-001-static-automation-2026-07-20.md
+docs/validation/SEG-001-container-build-2026-07-20.md
+docs/validation/SEG-001-rerun-2026-07-20.md
+```
 
 ### Known limitations
 
-- frontend corregido todavía debe reconstruirse;
-- backend, Flyway, Hibernate, tests y smoke aún no fueron alcanzados por el primer build;
-- CI real todavía no fue observado verde;
-- falta `package-lock.json`;
-- imagen frontend usa `npm install` hasta lockfile;
-- PowerShell smoke todavía no fue ejecutado;
+- builds limpios pendientes;
+- stack pendiente de reejecución con puerto 55432;
+- Maven/Spotless/tests/Testcontainers pendientes;
+- Flyway/Hibernate pendientes;
+- falta package-lock y migración a npm ci;
+- CI real no observado verde;
+- HTTP Basic temporal;
 - RBAC no implementado;
 - revisiones sin resolución y jobs sin retry;
 - sin campañas/Gmail/Sheets/cloud;
