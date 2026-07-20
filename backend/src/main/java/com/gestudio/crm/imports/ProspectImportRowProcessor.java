@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gestudio.crm.common.NormalizationService;
 import com.gestudio.crm.contact.ContactChannelType;
+import com.gestudio.crm.exclusion.ContactEligibilityService;
+import com.gestudio.crm.exclusion.ContactEligibilityService.ChannelCandidate;
 import com.gestudio.crm.exclusion.ExclusionApplicationService;
 import com.gestudio.crm.exclusion.ExclusionReason;
 import com.gestudio.crm.exclusion.ExclusionRepository;
@@ -19,6 +21,8 @@ import com.gestudio.crm.prospect.ProspectApplicationService.ProspectView;
 import com.gestudio.crm.prospect.ProspectRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -32,6 +36,7 @@ public class ProspectImportRowProcessor {
   private final DuplicateReviewRepository duplicateReviewRepository;
   private final ExclusionRepository exclusionRepository;
   private final ExclusionApplicationService exclusionApplicationService;
+  private final ContactEligibilityService contactEligibilityService;
   private final ProspectRepository prospectRepository;
   private final ProspectDeduplicationService deduplicationService;
   private final ProspectApplicationService prospectApplicationService;
@@ -44,6 +49,7 @@ public class ProspectImportRowProcessor {
       DuplicateReviewRepository duplicateReviewRepository,
       ExclusionRepository exclusionRepository,
       ExclusionApplicationService exclusionApplicationService,
+      ContactEligibilityService contactEligibilityService,
       ProspectRepository prospectRepository,
       ProspectDeduplicationService deduplicationService,
       ProspectApplicationService prospectApplicationService,
@@ -54,6 +60,7 @@ public class ProspectImportRowProcessor {
     this.duplicateReviewRepository = duplicateReviewRepository;
     this.exclusionRepository = exclusionRepository;
     this.exclusionApplicationService = exclusionApplicationService;
+    this.contactEligibilityService = contactEligibilityService;
     this.prospectRepository = prospectRepository;
     this.deduplicationService = deduplicationService;
     this.prospectApplicationService = prospectApplicationService;
@@ -102,8 +109,12 @@ public class ProspectImportRowProcessor {
     }
 
     if (dryRun) {
-      row.accept(null);
-      return RowOutcome.ACCEPTED;
+      if (previewEligible(candidate, normalizedEmail, normalizedPhone)) {
+        row.accept(null);
+        return RowOutcome.ACCEPTED;
+      }
+      row.exclude(null);
+      return RowOutcome.EXCLUDED;
     }
 
     ProspectView created = prospectApplicationService.create(toCommand(candidate));
@@ -177,6 +188,22 @@ public class ProspectImportRowProcessor {
             null);
     row.reject(message);
     importRowRepository.save(row);
+  }
+
+  private boolean previewEligible(
+      ProspectCandidate candidate, String normalizedEmail, String normalizedPhone) {
+    List<ChannelCandidate> channels = new ArrayList<>();
+    if (normalizedEmail != null) {
+      channels.add(new ChannelCandidate(ContactChannelType.EMAIL, normalizedEmail));
+    }
+    if (normalizedPhone != null) {
+      channels.add(new ChannelCandidate(ContactChannelType.WHATSAPP, normalizedPhone));
+    }
+    String websiteDomain = normalizationService.normalizeDomain(candidate.website());
+    if (websiteDomain != null) {
+      channels.add(new ChannelCandidate(ContactChannelType.WEBSITE, websiteDomain));
+    }
+    return contactEligibilityService.evaluate(channels).eligible();
   }
 
   private ImportJob getJob(UUID jobId) {
