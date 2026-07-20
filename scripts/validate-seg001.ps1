@@ -100,9 +100,11 @@ try {
     throw "Validation must run from main; current branch is $($summary.branch)"
   }
 
-  $trackedChanges = @(& git status --porcelain --untracked-files=no)
-  if ($trackedChanges.Count -gt 0) {
-    throw "Tracked working tree is not clean. Review or restore changes before validation:`n$($trackedChanges -join "`n")"
+  $initialChanges = @(& git status --porcelain | Where-Object {
+    $_ -notmatch '^\?\? frontend/package-lock\.json$'
+  })
+  if ($initialChanges.Count -gt 0) {
+    throw "Working tree contains unexpected changes. Review or restore them before validation:`n$($initialChanges -join "`n")"
   }
   $summary.phases.trackedTreeClean = 'PASS'
 
