@@ -1,4 +1,4 @@
-.PHONY: preflight preflight-container db-up db-down app-up app-down app-logs backend frontend verify smoke smoke-container reset-db
+.PHONY: preflight preflight-container db-up db-down app-up app-down app-logs backend frontend frontend-lock verify smoke smoke-container reset-db
 
 preflight:
 	sh scripts/preflight.sh --local
@@ -26,6 +26,9 @@ backend:
 
 frontend:
 	cd frontend && npm install && npm run dev
+
+frontend-lock:
+	sh scripts/generate-frontend-lock.sh
 
 verify:
 	sh ./mvnw -B -f backend/pom.xml verify
