@@ -46,6 +46,7 @@ La rama canónica es `main`.
 - [x] auditoría;
 - [x] API/OpenAPI/RFC 7807;
 - [x] frontend operativo;
+- [x] resumen UI con `excludedRows` visible como `Bloqueadas`;
 - [x] pruebas implementadas;
 - [x] documentación técnica.
 
@@ -59,7 +60,9 @@ La rama canónica es `main`.
 - [x] validación y recuperación por fila;
 - [x] parser CSV/XLSX endurecido;
 - [x] UTC, límites, HTTP 413 y filenames seguros;
-- [x] Basic Auth UTF-8.
+- [x] Basic Auth UTF-8;
+- [x] credenciales no anulables dentro del render autenticado;
+- [x] tipos Vite e imports CSS declarados.
 
 ### Consolidación y operación finalizadas
 
@@ -75,7 +78,8 @@ La rama canónica es `main`.
 - [x] preflight Unix/PowerShell;
 - [x] smoke de host Unix/PowerShell;
 - [x] smoke E2E contenedorizado;
-- [x] Makefile con `smoke-container`;
+- [x] Makefile con `smoke-container` y `frontend-lock`;
+- [x] scripts Docker de generación de lockfile para Windows/Unix;
 - [x] `.dockerignore` y `.gitattributes`;
 - [x] README, quickstarts y scripts documentados.
 
@@ -83,7 +87,7 @@ La rama canónica es `main`.
 
 - [x] backend verify;
 - [x] frontend install/typecheck/build;
-- [x] sintaxis Unix/PowerShell;
+- [x] sintaxis Unix/PowerShell, incluidos scripts de lockfile;
 - [x] preflight fail-closed;
 - [x] perfiles Compose app/smoke;
 - [x] build de ambas imágenes;
@@ -93,38 +97,43 @@ La rama canónica es `main`.
 - [x] cleanup obligatorio;
 - [x] sin caché npm hasta lockfile.
 
-### Evidencia estática ejecutada
+### Evidencia ejecutada
 
 - [x] YAML Compose parsea con servicios esperados;
 - [x] YAML CI parsea con job E2E;
 - [x] scripts Unix pasan `sh -n`;
 - [x] Makefile pasa `make -n`, incluido smoke-container;
-- [x] evidencia documentada.
+- [x] preflight PowerShell `-ContainerOnly` pasa;
+- [x] guardas de envío reales verificadas;
+- [x] imagen PostgreSQL descargada;
+- [x] capas base Maven/Temurin/Node/Nginx alcanzadas;
+- [x] `npm install` frontend ejecutado, 24 paquetes;
+- [x] frontend TypeScript ejecutado y tres errores reproducidos;
+- [x] errores frontend corregidos y leídos desde `main`;
+- [x] evidencia real documentada.
 
 ### Bloqueantes para cierre
 
-- [ ] obtener ejecución CI visible o checkout con red/Docker;
-- [ ] registrar SHA exacto;
-- [ ] ejecutar preflight real;
+- [ ] actualizar el checkout local a los commits correctivos;
+- [ ] reconstruir frontend corregido;
+- [ ] confirmar typecheck y Vite build en `PASS`;
+- [ ] construir backend de forma aislada;
 - [ ] ejecutar `mvn verify`;
-- [ ] corregir compilación/Spotless/tests;
+- [ ] corregir compilación/Spotless/tests si falla;
 - [ ] validar Testcontainers/Flyway/Hibernate;
-- [ ] ejecutar `npm install`;
+- [ ] levantar stack y confirmar tres servicios saludables;
+- [ ] ejecutar smoke PowerShell y/o contenedorizado;
 - [ ] generar y versionar `package-lock.json`;
 - [ ] migrar a `npm ci` y caché npm;
-- [ ] ejecutar typecheck/build;
-- [ ] validar Compose semántico;
-- [ ] construir/pullar imágenes;
-- [ ] ejecutar smoke contenedorizado real;
+- [ ] validar Compose semántico y ambas imágenes;
 - [ ] escanear secretos/datos;
-- [ ] corregir fallos y repetir matriz;
+- [ ] corregir fallos nuevos y repetir matriz;
 - [ ] registrar evidencia completa;
 - [ ] marcar SEG-001 `COMPLETE`;
 - [ ] activar SEG-002.
 
 ### Mejoras no bloqueantes
 
-- [ ] mostrar `excludedRows` en UI;
 - [ ] resolución auditada de DuplicateReview;
 - [ ] retry de ImportJob;
 - [ ] filtros/exportación;
