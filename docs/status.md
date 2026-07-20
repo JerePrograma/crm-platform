@@ -5,42 +5,38 @@ Actualizado: 2026-07-20
 ## Repositorio
 
 - rama canónica y activa: `main`;
-- `main` recibió por fast-forward los 171 commits que componían `feat/seg-001-prospect-vertical-slice`;
-- el avance se realizó con `force=false`;
-- inmediatamente después de consolidar, ambas ramas resultaron idénticas;
-- las correcciones y documentos posteriores se realizaron directamente en `main`;
+- todo SEG-001 fue consolidado por fast-forward, sin force push;
+- las correcciones posteriores se realizan directamente en `main` por autorización expresa;
 - no existe pull request abierto para esta consolidación;
 - no se desplegó ningún ambiente;
 - ningún envío fue habilitado;
-- documento de evidencia: `docs/main-consolidation.md`.
+- evidencia de consolidación: `docs/main-consolidation.md`.
 
 Toda sesión nueva debe partir de `main`. Ninguna rama temática anterior constituye fuente de verdad.
 
 ## Segmentos
 
-- `SEG-000` — repositorio y protocolo de continuidad: `COMPLETE`;
+- `SEG-000` — repositorio y continuidad: `COMPLETE`;
 - `SEG-001` — vertical slice persistente de prospectos: `ACTIVE`;
 - `SEG-002` — identidad, usuarios y RBAC: `PLANNED`.
 
-`SEG-001` está implementado y endurecido, pero no puede marcarse `COMPLETE` hasta registrar validación ejecutada.
+`SEG-001` está implementado, endurecido y documentado. No puede marcarse `COMPLETE` hasta registrar una ejecución técnica verde.
 
-## Implementación disponible
+## Alcance implementado
 
 ### Backend
 
 - Java 21 y Spring Boot 4.1;
-- Maven Wrapper fijado a Maven 3.9.16 con verificación SHA-512;
+- Maven Wrapper fijado a Maven 3.9.16 con SHA-512;
 - PostgreSQL 17;
 - Flyway V1–V5;
-- Hibernate con `ddl-auto=validate`;
-- instituciones, contactos y canales separados;
-- prospectos y estados comerciales;
+- Hibernate `ddl-auto=validate`;
+- instituciones, contactos, canales y prospectos;
+- estados comerciales;
 - exclusiones dominantes y retroactivas;
 - equivalencia teléfono/WhatsApp;
-- normalización y validación central de nombre, correo, teléfono y dominio;
-- API paginada;
-- OpenAPI;
-- RFC 7807;
+- normalización y validación central;
+- API paginada, OpenAPI y RFC 7807;
 - auditoría JSONB;
 - autenticación bootstrap fail-closed;
 - Actuator, Prometheus y logging estructurado.
@@ -50,190 +46,206 @@ Toda sesión nueva debe partir de `main`. Ninguna rama temática anterior consti
 - CSV UTF-8 con coma o punto y coma;
 - XLSX con hojas `Prospectos` y `Exclusiones`;
 - parser por encabezados normalizados;
-- rechazo de encabezados duplicados normalizados;
-- soporte de comillas, delimitadores y saltos internos en CSV;
+- rechazo de encabezados duplicados;
+- comillas, delimitadores y saltos internos;
 - rechazo de comillas sin cerrar;
-- fechas Excel normalizadas en UTC;
-- SHA-256;
-- nombre de archivo saneado;
-- límite funcional de 10 MB;
-- límite multipart alineado y respuesta HTTP 413;
-- `ImportJob`, `ImportRow` y `DuplicateReview` persistentes;
+- fechas Excel en UTC;
+- SHA-256, basename seguro y límite de 10 MB;
+- límite multipart alineado y HTTP 413;
+- `ImportJob`, `ImportRow` y `DuplicateReview`;
 - preview y ejecución confirmada;
 - transacción y recuperación por fila;
 - idempotencia por contenido y modo;
-- orden determinístico por hoja y fila;
-- métricas separadas `acceptedRows`, `excludedRows`, `rejectedRows`, `duplicateRows` y `reviewRows`;
-- coincidencias exactas enlazadas al prospecto existente;
-- coincidencias ambiguas persistidas durante preview;
-- preview que aplica exclusiones sin crear datos de dominio;
-- exclusiones importadas que deshabilitan prospectos existentes y generan auditoría;
-- fixture ficticia de 100 prospectos y 16 exclusiones.
+- orden determinístico por hoja/fila;
+- métricas `acceptedRows`, `excludedRows`, `rejectedRows`, `duplicateRows` y `reviewRows`;
+- duplicados exactos enlazados al existente;
+- ambigüedades persistidas durante preview;
+- preview con exclusiones sin escritura de dominio;
+- exclusiones importadas retroactivas y auditadas;
+- fixture ficticia 100/16.
 
 ### Frontend
 
 - React, TypeScript y Vite;
-- credenciales bootstrap conservadas solo en memoria;
-- codificación Basic desde bytes UTF-8;
+- credenciales solo en memoria;
+- Basic Auth UTF-8;
 - Dashboard;
 - listado y ficha de prospectos;
-- importaciones preview/execute;
+- preview y ejecución de importaciones;
 - resultado por fila;
-- revisiones ambiguas pendientes;
-- exclusiones;
-- auditoría;
+- revisiones ambiguas;
+- exclusiones y auditoría;
 - tipos compatibles con `excludedRows`;
 - diseño responsive.
 
-Pendiente no bloqueante: mostrar `excludedRows` como control separado en la vista resumen.
+Pendiente no bloqueante: mostrar `excludedRows` como control separado en la vista.
 
-### Tooling
+## Infraestructura y operación local
 
-- Dockerfile backend;
-- Docker Compose PostgreSQL;
-- configuración local unificada mediante `.env`;
-- GitHub Actions para backend, frontend, Compose e imagen;
-- Spotless;
-- Testcontainers;
-- ArchUnit;
-- documentación operativa completa en `docs/local-development-and-usage.md`.
+### Modalidad por procesos
 
-## Consolidación y operación local realizadas
+- PostgreSQL mediante Compose;
+- backend mediante Maven Wrapper;
+- frontend mediante Vite;
+- guía: `docs/local-development-and-usage.md`.
 
-1. `main` avanzó al árbol completo de SEG-001 sin reescritura de historia;
-2. se confirmó igualdad entre `main` y la rama temática al momento de consolidar;
-3. `.env.example` incorporó `POSTGRES_DB` y credenciales bootstrap locales explícitas;
-4. Docker Compose consume `POSTGRES_DB`, `DATABASE_USER` y `DATABASE_PASSWORD` desde `.env`;
-5. se eliminó la contradicción de contraseñas entre backend y PostgreSQL local;
-6. `README.md` se convirtió en punto de entrada canónico de `main`;
-7. se añadió una guía completa de instalación, arranque, uso, detención y troubleshooting;
-8. se añadió evidencia formal de consolidación en `docs/main-consolidation.md`.
+### Modalidad completamente contenedorizada
 
-## Correcciones de hardening ya finalizadas
+- perfil Compose `app` con PostgreSQL, backend y frontend;
+- puertos publicados solo en `127.0.0.1`;
+- dependencia por health checks: PostgreSQL → backend → frontend;
+- imagen backend multi-stage con health probe;
+- imagen frontend multi-stage con Nginx y proxy `/api`/`/actuator`;
+- guía: `docs/containerized-quickstart.md`.
 
-1. exclusiones importadas unificadas con el flujo manual y retroactivo;
-2. auditoría generada para exclusiones importadas;
-3. evidencia ambigua persistida durante dry-run;
-4. filas duplicadas exactas enlazadas al prospecto existente;
-5. límite multipart de 10 MB y RFC 7807/413;
-6. orden estable por hoja y fila;
-7. validación central de correo;
-8. recuperación segura de filas malformadas;
-9. soporte CSV `;`, comillas y encabezados duplicados;
-10. fechas Excel independientes de la zona horaria del host;
-11. preview con elegibilidad real;
-12. `excludedRows` persistente y expuesto;
-13. nombre de archivo reducido a basename seguro;
-14. credenciales Basic codificadas en UTF-8;
-15. pruebas de regresión para los flujos anteriores.
+### Automatización
 
-## Seguridad
+- `scripts/preflight.sh` y `scripts/preflight.ps1`;
+- modo local con Java/Node y modo `container-only`;
+- `scripts/smoke-test.sh` y `scripts/smoke-test.ps1`;
+- Makefile con preflight, DB, stack, logs, verificación, smoke y reset;
+- documentación en `scripts/README.md`;
+- `.gitattributes` para finales de línea multiplataforma;
+- `.dockerignore` raíz y frontend para excluir secretos, datos y cachés.
 
-- envío real: inexistente;
-- `sending.enabled=false`;
-- `sending.dry-run=true`;
-- `sending.daily-limit=0`;
-- kill switch ambiental activo;
+### CI
+
+El workflow contiene trabajos separados para:
+
+- Maven, Spotless, unit tests y Testcontainers;
+- instalación, typecheck y build frontend;
+- sintaxis de scripts Unix y PowerShell;
+- preflight fail-closed;
+- validación del perfil completo de Compose;
+- build de imagen backend;
+- build de imagen frontend.
+
+No se habilitó caché npm porque todavía no existe `package-lock.json`.
+
+## Trabajo finalizado
+
+### Implementación y hardening
+
+- [x] dominio y persistencia;
+- [x] importaciones persistentes;
+- [x] deduplicación y revisión humana;
+- [x] exclusiones dominantes;
+- [x] auditoría;
+- [x] API y UI;
+- [x] configuración fail-closed;
+- [x] parser endurecido;
+- [x] recuperación por fila;
+- [x] métricas de bloqueados separadas;
+- [x] pruebas de regresión versionadas.
+
+### Consolidación y documentación
+
+- [x] consolidar absolutamente todo en `main`;
+- [x] conservar historia mediante fast-forward;
+- [x] convertir `main` en única fuente canónica;
+- [x] alinear `.env.example`, Compose y backend;
+- [x] documentar Linux/macOS y Windows;
+- [x] documentar flujo funcional completo;
+- [x] documentar detención, reinicio y troubleshooting;
+- [x] añadir inicio rápido contenedorizado;
+- [x] añadir preflight, smoke tests y Makefile;
+- [x] ampliar CI para scripts y ambas imágenes;
+- [x] minimizar contextos Docker;
+- [x] actualizar README e índice documental.
+
+## Seguridad vigente
+
+- no existe adaptador Gmail, SMTP o de correo;
+- `SENDING_ENABLED=false`;
+- `SENDING_DRY_RUN=true`;
+- `SENDING_DAILY_LIMIT=0`;
+- `SENDING_KILL_SWITCH=true`;
 - kill switch persistente activo;
-- sin adaptadores Gmail o SMTP;
-- XLSX real y datos operativos fuera de Git;
-- secretos fuera del repositorio;
 - API cerrada sin ambas credenciales bootstrap;
-- auditoría de exclusión sin copiar el canal completo;
-- PostgreSQL local expuesto únicamente en `127.0.0.1`;
-- búsquedas remotas sin claves privadas, tokens, correos personales ni el lote XLSX.
+- `.env` y datos operativos fuera de Git e imágenes;
+- XLSX real fuera del repositorio y CI;
+- auditoría de exclusión sin canal completo;
+- contextos Docker excluyen planillas, secretos, claves y cachés;
+- puertos locales ligados a loopback.
 
 ## Validación
 
-### Implementada
+### Evidencia disponible
 
-- pruebas unitarias de normalización, similitud y parser;
-- pruebas CSV con `;`, comillas inválidas y encabezados duplicados;
-- Testcontainers de persistencia, importación, deduplicación y exclusión;
-- exclusión importada retroactiva y auditada;
-- preview bloqueado sin escrituras de dominio;
-- correo malformado rechazado por fila;
-- duplicado exacto enlazado al prospecto;
-- revisión ambigua persistida en preview;
-- autorización fail-closed;
-- regla ArchUnit;
-- workflow CI para backend, frontend, Compose e imagen.
+- consolidación de `main` verificada;
+- archivos releídos después de escritura;
+- revisión estática de backend, migraciones, controladores y frontend;
+- configuración fail-closed comprobada;
+- búsqueda remota sin datos reales ni secretos evidentes;
+- Compose, Dockerfiles, scripts y CI revisados estáticamente;
+- checks y workflow runs consultados para el último commit observado: sin resultados visibles.
 
-### Ejecutada con evidencia
+### Implementada pero no ejecutada
 
-- avance fast-forward de `main`;
-- comparación posterior idéntica entre ramas;
-- lectura remota posterior a escrituras;
-- revisión estática cruzada de servicios, entidades, migraciones, controladores y tipos frontend;
-- comprobación de configuración fail-closed;
-- escaneo remoto de secretos y datos reales;
-- comprobación de que el entorno local disponible carece de Maven, Docker y cachés.
-
-### Pendiente por infraestructura
-
-- `mvn verify` y Spotless;
+- Maven y Spotless;
+- unit tests y ArchUnit;
 - Testcontainers, Flyway y Hibernate reales;
-- `npm install`, typecheck y build;
-- generación de `package-lock.json`;
-- `docker compose config`;
-- build de imagen;
-- ejecución observable de GitHub Actions.
+- frontend typecheck/build;
+- preflight en entorno real;
+- Compose completo;
+- imágenes backend/frontend;
+- smoke test.
 
-Los commits realizados mediante el conector no muestran checks en `get_commit_combined_status`. No se afirma que el proyecto compile hasta registrar evidencia ejecutada en `docs/validation/SEG-001.md`.
+### Bloqueo del entorno disponible
 
-## Tareas finalizadas
+- Maven ausente;
+- Docker/Compose ausentes;
+- cachés Maven/npm vacías;
+- acceso a registros externos no disponible;
+- commits del conector sin checks visibles.
 
-- [x] consolidar código y documentación en `main`;
-- [x] conservar historia mediante fast-forward;
-- [x] convertir `main` en fuente canónica;
-- [x] corregir configuración local PostgreSQL;
-- [x] documentar arranque Linux/macOS;
-- [x] documentar arranque Windows;
-- [x] documentar flujo funcional de la UI;
-- [x] documentar API, comprobaciones y troubleshooting;
-- [x] mantener envío completamente bloqueado;
-- [x] actualizar README y documentación de continuidad.
+No se afirma que el proyecto compile o arranque hasta registrar evidencia real en `docs/validation/SEG-001.md`.
 
 ## Tareas pendientes
 
 ### Bloqueantes de SEG-001
 
-- [ ] obtener checkout con red o ejecución CI visible;
-- [ ] ejecutar Maven, Spotless y todas las pruebas;
-- [ ] validar Flyway V1–V5 y Hibernate contra PostgreSQL real;
-- [ ] instalar frontend y generar `package-lock.json`;
-- [ ] ejecutar typecheck y build;
-- [ ] validar Compose;
-- [ ] construir imagen backend;
-- [ ] corregir todo fallo observado;
-- [ ] actualizar la matriz de validación con salida real;
+- [ ] clonar `main` en un entorno con red y Docker;
+- [ ] registrar el SHA exacto;
+- [ ] ejecutar preflight;
+- [ ] ejecutar Maven, Spotless y pruebas;
+- [ ] validar Flyway V1–V5, Hibernate y Testcontainers;
+- [ ] ejecutar `npm install` y generar `package-lock.json`;
+- [ ] ejecutar typecheck y build frontend;
+- [ ] validar perfil Compose completo;
+- [ ] construir ambas imágenes;
+- [ ] levantar stack y ejecutar smoke test;
+- [ ] corregir todos los fallos reales;
+- [ ] repetir la matriz completa;
+- [ ] documentar fecha, SHA, comandos y resultados;
 - [ ] cerrar SEG-001 y activar SEG-002.
 
 ### No bloqueantes
 
-- [ ] visualizar `excludedRows` en la UI;
-- [ ] resolver `DuplicateReview` mediante acción auditada;
+- [ ] visualizar `excludedRows` en UI;
+- [ ] resolver `DuplicateReview` de forma auditada;
 - [ ] retry explícito de `ImportJob` fallido;
-- [ ] filtros combinables adicionales;
-- [ ] exportar resultados de importación;
+- [ ] filtros combinables;
+- [ ] exportación de resultados;
 - [ ] accesibilidad básica;
-- [ ] estrategia de distribución del frontend.
+- [ ] política de retención;
+- [ ] actor persistente en auditoría.
 
 ## Riesgos activos
 
 1. pueden existir fallos de compilación o formato no detectables estáticamente;
-2. puede existir divergencia JPA/Flyway no observada en ejecución;
-3. HTTP Basic es temporal y no implementa RBAC;
-4. exclusiones y auditoría requieren permisos por rol en SEG-002;
-5. no existe acción auditada para resolver `DuplicateReview`;
-6. un trabajo fallido no tiene retry explícito con el mismo SHA y modo;
-7. frontend sin lockfile;
-8. el historial contiene muchos commits pequeños procedentes del conector;
-9. el lote disponible cubre 100 prospectos, no 298;
-10. La Colmena, Collegium, LAEM y Trobada deben excluirse solo con canales exactos verificados;
-11. el esquema conserva una relación institución–prospecto uno a uno;
-12. la auditoría todavía no registra actor persistente ni política de retención.
+2. puede existir divergencia JPA/Flyway no observada;
+3. el frontend no tiene lockfile;
+4. HTTP Basic es temporal y no implementa RBAC;
+5. la imagen frontend usa `npm install` hasta generar lockfile;
+6. no existe resolución auditada de revisiones;
+7. no existe retry explícito;
+8. la relación institución–prospecto sigue siendo uno a uno;
+9. la auditoría no tiene actor ni retención final;
+10. el lote disponible cubre 100 prospectos, no 298;
+11. contactos históricos deben excluirse solo con canales exactos verificados;
+12. el stack Compose es local, no producción.
 
 ## Próxima acción canónica
 
-Leer `docs/next-step.md`: ejecutar la matriz completa desde `main`, corregir fallos reales y documentar evidencia. No iniciar SEG-002 mientras los controles principales permanezcan pendientes.
+Leer `docs/next-step.md`: ejecutar toda la matriz desde `main`, corregir fallos reales y registrar evidencia. No iniciar SEG-002 mientras los controles principales permanezcan pendientes.
