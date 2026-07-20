@@ -3,33 +3,37 @@
 ## Continuidad
 
 - `../AGENTS.md` — reglas obligatorias y rama canónica;
-- `status.md` — estado real, tareas finalizadas, pendientes y riesgos;
+- `status.md` — alcance, progreso, tareas finalizadas, pendientes y riesgos;
 - `next-step.md` — única próxima acción autorizada;
-- `backlog.md` — segmentos, dependencias y checklist ejecutable;
+- `backlog.md` — segmentos y checklist ejecutable;
 - `segments/SEG-001.md` — alcance y criterios del segmento activo;
-- `validation/SEG-001.md` — matriz principal de evidencia y bloqueos;
-- `validation/SEG-001-static-automation-2026-07-20.md` — controles YAML, shell y Make;
-- `validation/SEG-001-container-build-2026-07-20.md` — primer preflight/build Docker, errores frontend y correcciones;
-- `validation/SEG-001-rerun-2026-07-20.md` — imágenes cacheadas, conflicto 5432 y corrección de puerto configurable;
+- `validation/SEG-001.md` — matriz principal;
 - `main-consolidation.md` — consolidación fast-forward en `main`.
+
+## Evidencias SEG-001
+
+- `validation/SEG-001-static-automation-2026-07-20.md` — YAML, shell y Make;
+- `validation/SEG-001-container-build-2026-07-20.md` — primer build real y errores TypeScript;
+- `validation/SEG-001-rerun-2026-07-20.md` — exportación cacheada y conflicto 5432;
+- `validation/SEG-001-local-orchestration-2026-07-20.md` — tres puertos, orquestador Docker y npm ci condicional.
 
 ## Inicio y operación
 
-- `containerized-quickstart.md` — PostgreSQL, backend, frontend y smoke con Compose;
-- `local-development-and-usage.md` — procesos separados, variables, flujo y troubleshooting;
-- `../scripts/README.md` — preflight, builds limpios, smoke, lockfile y Makefile;
-- `manual-operations.md` — procedimientos diarios;
-- `runbook.md` — incidentes;
+- `containerized-quickstart.md` — stack completo con Docker Compose;
+- `local-development-and-usage.md` — procesos separados y flujo funcional;
+- `../scripts/README.md` — puertos, preflight, validador Docker, smoke, lockfile y Makefile;
+- `manual-operations.md` — procedimientos operativos diarios;
+- `runbook.md` — respuesta ante incidentes;
 - `disaster-recovery.md` — backups y restauración;
-- `testing.md` — estrategia de pruebas;
+- `testing.md` — estrategia y comandos de pruebas;
 - `deployment.md` — ambientes, gates y rollback.
 
 ## Diseño
 
-- `architecture.md`;
-- `domain.md`;
-- `data-model.md`;
-- `roadmap.md`;
+- `architecture.md` — monolito modular y límites;
+- `domain.md` — lenguaje ubicuo e invariantes;
+- `data-model.md` — tablas, relaciones y migraciones;
+- `roadmap.md` — fases de entrega;
 - `adr/0001-modular-monolith.md`;
 - `adr/0002-postgresql-source-of-truth.md`;
 - `adr/0003-react-vite-frontend.md`;
@@ -39,25 +43,32 @@
 
 ## Seguridad
 
-- `security.md`;
-- `campaign-safety.md`;
-- `../SECURITY.md`;
-- `gmail-deliverability.md`.
+- `security.md` — postura técnica y brechas;
+- `campaign-safety.md` — guardas futuras;
+- `../SECURITY.md` — reporte de vulnerabilidades;
+- `gmail-deliverability.md` — diseño futuro de entregabilidad.
 
 ## Datos e integraciones
 
-- `import-existing-data.md`;
-- `import-hardening.md`;
-- `google-integration.md`.
+- `import-existing-data.md` — incorporación segura del lote operativo;
+- `import-hardening.md` — contrato del parser, preview, ejecución y recuperación;
+- `google-integration.md` — diseño futuro de OAuth, Gmail, Sheets y Drive.
 
-## Entrada principal
+## Entradas principales
 
-- `../README.md`;
-- `../Makefile`;
-- `../CONTRIBUTING.md`;
-- `../CHANGELOG.md`.
+- `../README.md` — inicio rápido;
+- `../Makefile` — comandos repetibles Unix;
+- `../CONTRIBUTING.md` — contribución;
+- `../CHANGELOG.md` — cambios acumulados.
 
-## Lectura por tarea
+## Lectura recomendada
+
+### Ejecutar el siguiente paso en Windows
+
+1. `next-step.md`;
+2. `../scripts/README.md`;
+3. `validation/SEG-001.md`;
+4. `validation/SEG-001-local-orchestration-2026-07-20.md`.
 
 ### Levantar todo con Docker
 
@@ -66,27 +77,21 @@
 3. `../scripts/README.md`;
 4. `status.md`.
 
-### Procesos separados
+### Levantar procesos separados
 
-1. `local-development-and-usage.md`;
-2. `../scripts/README.md`;
-3. `status.md`.
+1. `../README.md`;
+2. `local-development-and-usage.md`;
+3. `../scripts/README.md`;
+4. `status.md`.
 
-### Resolver el estado actual
-
-1. `next-step.md`;
-2. `validation/SEG-001-rerun-2026-07-20.md`;
-3. `validation/SEG-001.md`;
-4. `containerized-quickstart.md`;
-5. `../scripts/README.md`.
-
-### Validación de cierre
+### Cerrar SEG-001
 
 1. `validation/SEG-001.md`;
 2. `next-step.md`;
 3. `validation/SEG-001-container-build-2026-07-20.md`;
 4. `validation/SEG-001-rerun-2026-07-20.md`;
-5. `validation/SEG-001-static-automation-2026-07-20.md`.
+5. `validation/SEG-001-local-orchestration-2026-07-20.md`;
+6. `containerized-quickstart.md`.
 
 ### Continuar desarrollo
 
@@ -113,10 +118,14 @@
 
 ## Regla de precedencia
 
-1. invariantes de seguridad y ADR;
+Cuando exista contradicción:
+
+1. invariantes de seguridad y ADR aceptados;
 2. `status.md`;
 3. `next-step.md`;
-4. segmento y validación;
+4. segmento y matriz de validación;
 5. contratos normativos;
 6. guías operativas;
-7. resto.
+7. resto de documentos.
+
+Actualizar referencias cruzadas al crear, mover o reemplazar documentos.
