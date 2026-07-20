@@ -2,7 +2,64 @@
 
 ## Objetivo
 
-Scripts reproducibles para configurar, construir y comprobar Gestudio CRM. No despliegan, no importan datos y no realizan comunicaciones.
+Scripts reproducibles para configurar, construir, verificar y operar Gestudio CRM localmente.
+
+Ningún script:
+
+- despliega producción;
+- habilita envíos;
+- importa el XLSX real;
+- realiza commits;
+- elimina el volumen PostgreSQL salvo los comandos destructivos explícitos.
+
+## Validación integral recomendada — Windows
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173 `
+  -KeepRunning
+```
+
+Requisitos:
+
+- rama `main`;
+- archivos rastreados limpios;
+- `.env` existente;
+- Git;
+- Docker Desktop y Compose v2.
+
+No requiere Java, Maven, Node o npm instalados en el host.
+
+El script ejecuta:
+
+1. validación de rama y working tree;
+2. configuración segura de puertos;
+3. preflight container-only;
+4. Compose config;
+5. builds frontend/backend sin caché;
+6. arranque y health de tres servicios;
+7. smoke host y contenedor;
+8. Maven verify/Spotless/tests/ArchUnit/Testcontainers en Docker;
+9. generación package-lock-only sin lifecycle scripts;
+10. build frontend mediante npm ci;
+11. recreación y health frontend;
+12. smoke final;
+13. seguridad del repositorio;
+14. JSON y transcript;
+15. cleanup opcional.
+
+No usar `-UseBuildCache` como evidencia de cierre.
+
+Evidencia:
+
+```text
+validation-output/seg001-complete-*.log
+validation-output/seg001-complete-*.json
+validation-output/seg001-docker-*.json
+frontend/package-lock.json
+```
 
 ## Configurar puertos host
 
@@ -15,7 +72,7 @@ powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
   -FrontendPort 5173
 ```
 
-Linux/macOS:
+Unix:
 
 ```bash
 sh scripts/set-local-host-ports.sh 55432 8080 5173
@@ -29,17 +86,17 @@ make local-ports
 
 Los scripts:
 
-- añaden o actualizan `POSTGRES_HOST_PORT`;
-- añaden o actualizan `BACKEND_HOST_PORT`;
-- añaden o actualizan `FRONTEND_HOST_PORT`;
-- actualizan `DATABASE_URL`;
+- actualizan `POSTGRES_HOST_PORT`;
+- actualizan `BACKEND_HOST_PORT`;
+- actualizan `FRONTEND_HOST_PORT`;
+- coordinan `DATABASE_URL`;
 - conservan nombre de base, usuarios y contraseñas;
-- conservan las cuatro variables `SENDING_*`;
+- conservan `SENDING_*`;
 - rechazan puertos inválidos o repetidos;
 - no imprimen secretos;
-- PowerShell escribe UTF-8 sin BOM.
+- escriben UTF-8 sin BOM en PowerShell.
 
-Los helpers históricos `set-postgres-host-port.ps1` y `.sh` siguen disponibles como wrappers compatibles.
+Los helpers `set-postgres-host-port.ps1` y `.sh` siguen disponibles como wrappers compatibles.
 
 ## Preflight
 
@@ -68,16 +125,15 @@ Valida:
 - Git, Docker y Compose;
 - Java/Node/npm en modo local;
 - `.env`;
-- tres puertos entre 1 y 65535;
-- puertos distintos;
+- tres puertos válidos y distintos;
 - `DATABASE_URL` coordinada;
 - credenciales DB y bootstrap;
-- cuatro guardas de envío cerradas;
-- Compose con perfiles `app` y `smoke`.
+- cuatro guardas de envío;
+- perfiles `app` y `smoke`.
 
 No imprime contraseñas ni inicia servicios.
 
-## Validación Docker automatizada — Windows
+## Validación Docker del stack
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
@@ -87,19 +143,18 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
   -KeepRunning
 ```
 
-Flujo:
+Fases:
 
-1. configura puertos;
-2. ejecuta preflight container-only;
-3. retira contenedores incompletos sin borrar volumen;
-4. construye frontend sin caché;
-5. construye backend sin caché;
-6. inicia el perfil `app`;
-7. espera health de PostgreSQL, backend y frontend;
-8. ejecuta smoke PowerShell;
-9. ejecuta smoke contenedorizado;
-10. guarda transcript en `validation-output/`;
-11. retira el stack, salvo `-KeepRunning`.
+1. puertos;
+2. preflight;
+3. Compose config;
+4. cleanup no destructivo;
+5. builds limpios;
+6. arranque;
+7. health;
+8. smoke host;
+9. smoke contenedor;
+10. JSON y transcript.
 
 Parámetros:
 
@@ -109,24 +164,145 @@ Parámetros:
 -FrontendPort
 -KeepRunning
 -UseBuildCache
+-NoTranscript
 ```
 
-No utilizar `-UseBuildCache` como evidencia de cierre.
+`-NoTranscript` existe para composición desde `validate-seg001.ps1`.
 
-El validador no ejecuta Maven verify, Testcontainers ni genera el lockfile.
+Evidencia:
 
-## Builds limpios manuales
+```text
+validation-output/seg001-docker-*.log
+validation-output/seg001-docker-*.json
+```
+
+Este script no ejecuta Maven verify ni genera package-lock; el validador integral sí.
+
+## Backend verify/Testcontainers sin Java local
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify-backend-container.ps1
+```
+
+Unix:
 
 ```bash
-docker compose --progress plain --profile app build --no-cache frontend
-docker compose --progress plain --profile app build --no-cache backend
+sh scripts/verify-backend-container.sh
 ```
 
-Una salida completamente `CACHED` no demuestra compilación limpia.
+Con Make:
+
+```bash
+make backend-verify-container
+```
+
+Comportamiento:
+
+- usa `maven:3.9.16-eclipse-temurin-21`;
+- ejecuta `mvn -B -f backend/pom.xml verify`;
+- monta el repositorio en solo lectura;
+- monta `backend/target` en volumen efímero;
+- reutiliza `crm_maven_cache`;
+- monta `/var/run/docker.sock`;
+- configura `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`;
+- elimina contenedor y volumen target.
+
+Cobertura:
+
+- compilación;
+- Maven Enforcer;
+- Spotless;
+- unit tests;
+- ArchUnit;
+- Testcontainers.
+
+Advertencia: montar el socket Docker concede privilegios elevados. Ejecutar únicamente sobre código propio y revisado.
+
+## Generar package-lock de forma segura
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
+```
+
+Unix:
+
+```bash
+sh scripts/generate-frontend-lock.sh
+```
+
+Con Make:
+
+```bash
+make frontend-lock
+```
+
+Comando npm:
+
+```text
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+```
+
+Garantías:
+
+- solo genera o actualiza package-lock;
+- no ejecuta lifecycle scripts;
+- no debe crear node_modules;
+- falla si node_modules aparece;
+- no realiza commit.
+
+Revisar:
+
+```bash
+git status --short
+git diff -- frontend/package-lock.json
+```
+
+Dockerfile, Makefile y CI detectan automáticamente:
+
+```text
+package-lock presente -> npm ci
+package-lock ausente  -> npm install
+```
+
+## Seguridad del repositorio
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-repository-safety.ps1
+```
+
+Unix:
+
+```bash
+sh scripts/check-repository-safety.sh
+```
+
+Con Make:
+
+```bash
+make repository-safety
+```
+
+Comprueba:
+
+- `git diff --check`;
+- `.env` no rastreado;
+- `validation-output/` no rastreado;
+- datos privados no rastreados;
+- lote `gestudio_lote_*_prospectos.xlsx` no rastreado;
+- claves/certificados no rastreados;
+- JSON de credenciales no rastreados.
+
+No reemplaza un escáner de secretos por contenido.
 
 ## Smoke host
 
-Linux/macOS:
+Unix:
 
 ```bash
 sh scripts/smoke-test.sh
@@ -138,21 +314,22 @@ Windows:
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
 ```
 
-Los URLs se derivan de:
+Variables:
 
 ```text
 BACKEND_HOST_PORT
 FRONTEND_HOST_PORT
+BACKEND_URL opcional
+FRONTEND_URL opcional
 ```
 
-Overrides opcionales:
+Comprueba:
 
-```text
-BACKEND_URL
-FRONTEND_URL
-```
+- health;
+- API autenticada;
+- frontend.
 
-Comprueba health, API autenticada y frontend. No crea datos.
+No crea datos.
 
 ## Smoke contenedorizado
 
@@ -170,105 +347,78 @@ docker compose --profile app --profile smoke up \
   smoke
 ```
 
-Contra un stack ya activo:
+Contra stack activo:
 
 ```bash
 docker compose --profile app --profile smoke run --rm smoke
 ```
 
-## Generar package-lock
-
-Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
-```
-
-Linux/macOS:
+## Builds limpios manuales
 
 ```bash
-sh scripts/generate-frontend-lock.sh
+docker compose --progress plain --profile app build --no-cache frontend
+docker compose --progress plain --profile app build --no-cache backend
 ```
 
-Con Make:
-
-```bash
-make frontend-lock
-```
-
-Revisar:
-
-```bash
-git status --short
-git diff -- frontend/package-lock.json
-```
-
-Dockerfile, Makefile y CI detectan automáticamente:
-
-```text
-package-lock presente -> npm ci
-package-lock ausente  -> npm install
-```
+Un build completamente `CACHED` no demuestra compilación limpia.
 
 ## Makefile
 
-```bash
-make preflight
-make preflight-container
-make postgres-port
-make local-ports
-make db-up
-make db-down
-make app-up
-make app-down
-make app-logs
-make backend
-make frontend
-make frontend-lock
-make verify
-make smoke
-make smoke-container
-make reset-db
+```text
+preflight
+preflight-container
+postgres-port
+local-ports
+repository-safety
+db-up
+db-down
+app-up
+app-down
+app-logs
+backend
+backend-verify-container
+frontend
+frontend-lock
+verify
+verify-container
+smoke
+smoke-container
+reset-db
 ```
 
 | Target | Acción |
 |---|---|
-| `preflight` | valida herramientas locales y configuración |
-| `preflight-container` | valida modalidad Docker-only |
-| `postgres-port` | compatibilidad: configura PostgreSQL y completa otros puertos |
-| `local-ports` | configura 55432/8080/5173 coordinadamente |
+| `preflight` | herramientas locales y configuración |
+| `preflight-container` | modalidad Docker-only |
+| `postgres-port` | wrapper compatible de puerto PostgreSQL |
+| `local-ports` | configura tres puertos |
+| `repository-safety` | escanea rutas/extensiones sensibles |
 | `db-up` | inicia PostgreSQL |
 | `db-down` | detiene PostgreSQL conservando volumen |
 | `app-up` | construye e inicia stack |
 | `app-down` | retira stack conservando volumen |
 | `app-logs` | sigue logs |
-| `backend` | ejecuta Spring Boot |
-| `frontend` | instala con npm ci/install y ejecuta Vite |
-| `frontend-lock` | genera package-lock con Docker |
-| `verify` | backend, frontend, Compose y clean builds |
+| `backend` | ejecuta Spring Boot local |
+| `backend-verify-container` | Maven verify/Testcontainers en Docker |
+| `frontend` | npm ci/install y Vite |
+| `frontend-lock` | genera package-lock-only |
+| `verify` | validación con herramientas locales |
+| `verify-container` | validación Unix Docker-only integral |
 | `smoke` | prueba stack activo |
-| `smoke-container` | prueba stack efímero |
+| `smoke-container` | stack efímero y smoke |
 | `reset-db` | elimina stack y volumen |
 
-## Evidencia
+`verify-container` ejecuta preflight, backend verify contenedorizado, lockfile, builds limpios, smoke y seguridad.
+
+## Evidencia versionada
 
 ```text
 docs/validation/SEG-001-container-build-2026-07-20.md
 docs/validation/SEG-001-rerun-2026-07-20.md
 docs/validation/SEG-001-local-orchestration-2026-07-20.md
+docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 docs/validation/SEG-001-static-automation-2026-07-20.md
 ```
-
-Estado demostrado:
-
-- preflight inicial PASS;
-- npm install PASS;
-- fallo TypeScript reproducido y corregido;
-- imágenes exportadas desde caché;
-- conflicto 5432 reproducido;
-- tres puertos configurables implementados;
-- configurador Unix probado preservando secretos ficticios, UTF-8 y guardas;
-- orquestador Windows pendiente de ejecución real.
 
 ## Evidencia local
 
@@ -276,9 +426,9 @@ Estado demostrado:
 validation-output/
 ```
 
-está ignorado por Git. Los transcripts deben revisarse y resumirse en `docs/validation/`, no versionarse automáticamente.
+Está ignorado por Git. Revisar transcripts antes de compartir y resumir resultados importantes en `docs/validation/SEG-001.md`.
 
-## Advertencia destructiva
+## Advertencias destructivas
 
 ```bash
 make reset-db
@@ -290,7 +440,7 @@ O:
 docker compose --profile app --profile smoke down -v --remove-orphans
 ```
 
-elimina la base local.
+Eliminan la base local.
 
 ## Controles de envío
 
@@ -307,16 +457,17 @@ El preflight falla si alguno cambia.
 
 CI valida:
 
-- shell y PowerShell;
-- configuradores de puertos;
-- orquestador Docker a nivel de parser;
+- shell;
+- parser PowerShell;
+- puertos;
+- seguridad del repositorio;
 - preflight fail-closed;
 - frontend typecheck/build;
 - backend verify;
-- Compose app/smoke;
+- Compose;
 - imágenes;
 - stack;
 - smoke;
 - logs y cleanup.
 
-Hasta versionar package-lock, CI utiliza npm install; después adoptará npm ci automáticamente.
+Hasta versionar package-lock, CI utiliza npm install. Después adopta npm ci automáticamente.
