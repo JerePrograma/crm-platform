@@ -33,19 +33,65 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package.json
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install --no-audit --no-fund
+      - name: Typecheck frontend
+        working-directory: frontend
+        run: npm run typecheck
       - name: Build frontend
         working-directory: frontend
         run: npm run build
 
-  compose-and-image:
+  scripts:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Validate Docker Compose
-        run: docker compose config
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate Unix script syntax
+        run: sh -n scripts/preflight.sh scripts/smoke-test.sh
+      - name: Validate PowerShell script syntax
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            'scripts/preflight.ps1',
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) { throw ($errors | Out-String) }
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            'scripts/smoke-test.ps1',
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) { throw ($errors | Out-String) }
+      - name: Run fail-closed preflight
+        run: |
+          cp .env.example .env
+          sed -i 's/^CRM_BOOTSTRAP_USERNAME=.*/CRM_BOOTSTRAP_USERNAME=ci-user/' .env
+          sed -i 's/^CRM_BOOTSTRAP_PASSWORD=.*/CRM_BOOTSTRAP_PASSWORD=ci-local-only/' .env
+          sh scripts/preflight.sh
+          rm .env
+
+  compose-and-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate full Docker Compose profile
+        run: docker compose --profile app config
       - name: Build backend image
         run: docker build -t gestudio-crm:${{ github.sha }} .
+      - name: Build frontend image
+        run: docker build -f frontend/Dockerfile -t gestudio-crm-frontend:${{ github.sha }} frontend
