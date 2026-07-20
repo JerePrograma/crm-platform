@@ -24,6 +24,9 @@
 *service-account*.json
 *client_secret*.json
 
+# Local validation transcripts and generated evidence
+/validation-output/
+
 # Runtime and uploads
 backend/uploads/
 
