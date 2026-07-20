@@ -2,80 +2,69 @@
 
 ## Estado
 
-Todo el código, hardening, documentación y automatización local están consolidados en `main`.
+Producto, hardening, documentación y automatización están consolidados en `main`.
 
-La única brecha bloqueante es ejecutar la matriz técnica en un entorno con red y Docker, corregir fallos reales y registrar evidencia. Los commits del conector continúan sin checks o runs visibles.
+El cierre depende exclusivamente de ejecutar la matriz en un entorno con red y Docker, corregir fallos reales y registrar evidencia. Los commits del conector continúan sin checks visibles.
 
 ## Objetivo del próximo `continuar`
 
-Trabajar exclusivamente desde `main`, ejecutar la matriz completa, corregir cualquier fallo real y cerrar `SEG-001`.
+Trabajar solo desde `main`, ejecutar la matriz completa y cerrar SEG-001.
 
-No iniciar identidad/RBAC, campañas, Gmail, Sheets, workers o infraestructura cloud antes de estabilizar el árbol.
+No iniciar identidad/RBAC, campañas, Gmail, Sheets, workers o cloud antes de estabilizar el árbol.
 
-## Fuente canónica
+## Fuentes canónicas
 
 ```text
 branch: main
-container quickstart: docs/containerized-quickstart.md
-local tools: docs/local-development-and-usage.md
-automation: scripts/README.md
-status: docs/status.md
-validation: docs/validation/SEG-001.md
+Docker-only: docs/containerized-quickstart.md
+procesos separados: docs/local-development-and-usage.md
+automatización: scripts/README.md
+estado: docs/status.md
+validación: docs/validation/SEG-001.md
 backlog: docs/backlog.md
 ```
 
-## No repetir sin evidencia de fallo
+## Ya implementado — no repetir sin fallo real
 
-Ya están implementados y revisados:
-
-- dominio, API y frontend del vertical slice;
-- exclusiones importadas retroactivas y auditadas;
-- revisiones ambiguas en preview;
-- referencias de duplicados exactos;
-- límites multipart y HTTP 413;
-- validación de correo y recuperación por fila;
-- CSV con coma o punto y coma, comillas y encabezados duplicados;
-- fechas Excel UTC;
-- preview con exclusiones;
-- métrica `excludedRows`;
-- saneamiento de archivos;
-- Basic Auth UTF-8;
-- configuración DB compartida;
+- vertical slice backend/frontend;
+- importación, deduplicación, exclusiones y auditoría;
+- hardening de parser, preview, recuperación y métricas;
 - consolidación en `main`;
-- perfil Compose `app` con los tres servicios;
-- imágenes backend y frontend;
-- preflight y smoke tests multiplataforma;
-- Makefile;
-- CI ampliado;
-- contextos Docker minimizados;
-- guías de arranque y uso.
-
-Reabrir estos puntos solo si una ejecución real demuestra un defecto.
+- configuración DB coherente;
+- perfil Compose `app`;
+- perfil Compose `smoke`;
+- imágenes backend/frontend;
+- health checks y Nginx;
+- preflight y smoke multiplataforma;
+- Makefile con `smoke-container`;
+- CI con arranque y smoke E2E;
+- `.dockerignore`/`.gitattributes`;
+- documentación completa;
+- evidencia estática de YAML, shell y Make.
 
 ## Orden obligatorio
 
-1. clonar o actualizar `main` en un entorno con red y Docker;
-2. registrar el SHA exacto;
-3. copiar `.env.example` a `.env`;
-4. configurar credenciales bootstrap locales;
-5. verificar que las cuatro variables de envío siguen cerradas;
+1. clonar/actualizar `main`;
+2. registrar SHA;
+3. crear `.env`;
+4. configurar credenciales bootstrap;
+5. mantener guardas de envío cerradas;
 6. ejecutar preflight;
-7. ejecutar Maven, Spotless y pruebas;
-8. confirmar Flyway V1–V5, Hibernate y Testcontainers;
-9. instalar dependencias frontend;
-10. generar y versionar `package-lock.json`;
-11. ejecutar typecheck y build;
-12. validar perfil Compose completo;
-13. construir imágenes backend y frontend;
-14. levantar el stack completo;
-15. ejecutar smoke test;
-16. realizar escaneo local de secretos y datos reales;
-17. corregir cada fallo con prueba de regresión cuando corresponda;
-18. repetir toda la matriz;
-19. registrar fecha, SHA, comandos, jobs y resultados;
-20. cerrar SEG-001 solo cuando los controles principales estén en `PASS`.
+7. ejecutar Maven/Spotless/tests;
+8. confirmar Flyway/Hibernate/Testcontainers;
+9. instalar frontend y generar lockfile;
+10. ejecutar typecheck/build;
+11. migrar a `npm ci` después del lockfile;
+12. validar Compose app/smoke;
+13. construir ambas imágenes;
+14. ejecutar smoke contenedorizado;
+15. escanear secretos/datos;
+16. corregir fallos con regresión;
+17. repetir la matriz;
+18. registrar fecha, SHA, comandos y salida;
+19. cerrar SEG-001 solo con controles principales en PASS.
 
-## Ruta rápida contenedorizada
+## Ruta recomendada — Docker-only
 
 ### Linux/macOS
 
@@ -87,15 +76,23 @@ git pull --ff-only
 git rev-parse HEAD
 
 cp .env.example .env
-# Editar .env: establecer credenciales bootstrap.
-# Mantener SENDING_ENABLED=false, SENDING_DRY_RUN=true,
-# SENDING_DAILY_LIMIT=0 y SENDING_KILL_SWITCH=true.
+# Editar credenciales bootstrap.
+# Mantener las cuatro variables SENDING_* cerradas.
 
 sh scripts/preflight.sh --container-only
-docker compose --profile app config
-docker compose --profile app up -d --build
-docker compose --profile app ps
-sh scripts/smoke-test.sh
+make smoke-container
+```
+
+Sin Make:
+
+```bash
+docker compose --profile app --profile smoke config
+docker compose --profile app --profile smoke up \
+  --build \
+  --abort-on-container-exit \
+  --exit-code-from smoke \
+  smoke
+docker compose --profile app --profile smoke down --remove-orphans
 ```
 
 ### Windows PowerShell
@@ -108,13 +105,12 @@ git pull --ff-only
 git rev-parse HEAD
 
 Copy-Item .env.example .env
-# Editar .env y establecer credenciales bootstrap.
+# Editar credenciales bootstrap.
 
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
-docker compose --profile app config
-docker compose --profile app up -d --build
-docker compose --profile app ps
-powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
+docker compose --profile app --profile smoke config
+docker compose --profile app --profile smoke up --build --abort-on-container-exit --exit-code-from smoke smoke
+docker compose --profile app --profile smoke down --remove-orphans
 ```
 
 ## Matriz completa Linux/macOS
@@ -129,23 +125,13 @@ npm run typecheck
 npm run build
 cd ..
 
-docker compose --profile app config
+docker compose --profile app --profile smoke config
 docker build -t gestudio-crm:seg-001 .
 docker build -f frontend/Dockerfile -t gestudio-crm-frontend:seg-001 frontend
-docker compose --profile app up -d --build
-sh scripts/smoke-test.sh
+make smoke-container
 ```
 
-Con Make:
-
-```bash
-make preflight
-make verify
-make app-up
-make smoke
-```
-
-## Matriz completa Windows PowerShell
+## Matriz completa Windows
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1
@@ -157,100 +143,77 @@ npm run typecheck
 npm run build
 Pop-Location
 
-docker compose --profile app config
+docker compose --profile app --profile smoke config
 docker build -t gestudio-crm:seg-001 .
 docker build -f frontend/Dockerfile -t gestudio-crm-frontend:seg-001 frontend
-docker compose --profile app up -d --build
-powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
+docker compose --profile app --profile smoke up --build --abort-on-container-exit --exit-code-from smoke smoke
+docker compose --profile app --profile smoke down --remove-orphans
 ```
 
-## Lockfile frontend
+## Lockfile
 
 Después de `npm install`:
 
 ```bash
-git status --short frontend/package-lock.json
 git add frontend/package-lock.json
 git commit -m "build: lock frontend dependencies"
 git push origin main
 ```
 
-Después de versionarlo, cambiar CI e imagen frontend de `npm install` a `npm ci` y habilitar caché npm con el lockfile.
+Luego:
 
-## Inspección del stack
+- reemplazar `npm install` por `npm ci` en CI e imagen frontend;
+- habilitar caché npm usando `frontend/package-lock.json`;
+- repetir frontend, imágenes y smoke.
 
-```bash
-docker compose --profile app ps
-docker compose --profile app logs backend
-docker compose --profile app logs frontend
-docker compose --profile app logs postgres
-curl http://localhost:8080/actuator/health
-```
+## Evidencia a registrar
 
-UI:
+En `docs/validation/SEG-001.md`:
 
-```text
-http://localhost:5173
-```
+- fecha y SHA;
+- versión de Java, Node, npm, Docker y Compose;
+- resultado Maven/Spotless/tests;
+- Flyway/Hibernate/Testcontainers;
+- frontend install/typecheck/build;
+- `docker compose config`;
+- builds de ambas imágenes;
+- salida de smoke;
+- escaneo de datos/secretos;
+- correcciones realizadas;
+- repetición final verde.
 
-## Escaneo mínimo
+## Correcciones autorizadas
 
-```bash
-git diff --check
-git status --short
-git ls-files | grep -E '\.(xlsx|xls|csv|env|pem|key|p12|pfx)$' || true
-```
-
-Revisar además patrones de secretos con una herramienta local adecuada. El resultado no debe incluir `.env`, lotes reales, claves ni tokens.
-
-## Correcciones autorizadas dentro de SEG-001
-
-- compilación Java/Spring Boot;
-- formato Spotless;
-- mapeos JPA/Flyway;
-- tests y aislamiento de datos;
-- compatibilidad Testcontainers;
-- tipos TypeScript;
-- lockfile y `npm ci`;
-- configuración Vite/Nginx;
-- Dockerfiles y Compose;
-- scripts y CI;
-- representación de `excludedRows`;
+- Java/Spring Boot;
+- Spotless/tests;
+- JPA/Flyway/Testcontainers;
+- TypeScript/Vite/Nginx;
+- lockfile/npm ci;
+- Dockerfiles/Compose/smoke;
+- scripts/CI;
+- `excludedRows` en UI;
 - documentación de evidencia;
-- cualquier fallo demostrado por la matriz.
-
-## Mejoras permitidas después de verde
-
-- mostrar `excludedRows` como tarjeta independiente;
-- pruebas HTTP para confirmación y 413;
-- resolución auditada de `DuplicateReview`;
-- retry explícito de trabajos fallidos;
-- accesibilidad básica;
-- identidad persistente y RBAC en SEG-002.
+- cualquier fallo demostrado.
 
 ## Criterios de cierre
 
-- Maven y Spotless: `PASS`;
-- unit tests y ArchUnit: `PASS`;
-- Testcontainers: `PASS`;
-- Flyway V1–V5: `PASS`;
-- Hibernate validate: `PASS`;
-- frontend, typecheck y lockfile: `PASS`;
-- scripts/preflight: `PASS`;
-- Compose completo: `PASS`;
-- imágenes backend/frontend: `PASS`;
-- stack y smoke test: `PASS`;
-- escaneo de secretos/datos: `PASS`;
-- resultados documentados con SHA y fecha;
-- `SEG-001` marcado `COMPLETE`;
-- `SEG-002` marcado `ACTIVE`;
-- `docs/next-step.md` reemplazado por identidad, organizaciones y RBAC.
+- Maven/Spotless/tests: PASS;
+- Flyway/Hibernate/Testcontainers: PASS;
+- frontend + lockfile: PASS;
+- scripts/preflight: PASS;
+- Compose app/smoke: PASS;
+- ambas imágenes: PASS;
+- smoke E2E: PASS;
+- secretos/datos: PASS;
+- evidencia registrada;
+- SEG-001 COMPLETE;
+- SEG-002 ACTIVE.
 
 ## Restricciones
 
 - no desplegar producción;
 - no habilitar envíos;
-- no incorporar el XLSX real al repositorio, CI o imágenes;
+- no incorporar XLSX real a Git, CI o imágenes;
 - no declarar éxito sin salida ejecutada;
-- no iniciar SEG-002 con controles bloqueantes pendientes;
-- no utilizar el stack Compose local como despliegue productivo.
+- no iniciar SEG-002 con bloqueantes;
+- no tratar Compose local como producción.
