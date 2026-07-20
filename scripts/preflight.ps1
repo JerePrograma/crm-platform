@@ -34,6 +34,7 @@ Get-Content .env | ForEach-Object {
 
 foreach ($name in @(
   'POSTGRES_DB',
+  'POSTGRES_HOST_PORT',
   'DATABASE_URL',
   'DATABASE_USER',
   'DATABASE_PASSWORD',
@@ -44,6 +45,17 @@ foreach ($name in @(
   if ([string]::IsNullOrWhiteSpace($value)) {
     Fail "$name is required"
   }
+}
+
+$postgresHostPort = 0
+if (-not [int]::TryParse($env:POSTGRES_HOST_PORT, [ref]$postgresHostPort)) {
+  Fail 'POSTGRES_HOST_PORT must be an integer'
+}
+if ($postgresHostPort -lt 1 -or $postgresHostPort -gt 65535) {
+  Fail 'POSTGRES_HOST_PORT must be between 1 and 65535'
+}
+if ($env:DATABASE_URL -notmatch ":$postgresHostPort/") {
+  Fail 'DATABASE_URL must use the same port as POSTGRES_HOST_PORT for host-based development'
 }
 
 if ($env:SENDING_ENABLED -ne 'false') { Fail 'SENDING_ENABLED must remain false' }
@@ -62,6 +74,7 @@ if (-not $ContainerOnly) {
   Write-Host "Node: $(& node --version)"
   Write-Host "npm: $(& npm --version)"
 }
+Write-Host "PostgreSQL host port: $env:POSTGRES_HOST_PORT"
 Write-Host "Database URL: $env:DATABASE_URL"
 Write-Host 'Bootstrap user configured: yes'
 Write-Host 'Sending controls: enabled=false dry-run=true daily-limit=0 kill-switch=true'
