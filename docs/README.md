@@ -7,14 +7,15 @@
 - `next-step.md` — única próxima acción autorizada;
 - `backlog.md` — segmentos, dependencias y checklist ejecutable;
 - `segments/SEG-001.md` — alcance y criterios del segmento activo;
-- `validation/SEG-001.md` — evidencia ejecutada, revisión estática y bloqueos;
+- `validation/SEG-001.md` — matriz principal de evidencia y bloqueos;
+- `validation/SEG-001-static-automation-2026-07-20.md` — controles YAML, shell y Make ejecutados;
 - `main-consolidation.md` — consolidación fast-forward del trabajo en `main`.
 
 ## Inicio y operación
 
-- `containerized-quickstart.md` — PostgreSQL, backend y frontend con Docker Compose;
+- `containerized-quickstart.md` — PostgreSQL, backend, frontend y smoke E2E con Docker Compose;
 - `local-development-and-usage.md` — procesos separados, variables, health, UI, flujo y troubleshooting;
-- `../scripts/README.md` — preflight, smoke tests y Makefile;
+- `../scripts/README.md` — preflight, smoke tests de host/contenedor y Makefile;
 - `manual-operations.md` — procedimientos operativos diarios;
 - `runbook.md` — respuesta ante incidentes;
 - `disaster-recovery.md` — backups y restauración;
@@ -69,6 +70,14 @@
 2. `local-development-and-usage.md`;
 3. `../scripts/README.md`;
 4. `status.md`.
+
+### Ejecutar la validación de cierre
+
+1. `validation/SEG-001.md`;
+2. `next-step.md`;
+3. `containerized-quickstart.md`;
+4. `../scripts/README.md`;
+5. `validation/SEG-001-static-automation-2026-07-20.md`.
 
 ### Continuar desarrollo
 
