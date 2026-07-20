@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gestudio.crm.common.NormalizationService;
 import com.gestudio.crm.contact.ContactChannelType;
-import com.gestudio.crm.exclusion.Exclusion;
+import com.gestudio.crm.exclusion.ExclusionApplicationService;
 import com.gestudio.crm.exclusion.ExclusionReason;
 import com.gestudio.crm.exclusion.ExclusionRepository;
 import com.gestudio.crm.imports.ImportJobLifecycleService.RowOutcome;
@@ -31,6 +31,7 @@ public class ProspectImportRowProcessor {
   private final ImportRowRepository importRowRepository;
   private final DuplicateReviewRepository duplicateReviewRepository;
   private final ExclusionRepository exclusionRepository;
+  private final ExclusionApplicationService exclusionApplicationService;
   private final ProspectRepository prospectRepository;
   private final ProspectDeduplicationService deduplicationService;
   private final ProspectApplicationService prospectApplicationService;
@@ -42,6 +43,7 @@ public class ProspectImportRowProcessor {
       ImportRowRepository importRowRepository,
       DuplicateReviewRepository duplicateReviewRepository,
       ExclusionRepository exclusionRepository,
+      ExclusionApplicationService exclusionApplicationService,
       ProspectRepository prospectRepository,
       ProspectDeduplicationService deduplicationService,
       ProspectApplicationService prospectApplicationService,
@@ -51,6 +53,7 @@ public class ProspectImportRowProcessor {
     this.importRowRepository = importRowRepository;
     this.duplicateReviewRepository = duplicateReviewRepository;
     this.exclusionRepository = exclusionRepository;
+    this.exclusionApplicationService = exclusionApplicationService;
     this.prospectRepository = prospectRepository;
     this.deduplicationService = deduplicationService;
     this.prospectApplicationService = prospectApplicationService;
@@ -139,9 +142,8 @@ public class ProspectImportRowProcessor {
       return RowOutcome.DUPLICATE;
     }
     if (!dryRun) {
-      exclusionRepository.save(
-          Exclusion.create(
-              ContactChannelType.EMAIL, normalizedEmail, mapReason(candidate.reason())));
+      exclusionApplicationService.create(
+          ContactChannelType.EMAIL, normalizedEmail, mapReason(candidate.reason()));
     }
     row.accept(null);
     return RowOutcome.ACCEPTED;
