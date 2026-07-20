@@ -83,7 +83,7 @@ public class ProspectImportRowProcessor {
 
     DeduplicationOutcome deduplication = deduplicationService.evaluate(candidate);
     if (deduplication.kind() == Kind.EXACT_DUPLICATE) {
-      row.markDuplicate();
+      row.markDuplicate(deduplication.existingProspect());
       return RowOutcome.DUPLICATE;
     }
     if (deduplication.kind() == Kind.REVIEW_REQUIRED) {
@@ -138,7 +138,7 @@ public class ProspectImportRowProcessor {
     }
     if (exclusionRepository.existsByChannelTypeAndNormalizedValue(
         ContactChannelType.EMAIL, normalizedEmail)) {
-      row.markDuplicate();
+      row.markDuplicate(null);
       return RowOutcome.DUPLICATE;
     }
     if (!dryRun) {
