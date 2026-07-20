@@ -1,4 +1,4 @@
-.PHONY: preflight preflight-container postgres-port db-up db-down app-up app-down app-logs backend frontend frontend-lock verify smoke smoke-container reset-db
+.PHONY: preflight preflight-container postgres-port local-ports db-up db-down app-up app-down app-logs backend frontend frontend-lock verify smoke smoke-container reset-db
 
 preflight:
 	sh scripts/preflight.sh --local
@@ -8,6 +8,9 @@ preflight-container:
 
 postgres-port:
 	sh scripts/set-postgres-host-port.sh 55432
+
+local-ports:
+	sh scripts/set-local-host-ports.sh 55432 8080 5173
 
 db-up:
 	docker compose up -d postgres
@@ -28,14 +31,14 @@ backend:
 	sh ./mvnw -f backend/pom.xml spring-boot:run
 
 frontend:
-	cd frontend && npm install && npm run dev
+	cd frontend && if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run dev
 
 frontend-lock:
 	sh scripts/generate-frontend-lock.sh
 
 verify:
 	sh ./mvnw -B -f backend/pom.xml verify
-	cd frontend && npm install && npm run typecheck && npm run build
+	cd frontend && if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run typecheck && npm run build
 	docker compose --profile app --profile smoke config
 	docker compose --progress plain --profile app build --no-cache frontend
 	docker compose --progress plain --profile app build --no-cache backend
