@@ -28,9 +28,18 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - Makefile;
 - `.dockerignore` raíz/frontend;
 - `.gitattributes` multiplataforma;
-- generadores Docker de `package-lock.json`;
 - configuradores coordinados de puertos Windows/Unix;
-- orquestador Docker Windows con clean builds, health, smoke y transcript;
+- wrappers compatibles de puerto PostgreSQL;
+- validador Docker Windows con clean builds, health y smoke;
+- evidencia Docker JSON y transcript;
+- backend Maven verify/Testcontainers contenedorizado para Windows/Unix;
+- caché Maven local en volumen Docker;
+- target Maven efímero y código montado en solo lectura;
+- generadores Docker de `package-lock.json`;
+- validador integral `scripts/validate-seg001.ps1`;
+- evidencia integral JSON y transcript;
+- escaneo centralizado del repositorio Windows/Unix;
+- targets Make `repository-safety`, `backend-verify-container` y `verify-container`;
 - `validation-output/` ignorado por Git;
 - CI con backend, frontend, scripts y stack E2E;
 - fixtures, Testcontainers y ArchUnit;
@@ -45,11 +54,16 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - preflight valida tres puertos válidos, distintos y coherentes;
 - smoke deriva URLs desde `.env`;
 - helpers de PostgreSQL delegan al configurador conjunto;
-- README presenta el validador Docker Windows como ruta principal;
+- README y quickstart usan el validador integral como ruta principal;
 - Dockerfile frontend usa `npm ci` cuando existe lockfile y `npm install` cuando falta;
 - CI y Makefile aplican la misma selección npm;
 - CI usa puertos alternativos para reducir conflictos;
+- CI parsea todos los scripts PowerShell nuevos;
+- CI ejecuta el escaneo centralizado de seguridad;
 - builds de cierre exigen `--no-cache`;
+- el validador integral exige `main` y archivos rastreados limpios;
+- el validador integral permite únicamente el cambio esperado de package-lock;
+- Maven verify puede ejecutarse sin Java instalado en el host;
 - contextos Docker excluyen secretos, datos y cachés;
 - puertos publicados solo en loopback;
 - resultados de importación ordenados por hoja/fila;
@@ -78,7 +92,10 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - conflicto del puerto PostgreSQL 5432 mediante puerto host configurable;
 - riesgo de BOM en `.env` PowerShell;
 - transición incompleta de helper PostgreSQL a preflight de tres puertos;
-- comandos Compose con `--progress` en posición correcta.
+- comandos Compose con `--progress` en posición correcta;
+- splatting de parámetros del validador integral PowerShell;
+- escaneo del lote operativo ampliado a cualquier subdirectorio;
+- generador de lockfile ya no crea node_modules ni ejecuta lifecycle scripts.
 
 ### Validation
 
@@ -94,7 +111,12 @@ Ejecución real acumulada:
 - arranque: `FAIL` por 5432;
 - puertos coordinados: implementados;
 - configurador Unix: `PASS_FUNCTIONAL_ISOLATED` preservando secretos ficticios, UTF-8 y guardas;
-- orquestador Windows: pendiente de ejecución;
+- backend verify Unix: `PASS_SYNTAX`;
+- generador lockfile seguro Unix: `PASS_SYNTAX`;
+- Make `backend-verify-container`: `PASS_PARSE`;
+- Make `verify-container`: `PASS_PARSE`;
+- CI YAML: `PASS_PARSE`;
+- validador integral Windows: pendiente de ejecución;
 - Maven/Testcontainers/Flyway/Hibernate/smoke: pendientes;
 - GitHub Actions: sin run visible desde el conector.
 
@@ -105,6 +127,7 @@ docs/validation/SEG-001-static-automation-2026-07-20.md
 docs/validation/SEG-001-container-build-2026-07-20.md
 docs/validation/SEG-001-rerun-2026-07-20.md
 docs/validation/SEG-001-local-orchestration-2026-07-20.md
+docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 ```
 
 ### Documentation
@@ -112,7 +135,11 @@ docs/validation/SEG-001-local-orchestration-2026-07-20.md
 - estado, backlog, siguiente paso, segmento y matriz sincronizados;
 - instalación Windows/Linux/macOS/Docker-only;
 - puertos variables y diagnóstico;
-- validador Docker de un comando;
+- validador Docker y validador integral;
+- Maven/Testcontainers sin Java local;
+- package-lock-only y npm ci;
+- formato de evidencia JSON/transcript;
+- escaneo de seguridad;
 - health, Swagger y autenticación;
 - flujo Dashboard → Exclusiones → Preview → Ejecución → Prospectos → Auditoría;
 - formatos y estados de importación;
@@ -131,16 +158,21 @@ docs/validation/SEG-001-local-orchestration-2026-07-20.md
 - servicios solo en localhost;
 - smoke realiza lecturas;
 - scripts de puertos preservan contraseñas;
+- lockfile se genera con lifecycle scripts deshabilitados;
+- `node_modules` inesperado produce fallo;
+- scripts de seguridad bloquean `.env`, evidencia, datos privados, lote, claves y credenciales rastreados;
 - transcripts locales fuera de Git;
-- CI usa credenciales ficticias y elimina su volumen.
+- CI usa credenciales ficticias y elimina su volumen;
+- verificación backend con socket Docker documentada como operación privilegiada sobre código confiable.
 
 ### Known limitations
 
 - frontend/backend clean builds pendientes;
-- PowerShell nuevo pendiente de ejecución real;
+- scripts PowerShell nuevos pendientes de ejecución real;
 - Maven, tests, migraciones y smoke no están verdes;
 - falta `package-lock.json` versionado;
-- npm ci está preparado, pero depende del lockfile;
+- npm ci está preparado, pero pendiente de evidencia real;
+- GitHub Actions no muestra runs visibles;
 - HTTP Basic temporal;
 - revisiones sin resolución y jobs sin retry;
 - sin campañas, Gmail, Sheets o cloud;
