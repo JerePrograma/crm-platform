@@ -6,7 +6,7 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 
 Todo el código y la documentación vigentes están consolidados en `main`.
 
-`SEG-001 — Vertical slice persistente de prospectos` está funcionalmente implementado y endurecido mediante revisión estática. Continúa abierto hasta obtener evidencia ejecutada de Maven, Testcontainers, Flyway, Hibernate, frontend, Compose e imagen Docker.
+`SEG-001 — Vertical slice persistente de prospectos` está implementado y endurecido mediante revisión estática. Continúa abierto hasta obtener evidencia ejecutada de Maven, Testcontainers, Flyway, Hibernate, frontend, Compose, imágenes y smoke test.
 
 El sistema incluye:
 
@@ -20,7 +20,8 @@ El sistema incluye:
 - auditoría JSONB;
 - API REST, OpenAPI y RFC 7807;
 - interfaz React, TypeScript y Vite;
-- Docker, Docker Compose, GitHub Actions y Testcontainers.
+- Docker Compose para PostgreSQL, backend y frontend;
+- GitHub Actions, Testcontainers, preflight y smoke tests.
 
 Estado detallado: `docs/status.md`.
 
@@ -37,15 +38,15 @@ SENDING_KILL_SWITCH=true
 
 PostgreSQL inicializa además un kill switch persistente. Ninguna operación disponible puede enviar mensajes.
 
-## Inicio rápido
+## Inicio rápido recomendado: todo con Docker
 
 ### Requisitos
 
 - Git;
-- Java 21;
-- Docker con Compose v2;
-- Node.js 22 y npm;
-- `curl` o `wget`, `unzip` y SHA-512 para el primer uso del Maven Wrapper.
+- Docker Desktop o Docker Engine;
+- Docker Compose v2.
+
+Java, Node y Maven no son necesarios en el host para esta modalidad.
 
 ### 1. Clonar `main`
 
@@ -70,18 +71,136 @@ Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
-Editar `.env` y cambiar al menos `CRM_BOOTSTRAP_PASSWORD`. Mantener cerradas las cuatro variables de envío.
+Editar `.env` y definir credenciales locales:
 
-### 3. Levantar PostgreSQL
+```dotenv
+POSTGRES_DB=gestudio_crm
+DATABASE_URL=jdbc:postgresql://localhost:5432/gestudio_crm
+DATABASE_USER=gestudio
+DATABASE_PASSWORD=gestudio_local_only
+CRM_BOOTSTRAP_USERNAME=gestudio-admin
+CRM_BOOTSTRAP_PASSWORD=una-clave-local-segura
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
+PORT=8080
+```
+
+No modificar las cuatro guardas de envío.
+
+### 3. Ejecutar preflight
+
+Linux/macOS:
+
+```bash
+sh scripts/preflight.sh --container-only
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
+```
+
+Con Make:
+
+```bash
+make preflight-container
+```
+
+### 4. Construir e iniciar
+
+```bash
+docker compose --profile app up -d --build
+```
+
+Con Make:
+
+```bash
+make app-up
+```
+
+Servicios publicados solo en localhost:
+
+```text
+PostgreSQL  127.0.0.1:5432
+Backend     127.0.0.1:8080
+Frontend    127.0.0.1:5173
+```
+
+Comprobar:
+
+```bash
+docker compose --profile app ps
+docker compose --profile app logs -f
+```
+
+### 5. Abrir
+
+```text
+http://localhost:5173
+```
+
+Ingresar con `CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`.
+
+Health:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+Swagger autenticado:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+### 6. Ejecutar smoke test
+
+Linux/macOS:
+
+```bash
+sh scripts/smoke-test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
+```
+
+Con Make:
+
+```bash
+make smoke
+```
+
+Guía específica: `docs/containerized-quickstart.md`.
+
+## Desarrollo con procesos separados
+
+Esta modalidad requiere:
+
+- Java 21;
+- Docker con Compose v2;
+- Node.js 22 y npm;
+- `curl` o `wget`, `unzip` y SHA-512 para Maven Wrapper.
+
+Preflight:
+
+```bash
+sh scripts/preflight.sh --local
+```
+
+### PostgreSQL
 
 ```bash
 docker compose up -d postgres
 docker compose ps
 ```
 
-Compose y el backend consumen el mismo `DATABASE_USER`, `DATABASE_PASSWORD` y `POSTGRES_DB` desde `.env`.
-
-### 4. Levantar backend
+### Backend
 
 Linux/macOS:
 
@@ -101,19 +220,7 @@ Get-Content .env | ForEach-Object {
 .\mvnw.cmd -f backend\pom.xml spring-boot:run
 ```
 
-Health:
-
-```text
-http://localhost:8080/actuator/health
-```
-
-Swagger, con autenticación Basic:
-
-```text
-http://localhost:8080/swagger-ui/index.html
-```
-
-### 5. Levantar frontend
+### Frontend
 
 En otra terminal:
 
@@ -123,19 +230,9 @@ npm install
 npm run dev
 ```
 
-Abrir:
+Abrir `http://localhost:5173`.
 
-```text
-http://localhost:5173
-```
-
-Ingresar con `CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`.
-
-La guía completa, incluyendo comprobaciones, troubleshooting, detención y flujo funcional, está en:
-
-```text
-docs/local-development-and-usage.md
-```
+Guía completa: `docs/local-development-and-usage.md`.
 
 ## Flujo operativo recomendado
 
@@ -163,7 +260,7 @@ X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
 - CSV requiere al menos el encabezado `Institución`;
 - el parser trabaja por encabezados normalizados, no por posiciones fijas.
 
-Contrato completo:
+Contratos:
 
 - `docs/import-existing-data.md`;
 - `docs/import-hardening.md`.
@@ -188,7 +285,22 @@ GET  /api/v1/exclusions/{id}
 GET  /api/v1/audit
 ```
 
-## Validación
+## Automatización local
+
+```bash
+make preflight
+make preflight-container
+make db-up
+make app-up
+make app-logs
+make smoke
+make verify
+make app-down
+```
+
+Detalles: `scripts/README.md`.
+
+## Validación completa
 
 Linux/macOS:
 
@@ -201,8 +313,15 @@ npm run typecheck
 npm run build
 cd ..
 
-docker compose config
+docker compose --profile app config
 docker build -t gestudio-crm:local .
+docker build -f frontend/Dockerfile -t gestudio-crm-frontend:local frontend
+```
+
+Con Make:
+
+```bash
+make verify
 ```
 
 Windows PowerShell:
@@ -216,8 +335,9 @@ npm run typecheck
 npm run build
 Pop-Location
 
-docker compose config
+docker compose --profile app config
 docker build -t gestudio-crm:local .
+docker build -f frontend/Dockerfile -t gestudio-crm-frontend:local frontend
 ```
 
 Las pruebas de integración requieren Docker porque utilizan PostgreSQL mediante Testcontainers.
@@ -226,18 +346,22 @@ La evidencia real se registra exclusivamente en `docs/validation/SEG-001.md`.
 
 ## Detener el entorno
 
-Detener backend y frontend con `Ctrl+C`.
-
-Conservar base local:
+Stack completo, conservando datos:
 
 ```bash
-docker compose down
+docker compose --profile app down
+```
+
+Solo PostgreSQL:
+
+```bash
+docker compose stop postgres
 ```
 
 Eliminar también la base local:
 
 ```bash
-docker compose down -v
+docker compose --profile app down -v
 ```
 
 `down -v` destruye los datos del volumen.
@@ -245,12 +369,24 @@ docker compose down -v
 ## Limitaciones actuales
 
 - `SEG-001` no debe declararse completo sin CI o validación local verde;
-- falta `package-lock.json` hasta ejecutar `npm install` en un entorno con registro disponible;
+- falta `package-lock.json` hasta ejecutar `npm install` con registro disponible;
 - HTTP Basic es temporal;
 - no existen usuarios persistentes ni RBAC;
 - no existe resolución desde UI de `DuplicateReview`;
 - no existe retry explícito de trabajos fallidos;
-- no existen campañas, Gmail, Sheets, workers ni infraestructura cloud.
+- no existen campañas, Gmail, Sheets, workers ni infraestructura cloud;
+- el stack Compose es local y no constituye un despliegue de producción.
+
+## Documentación
+
+- `docs/README.md` — índice completo;
+- `docs/containerized-quickstart.md` — stack completo con Docker;
+- `docs/local-development-and-usage.md` — procesos separados y flujo funcional;
+- `scripts/README.md` — preflight, smoke test y Makefile;
+- `docs/status.md` — estado real;
+- `docs/next-step.md` — trabajo siguiente;
+- `docs/backlog.md` — tareas y segmentos;
+- `docs/validation/SEG-001.md` — evidencia.
 
 ## Continuidad
 
