@@ -6,35 +6,43 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 
 Todo el código y la documentación vigentes están consolidados en `main`.
 
-`SEG-001 — Vertical slice persistente de prospectos` está implementado. El primer preflight Docker real pasó y el build frontend reprodujo tres errores TypeScript, ya corregidos en `main`. Continúa abierto hasta reconstruir frontend, compilar backend, ejecutar migraciones/tests y completar smoke E2E.
+`SEG-001 — Vertical slice persistente de prospectos` está implementado. La validación real produjo:
+
+- preflight Docker: `PASS`;
+- primer build frontend: `FAIL` con tres errores TypeScript;
+- errores frontend: corregidos en `main`;
+- imágenes frontend/backend: exportadas desde caché;
+- stack: bloqueado por el puerto host PostgreSQL 5432;
+- puerto PostgreSQL configurable: corregido en `main`;
+- build limpio, stack, migraciones, tests y smoke: pendientes.
 
 Evidencias:
 
 ```text
 docs/validation/SEG-001.md
 docs/validation/SEG-001-container-build-2026-07-20.md
+docs/validation/SEG-001-rerun-2026-07-20.md
 ```
 
 El sistema incluye:
 
 - backend Java 21 y Spring Boot;
-- PostgreSQL 17, Flyway V1–V5 y JPA `validate`;
+- PostgreSQL 17, Flyway V1–V5 y JPA validate;
 - instituciones, contactos, canales, prospectos y exclusiones;
 - normalización, elegibilidad y deduplicación exacta/ambigua;
 - importaciones CSV/XLSX persistentes e idempotentes;
-- preview con paridad de validación y ejecución confirmada;
-- evidencia por fila y cola de revisión humana;
+- preview, ejecución confirmada y evidencia por fila;
 - auditoría JSONB;
 - API REST, OpenAPI y RFC 7807;
-- interfaz React, TypeScript y Vite;
-- Docker Compose para PostgreSQL, backend, frontend y smoke;
+- React, TypeScript y Vite;
+- Compose para PostgreSQL, backend, frontend y smoke;
 - GitHub Actions, Testcontainers, preflight y smoke tests.
 
 Estado detallado: `docs/status.md`.
 
 ## Seguridad de envío
 
-No existe ningún adaptador de correo, Gmail o SMTP. Los valores obligatorios son:
+No existe adaptador de correo, Gmail o SMTP. Valores obligatorios:
 
 ```text
 SENDING_ENABLED=false
@@ -43,9 +51,9 @@ SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
 ```
 
-PostgreSQL inicializa además un kill switch persistente. Ninguna operación disponible puede enviar mensajes.
+PostgreSQL contiene además un kill switch persistente. Ninguna operación disponible puede enviar mensajes.
 
-## Inicio rápido recomendado: todo con Docker
+## Inicio rápido recomendado: Docker
 
 ### Requisitos
 
@@ -68,12 +76,18 @@ git rev-parse HEAD
 En un checkout existente:
 
 ```bash
-git switch main
-git fetch origin
+git status
+git diff -- mvnw.cmd
 git pull --ff-only
 ```
 
-### 2. Crear configuración local
+Restaurar `mvnw.cmd` únicamente si su modificación local no fue intencional:
+
+```bash
+git restore -- mvnw.cmd
+```
+
+### 2. Crear o actualizar `.env`
 
 Linux/macOS:
 
@@ -87,15 +101,18 @@ Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
-No sobrescribir `.env` si ya contiene credenciales locales válidas.
+No sobrescribir `.env` si ya contiene credenciales válidas.
 
-Editar `.env`:
+Configuración recomendada:
 
 ```dotenv
 POSTGRES_DB=gestudio_crm
-DATABASE_URL=jdbc:postgresql://localhost:5432/gestudio_crm
+POSTGRES_HOST_PORT=55432
+DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
 DATABASE_USER=gestudio
 DATABASE_PASSWORD=gestudio_local_only
+DATABASE_POOL_SIZE=10
+DATABASE_MIN_IDLE=1
 CRM_BOOTSTRAP_USERNAME=gestudio-admin
 CRM_BOOTSTRAP_PASSWORD=una-clave-local-segura
 SENDING_ENABLED=false
@@ -105,7 +122,7 @@ SENDING_KILL_SWITCH=true
 PORT=8080
 ```
 
-No modificar las cuatro guardas de envío.
+`POSTGRES_HOST_PORT` afecta únicamente al host. El backend contenedorizado conecta internamente a `postgres:5432`.
 
 ### 3. Ejecutar preflight
 
@@ -115,7 +132,7 @@ Linux/macOS:
 sh scripts/preflight.sh --container-only
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
@@ -127,21 +144,26 @@ Con Make:
 make preflight-container
 ```
 
-### 4. Reconstruir después de las correcciones frontend
+### 4. Build limpio de validación
 
-Para obtener errores aislados y claros:
+Frontend:
 
 ```bash
-docker compose --profile app build frontend --progress=plain
-docker compose --profile app build backend --progress=plain
+docker compose --progress plain --profile app build --no-cache frontend
 ```
 
-Windows PowerShell usa los mismos comandos.
-
-### 5. Construir e iniciar el stack
+Backend:
 
 ```bash
-docker compose --profile app up -d --build
+docker compose --progress plain --profile app build --no-cache backend
+```
+
+`--progress` es una opción global y debe ir antes de `build`.
+
+### 5. Levantar
+
+```bash
+docker compose --profile app up -d
 docker compose --profile app ps
 ```
 
@@ -151,10 +173,10 @@ Con Make:
 make app-up
 ```
 
-Servicios publicados solo en localhost:
+Puertos:
 
 ```text
-PostgreSQL  127.0.0.1:5432
+PostgreSQL  127.0.0.1:55432
 Backend     127.0.0.1:8080
 Frontend    127.0.0.1:5173
 ```
@@ -175,7 +197,7 @@ Swagger:  http://localhost:8080/swagger-ui/index.html
 
 Ingresar con `CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`.
 
-### 7. Ejecutar smoke test
+### 7. Smoke
 
 Linux/macOS:
 
@@ -183,7 +205,7 @@ Linux/macOS:
 sh scripts/smoke-test.sh
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
@@ -193,17 +215,12 @@ Con Make:
 
 ```bash
 make smoke
-```
-
-Smoke completamente contenedorizado:
-
-```bash
 make smoke-container
 ```
 
-Guía específica: `docs/containerized-quickstart.md`.
+Guía completa: `docs/containerized-quickstart.md`.
 
-## Generar `package-lock.json` sin Node local
+## Generar package-lock sin Node local
 
 Linux/macOS:
 
@@ -211,7 +228,7 @@ Linux/macOS:
 sh scripts/generate-frontend-lock.sh
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
@@ -223,7 +240,7 @@ Con Make:
 make frontend-lock
 ```
 
-Después revisar:
+Revisar:
 
 ```bash
 git status --short
@@ -234,12 +251,7 @@ El lockfile debe versionarse antes de cambiar Dockerfile y CI a `npm ci`.
 
 ## Desarrollo con procesos separados
 
-Requiere:
-
-- Java 21;
-- Docker con Compose v2;
-- Node.js 22 y npm;
-- `curl` o `wget`, `unzip` y SHA-512 para Maven Wrapper.
+Requiere Java 21, Docker, Node 22 y npm.
 
 Preflight:
 
@@ -247,23 +259,21 @@ Preflight:
 sh scripts/preflight.sh --local
 ```
 
-### PostgreSQL
+PostgreSQL:
 
 ```bash
 docker compose up -d postgres
 docker compose ps
 ```
 
-### Backend
-
-Linux/macOS:
+Backend Linux/macOS:
 
 ```bash
 set -a && . ./.env && set +a
 sh ./mvnw -f backend/pom.xml spring-boot:run
 ```
 
-Windows PowerShell:
+Backend Windows:
 
 ```powershell
 Get-Content .env | ForEach-Object {
@@ -274,7 +284,7 @@ Get-Content .env | ForEach-Object {
 .\mvnw.cmd -f backend\pom.xml spring-boot:run
 ```
 
-### Frontend
+Frontend:
 
 ```bash
 cd frontend
@@ -284,42 +294,35 @@ npm run dev
 
 Abrir `http://localhost:5173`.
 
-Guía completa: `docs/local-development-and-usage.md`.
+## Flujo operativo
 
-## Flujo operativo recomendado
-
-1. ingresar al Dashboard y comprobar que los envíos figuran bloqueados;
-2. registrar en `Exclusiones` los canales que no deben contactarse;
-3. preparar un CSV o XLSX de hasta 10 MB;
-4. ejecutar `Preview` desde `Importaciones`;
-5. revisar filas `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
-6. corregir el archivo cuando corresponda;
+1. ingresar al Dashboard y comprobar envíos bloqueados;
+2. registrar canales en `Exclusiones`;
+3. preparar CSV o XLSX de hasta 10 MB;
+4. ejecutar `Preview`;
+5. revisar `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
+6. corregir el archivo;
 7. ejecutar `Importar con confirmación`;
-8. revisar prospectos, elegibilidad y resumen, incluida la métrica `Bloqueadas`;
-9. comprobar eventos en `Auditoría`.
+8. revisar prospectos, elegibilidad y métrica `Bloqueadas`;
+9. revisar `Auditoría`.
 
-La ejecución requiere confirmación en la UI y la cabecera:
+La ejecución exige:
 
 ```text
 X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
 ```
 
-## Formatos de importación
+## Formatos
 
-- CSV UTF-8 separado por coma o punto y coma;
+- CSV UTF-8 con coma o punto y coma;
 - XLSX con hoja `Prospectos` y hoja opcional `Exclusiones`;
-- tamaño máximo: 10 MB;
-- CSV requiere al menos `Institución`;
+- máximo 10 MB;
+- CSV requiere `Institución`;
 - parser por encabezados normalizados.
 
-Contratos:
+Los datos reales no se versionan.
 
-- `docs/import-existing-data.md`;
-- `docs/import-hardening.md`.
-
-Los datos operativos reales no se versionan.
-
-## API implementada
+## API
 
 ```text
 GET  /actuator/health
@@ -337,7 +340,7 @@ GET  /api/v1/exclusions/{id}
 GET  /api/v1/audit
 ```
 
-## Automatización local
+## Automatización
 
 ```bash
 make preflight
@@ -356,42 +359,30 @@ Detalles: `scripts/README.md`.
 
 ## Validación completa
 
-Backend:
+Backend Linux/macOS:
 
 ```bash
 sh ./mvnw -B -f backend/pom.xml verify
 ```
 
-Windows:
+Backend Windows:
 
 ```powershell
 .\mvnw.cmd -B -f backend\pom.xml verify
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm install
-npm run typecheck
-npm run build
-cd ..
 ```
 
 Infraestructura:
 
 ```bash
 docker compose --profile app --profile smoke config
-docker build -t gestudio-crm:local .
-docker build -f frontend/Dockerfile -t gestudio-crm-frontend:local frontend
+docker compose --progress plain --profile app build --no-cache frontend
+docker compose --progress plain --profile app build --no-cache backend
 make smoke-container
 ```
 
-Las pruebas de integración requieren Docker porque utilizan PostgreSQL mediante Testcontainers.
+Testcontainers requiere Docker.
 
-La evidencia real se registra en `docs/validation/SEG-001.md`.
-
-## Detener el entorno
+## Detener
 
 Conservar datos:
 
@@ -399,49 +390,34 @@ Conservar datos:
 docker compose --profile app down
 ```
 
-Eliminar también la base local:
+Eliminar también la base:
 
 ```bash
 docker compose --profile app --profile smoke down -v --remove-orphans
 ```
 
-`down -v` destruye los datos del volumen.
+`down -v` destruye el volumen.
 
 ## Limitaciones actuales
 
-- frontend corregido pendiente de reejecución;
-- backend, Flyway, Hibernate, tests y smoke aún no alcanzados por el primer build;
-- falta `package-lock.json`;
-- Dockerfile/CI usan `npm install` hasta versionar el lockfile;
-- HTTP Basic es temporal;
-- no existen usuarios persistentes ni RBAC;
-- no existe resolución desde UI de `DuplicateReview`;
-- no existe retry explícito de trabajos fallidos;
-- no existen campañas, Gmail, Sheets, workers ni infraestructura cloud;
-- el stack Compose es local, no producción.
+- builds limpios posteriores a las correcciones pendientes;
+- stack bloqueado previamente por 5432, pendiente de reejecución con 55432;
+- Flyway, Hibernate, tests y smoke pendientes;
+- falta package-lock;
+- Dockerfile/CI usan npm install hasta versionarlo;
+- HTTP Basic temporal;
+- sin usuarios persistentes/RBAC;
+- sin resolución UI de DuplicateReview;
+- sin retry de trabajos fallidos;
+- sin campañas, Gmail, Sheets, workers o cloud;
+- Compose es local, no producción.
 
 ## Documentación
 
-- `docs/README.md` — índice completo;
-- `docs/containerized-quickstart.md` — stack completo con Docker;
-- `docs/local-development-and-usage.md` — procesos separados y flujo funcional;
-- `scripts/README.md` — preflight, smoke, lockfile y Makefile;
+- `docs/README.md` — índice;
 - `docs/status.md` — estado real;
-- `docs/next-step.md` — reejecución inmediata;
-- `docs/backlog.md` — tareas y segmentos;
-- `docs/validation/SEG-001.md` — matriz;
-- `docs/validation/SEG-001-container-build-2026-07-20.md` — primer build real.
-
-## Continuidad
-
-Antes de modificar el proyecto, leer:
-
-1. `AGENTS.md`;
-2. `docs/status.md`;
-3. `docs/next-step.md`;
-4. `docs/backlog.md`;
-5. `docs/segments/SEG-001.md`;
-6. `docs/validation/SEG-001.md`;
-7. ADR y documentación del módulo afectado.
-
-La instrucción `continuar` ejecuta el trabajo indicado en `docs/next-step.md` y actualiza toda la documentación canónica al finalizar.
+- `docs/next-step.md` — siguiente acción;
+- `docs/containerized-quickstart.md` — Docker;
+- `docs/local-development-and-usage.md` — procesos separados;
+- `scripts/README.md` — automatización;
+- `docs/validation/SEG-001.md` — matriz.
