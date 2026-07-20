@@ -31,9 +31,9 @@ if ($health.status -ne 'UP') {
 
 $pair = "$($env:CRM_BOOTSTRAP_USERNAME):$($env:CRM_BOOTSTRAP_PASSWORD)"
 $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pair))
-$prospects = Invoke-RestMethod \
-  -Uri "$backendUrl/api/v1/prospects?size=1" \
-  -Headers @{ Authorization = "Basic $encoded" }
+$prospects = Invoke-RestMethod -Uri "$backendUrl/api/v1/prospects?size=1" -Headers @{
+  Authorization = "Basic $encoded"
+}
 if ($null -eq $prospects.content) {
   Fail 'Authenticated prospects response does not contain a page'
 }
