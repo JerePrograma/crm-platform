@@ -6,9 +6,7 @@
 
 ## Alcance
 
-Controles ejecutados localmente sobre representaciones exactas de los archivos versionados de automatización y configuración.
-
-No sustituyen Docker, compilación, tests o smoke test real.
+Controles ejecutados sobre representaciones exactas de archivos versionados. No sustituyen Docker, compilación, tests o smoke real.
 
 ## Entorno disponible
 
@@ -21,71 +19,43 @@ Docker/Compose: no disponible
 Maven: no disponible
 ```
 
-## Controles ejecutados
+## Docker Compose
 
-### Docker Compose — parseo YAML
-
-Se cargó el contenido actualizado de `docker-compose.yml` con PyYAML.
-
-Resultado:
+Se cargó el contenido actualizado con PyYAML.
 
 ```text
 PASS
-services presentes: postgres, backend, frontend, smoke
-dependencia smoke -> frontend healthy: presente
+services: postgres, backend, frontend, smoke
+postgres port: 127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432
+backend database: postgres:5432
+smoke depende de frontend healthy
 ```
 
-Este control confirma estructura YAML básica y relaciones declaradas. No equivale a `docker compose --profile app --profile smoke config`.
+Confirma estructura YAML, no `docker compose config` semántico.
 
-### GitHub Actions — parseo YAML
+## GitHub Actions
 
-Se cargó `.github/workflows/ci.yml` con PyYAML y se verificaron los jobs esperados.
-
-Resultado:
+Se cargó el workflow y se verificaron jobs y pasos.
 
 ```text
 PASS
 jobs: backend, frontend, scripts, compose-images-and-smoke
-paso Run containerized smoke test: presente
-validación de scripts de lockfile: presente
+smoke E2E: presente
+scripts lockfile: presentes
+scripts PostgreSQL port: presentes
 ```
 
-Este control no confirma que las actions externas, imágenes o comandos ejecuten correctamente.
+No confirma ejecución de actions externas.
 
-### Scripts Unix — sintaxis inicial
+## Scripts Unix
+
+Sintaxis ejecutada:
 
 ```bash
 sh -n scripts/preflight.sh
 sh -n scripts/smoke-test.sh
-```
-
-Resultado:
-
-```text
-preflight.sh: PASS
-smoke-test.sh: PASS
-```
-
-### Generación de lockfile — sintaxis Unix
-
-Se reprodujo el contenido exacto de `scripts/generate-frontend-lock.sh` y se ejecutó:
-
-```bash
 sh -n scripts/generate-frontend-lock.sh
-```
-
-Resultado:
-
-```text
-generate-frontend-lock.sh: PASS
-```
-
-El control confirma sintaxis shell. No ejecutó Docker ni npm.
-
-### Makefile — parseo inicial
-
-```bash
-make -n preflight-container app-up verify smoke
+sh -n scripts/set-postgres-host-port.sh
 ```
 
 Resultado:
@@ -94,10 +64,32 @@ Resultado:
 PASS
 ```
 
-### Makefile — smoke y lockfile
+## Prueba funcional del actualizador Unix
+
+Se ejecutó `set-postgres-host-port.sh 55432` sobre un `.env` temporal con:
+
+- contraseña de base ficticia;
+- contraseña bootstrap con caracteres no ASCII;
+- cuatro guardas de envío.
+
+Resultado:
+
+```text
+POSTGRES_HOST_PORT añadido: PASS
+DATABASE_URL actualizado: PASS
+POSTGRES_DB preservado: PASS
+DATABASE_PASSWORD preservada: PASS
+CRM_BOOTSTRAP_PASSWORD preservada: PASS
+SENDING_* preservadas: PASS
+UTF-8 preservado: PASS
+```
+
+## Makefile
+
+Comando:
 
 ```bash
-make -n frontend-lock smoke-container
+make -n postgres-port verify smoke-container
 ```
 
 Resultado:
@@ -109,34 +101,35 @@ PASS
 Recetas expandidas:
 
 ```text
-sh scripts/generate-frontend-lock.sh
-set -eu; trap cleanup; docker compose ... smoke
+sh scripts/set-postgres-host-port.sh 55432
+mvn verify
+frontend install/typecheck/build
+Compose config
+frontend clean build
+backend clean build
+smoke contenedorizado con cleanup
 ```
-
-Los controles Make confirman que se interpretan targets y recetas. No ejecutan Docker, Maven o npm.
 
 ## Evidencia real separada
 
-El preflight PowerShell container-only y el primer build Docker sí se ejecutaron en un entorno Windows externo. Su evidencia está en:
-
 ```text
 docs/validation/SEG-001-container-build-2026-07-20.md
+docs/validation/SEG-001-rerun-2026-07-20.md
 ```
 
-Esta evidencia estática no duplica ni reemplaza esa ejecución.
+La evidencia real confirma preflight, npm install, fallo TypeScript, imágenes cacheadas y conflicto del puerto 5432.
 
 ## Controles no ejecutados en este entorno
 
-- sintaxis PowerShell, porque `pwsh` no está instalado;
-- ejecución real de `generate-frontend-lock.ps1`;
-- `docker compose config` semántico;
-- build frontend después de los commits correctivos;
-- build backend;
-- ejecución del servicio `smoke`;
+- parser PowerShell de los scripts nuevos;
+- ejecución real de `set-postgres-host-port.ps1`;
+- preflight con puerto 55432 en Windows;
+- Docker Compose config semántico;
+- builds sin caché;
 - Maven/Spotless/tests;
 - Flyway/Hibernate/Testcontainers;
-- stack completo.
+- stack y smoke.
 
 ## Conclusión
 
-Compose, CI, scripts Unix y Makefile superaron los controles estáticos disponibles. Esto incluye el nuevo generador de lockfile y el target `frontend-lock`. SEG-001 continúa pendiente de reejecución funcional después de las correcciones frontend.
+La estructura Compose/CI, shell, Makefile y el actualizador Unix superaron los controles disponibles. El puerto PostgreSQL configurable y la preservación de secretos/guardas están demostrados en Unix. Windows y la matriz funcional completa continúan pendientes de reejecución.
