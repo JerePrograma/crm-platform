@@ -12,16 +12,17 @@
 
 ## Evidencias SEG-001
 
-- `validation/SEG-001-static-automation-2026-07-20.md` — YAML, shell y Make;
+- `validation/SEG-001-static-automation-2026-07-20.md` — YAML, shell, Make y controles aislados;
 - `validation/SEG-001-container-build-2026-07-20.md` — primer build real y errores TypeScript;
 - `validation/SEG-001-rerun-2026-07-20.md` — exportación cacheada y conflicto 5432;
-- `validation/SEG-001-local-orchestration-2026-07-20.md` — tres puertos, orquestador Docker y npm ci condicional.
+- `validation/SEG-001-local-orchestration-2026-07-20.md` — tres puertos, orquestador Docker y npm ci condicional;
+- `validation/SEG-001-complete-validation-automation-2026-07-20.md` — Maven/Testcontainers contenedorizado, lockfile seguro, seguridad y validador integral.
 
 ## Inicio y operación
 
-- `containerized-quickstart.md` — stack completo con Docker Compose;
+- `containerized-quickstart.md` — validación integral y stack Docker;
 - `local-development-and-usage.md` — procesos separados y flujo funcional;
-- `../scripts/README.md` — puertos, preflight, validador Docker, smoke, lockfile y Makefile;
+- `../scripts/README.md` — puertos, preflight, validadores, Maven Docker, smoke, lockfile, seguridad y Makefile;
 - `manual-operations.md` — procedimientos operativos diarios;
 - `runbook.md` — respuesta ante incidentes;
 - `disaster-recovery.md` — backups y restauración;
@@ -46,7 +47,9 @@
 - `security.md` — postura técnica y brechas;
 - `campaign-safety.md` — guardas futuras;
 - `../SECURITY.md` — reporte de vulnerabilidades;
-- `gmail-deliverability.md` — diseño futuro de entregabilidad.
+- `gmail-deliverability.md` — diseño futuro de entregabilidad;
+- `../scripts/check-repository-safety.ps1` — escaneo local Windows;
+- `../scripts/check-repository-safety.sh` — escaneo local Unix.
 
 ## Datos e integraciones
 
@@ -63,12 +66,13 @@
 
 ## Lectura recomendada
 
-### Ejecutar el siguiente paso en Windows
+### Ejecutar validación integral en Windows
 
 1. `next-step.md`;
 2. `../scripts/README.md`;
-3. `validation/SEG-001.md`;
-4. `validation/SEG-001-local-orchestration-2026-07-20.md`.
+3. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
+4. `validation/SEG-001.md`;
+5. `containerized-quickstart.md`.
 
 ### Levantar todo con Docker
 
@@ -88,10 +92,11 @@
 
 1. `validation/SEG-001.md`;
 2. `next-step.md`;
-3. `validation/SEG-001-container-build-2026-07-20.md`;
-4. `validation/SEG-001-rerun-2026-07-20.md`;
-5. `validation/SEG-001-local-orchestration-2026-07-20.md`;
-6. `containerized-quickstart.md`.
+3. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
+4. `validation/SEG-001-container-build-2026-07-20.md`;
+5. `validation/SEG-001-rerun-2026-07-20.md`;
+6. `validation/SEG-001-local-orchestration-2026-07-20.md`;
+7. `containerized-quickstart.md`.
 
 ### Continuar desarrollo
 
@@ -114,7 +119,8 @@
 1. `security.md`;
 2. `campaign-safety.md`;
 3. `../SECURITY.md`;
-4. ADR 0004.
+4. `../scripts/check-repository-safety.ps1` o `.sh`;
+5. ADR 0004.
 
 ## Regla de precedencia
 
