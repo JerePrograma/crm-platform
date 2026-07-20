@@ -11,6 +11,7 @@ import com.gestudio.crm.prospect.ProspectApplicationService;
 import com.gestudio.crm.prospect.ProspectApplicationService.CreateProspectCommand;
 import com.gestudio.crm.prospect.ProspectRepository;
 import com.gestudio.crm.prospect.ProspectStatus;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,6 +116,25 @@ class ProspectImportIntegrationTest {
                 "SELECT count(*) FROM audit_event WHERE action = 'EXCLUSION_CREATED'",
                 Integer.class))
         .isEqualTo(1);
+  }
+
+  @Test
+  void malformedEmailRejectsOnlyItsRowAndKeepsTheJobCompleted() {
+    byte[] csv =
+        ("Institución,Correo publicado,Localidad\n"
+                + "Academia inválida,not-an-email,Córdoba\n")
+            .getBytes(StandardCharsets.UTF_8);
+
+    ImportSummary summary = prospectImportService.importFile("malformed-email.csv", csv, false);
+
+    ImportRow row = importRowRepository.findAll().getFirst();
+    assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
+    assertThat(summary.totalRows()).isEqualTo(1);
+    assertThat(summary.rejectedRows()).isEqualTo(1);
+    assertThat(row.getStatus()).isEqualTo(ImportRow.Status.REJECTED);
+    assertThat(row.getNormalizedEmail()).isNull();
+    assertThat(row.getErrorMessage()).contains("Invalid email address");
+    assertThat(prospectRepository.count()).isZero();
   }
 
   private CreateProspectCommand existingProspectCommand() {
