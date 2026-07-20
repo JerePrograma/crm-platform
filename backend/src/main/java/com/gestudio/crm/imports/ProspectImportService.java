@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class ProspectImportService {
 
   private static final int MAX_IMPORT_BYTES = 10 * 1024 * 1024;
+  private static final int MAX_FILE_NAME_LENGTH = 255;
 
   private final ProspectImportFileParser parser;
   private final ProspectImportRowProcessor rowProcessor;
@@ -34,12 +35,13 @@ public class ProspectImportService {
   }
 
   public ImportSummary importFile(String fileName, byte[] bytes, boolean dryRun) {
-    validateFile(fileName, bytes);
-    SourceType sourceType = sourceType(fileName);
+    String safeFileName = safeFileName(fileName);
+    validateFile(safeFileName, bytes);
+    SourceType sourceType = sourceType(safeFileName);
     String sha256 = sha256(bytes);
     String idempotencyKey = "prospects:" + sha256 + ":dryRun=" + dryRun;
     StartResult start =
-        lifecycleService.start(fileName, sha256, idempotencyKey, sourceType, dryRun);
+        lifecycleService.start(safeFileName, sha256, idempotencyKey, sourceType, dryRun);
     if (start.existing()) {
       return start.summary();
     }
@@ -47,7 +49,7 @@ public class ProspectImportService {
     UUID jobId = start.jobId();
     MutableCounters counters = new MutableCounters();
     try {
-      ParsedImport parsed = parser.parse(fileName, bytes);
+      ParsedImport parsed = parser.parse(safeFileName, bytes);
       for (ExclusionCandidate exclusion : parsed.exclusions()) {
         counters.total++;
         try {
@@ -75,6 +77,28 @@ public class ProspectImportService {
 
   public ImportSummary getSummary(UUID jobId) {
     return lifecycleService.getSummary(jobId);
+  }
+
+  private String safeFileName(String fileName) {
+    if (fileName == null || fileName.isBlank()) {
+      throw new IllegalArgumentException("Import file name is required");
+    }
+    String normalizedPath = fileName.replace('\\', '/');
+    String baseName = normalizedPath.substring(normalizedPath.lastIndexOf('/') + 1).trim();
+    baseName = baseName.replaceAll("[\\p{Cntrl}]", "_");
+    if (baseName.isBlank()) {
+      throw new IllegalArgumentException("Import file name is required");
+    }
+    if (baseName.length() <= MAX_FILE_NAME_LENGTH) {
+      return baseName;
+    }
+    int extensionIndex = baseName.lastIndexOf('.');
+    String extension = extensionIndex < 0 ? "" : baseName.substring(extensionIndex);
+    int stemLength = MAX_FILE_NAME_LENGTH - extension.length();
+    if (stemLength <= 0) {
+      throw new IllegalArgumentException("Import file name extension is too long");
+    }
+    return baseName.substring(0, stemLength) + extension;
   }
 
   private void validateFile(String fileName, byte[] bytes) {
