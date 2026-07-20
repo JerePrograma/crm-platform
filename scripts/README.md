@@ -2,13 +2,11 @@
 
 ## Objetivo
 
-Esta carpeta contiene controles reproducibles para preparar, construir y comprobar un entorno local de Gestudio CRM. Los scripts no despliegan, no importan datos y no realizan comunicaciones.
+Scripts reproducibles para preparar, construir y comprobar Gestudio CRM. No despliegan, no importan datos y no realizan comunicaciones.
 
 ## Preflight
 
-### Modo de herramientas locales
-
-Comprueba Git, Docker, Compose, Java, Node, npm, `.env`, variables y guardas.
+### Herramientas locales
 
 Linux/macOS:
 
@@ -16,15 +14,15 @@ Linux/macOS:
 sh scripts/preflight.sh --local
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1
 ```
 
-### Modo completamente contenedorizado
+Comprueba Git, Docker, Compose, Java, Node, npm, `.env`, variables y guardas.
 
-Comprueba Git, Docker, Compose, `.env`, variables y guardas. No requiere Java, Node o npm en el host.
+### Solo contenedores
 
 Linux/macOS:
 
@@ -32,25 +30,53 @@ Linux/macOS:
 sh scripts/preflight.sh --container-only
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
 ```
 
-El preflight comprueba siempre:
+No requiere Java, Node o npm en el host.
 
-- existencia de `.env`;
-- `POSTGRES_DB`, URL, usuario y contraseña de base;
-- credenciales bootstrap locales;
-- las cuatro guardas de envío cerradas;
-- parseo del perfil completo de Docker Compose.
+### Validaciones comunes
 
-No imprime contraseñas ni inicia servicios.
+- `.env` presente;
+- `POSTGRES_DB`;
+- `POSTGRES_HOST_PORT` entero entre 1 y 65535;
+- `DATABASE_URL` con el mismo puerto host;
+- usuario y contraseña de base;
+- credenciales bootstrap;
+- cuatro guardas de envío cerradas;
+- parseo de Compose.
 
-## Smoke test contra stack activo
+Configuración recomendada:
 
-Requiere PostgreSQL, backend y frontend ya activos.
+```dotenv
+POSTGRES_HOST_PORT=55432
+DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
+```
+
+Compose publica el puerto host configurado hacia el `5432` interno. El backend contenedorizado utiliza `postgres:5432`.
+
+Los scripts no imprimen contraseñas ni inician servicios.
+
+## Builds limpios
+
+Frontend:
+
+```bash
+docker compose --progress plain --profile app build --no-cache frontend
+```
+
+Backend:
+
+```bash
+docker compose --progress plain --profile app build --no-cache backend
+```
+
+`--progress` debe ir antes de `build`. Los builds completamente `CACHED` no sustituyen una validación limpia.
+
+## Smoke contra stack activo
 
 Linux/macOS:
 
@@ -58,7 +84,7 @@ Linux/macOS:
 sh scripts/smoke-test.sh
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
@@ -66,15 +92,13 @@ powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
 
 Comprueba:
 
-- `GET /actuator/health` con estado `UP`;
-- acceso autenticado a la página de prospectos;
-- entrega del documento raíz del frontend.
+- `/actuator/health` con `UP`;
+- API de prospectos autenticada;
+- documento raíz del frontend.
 
-No crea prospectos, exclusiones ni importaciones.
+No crea datos.
 
-## Smoke test completamente contenedorizado
-
-El perfil `smoke` usa un contenedor efímero y espera que frontend y backend estén saludables.
+## Smoke contenedorizado
 
 Con Make:
 
@@ -92,16 +116,26 @@ docker compose --profile app --profile smoke up \
   smoke
 ```
 
-El target Make retira los contenedores al finalizar y conserva el volumen PostgreSQL. En CI se imprime el log completo si el smoke falla y luego se elimina también el volumen de CI.
+Retirar después:
 
-## Generar `package-lock.json` mediante Docker
+```bash
+docker compose --profile app --profile smoke down --remove-orphans
+```
 
-Este recorrido permite generar el lockfile sin instalar Node o npm en el host.
+El target Make conserva el volumen. CI elimina su volumen efímero.
 
-### Linux/macOS
+## Generar package-lock mediante Docker
+
+Linux/macOS:
 
 ```bash
 sh scripts/generate-frontend-lock.sh
+```
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
 ```
 
 Con Make:
@@ -110,40 +144,34 @@ Con Make:
 make frontend-lock
 ```
 
-### Windows PowerShell
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
-```
-
 Los scripts:
 
 1. comprueban Docker;
-2. localizan `frontend/package.json` desde la raíz real del repositorio;
-3. ejecutan `node:22-alpine` con el directorio frontend montado;
+2. localizan `frontend/package.json`;
+3. montan `frontend` en `node:22-alpine`;
 4. ejecutan `npm install --no-audit --no-fund`;
-5. verifican que exista `frontend/package-lock.json`;
-6. no realizan commits automáticamente.
+5. verifican `frontend/package-lock.json`;
+6. no realizan commits.
 
-Después:
+Revisar:
 
 ```bash
 git status --short
 git diff -- frontend/package-lock.json
 ```
 
-Revisar y versionar el archivo. Una vez disponible, Dockerfile y CI deben migrarse de `npm install` a `npm ci` y repetir toda la matriz.
+Después se debe migrar Dockerfile/CI a `npm ci` y repetir la matriz.
 
-## Variables opcionales del smoke test de host
+## Variables del smoke host
 
-Por defecto:
+Predeterminadas:
 
 ```text
 BACKEND_URL=http://localhost:8080
 FRONTEND_URL=http://localhost:5173
 ```
 
-Pueden reemplazarse en la sesión sin modificar `.env`.
+Pueden sobrescribirse en la sesión.
 
 ## Makefile
 
@@ -151,48 +179,75 @@ Pueden reemplazarse en la sesión sin modificar `.env`.
 make preflight
 make preflight-container
 make db-up
+make db-down
 make app-up
+make app-down
 make app-logs
+make backend
+make frontend
 make frontend-lock
+make verify
 make smoke
 make smoke-container
-make verify
-make app-down
+make reset-db
 ```
-
-### Targets
 
 | Target | Acción |
 |---|---|
-| `preflight` | valida herramientas locales, variables y Compose |
+| `preflight` | valida herramientas locales y configuración |
 | `preflight-container` | valida modalidad solo Docker |
-| `db-up` | inicia únicamente PostgreSQL |
-| `db-down` | detiene PostgreSQL conservando el volumen |
-| `app-up` | construye e inicia PostgreSQL, backend y frontend |
-| `app-down` | retira el stack conservando el volumen |
-| `app-logs` | sigue logs de todo el perfil `app` |
-| `backend` | ejecuta Spring Boot desde Maven Wrapper |
-| `frontend` | instala dependencias y ejecuta Vite |
-| `frontend-lock` | genera `package-lock.json` mediante Node en Docker |
-| `verify` | ejecuta backend, frontend, Compose y builds de imágenes |
-| `smoke` | prueba servicios ya activos desde el host |
-| `smoke-container` | construye, levanta, prueba y retira stack efímero |
-| `reset-db` | elimina contenedores y volumen local |
+| `db-up` | inicia PostgreSQL |
+| `db-down` | detiene PostgreSQL conservando volumen |
+| `app-up` | construye e inicia stack |
+| `app-down` | retira stack conservando volumen |
+| `app-logs` | sigue logs |
+| `backend` | Spring Boot mediante Maven Wrapper |
+| `frontend` | instala y ejecuta Vite |
+| `frontend-lock` | genera lockfile con Node en Docker |
+| `verify` | backend, frontend, Compose e imágenes |
+| `smoke` | prueba stack activo desde host |
+| `smoke-container` | construye, prueba y retira stack efímero |
+| `reset-db` | elimina stack y volumen |
 
-## Primer build real registrado
+## Evidencia real
 
-El 20 de julio de 2026, el preflight PowerShell en modo container-only pasó y el build frontend llegó a ejecutar TypeScript. Se reprodujeron y corrigieron:
-
-- credenciales anulables dentro de callbacks;
-- declaración ausente para imports CSS/Vite.
-
-Evidencia:
+### Primer build
 
 ```text
 docs/validation/SEG-001-container-build-2026-07-20.md
 ```
 
-La próxima operación debe reconstruir frontend desde `main`, después backend y finalmente smoke.
+- preflight PASS;
+- npm install PASS;
+- tres errores TypeScript reproducidos y corregidos.
+
+### Reejecución
+
+```text
+docs/validation/SEG-001-rerun-2026-07-20.md
+```
+
+- imágenes exportadas desde caché;
+- build limpio no demostrado;
+- stack bloqueado por puerto host 5432;
+- puerto configurable corregido en `main`.
+
+## Diagnóstico del puerto
+
+Windows:
+
+```powershell
+Get-NetTCPConnection -LocalPort 5432 -ErrorAction SilentlyContinue |
+  Select-Object LocalAddress, LocalPort, State, OwningProcess
+```
+
+Puertos reservados:
+
+```powershell
+netsh interface ipv4 show excludedportrange protocol=tcp
+```
+
+Usar `POSTGRES_HOST_PORT=55432` evita detener otro servicio local.
 
 ## Advertencia destructiva
 
@@ -206,11 +261,9 @@ o:
 docker compose --profile app --profile smoke down -v --remove-orphans
 ```
 
-elimina la base PostgreSQL local. No ejecutar si el volumen contiene información que deba conservarse.
+elimina la base local.
 
 ## Controles de envío
-
-Los scripts exigen:
 
 ```text
 SENDING_ENABLED=false
@@ -219,20 +272,20 @@ SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
 ```
 
-El preflight falla si cualquiera de estos valores cambia.
+El preflight falla si alguno cambia.
 
-## Integración continua
+## CI
 
 CI valida:
 
-- sintaxis `sh` de preflight, smoke y generación de lockfile;
-- sintaxis PowerShell de preflight, smoke y generación de lockfile;
-- preflight fail-closed con credenciales ficticias;
-- frontend typecheck y build;
-- Compose con perfiles `app` y `smoke`;
-- imágenes backend y frontend;
-- arranque de PostgreSQL, backend y frontend;
-- smoke test contenedorizado;
-- logs en fallo y limpieza obligatoria.
+- shell y PowerShell;
+- preflight fail-closed;
+- frontend typecheck/build;
+- backend verify;
+- Compose app/smoke;
+- imágenes;
+- stack;
+- smoke;
+- logs y cleanup.
 
-Hasta versionar `package-lock.json`, CI usa `npm install` sin caché npm.
+Hasta versionar el lockfile, CI usa `npm install` sin caché npm.
