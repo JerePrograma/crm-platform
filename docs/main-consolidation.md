@@ -29,7 +29,7 @@ La referencia `refs/heads/main` avanzó a:
 
 La actualización se ejecutó con `force=false`.
 
-Después del avance, la comparación entre `main` y `feat/seg-001-prospect-vertical-slice` resultó:
+Después del avance, la comparación entre `main` y la rama temática resultó:
 
 ```text
 status: identical
@@ -37,25 +37,49 @@ ahead: 0
 behind: 0
 ```
 
-## Cambios posteriores en `main`
+## Evolución posterior
 
 Después de consolidar se realizaron directamente en `main`:
 
-- alineación de `.env.example` y Docker Compose;
+- alineación de `.env.example`, Compose y backend;
 - documentación completa de arranque y uso;
-- actualización de `README.md` para convertirlo en punto de entrada canónico;
-- actualización de estado, backlog, validación y continuidad;
-- documentación de esta operación.
+- perfil Compose con PostgreSQL, backend y frontend;
+- imágenes backend y frontend;
+- health checks y proxy Nginx;
+- preflight y smoke tests Unix/PowerShell;
+- Makefile;
+- CI ampliado;
+- `.dockerignore` y `.gitattributes`;
+- evidencia estática ejecutada;
+- actualización de README, estado, backlog, segmento, validación y changelog.
+
+## Comparación más reciente
+
+La comparación más reciente entre la rama histórica y `main` arrojó:
+
+```text
+base: feat/seg-001-prospect-vertical-slice
+head: main
+status: ahead
+main ahead: 44
+main behind: 0
+```
+
+Interpretación:
+
+- la rama histórica no contiene cambios exclusivos;
+- todo su contenido está en `main`;
+- `main` contiene además 44 commits posteriores;
+- no debe realizarse trabajo nuevo en la rama histórica.
 
 ## Fuente canónica
-
-Desde esta consolidación:
 
 - `main` contiene todo el código vigente;
 - nuevas sesiones deben partir de `main`;
 - `docs/status.md` define el estado real;
 - `docs/next-step.md` define el trabajo siguiente;
-- ninguna rama temática anterior debe considerarse fuente de verdad.
+- `docs/validation/SEG-001.md` define la evidencia;
+- ninguna rama temática anterior es fuente de verdad.
 
 ## Lo que la consolidación no implica
 
@@ -65,14 +89,16 @@ Continúan pendientes:
 
 - ejecución verde de Maven y Spotless;
 - Testcontainers, Flyway y Hibernate reales;
-- instalación y build frontend;
-- generación de `package-lock.json`;
-- validación de Compose e imagen;
+- instalación frontend y lockfile;
+- typecheck/build;
+- validación semántica de Compose;
+- builds de ambas imágenes;
+- stack y smoke test;
 - evidencia de GitHub Actions o validación local equivalente.
 
 ## Seguridad
 
-La consolidación no modificó las guardas de envío:
+La consolidación no modificó las guardas:
 
 ```text
 sending.enabled=false
@@ -81,16 +107,17 @@ sending.daily-limit=0
 sending.environment-kill-switch=true
 ```
 
-El kill switch persistente también continúa activo. No existe adaptador Gmail, SMTP ni otro mecanismo de envío.
+El kill switch persistente continúa activo. No existe adaptador Gmail, SMTP ni otro mecanismo de envío.
 
 ## Estrategia futura de ramas
 
 Hasta cerrar `SEG-001`, las correcciones pequeñas de estabilización pueden aplicarse directamente en `main` por autorización expresa del propietario.
 
-Para segmentos funcionales posteriores se recomienda:
+Para segmentos funcionales posteriores:
 
-1. crear una rama temática desde `main` verde;
-2. mantener commits agrupados por unidad lógica;
-3. exigir CI verde;
-4. consolidar mediante pull request o fast-forward explícitamente autorizado;
-5. actualizar estado, backlog, validación y changelog en la misma entrega.
+1. partir de `main` verde;
+2. crear una rama temática;
+3. agrupar commits por unidad lógica;
+4. exigir CI verde;
+5. consolidar mediante PR o fast-forward autorizado;
+6. actualizar estado, backlog, validación y changelog.
