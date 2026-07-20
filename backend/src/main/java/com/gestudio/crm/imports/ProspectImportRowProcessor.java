@@ -158,8 +158,8 @@ public class ProspectImportRowProcessor {
             "Prospectos",
             candidate.rowNumber(),
             rawJson(candidate.rawData()),
-            normalizationService.normalizeEmail(candidate.email()),
-            normalizationService.normalizePhone(candidate.phoneOrWhatsapp()));
+            safeNormalizeEmail(candidate.email()),
+            safeNormalizePhone(candidate.phoneOrWhatsapp()));
     row.reject(message);
     importRowRepository.save(row);
   }
@@ -173,7 +173,7 @@ public class ProspectImportRowProcessor {
             "Exclusiones",
             candidate.rowNumber(),
             rawJson(candidate.rawData()),
-            normalizationService.normalizeEmail(candidate.email()),
+            safeNormalizeEmail(candidate.email()),
             null);
     row.reject(message);
     importRowRepository.save(row);
@@ -230,6 +230,22 @@ public class ProspectImportRowProcessor {
       return ExclusionReason.UNSUBSCRIBE_REQUEST;
     }
     return ExclusionReason.MANUAL;
+  }
+
+  private String safeNormalizeEmail(String value) {
+    try {
+      return normalizationService.normalizeEmail(value);
+    } catch (IllegalArgumentException exception) {
+      return null;
+    }
+  }
+
+  private String safeNormalizePhone(String value) {
+    try {
+      return normalizationService.normalizePhone(value);
+    } catch (IllegalArgumentException exception) {
+      return null;
+    }
   }
 
   private String rawJson(java.util.Map<String, String> rawData) {
