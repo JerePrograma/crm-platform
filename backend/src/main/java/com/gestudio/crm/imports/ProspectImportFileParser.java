@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -26,6 +27,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ProspectImportFileParser {
+
+  private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
   private final NormalizationService normalizationService;
   private final DataFormatter dataFormatter = new DataFormatter(Locale.ROOT);
@@ -144,7 +147,7 @@ public class ProspectImportFileParser {
 
   private ParsedImport parseCsv(byte[] bytes) {
     String content = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-    List<List<String>> rows = parseCsvRows(content);
+    List<List<String>> rows = parseCsvRows(content, detectDelimiter(content));
     if (rows.isEmpty()) {
       throw new IllegalArgumentException("The CSV file is empty");
     }
@@ -169,7 +172,14 @@ public class ProspectImportFileParser {
               cleanPublished(value(headers, row, "sitio web")),
               cleanPublished(value(headers, row, "redes sociales")),
               cleanPublished(value(headers, row, "correo publicado", "correo", "email")),
-              cleanPublished(value(headers, row, "telefono whatsapp", "telefono")),
+              cleanPublished(
+                  value(
+                      headers,
+                      row,
+                      "telefono whatsapp",
+                      "telefono o whatsapp",
+                      "telefono",
+                      "whatsapp")),
               value(headers, row, "fuente"),
               parseDate(value(headers, row, "fecha de verificacion")),
               value(headers, row, "motivo de encaje"),
@@ -189,9 +199,7 @@ public class ProspectImportFileParser {
     Map<String, Integer> headers = new LinkedHashMap<>();
     for (Cell cell : row) {
       String key = normalizationService.normalizeText(dataFormatter.formatCellValue(cell));
-      if (key != null) {
-        headers.put(key, cell.getColumnIndex());
-      }
+      putHeader(headers, key, cell.getColumnIndex());
     }
     return headers;
   }
@@ -200,11 +208,18 @@ public class ProspectImportFileParser {
     Map<String, Integer> headers = new LinkedHashMap<>();
     for (int index = 0; index < row.size(); index++) {
       String key = normalizationService.normalizeText(row.get(index));
-      if (key != null) {
-        headers.put(key, index);
-      }
+      putHeader(headers, key, index);
     }
     return headers;
+  }
+
+  private void putHeader(Map<String, Integer> headers, String key, int index) {
+    if (key == null) {
+      return;
+    }
+    if (headers.putIfAbsent(key, index) != null) {
+      throw new IllegalArgumentException("Duplicate normalized import column: " + key);
+    }
   }
 
   private void requireHeader(Map<String, Integer> headers, String name) {
@@ -242,8 +257,9 @@ public class ProspectImportFileParser {
     if (cell == null) {
       return null;
     }
-    if (cell.getCellType() == CellType.NUMERIC && DateUtil.isValidExcelDate(cell.getNumericCellValue())) {
-      return DateUtil.getJavaDate(cell.getNumericCellValue()).toInstant();
+    if (cell.getCellType() == CellType.NUMERIC
+        && DateUtil.isValidExcelDate(cell.getNumericCellValue())) {
+      return DateUtil.getJavaDate(cell.getNumericCellValue(), false, UTC).toInstant();
     }
     return parseDate(dataFormatter.formatCellValue(cell));
   }
@@ -318,7 +334,30 @@ public class ProspectImportFileParser {
         .collect(java.util.stream.Collectors.joining(" | "));
   }
 
-  private List<List<String>> parseCsvRows(String content) {
+  private char detectDelimiter(String content) {
+    int commas = 0;
+    int semicolons = 0;
+    boolean quoted = false;
+    for (int index = 0; index < content.length(); index++) {
+      char character = content.charAt(index);
+      if (character == '"') {
+        if (quoted && index + 1 < content.length() && content.charAt(index + 1) == '"') {
+          index++;
+        } else {
+          quoted = !quoted;
+        }
+      } else if (!quoted && (character == '\n' || character == '\r')) {
+        break;
+      } else if (!quoted && character == ',') {
+        commas++;
+      } else if (!quoted && character == ';') {
+        semicolons++;
+      }
+    }
+    return semicolons > commas ? ';' : ',';
+  }
+
+  private List<List<String>> parseCsvRows(String content, char delimiter) {
     List<List<String>> rows = new ArrayList<>();
     List<String> row = new ArrayList<>();
     StringBuilder field = new StringBuilder();
@@ -332,11 +371,13 @@ public class ProspectImportFileParser {
         } else {
           quoted = !quoted;
         }
-      } else if (character == ',' && !quoted) {
+      } else if (character == delimiter && !quoted) {
         row.add(field.toString());
         field.setLength(0);
       } else if ((character == '\n' || character == '\r') && !quoted) {
-        if (character == '\r' && index + 1 < content.length() && content.charAt(index + 1) == '\n') {
+        if (character == '\r'
+            && index + 1 < content.length()
+            && content.charAt(index + 1) == '\n') {
           index++;
         }
         row.add(field.toString());
@@ -348,6 +389,9 @@ public class ProspectImportFileParser {
       } else {
         field.append(character);
       }
+    }
+    if (quoted) {
+      throw new IllegalArgumentException("The CSV file contains an unclosed quoted field");
     }
     row.add(field.toString());
     if (row.stream().anyMatch(value -> !value.isBlank())) {
