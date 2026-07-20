@@ -9,7 +9,8 @@ if (-not (Test-Path '.env')) {
 }
 
 Get-Content .env | ForEach-Object {
-  if ($_ -match '^(?<name>[^#][^=]*)=(?<value>.*)$') {
+  $line = $_.TrimStart([char]0xFEFF)
+  if ($line -match '^(?<name>[^#][^=]*)=(?<value>.*)$') {
     [Environment]::SetEnvironmentVariable($matches.name.Trim(), $matches.value, 'Process')
   }
 }
@@ -21,8 +22,10 @@ if ([string]::IsNullOrWhiteSpace($env:CRM_BOOTSTRAP_PASSWORD)) {
   Fail 'CRM_BOOTSTRAP_PASSWORD is required'
 }
 
-$backendUrl = if ($env:BACKEND_URL) { $env:BACKEND_URL } else { 'http://localhost:8080' }
-$frontendUrl = if ($env:FRONTEND_URL) { $env:FRONTEND_URL } else { 'http://localhost:5173' }
+$backendPort = if ($env:BACKEND_HOST_PORT) { $env:BACKEND_HOST_PORT } else { '8080' }
+$frontendPort = if ($env:FRONTEND_HOST_PORT) { $env:FRONTEND_HOST_PORT } else { '5173' }
+$backendUrl = if ($env:BACKEND_URL) { $env:BACKEND_URL } else { "http://localhost:$backendPort" }
+$frontendUrl = if ($env:FRONTEND_URL) { $env:FRONTEND_URL } else { "http://localhost:$frontendPort" }
 
 $health = Invoke-RestMethod -Uri "$backendUrl/actuator/health"
 if ($health.status -ne 'UP') {
@@ -44,6 +47,8 @@ if ($frontend.Content -notmatch '<div id="root"></div>') {
 }
 
 Write-Host 'Smoke test passed.'
+Write-Host "Backend URL: $backendUrl"
+Write-Host "Frontend URL: $frontendUrl"
 Write-Host 'Backend health: UP'
 Write-Host 'Authenticated API: reachable'
 Write-Host 'Frontend: reachable'
