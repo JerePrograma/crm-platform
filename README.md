@@ -6,7 +6,14 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 
 Todo el código y la documentación vigentes están consolidados en `main`.
 
-`SEG-001 — Vertical slice persistente de prospectos` está implementado y endurecido mediante revisión estática. Continúa abierto hasta obtener evidencia ejecutada de Maven, Testcontainers, Flyway, Hibernate, frontend, Compose, imágenes y smoke test.
+`SEG-001 — Vertical slice persistente de prospectos` está implementado. El primer preflight Docker real pasó y el build frontend reprodujo tres errores TypeScript, ya corregidos en `main`. Continúa abierto hasta reconstruir frontend, compilar backend, ejecutar migraciones/tests y completar smoke E2E.
+
+Evidencias:
+
+```text
+docs/validation/SEG-001.md
+docs/validation/SEG-001-container-build-2026-07-20.md
+```
 
 El sistema incluye:
 
@@ -20,7 +27,7 @@ El sistema incluye:
 - auditoría JSONB;
 - API REST, OpenAPI y RFC 7807;
 - interfaz React, TypeScript y Vite;
-- Docker Compose para PostgreSQL, backend y frontend;
+- Docker Compose para PostgreSQL, backend, frontend y smoke;
 - GitHub Actions, Testcontainers, preflight y smoke tests.
 
 Estado detallado: `docs/status.md`.
@@ -48,12 +55,21 @@ PostgreSQL inicializa además un kill switch persistente. Ninguna operación dis
 
 Java, Node y Maven no son necesarios en el host para esta modalidad.
 
-### 1. Clonar `main`
+### 1. Clonar o actualizar `main`
 
 ```bash
 git clone https://github.com/JerePrograma/crm-platform.git
 cd crm-platform
 git switch main
+git pull --ff-only
+git rev-parse HEAD
+```
+
+En un checkout existente:
+
+```bash
+git switch main
+git fetch origin
 git pull --ff-only
 ```
 
@@ -71,7 +87,9 @@ Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
-Editar `.env` y definir credenciales locales:
+No sobrescribir `.env` si ya contiene credenciales locales válidas.
+
+Editar `.env`:
 
 ```dotenv
 POSTGRES_DB=gestudio_crm
@@ -109,10 +127,22 @@ Con Make:
 make preflight-container
 ```
 
-### 4. Construir e iniciar
+### 4. Reconstruir después de las correcciones frontend
+
+Para obtener errores aislados y claros:
+
+```bash
+docker compose --profile app build frontend --progress=plain
+docker compose --profile app build backend --progress=plain
+```
+
+Windows PowerShell usa los mismos comandos.
+
+### 5. Construir e iniciar el stack
 
 ```bash
 docker compose --profile app up -d --build
+docker compose --profile app ps
 ```
 
 Con Make:
@@ -129,34 +159,23 @@ Backend     127.0.0.1:8080
 Frontend    127.0.0.1:5173
 ```
 
-Comprobar:
+Logs:
 
 ```bash
-docker compose --profile app ps
 docker compose --profile app logs -f
 ```
 
-### 5. Abrir
+### 6. Abrir
 
 ```text
-http://localhost:5173
+Frontend: http://localhost:5173
+Health:   http://localhost:8080/actuator/health
+Swagger:  http://localhost:8080/swagger-ui/index.html
 ```
 
 Ingresar con `CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`.
 
-Health:
-
-```text
-http://localhost:8080/actuator/health
-```
-
-Swagger autenticado:
-
-```text
-http://localhost:8080/swagger-ui/index.html
-```
-
-### 6. Ejecutar smoke test
+### 7. Ejecutar smoke test
 
 Linux/macOS:
 
@@ -176,11 +195,46 @@ Con Make:
 make smoke
 ```
 
+Smoke completamente contenedorizado:
+
+```bash
+make smoke-container
+```
+
 Guía específica: `docs/containerized-quickstart.md`.
+
+## Generar `package-lock.json` sin Node local
+
+Linux/macOS:
+
+```bash
+sh scripts/generate-frontend-lock.sh
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
+```
+
+Con Make:
+
+```bash
+make frontend-lock
+```
+
+Después revisar:
+
+```bash
+git status --short
+git diff -- frontend/package-lock.json
+```
+
+El lockfile debe versionarse antes de cambiar Dockerfile y CI a `npm ci`.
 
 ## Desarrollo con procesos separados
 
-Esta modalidad requiere:
+Requiere:
 
 - Java 21;
 - Docker con Compose v2;
@@ -222,8 +276,6 @@ Get-Content .env | ForEach-Object {
 
 ### Frontend
 
-En otra terminal:
-
 ```bash
 cd frontend
 npm install
@@ -243,10 +295,10 @@ Guía completa: `docs/local-development-and-usage.md`.
 5. revisar filas `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
 6. corregir el archivo cuando corresponda;
 7. ejecutar `Importar con confirmación`;
-8. revisar los prospectos creados y su elegibilidad;
-9. comprobar los eventos en `Auditoría`.
+8. revisar prospectos, elegibilidad y resumen, incluida la métrica `Bloqueadas`;
+9. comprobar eventos en `Auditoría`.
 
-El preview persiste evidencia, pero no crea prospectos ni exclusiones procedentes del archivo. La ejecución requiere confirmación en la UI y la cabecera:
+La ejecución requiere confirmación en la UI y la cabecera:
 
 ```text
 X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
@@ -257,15 +309,15 @@ X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
 - CSV UTF-8 separado por coma o punto y coma;
 - XLSX con hoja `Prospectos` y hoja opcional `Exclusiones`;
 - tamaño máximo: 10 MB;
-- CSV requiere al menos el encabezado `Institución`;
-- el parser trabaja por encabezados normalizados, no por posiciones fijas.
+- CSV requiere al menos `Institución`;
+- parser por encabezados normalizados.
 
 Contratos:
 
 - `docs/import-existing-data.md`;
 - `docs/import-hardening.md`.
 
-Los datos operativos reales no se versionan. Las pruebas generan fixtures con dominios `.test`.
+Los datos operativos reales no se versionan.
 
 ## API implementada
 
@@ -293,7 +345,9 @@ make preflight-container
 make db-up
 make app-up
 make app-logs
+make frontend-lock
 make smoke
+make smoke-container
 make verify
 make app-down
 ```
@@ -302,91 +356,81 @@ Detalles: `scripts/README.md`.
 
 ## Validación completa
 
-Linux/macOS:
+Backend:
 
 ```bash
 sh ./mvnw -B -f backend/pom.xml verify
+```
 
+Windows:
+
+```powershell
+.\mvnw.cmd -B -f backend\pom.xml verify
+```
+
+Frontend:
+
+```bash
 cd frontend
 npm install
 npm run typecheck
 npm run build
 cd ..
-
-docker compose --profile app config
-docker build -t gestudio-crm:local .
-docker build -f frontend/Dockerfile -t gestudio-crm-frontend:local frontend
 ```
 
-Con Make:
+Infraestructura:
 
 ```bash
-make verify
-```
-
-Windows PowerShell:
-
-```powershell
-.\mvnw.cmd -B -f backend\pom.xml verify
-
-Push-Location frontend
-npm install
-npm run typecheck
-npm run build
-Pop-Location
-
-docker compose --profile app config
+docker compose --profile app --profile smoke config
 docker build -t gestudio-crm:local .
 docker build -f frontend/Dockerfile -t gestudio-crm-frontend:local frontend
+make smoke-container
 ```
 
 Las pruebas de integración requieren Docker porque utilizan PostgreSQL mediante Testcontainers.
 
-La evidencia real se registra exclusivamente en `docs/validation/SEG-001.md`.
+La evidencia real se registra en `docs/validation/SEG-001.md`.
 
 ## Detener el entorno
 
-Stack completo, conservando datos:
+Conservar datos:
 
 ```bash
 docker compose --profile app down
 ```
 
-Solo PostgreSQL:
-
-```bash
-docker compose stop postgres
-```
-
 Eliminar también la base local:
 
 ```bash
-docker compose --profile app down -v
+docker compose --profile app --profile smoke down -v --remove-orphans
 ```
 
 `down -v` destruye los datos del volumen.
 
 ## Limitaciones actuales
 
-- `SEG-001` no debe declararse completo sin CI o validación local verde;
-- falta `package-lock.json` hasta ejecutar `npm install` con registro disponible;
+- frontend corregido pendiente de reejecución;
+- backend, Flyway, Hibernate, tests y smoke aún no alcanzados por el primer build;
+- falta `package-lock.json`;
+- Dockerfile/CI usan `npm install` hasta versionar el lockfile;
 - HTTP Basic es temporal;
 - no existen usuarios persistentes ni RBAC;
 - no existe resolución desde UI de `DuplicateReview`;
 - no existe retry explícito de trabajos fallidos;
 - no existen campañas, Gmail, Sheets, workers ni infraestructura cloud;
-- el stack Compose es local y no constituye un despliegue de producción.
+- el stack Compose es local, no producción.
 
 ## Documentación
 
 - `docs/README.md` — índice completo;
 - `docs/containerized-quickstart.md` — stack completo con Docker;
 - `docs/local-development-and-usage.md` — procesos separados y flujo funcional;
-- `scripts/README.md` — preflight, smoke test y Makefile;
+- `scripts/README.md` — preflight, smoke, lockfile y Makefile;
 - `docs/status.md` — estado real;
-- `docs/next-step.md` — trabajo siguiente;
+- `docs/next-step.md` — reejecución inmediata;
 - `docs/backlog.md` — tareas y segmentos;
-- `docs/validation/SEG-001.md` — evidencia.
+- `docs/validation/SEG-001.md` — matriz;
+- `docs/validation/SEG-001-container-build-2026-07-20.md` — primer build real.
 
 ## Continuidad
 
