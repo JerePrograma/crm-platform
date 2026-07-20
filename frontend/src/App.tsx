@@ -107,10 +107,12 @@ export function App() {
     return <Login onAuthenticated={setCredentials} />;
   }
 
+  const activeCredentials = credentials;
+
   async function selectProspect(id: string) {
     setError(null);
     try {
-      setSelectedProspect(await getProspect(credentials, id));
+      setSelectedProspect(await getProspect(activeCredentials, id));
     } catch (caught) {
       setError(message(caught));
     }
@@ -118,7 +120,7 @@ export function App() {
 
   async function applyStatusFilter(value: ProspectStatus | "") {
     setStatusFilter(value);
-    await refresh(credentials, value);
+    await refresh(activeCredentials, value);
   }
 
   return (
@@ -166,7 +168,10 @@ export function App() {
             <h1>{title(tab)}</h1>
             <p>Fuente de verdad: PostgreSQL. Ningún envío real está disponible.</p>
           </div>
-          <button className="secondary-button" onClick={() => void refresh(credentials)}>
+          <button
+            className="secondary-button"
+            onClick={() => void refresh(activeCredentials)}
+          >
             Actualizar
           </button>
         </header>
@@ -259,17 +264,17 @@ export function App() {
 
         {tab === "imports" && (
           <ImportsPanel
-            credentials={credentials}
+            credentials={activeCredentials}
             duplicateReviews={duplicateReviews}
-            onChanged={() => refresh(credentials)}
+            onChanged={() => refresh(activeCredentials)}
           />
         )}
 
         {tab === "exclusions" && (
           <ExclusionsPanel
-            credentials={credentials}
+            credentials={activeCredentials}
             exclusions={exclusions}
-            onChanged={() => refresh(credentials)}
+            onChanged={() => refresh(activeCredentials)}
           />
         )}
 
@@ -578,6 +583,7 @@ function ImportSummaryView({ summary }: { summary: ImportSummary }) {
       <Control label="Modo" value={summary.dryRun ? "Preview" : "Ejecución"} />
       <Control label="Filas" value={summary.totalRows.toString()} />
       <Control label="Aceptadas" value={summary.acceptedRows.toString()} />
+      <Control label="Bloqueadas" value={summary.excludedRows.toString()} />
       <Control label="Rechazadas" value={summary.rejectedRows.toString()} />
       <Control label="Duplicadas" value={summary.duplicateRows.toString()} />
       <Control label="A revisión" value={summary.reviewRows.toString()} />
