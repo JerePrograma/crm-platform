@@ -7,6 +7,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -26,9 +27,17 @@ public class ApiExceptionHandler {
             : "The operation conflicts with an existing normalized record");
   }
 
-  @ExceptionHandler({IllegalArgumentException.class})
+  @ExceptionHandler(IllegalArgumentException.class)
   ProblemDetail handleBadRequest(IllegalArgumentException exception) {
     return problem(HttpStatus.BAD_REQUEST, "Invalid request", exception.getMessage());
+  }
+
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  ProblemDetail handleUploadTooLarge(MaxUploadSizeExceededException exception) {
+    return problem(
+        HttpStatus.PAYLOAD_TOO_LARGE,
+        "Import file too large",
+        "The uploaded file exceeds the 10 MB prospect import safety limit");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
