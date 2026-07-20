@@ -33,8 +33,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: frontend/package.json
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install --no-audit --no-fund
@@ -62,17 +60,19 @@ jobs:
       - name: Validate PowerShell script syntax
         shell: pwsh
         run: |
+          $tokens = $null
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile(
             'scripts/preflight.ps1',
-            [ref]$null,
+            [ref]$tokens,
             [ref]$errors
           ) | Out-Null
           if ($errors.Count -gt 0) { throw ($errors | Out-String) }
+          $tokens = $null
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile(
             'scripts/smoke-test.ps1',
-            [ref]$null,
+            [ref]$tokens,
             [ref]$errors
           ) | Out-Null
           if ($errors.Count -gt 0) { throw ($errors | Out-String) }
