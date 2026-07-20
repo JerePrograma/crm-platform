@@ -4,7 +4,7 @@
 
 Esta ruta levanta PostgreSQL, backend y frontend con Docker Compose. En el host solo requiere Git y Docker con Compose v2.
 
-No habilita comunicaciones. El backend continúa sin adaptadores Gmail o SMTP y las cuatro guardas de envío deben permanecer cerradas.
+No habilita comunicaciones. El backend no contiene adaptadores Gmail o SMTP y las cuatro guardas de envío deben permanecer cerradas.
 
 ## 1. Obtener el repositorio
 
@@ -13,6 +13,20 @@ git clone https://github.com/JerePrograma/crm-platform.git
 cd crm-platform
 git switch main
 git pull --ff-only
+```
+
+En un checkout existente:
+
+```bash
+git status
+git diff -- mvnw.cmd
+git pull --ff-only
+```
+
+Restaurar `mvnw.cmd` solo si su modificación local no fue intencional:
+
+```bash
+git restore -- mvnw.cmd
 ```
 
 ## 2. Crear el entorno local
@@ -29,13 +43,18 @@ Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
-Editar `.env` y definir al menos:
+No volver a copiar el archivo si `.env` ya contiene credenciales elegidas.
+
+Configuración recomendada:
 
 ```dotenv
 POSTGRES_DB=gestudio_crm
-DATABASE_URL=jdbc:postgresql://localhost:5432/gestudio_crm
+POSTGRES_HOST_PORT=55432
+DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
 DATABASE_USER=gestudio
 DATABASE_PASSWORD=gestudio_local_only
+DATABASE_POOL_SIZE=10
+DATABASE_MIN_IDLE=1
 CRM_BOOTSTRAP_USERNAME=gestudio-admin
 CRM_BOOTSTRAP_PASSWORD=una-clave-local-segura
 SENDING_ENABLED=false
@@ -45,9 +64,11 @@ SENDING_KILL_SWITCH=true
 PORT=8080
 ```
 
-Para el contenedor backend, Compose reemplaza internamente el host de `DATABASE_URL` por `postgres`. El valor de `.env` continúa siendo útil para ejecutar el backend directamente desde el host.
+`POSTGRES_HOST_PORT` controla únicamente el puerto publicado en el host. Dentro de Compose, el backend siempre conecta a `postgres:5432`.
 
-## 3. Ejecutar preflight contenedorizado
+El valor `55432` evita conflictos comunes con PostgreSQL local, otros contenedores y reservas de Windows.
+
+## 3. Ejecutar preflight
 
 Linux/macOS:
 
@@ -61,15 +82,26 @@ Con Make:
 make preflight-container
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
 ```
 
-El preflight comprueba Git, Docker, Compose, `.env`, PostgreSQL, credenciales bootstrap y guardas de envío. No requiere Java, Node ni npm en el host.
+El preflight comprueba:
 
-## 4. Construir e iniciar el stack persistente
+- Git, Docker y Compose;
+- `.env`;
+- base, usuario y contraseña;
+- `POSTGRES_HOST_PORT` entre 1 y 65535;
+- coincidencia del puerto con `DATABASE_URL`;
+- credenciales bootstrap;
+- cuatro guardas de envío cerradas;
+- parseo de Compose.
+
+## 4. Construir e iniciar el stack
+
+Ruta habitual:
 
 ```bash
 docker compose --profile app up -d --build
@@ -83,19 +115,39 @@ make app-up
 
 Servicios:
 
-| Servicio | Puerto host | Función |
-|---|---:|---|
-| PostgreSQL | `127.0.0.1:5432` | fuente de verdad |
-| Backend | `127.0.0.1:8080` | API, Flyway y seguridad |
-| Frontend | `127.0.0.1:5173` | SPA y proxy hacia backend |
+| Servicio | Puerto host predeterminado | Puerto interno | Función |
+|---|---:|---:|---|
+| PostgreSQL | `127.0.0.1:55432` | `5432` | fuente de verdad |
+| Backend | `127.0.0.1:8080` | `8080` | API, Flyway y seguridad |
+| Frontend | `127.0.0.1:5173` | `8080` | SPA y proxy al backend |
 
-Los servicios se inician en orden:
+Orden de inicio:
 
 1. PostgreSQL saludable;
 2. backend aplica Flyway y responde health;
 3. frontend inicia después del backend saludable.
 
-## 5. Comprobar estado
+## 5. Build limpio para validación
+
+Una salida completamente `CACHED` confirma que una imagen puede exportarse, pero no demuestra que el código actual compile desde cero.
+
+Frontend:
+
+```bash
+docker compose --progress plain --profile app build --no-cache frontend
+```
+
+Backend:
+
+```bash
+docker compose --progress plain --profile app build --no-cache backend
+```
+
+`--progress` es una opción global y debe ir antes de `build`.
+
+El Dockerfile backend usa `-DskipTests`; las pruebas completas se ejecutan después con Maven Wrapper.
+
+## 6. Comprobar estado
 
 ```bash
 docker compose --profile app ps
@@ -117,7 +169,9 @@ docker compose logs -f backend
 docker compose logs -f frontend
 ```
 
-## 6. Abrir el sistema
+## 7. Abrir el sistema
+
+Frontend:
 
 ```text
 http://localhost:5173
@@ -130,7 +184,7 @@ CRM_BOOTSTRAP_USERNAME
 CRM_BOOTSTRAP_PASSWORD
 ```
 
-Health directo:
+Health:
 
 ```text
 http://localhost:8080/actuator/health
@@ -142,7 +196,7 @@ Swagger autenticado:
 http://localhost:8080/swagger-ui/index.html
 ```
 
-## 7. Smoke test contra stack activo
+## 8. Smoke contra stack activo
 
 Linux/macOS:
 
@@ -156,17 +210,15 @@ Con Make:
 make smoke
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
 ```
 
-Comprueba health, API autenticada y documento raíz del frontend. No crea datos.
+Comprueba health, API autenticada y frontend. No crea datos.
 
-## 8. Smoke test efímero completamente contenedorizado
-
-Esta modalidad construye el stack, espera health checks, ejecuta un contenedor `smoke` y retira los contenedores al finalizar.
+## 9. Smoke efímero contenedorizado
 
 Con Make:
 
@@ -184,35 +236,78 @@ docker compose --profile app --profile smoke up \
   smoke
 ```
 
-Después del comando directo, retirar contenedores conservando el volumen:
+Retirar después:
 
 ```bash
 docker compose --profile app --profile smoke down --remove-orphans
 ```
 
-El servicio `smoke` verifica desde la red interna de Compose:
+El contenedor smoke verifica desde la red interna:
 
-- health del backend;
-- autenticación Basic contra prospectos;
-- entrega del frontend mediante Nginx.
+- backend health;
+- Basic Auth contra prospectos;
+- documento raíz de Nginx.
 
-Este es también el recorrido preparado para CI.
-
-## 9. Flujo funcional
+## 10. Flujo funcional
 
 1. ingresar al dashboard;
-2. registrar exclusiones conocidas;
-3. preparar CSV o XLSX de hasta 10 MB;
-4. ejecutar preview;
-5. revisar `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
-6. corregir el archivo cuando corresponda;
-7. ejecutar importación confirmada;
-8. revisar prospectos y elegibilidad;
-9. revisar auditoría.
+2. comprobar que los envíos estén bloqueados;
+3. registrar exclusiones conocidas;
+4. preparar CSV o XLSX de hasta 10 MB;
+5. ejecutar preview;
+6. revisar `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
+7. corregir el archivo;
+8. ejecutar importación confirmada;
+9. revisar prospectos y elegibilidad;
+10. revisar auditoría.
 
 La descripción completa está en `docs/local-development-and-usage.md`.
 
-## 10. Detener conservando datos
+## 11. Generar package-lock sin Node local
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
+```
+
+Linux/macOS:
+
+```bash
+sh scripts/generate-frontend-lock.sh
+```
+
+Con Make:
+
+```bash
+make frontend-lock
+```
+
+Después:
+
+```bash
+git status --short
+```
+
+El lockfile debe versionarse antes de migrar Docker y CI a `npm ci`.
+
+## 12. Pruebas backend completas
+
+Windows:
+
+```powershell
+.\mvnw.cmd -B -f backend\pom.xml verify
+```
+
+Linux/macOS:
+
+```bash
+sh ./mvnw -B -f backend/pom.xml verify
+```
+
+Requieren Docker para Testcontainers.
+
+## 13. Detener conservando datos
 
 ```bash
 docker compose --profile app down
@@ -226,7 +321,7 @@ make app-down
 
 El volumen `crm_postgres` se conserva.
 
-## 11. Eliminar también la base local
+## 14. Eliminar la base local
 
 ```bash
 docker compose --profile app --profile smoke down -v --remove-orphans
@@ -240,23 +335,39 @@ make reset-db
 
 Esta operación es destructiva.
 
-## 12. Reconstruir después de cambios
+## 15. Diagnóstico
 
-```bash
-git pull --ff-only
-docker compose --profile app up -d --build
+### Puerto PostgreSQL ocupado
+
+Error típico:
+
+```text
+listen tcp4 127.0.0.1:5432: bind ...
 ```
 
-Forzar reconstrucción sin caché:
+Solución recomendada en `.env`:
 
-```bash
-docker compose --profile app build --no-cache
-docker compose --profile app up -d
+```dotenv
+POSTGRES_HOST_PORT=55432
+DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
 ```
 
-## 13. Diagnóstico
+Windows, identificar proceso:
 
-### Backend no queda saludable
+```powershell
+Get-NetTCPConnection -LocalPort 5432 -ErrorAction SilentlyContinue |
+  Select-Object LocalAddress, LocalPort, State, OwningProcess
+```
+
+Puertos reservados:
+
+```powershell
+netsh interface ipv4 show excludedportrange protocol=tcp
+```
+
+No es necesario detener otro PostgreSQL si se usa un puerto host distinto.
+
+### Backend no saludable
 
 ```bash
 docker compose logs backend
@@ -264,10 +375,11 @@ docker compose logs backend
 
 Revisar:
 
-- autenticación PostgreSQL;
-- migraciones Flyway;
-- validación Hibernate;
-- memoria disponible para Docker.
+- PostgreSQL saludable;
+- credenciales;
+- Flyway;
+- Hibernate validate;
+- memoria Docker.
 
 ### Frontend devuelve 502
 
@@ -277,7 +389,7 @@ docker compose logs backend
 docker compose logs frontend
 ```
 
-El frontend Nginx necesita resolver `backend:8080` dentro de la red Compose.
+Nginx necesita resolver `backend:8080`.
 
 ### Smoke falla
 
@@ -285,37 +397,31 @@ El frontend Nginx necesita resolver `backend:8080` dentro de la red Compose.
 docker compose --profile app --profile smoke logs --no-color
 ```
 
-Revisar:
+Revisar credenciales, health y respuesta de prospectos.
 
-- credenciales bootstrap no vacías;
-- backend y frontend saludables;
-- respuesta de `/api/v1/prospects`;
-- documento raíz del frontend.
+### Contraseña PostgreSQL cambiada
 
-### Cambio de contraseña PostgreSQL
-
-La contraseña se fija al crear el volumen. Para un entorno descartable:
+La contraseña queda fijada en el volumen. Para un entorno descartable:
 
 ```bash
 docker compose --profile app --profile smoke down -v --remove-orphans
 docker compose --profile app up -d --build
 ```
 
-### Puertos ocupados
+## 16. Seguridad
 
-Los puertos predeterminados son 5432, 8080 y 5173. Cambiar mapeos y URLs relacionadas de manera consistente.
+- puertos solo en `127.0.0.1`;
+- `.env` fuera de Git;
+- credenciales bootstrap locales;
+- guardas de envío cerradas;
+- XLSX real fuera del repositorio e imágenes;
+- contextos Docker sin claves, planillas o cachés;
+- smoke solo lectura;
+- stack no apto para producción.
 
-## 14. Seguridad
+## Limitaciones actuales
 
-- todos los puertos se publican solo en `127.0.0.1`;
-- `.env` no debe versionarse;
-- las credenciales bootstrap son temporales y locales;
-- las cuatro guardas de envío deben conservar valores seguros;
-- no incorporar XLSX real al repositorio o imágenes;
-- `.dockerignore` excluye secretos, planillas, claves y cachés;
-- el servicio smoke solo realiza lecturas;
-- no utilizar este stack como despliegue de producción.
-
-## Limitación actual
-
-El frontend todavía no posee `package-lock.json`; la imagen utiliza `npm install`. Generar y versionar el lockfile continúa siendo un bloqueante de reproducibilidad para cerrar SEG-001.
+- falta versionar `package-lock.json`;
+- imagen frontend y CI usan `npm install` hasta el lockfile;
+- HTTP Basic es temporal;
+- SEG-001 requiere build limpio, pruebas, migraciones y smoke verdes.
