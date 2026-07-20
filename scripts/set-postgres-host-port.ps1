@@ -42,10 +42,10 @@ function Set-Or-Append([string[]]$InputLines, [string]$Name, [string]$Value) {
 $lines = Set-Or-Append $lines 'POSTGRES_HOST_PORT' $Port.ToString()
 $lines = Set-Or-Append $lines 'DATABASE_URL' "jdbc:postgresql://localhost:$Port/$dbName"
 
-$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$utf8NoBom = New-Object -TypeName System.Text.UTF8Encoding -ArgumentList $false
 [System.IO.File]::WriteAllLines($envPath, $lines, $utf8NoBom)
 
-Write-Host "Updated .env safely."
+Write-Host 'Updated .env safely.'
 Write-Host "PostgreSQL host port: $Port"
 Write-Host "Database URL: jdbc:postgresql://localhost:$Port/$dbName"
 Write-Host 'Existing passwords and sending controls were preserved.'
