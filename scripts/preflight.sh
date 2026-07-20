@@ -44,11 +44,22 @@ set -a
 set +a
 
 [ -n "${POSTGRES_DB:-}" ] || fail "POSTGRES_DB is required"
+[ -n "${POSTGRES_HOST_PORT:-}" ] || fail "POSTGRES_HOST_PORT is required"
 [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL is required"
 [ -n "${DATABASE_USER:-}" ] || fail "DATABASE_USER is required"
 [ -n "${DATABASE_PASSWORD:-}" ] || fail "DATABASE_PASSWORD is required"
 [ -n "${CRM_BOOTSTRAP_USERNAME:-}" ] || fail "CRM_BOOTSTRAP_USERNAME is required for local UI access"
 [ -n "${CRM_BOOTSTRAP_PASSWORD:-}" ] || fail "CRM_BOOTSTRAP_PASSWORD is required for local UI access"
+
+case "$POSTGRES_HOST_PORT" in
+  *[!0-9]*|'') fail "POSTGRES_HOST_PORT must be an integer" ;;
+esac
+[ "$POSTGRES_HOST_PORT" -ge 1 ] && [ "$POSTGRES_HOST_PORT" -le 65535 ] \
+  || fail "POSTGRES_HOST_PORT must be between 1 and 65535"
+case "$DATABASE_URL" in
+  *:"$POSTGRES_HOST_PORT"/*) ;;
+  *) fail "DATABASE_URL must use the same port as POSTGRES_HOST_PORT for host-based development" ;;
+esac
 
 [ "${SENDING_ENABLED:-}" = "false" ] || fail "SENDING_ENABLED must remain false"
 [ "${SENDING_DRY_RUN:-}" = "true" ] || fail "SENDING_DRY_RUN must remain true"
@@ -66,6 +77,7 @@ if [ "$container_only" = "false" ]; then
   printf 'Node: %s\n' "$(node --version)"
   printf 'npm: %s\n' "$(npm --version)"
 fi
+printf 'PostgreSQL host port: %s\n' "$POSTGRES_HOST_PORT"
 printf 'Database URL: %s\n' "$DATABASE_URL"
 printf 'Bootstrap user configured: yes\n'
 printf 'Sending controls: enabled=false dry-run=true daily-limit=0 kill-switch=true\n'
