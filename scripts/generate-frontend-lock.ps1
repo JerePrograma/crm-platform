@@ -18,18 +18,23 @@ if (-not (Test-Path $packageJson)) {
 }
 
 & docker run --rm `
-  -v "${frontendPath}:/workspace/frontend" `
-  -w /workspace/frontend `
+  --mount "type=bind,source=$frontendPath,target=/workspace/frontend" `
+  --workdir /workspace/frontend `
   node:22-alpine `
-  npm install --no-audit --no-fund
+  npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
 if ($LASTEXITCODE -ne 0) {
-  Fail "npm install exited with code $LASTEXITCODE"
+  Fail "npm package-lock generation exited with code $LASTEXITCODE"
 }
 
 if (-not (Test-Path $lockfile)) {
   Fail 'package-lock.json was not generated'
 }
 
+if (Test-Path (Join-Path $frontendPath 'node_modules')) {
+  Fail 'node_modules was unexpectedly created; remove it before continuing'
+}
+
 Write-Host "Frontend lockfile generated: $lockfile"
-Write-Host 'Review it with git diff before committing.'
+Write-Host 'No package lifecycle scripts were executed and node_modules was not created.'
+Write-Host 'Review the lockfile before committing.'
