@@ -1,6 +1,7 @@
 package com.gestudio.crm.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.gestudio.crm.contact.ContactChannelType;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,13 @@ class NormalizationServiceTest {
         .isEqualTo("5491155551212");
     assertThat(service.normalizeDomain("https://www.Example.com/contacto"))
         .isEqualTo("example.com");
+  }
+
+  @Test
+  void rejectsMalformedEmailChannelsBeforePersistence() {
+    assertThatThrownBy(() -> service.normalizeEmail("not-an-email"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid email address");
   }
 
   @Test
