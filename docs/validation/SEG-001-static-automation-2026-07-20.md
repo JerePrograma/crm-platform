@@ -62,10 +62,29 @@ Resultado: `PASS_PARSE / PASS_STRUCTURE`.
 
 PyYAML cargó el workflow y se verificaron los cuatro jobs y el paso de seguridad.
 
-### Scripts shell iniciales
+### Preflight Unix actualizado
 
 ```bash
 sh -n scripts/preflight.sh
+```
+
+Resultado: `PASS_SYNTAX`.
+
+Además de variables, puertos y guardas, el script ahora exige:
+
+```text
+docker info
+docker compose version
+docker compose --profile app --profile smoke config --quiet
+```
+
+Esto permite fallar antes de los builds cuando Docker Desktop está instalado pero el daemon no responde.
+
+La ejecución de `docker info` continúa pendiente porque Docker no está disponible en este entorno.
+
+### Otros scripts shell iniciales
+
+```bash
 sh -n scripts/smoke-test.sh
 sh -n scripts/set-postgres-host-port.sh
 sh -n scripts/set-local-host-ports.sh
@@ -121,6 +140,14 @@ sh -n scripts/check-repository-safety.sh
 
 Resultado: `PASS_SYNTAX`.
 
+El recorrido de `git ls-files` usa:
+
+```text
+while IFS= read -r path
+```
+
+para conservar rutas con espacios y evitar separación por palabras.
+
 Cobertura estructural:
 
 - `.env`;
@@ -174,7 +201,7 @@ Estado: `PASS_FUNCTIONAL_ISOLATED`.
 
 ### Makefile
 
-Controles:
+Controles iniciales:
 
 ```bash
 make -n backend-verify-container
@@ -197,8 +224,24 @@ verify-container: PASS_PARSE
 smoke-container recursion: PASS_PARSE
 ```
 
+Control final sobre los targets publicados:
+
+```bash
+make -n repository-safety backend-verify-container verify-container
+```
+
+Resultado:
+
+```text
+repository-safety: PASS_PARSE
+backend-verify-container: PASS_PARSE
+verify-container: PASS_PARSE
+smoke-container recursion: PASS_PARSE
+```
+
 Recetas expandidas:
 
+- seguridad del repositorio;
 - backend verify contenedorizado;
 - preflight container-only;
 - lockfile;
@@ -209,6 +252,22 @@ Recetas expandidas:
 
 El primer fallo fue del harness estático, no del Makefile versionado.
 
+### Validador integral — fail fast
+
+Read-back de `scripts/validate-seg001.ps1` confirmó:
+
+- rama `main` obligatoria;
+- detección inicial de cambios rastreados o archivos no rastreados inesperados;
+- única excepción previa: `frontend/package-lock.json` no rastreado;
+- builds y pruebas no comienzan si el árbol está contaminado;
+- verificación final permite únicamente package-lock;
+- resumen JSON en `finally`;
+- cleanup controlado por `-KeepRunning`.
+
+Estado: `PASS_CODE_REVIEW`.
+
+El parser PowerShell real continúa pendiente.
+
 ### Read-back remoto
 
 Se releyeron desde `main`:
@@ -217,10 +276,15 @@ Se releyeron desde `main`:
 docker-compose.yml
 .github/workflows/ci.yml
 Makefile
+scripts/preflight.ps1
+scripts/preflight.sh
 scripts/set-local-host-ports.sh
 scripts/validate-docker-stack.ps1
+scripts/verify-backend-container.ps1
 scripts/verify-backend-container.sh
+scripts/generate-frontend-lock.ps1
 scripts/generate-frontend-lock.sh
+scripts/check-repository-safety.ps1
 scripts/check-repository-safety.sh
 scripts/validate-seg001.ps1
 frontend/Dockerfile
@@ -232,6 +296,7 @@ Resultado: `PASS`.
 
 - tres puertos host configurables;
 - preflight exige enteros válidos y distintos;
+- preflight exige daemon Docker accesible;
 - `DATABASE_URL` coordinada;
 - smoke deriva URLs desde `.env`;
 - configuradores preservan credenciales;
@@ -244,7 +309,9 @@ Resultado: `PASS`.
 - repositorio backend read-only;
 - socket Docker documentado como privilegiado;
 - seguridad centralizada;
+- rutas con espacios conservadas en Unix;
 - orquestador integral exige main y árbol limpio;
+- archivos locales inesperados fallan antes de los builds;
 - único cambio esperado: package-lock.
 
 ## Controles no ejecutados
@@ -255,6 +322,7 @@ Resultado: `PASS`.
 - validador Docker PowerShell;
 - backend verify PowerShell;
 - validador integral PowerShell;
+- daemon Docker real con preflight actualizado;
 - Docker Compose config semántico;
 - builds frontend/backend;
 - stack completo;
@@ -277,6 +345,6 @@ docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 
 ## Conclusión
 
-Compose, CI, shell, Makefile, configuración de puertos, backend verify, lockfile seguro y seguridad del repositorio superaron los controles estáticos disponibles.
+Compose, CI, shell, Makefile, configuración de puertos, preflight, backend verify, lockfile seguro y seguridad del repositorio superaron los controles estáticos disponibles.
 
 SEG-001 continúa pendiente hasta ejecutar `scripts/validate-seg001.ps1`, generar/versionar package-lock, repetir npm ci y observar evidencia funcional verde.
