@@ -1,31 +1,32 @@
 # Gestudio CRM Platform
 
-CRM comercial especializado en la prospección, revisión, importación y gestión segura de prospectos para Gestudio.
-
-El diseño objetivo es un monolito modular que permita separar workers e integraciones sin reescribir el dominio. PostgreSQL es la fuente de verdad. Google Sheets será una interfaz auxiliar en segmentos posteriores.
+CRM comercial para importar, revisar y administrar prospectos de Gestudio con PostgreSQL como fuente de verdad y controles fail-closed.
 
 ## Estado actual
 
-La rama activa `feat/seg-001-prospect-vertical-slice` contiene:
+Todo el código y la documentación vigentes están consolidados en `main`.
+
+`SEG-001 — Vertical slice persistente de prospectos` está funcionalmente implementado y endurecido mediante revisión estática. Continúa abierto hasta obtener evidencia ejecutada de Maven, Testcontainers, Flyway, Hibernate, frontend, Compose e imagen Docker.
+
+El sistema incluye:
 
 - backend Java 21 y Spring Boot;
-- PostgreSQL y migraciones Flyway;
+- PostgreSQL 17, Flyway V1–V5 y JPA `validate`;
 - instituciones, contactos, canales, prospectos y exclusiones;
-- normalización y deduplicación exacta/ambigua;
+- normalización, elegibilidad y deduplicación exacta/ambigua;
 - importaciones CSV/XLSX persistentes e idempotentes;
-- preview y ejecución con confirmación explícita;
-- cola de revisión humana de duplicados;
-- auditoría estructurada;
-- API REST y RFC 7807;
-- interfaz React + TypeScript + Vite;
-- Docker, Docker Compose y GitHub Actions;
-- pruebas unitarias y de integración con Testcontainers.
+- preview con paridad de validación y ejecución confirmada;
+- evidencia por fila y cola de revisión humana;
+- auditoría JSONB;
+- API REST, OpenAPI y RFC 7807;
+- interfaz React, TypeScript y Vite;
+- Docker, Docker Compose, GitHub Actions y Testcontainers.
 
-El segmento sigue abierto hasta obtener una ejecución CI verde y corregir cualquier fallo real de compilación o migración.
+Estado detallado: `docs/status.md`.
 
 ## Seguridad de envío
 
-No existe ningún adaptador de envío real. La configuración obligatoria es:
+No existe ningún adaptador de correo, Gmail o SMTP. Los valores obligatorios son:
 
 ```text
 SENDING_ENABLED=false
@@ -34,27 +35,85 @@ SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
 ```
 
-PostgreSQL inicializa además un kill switch persistente. Ningún cambio de este segmento puede habilitar correo.
+PostgreSQL inicializa además un kill switch persistente. Ninguna operación disponible puede enviar mensajes.
 
-## Requisitos locales
+## Inicio rápido
 
+### Requisitos
+
+- Git;
 - Java 21;
-- Docker con Docker Compose;
-- Node.js 22 para el frontend;
-- `curl` o `wget`, `unzip` y una herramienta SHA-512 si Maven no está instalado.
+- Docker con Compose v2;
+- Node.js 22 y npm;
+- `curl` o `wget`, `unzip` y SHA-512 para el primer uso del Maven Wrapper.
 
-El repositorio incluye lanzadores Maven que descargan Maven 3.9.16 y verifican su SHA-512 antes de ejecutarlo.
+### 1. Clonar `main`
 
-## Inicio local — Linux/macOS
+```bash
+git clone https://github.com/JerePrograma/crm-platform.git
+cd crm-platform
+git switch main
+git pull --ff-only
+```
+
+### 2. Crear configuración local
+
+Linux/macOS:
 
 ```bash
 cp .env.example .env
-# Editar .env y definir credenciales locales no compartidas.
+```
 
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Editar `.env` y cambiar al menos `CRM_BOOTSTRAP_PASSWORD`. Mantener cerradas las cuatro variables de envío.
+
+### 3. Levantar PostgreSQL
+
+```bash
 docker compose up -d postgres
+docker compose ps
+```
+
+Compose y el backend consumen el mismo `DATABASE_USER`, `DATABASE_PASSWORD` y `POSTGRES_DB` desde `.env`.
+
+### 4. Levantar backend
+
+Linux/macOS:
+
+```bash
 set -a && . ./.env && set +a
 sh ./mvnw -f backend/pom.xml spring-boot:run
 ```
+
+Windows PowerShell:
+
+```powershell
+Get-Content .env | ForEach-Object {
+  if ($_ -match '^(?<name>[^#][^=]*)=(?<value>.*)$') {
+    [Environment]::SetEnvironmentVariable($matches.name.Trim(), $matches.value, 'Process')
+  }
+}
+.\mvnw.cmd -f backend\pom.xml spring-boot:run
+```
+
+Health:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+Swagger, con autenticación Basic:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+### 5. Levantar frontend
 
 En otra terminal:
 
@@ -64,55 +123,52 @@ npm install
 npm run dev
 ```
 
-Abrir `http://localhost:5173`.
+Abrir:
 
-## Inicio local — Windows PowerShell
-
-```powershell
-Copy-Item .env.example .env
-# Editar .env y definir credenciales locales no compartidas.
-
-docker compose up -d postgres
-Get-Content .env | ForEach-Object {
-  if ($_ -match '^(?<name>[^#][^=]*)=(?<value>.*)$') {
-    [Environment]::SetEnvironmentVariable($matches.name.Trim(), $matches.value, 'Process')
-  }
-}
-.\mvnw.cmd -f backend\pom.xml spring-boot:run
+```text
+http://localhost:5173
 ```
 
-En otra terminal:
+Ingresar con `CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`.
 
-```powershell
-Set-Location frontend
-npm install
-npm run dev
+La guía completa, incluyendo comprobaciones, troubleshooting, detención y flujo funcional, está en:
+
+```text
+docs/local-development-and-usage.md
 ```
 
-## Validaciones
+## Flujo operativo recomendado
 
-Linux/macOS:
+1. ingresar al Dashboard y comprobar que los envíos figuran bloqueados;
+2. registrar en `Exclusiones` los canales que no deben contactarse;
+3. preparar un CSV o XLSX de hasta 10 MB;
+4. ejecutar `Preview` desde `Importaciones`;
+5. revisar filas `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
+6. corregir el archivo cuando corresponda;
+7. ejecutar `Importar con confirmación`;
+8. revisar los prospectos creados y su elegibilidad;
+9. comprobar los eventos en `Auditoría`.
 
-```bash
-sh ./mvnw -B -f backend/pom.xml verify
-(cd frontend && npm install && npm run build)
-docker compose config
-docker build -t gestudio-crm:local .
+El preview persiste evidencia, pero no crea prospectos ni exclusiones procedentes del archivo. La ejecución requiere confirmación en la UI y la cabecera:
+
+```text
+X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
 ```
 
-Windows PowerShell:
+## Formatos de importación
 
-```powershell
-.\mvnw.cmd -B -f backend\pom.xml verify
-Push-Location frontend
-npm install
-npm run build
-Pop-Location
-docker compose config
-docker build -t gestudio-crm:local .
-```
+- CSV UTF-8 separado por coma o punto y coma;
+- XLSX con hoja `Prospectos` y hoja opcional `Exclusiones`;
+- tamaño máximo: 10 MB;
+- CSV requiere al menos el encabezado `Institución`;
+- el parser trabaja por encabezados normalizados, no por posiciones fijas.
 
-Las pruebas de integración requieren Docker porque utilizan PostgreSQL mediante Testcontainers.
+Contrato completo:
+
+- `docs/import-existing-data.md`;
+- `docs/import-hardening.md`.
+
+Los datos operativos reales no se versionan. Las pruebas generan fixtures con dominios `.test`.
 
 ## API implementada
 
@@ -121,39 +177,80 @@ GET  /actuator/health
 GET  /api/v1/prospects
 POST /api/v1/prospects
 GET  /api/v1/prospects/{id}
-
 POST /api/v1/imports/prospects/preview
 POST /api/v1/imports/prospects/execute
 GET  /api/v1/imports/prospects/{jobId}
 GET  /api/v1/imports/prospects/{jobId}/rows
 GET  /api/v1/imports/prospects/duplicate-reviews/pending
-
 GET  /api/v1/exclusions
 POST /api/v1/exclusions
 GET  /api/v1/exclusions/{id}
-
 GET  /api/v1/audit
 ```
 
-`POST /api/v1/imports/prospects/execute` exige:
+## Validación
 
-```text
-X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
+Linux/macOS:
+
+```bash
+sh ./mvnw -B -f backend/pom.xml verify
+
+cd frontend
+npm install
+npm run typecheck
+npm run build
+cd ..
+
+docker compose config
+docker build -t gestudio-crm:local .
 ```
 
-## Datos operativos
+Windows PowerShell:
 
-El repositorio es público. No se versionan:
+```powershell
+.\mvnw.cmd -B -f backend\pom.xml verify
 
-- lotes reales de prospectos;
-- correos o teléfonos comerciales;
-- exportaciones de Gmail o Sheets;
-- tokens OAuth;
-- claves privadas;
-- cuentas de servicio;
-- secretos de infraestructura.
+Push-Location frontend
+npm install
+npm run typecheck
+npm run build
+Pop-Location
 
-Las pruebas generan un workbook ficticio con la misma estructura de encabezados y los mismos conteos de referencia: 100 prospectos y 16 exclusiones.
+docker compose config
+docker build -t gestudio-crm:local .
+```
+
+Las pruebas de integración requieren Docker porque utilizan PostgreSQL mediante Testcontainers.
+
+La evidencia real se registra exclusivamente en `docs/validation/SEG-001.md`.
+
+## Detener el entorno
+
+Detener backend y frontend con `Ctrl+C`.
+
+Conservar base local:
+
+```bash
+docker compose down
+```
+
+Eliminar también la base local:
+
+```bash
+docker compose down -v
+```
+
+`down -v` destruye los datos del volumen.
+
+## Limitaciones actuales
+
+- `SEG-001` no debe declararse completo sin CI o validación local verde;
+- falta `package-lock.json` hasta ejecutar `npm install` en un entorno con registro disponible;
+- HTTP Basic es temporal;
+- no existen usuarios persistentes ni RBAC;
+- no existe resolución desde UI de `DuplicateReview`;
+- no existe retry explícito de trabajos fallidos;
+- no existen campañas, Gmail, Sheets, workers ni infraestructura cloud.
 
 ## Continuidad
 
@@ -164,6 +261,7 @@ Antes de modificar el proyecto, leer:
 3. `docs/next-step.md`;
 4. `docs/backlog.md`;
 5. `docs/segments/SEG-001.md`;
-6. ADR y documentación del módulo afectado.
+6. `docs/validation/SEG-001.md`;
+7. ADR y documentación del módulo afectado.
 
-La instrucción `continuar` ejecuta el trabajo indicado en `docs/next-step.md` y actualiza el estado al terminar.
+La instrucción `continuar` ejecuta el trabajo indicado en `docs/next-step.md` y actualiza toda la documentación canónica al finalizar.
