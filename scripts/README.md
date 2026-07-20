@@ -48,17 +48,17 @@ El preflight comprueba siempre:
 
 No imprime contraseñas ni inicia servicios.
 
-## Smoke test
+## Smoke test contra stack activo
 
-Requiere PostgreSQL, backend y frontend activos.
+Requiere PostgreSQL, backend y frontend ya activos.
 
-### Linux y macOS
+Linux/macOS:
 
 ```bash
 sh scripts/smoke-test.sh
 ```
 
-### Windows PowerShell
+Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
@@ -72,7 +72,29 @@ Comprueba:
 
 No crea prospectos, exclusiones ni importaciones.
 
-## Variables opcionales del smoke test
+## Smoke test completamente contenedorizado
+
+El perfil `smoke` usa un contenedor efímero y espera que frontend y backend estén saludables.
+
+Con Make:
+
+```bash
+make smoke-container
+```
+
+Comando equivalente:
+
+```bash
+docker compose --profile app --profile smoke up \
+  --build \
+  --abort-on-container-exit \
+  --exit-code-from smoke \
+  smoke
+```
+
+El target Make retira los contenedores al finalizar y conserva el volumen PostgreSQL. En CI se imprime el log completo si el smoke falla y luego se elimina también el volumen de CI.
+
+## Variables opcionales del smoke test de host
 
 Por defecto:
 
@@ -85,8 +107,6 @@ Pueden reemplazarse en la sesión sin modificar `.env`.
 
 ## Makefile
 
-En sistemas con `make`:
-
 ```bash
 make preflight
 make preflight-container
@@ -94,6 +114,7 @@ make db-up
 make app-up
 make app-logs
 make smoke
+make smoke-container
 make verify
 make app-down
 ```
@@ -112,7 +133,8 @@ make app-down
 | `backend` | ejecuta Spring Boot desde Maven Wrapper |
 | `frontend` | instala dependencias y ejecuta Vite |
 | `verify` | ejecuta backend, frontend, Compose y builds de imágenes |
-| `smoke` | ejecuta el smoke test contra servicios activos |
+| `smoke` | prueba servicios ya activos desde el host |
+| `smoke-container` | construye, levanta, prueba y retira stack efímero |
 | `reset-db` | elimina contenedores y volumen local |
 
 ## Advertencia destructiva
@@ -124,7 +146,7 @@ make reset-db
 o:
 
 ```bash
-docker compose --profile app down -v
+docker compose --profile app --profile smoke down -v --remove-orphans
 ```
 
 elimina la base PostgreSQL local. No ejecutar si el volumen contiene información que deba conservarse.
@@ -149,7 +171,8 @@ CI valida:
 - sintaxis `sh` de ambos scripts Unix;
 - sintaxis PowerShell de ambos scripts Windows;
 - preflight fail-closed con credenciales ficticias;
-- Compose con perfil `app`;
-- imágenes backend y frontend.
-
-Los smoke tests no se ejecutan en CI todavía porque requieren levantar y esperar el stack completo; siguen siendo un control de cierre manual de SEG-001.
+- Compose con perfiles `app` y `smoke`;
+- imágenes backend y frontend;
+- arranque de PostgreSQL, backend y frontend;
+- smoke test contenedorizado;
+- logs en fallo y limpieza obligatoria.
