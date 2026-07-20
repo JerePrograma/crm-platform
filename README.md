@@ -6,31 +6,34 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 
 Todo el código y la documentación vigentes están consolidados en `main`.
 
-`SEG-001 — Vertical slice persistente de prospectos` está implementado y endurecido. La validación real produjo:
+```text
+SEG-000: COMPLETE
+SEG-001: ACTIVE — implementación completa, validación verde pendiente
+SEG-002: PLANNED
+```
+
+Evidencia real disponible:
 
 - preflight Docker: `PASS`;
 - primer build frontend: `FAIL` con tres errores TypeScript;
-- errores frontend: corregidos en `main`;
+- errores TypeScript: corregidos;
 - imágenes frontend/backend: exportadas desde caché;
-- primer arranque: bloqueado por el puerto host PostgreSQL 5432;
-- PostgreSQL, backend y frontend con puertos configurables: implementado;
-- validador Docker Windows: implementado;
-- build limpio, stack, migraciones, tests, smoke y lockfile: pendientes.
+- primer arranque: bloqueado por puerto 5432;
+- tres puertos host configurables: implementados;
+- validación integral Docker/Maven/Testcontainers/npm ci: automatizada y pendiente de ejecución.
 
-Evidencias:
+Fuentes:
 
 ```text
+docs/status.md
+docs/next-step.md
 docs/validation/SEG-001.md
-docs/validation/SEG-001-container-build-2026-07-20.md
-docs/validation/SEG-001-rerun-2026-07-20.md
-docs/validation/SEG-001-local-orchestration-2026-07-20.md
+docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 ```
-
-Estado detallado: `docs/status.md`.
 
 ## Alcance
 
-- backend Java 21 y Spring Boot;
+- Java 21 y Spring Boot;
 - PostgreSQL 17, Flyway V1–V5 y Hibernate validate;
 - instituciones, contactos, canales, prospectos y exclusiones;
 - normalización, elegibilidad y deduplicación exacta/ambigua;
@@ -38,9 +41,10 @@ Estado detallado: `docs/status.md`.
 - preview, ejecución confirmada y evidencia por fila;
 - auditoría JSONB;
 - API REST, OpenAPI y RFC 7807;
-- React, TypeScript y Vite;
+- React, TypeScript strict y Vite;
 - Docker Compose para PostgreSQL, backend, frontend y smoke;
-- GitHub Actions, Testcontainers, preflight y smoke tests.
+- Maven verify, ArchUnit y Testcontainers;
+- CI, preflight, smoke y evidencia estructurada.
 
 ## Seguridad de envío
 
@@ -55,15 +59,16 @@ SENDING_KILL_SWITCH=true
 
 PostgreSQL contiene además un kill switch persistente. Ninguna operación disponible puede enviar mensajes.
 
-## Inicio recomendado en Windows: un comando
+## Validación completa recomendada en Windows
 
 ### Requisitos
 
 - Git;
-- Docker Desktop;
-- Docker Compose v2.
+- Docker Desktop con contenedores Linux;
+- Docker Compose v2;
+- Windows PowerShell.
 
-Java, Node y Maven no son necesarios para validar el stack Docker. Java 21 sí es necesario después para ejecutar Maven verify desde el host.
+No requiere Java, Maven, Node o npm instalados en el host.
 
 ### 1. Actualizar `main`
 
@@ -81,17 +86,18 @@ Si `mvnw.cmd` aparece modificado sin intención:
 ```powershell
 git diff --ignore-space-at-eol -- mvnw.cmd
 git restore -- mvnw.cmd
+git status --short
 ```
 
-### 2. Crear `.env` solo si no existe
+### 2. Crear `.env` solamente cuando no exista
 
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-Editar las credenciales bootstrap y conservar las guardas de envío.
+Editar `CRM_BOOTSTRAP_PASSWORD` y conservar las cuatro guardas de envío.
 
-Variables de puertos:
+Puertos predeterminados:
 
 ```dotenv
 POSTGRES_HOST_PORT=55432
@@ -100,10 +106,10 @@ FRONTEND_HOST_PORT=5173
 DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
 ```
 
-### 3. Ejecutar validación Docker automatizada
+### 3. Ejecutar el recorrido integral
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
+powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -PostgresPort 55432 `
   -BackendPort 8080 `
   -FrontendPort 5173 `
@@ -112,30 +118,57 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
 
 El script:
 
-1. actualiza puertos sin tocar contraseñas;
-2. ejecuta preflight;
-3. limpia contenedores incompletos sin borrar volumen;
-4. construye frontend y backend sin caché;
-5. levanta los tres servicios;
-6. espera health checks;
-7. ejecuta smoke PowerShell;
-8. ejecuta smoke contenedorizado;
-9. guarda evidencia en `validation-output/`;
-10. deja el stack activo.
+1. exige `main` y archivos rastreados limpios;
+2. actualiza puertos sin tocar contraseñas;
+3. ejecuta preflight fail-closed;
+4. construye frontend/backend sin caché;
+5. levanta PostgreSQL, backend y frontend;
+6. espera los health checks;
+7. ejecuta smoke host y contenedor;
+8. ejecuta Maven verify/Spotless/tests/ArchUnit/Testcontainers en Docker;
+9. genera package-lock sin lifecycle scripts ni node_modules;
+10. reconstruye frontend mediante npm ci;
+11. repite health y smoke;
+12. escanea archivos sensibles rastreados;
+13. produce transcript y JSON;
+14. deja `frontend/package-lock.json` sin commit para revisión.
 
-Si 8080 o 5173 están ocupados:
+No usar `-UseBuildCache` como evidencia de cierre.
+
+### 4. Puertos alternativos
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
+powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -PostgresPort 55432 `
   -BackendPort 18080 `
   -FrontendPort 15173 `
   -KeepRunning
 ```
 
-Los smoke tests usan automáticamente los puertos configurados.
+Los smoke tests derivan las URLs desde `.env`.
 
-### 4. Abrir
+### 5. Resultado esperado
+
+```text
+SEG-001 Docker validation passed.
+Containerized backend verification passed.
+Frontend lockfile generated.
+Repository safety scan passed.
+Complete SEG-001 validation passed.
+```
+
+### 6. Evidencia
+
+```text
+validation-output/seg001-docker-*.json
+validation-output/seg001-complete-*.json
+validation-output/seg001-complete-*.log
+frontend/package-lock.json
+```
+
+`validation-output/` está ignorado por Git. Revisar transcripts antes de compartirlos.
+
+### 7. Abrir el sistema
 
 Con puertos predeterminados:
 
@@ -147,97 +180,112 @@ Swagger:  http://localhost:8080/swagger-ui/index.html
 
 Ingresar con `CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`.
 
-## Validaciones posteriores
-
-### Maven verify
-
-```powershell
-.\mvnw.cmd -B -f backend\pom.xml verify
-```
-
-Debe cubrir compilación, Spotless, unit tests, ArchUnit, Testcontainers, Flyway y Hibernate.
-
-### Generar package-lock
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
-```
-
-Revisar:
+### 8. Revisar y versionar package-lock
 
 ```powershell
 Test-Path frontend\package-lock.json
+Get-FileHash frontend\package-lock.json -Algorithm SHA256
 git status --short
 git diff -- frontend\package-lock.json
 ```
 
-Dockerfile, Makefile y CI ya seleccionan automáticamente:
-
-```text
-package-lock presente -> npm ci
-package-lock ausente  -> npm install
-```
-
-## Inicio manual con Docker
-
-Configurar puertos:
+Después de revisarlo:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
+git add frontend/package-lock.json
+git commit -m "build: lock frontend dependencies"
+git push origin main
+```
+
+No agregar `.env` ni `validation-output/`.
+
+### 9. Repetir desde árbol limpio
+
+```powershell
+git pull --ff-only
+powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -PostgresPort 55432 `
   -BackendPort 8080 `
   -FrontendPort 5173
 ```
 
-Preflight:
+La segunda ejecución debe usar npm ci desde el primer build.
+
+## Comandos separados
+
+### Validar solo Docker stack
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
+powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173 `
+  -KeepRunning
 ```
 
-Builds limpios:
+### Maven verify/Testcontainers sin Java local
 
 ```powershell
-docker compose --progress plain --profile app build --no-cache frontend
-docker compose --progress plain --profile app build --no-cache backend
+powershell -ExecutionPolicy Bypass -File scripts/verify-backend-container.ps1
 ```
 
-Levantar:
+Unix:
+
+```bash
+sh scripts/verify-backend-container.sh
+```
+
+Este control monta el socket Docker. Ejecutarlo solamente sobre código propio y revisado.
+
+### Generar package-lock de forma segura
 
 ```powershell
-docker compose --profile app up -d
-docker compose --profile app ps
+powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
 ```
 
-Smoke:
+Unix:
+
+```bash
+sh scripts/generate-frontend-lock.sh
+```
+
+Usa:
+
+```text
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+```
+
+### Seguridad del repositorio
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
-docker compose --profile app --profile smoke run --rm smoke
+powershell -ExecutionPolicy Bypass -File scripts/check-repository-safety.ps1
 ```
 
-No utilizar `docker compose down -v` salvo que se pretenda eliminar la base local.
+Unix:
+
+```bash
+sh scripts/check-repository-safety.sh
+```
 
 ## Linux/macOS
+
+Recorrido contenedorizado equivalente mediante Make:
 
 ```bash
 git switch main
 git pull --ff-only
 sh scripts/set-local-host-ports.sh 55432 8080 5173
-sh scripts/preflight.sh --container-only
-docker compose --profile app --profile smoke down --remove-orphans
-docker compose --progress plain --profile app build --no-cache frontend
-docker compose --progress plain --profile app build --no-cache backend
-docker compose --profile app up -d
-sh scripts/smoke-test.sh
-docker compose --profile app --profile smoke run --rm smoke
+make verify-container
 ```
 
-Maven y lockfile:
+Targets individuales:
 
 ```bash
-sh ./mvnw -B -f backend/pom.xml verify
-sh scripts/generate-frontend-lock.sh
+make preflight-container
+make repository-safety
+make backend-verify-container
+make frontend-lock
+make smoke-container
 ```
 
 ## Desarrollo con procesos separados
@@ -251,7 +299,7 @@ set -a && . ./.env && set +a
 sh ./mvnw -f backend/pom.xml spring-boot:run
 ```
 
-En otra terminal:
+Otra terminal:
 
 ```bash
 cd frontend
@@ -307,24 +355,29 @@ GET  /api/v1/exclusions/{id}
 GET  /api/v1/audit
 ```
 
-## Automatización Make
+## Makefile
 
-```bash
-make preflight
-make preflight-container
-make postgres-port
-make local-ports
-make db-up
-make app-up
-make app-logs
-make frontend-lock
-make smoke
-make smoke-container
-make verify
-make app-down
+```text
+preflight
+preflight-container
+postgres-port
+local-ports
+repository-safety
+db-up
+db-down
+app-up
+app-down
+app-logs
+backend
+backend-verify-container
+frontend
+frontend-lock
+verify
+verify-container
+smoke
+smoke-container
+reset-db
 ```
-
-Detalles: `scripts/README.md`.
 
 ## Detener
 
@@ -344,10 +397,12 @@ La segunda operación es destructiva.
 
 ## Limitaciones actuales
 
-- clean builds posteriores a las correcciones pendientes;
-- PowerShell nuevo pendiente de ejecución real;
-- Flyway, Hibernate, tests y smoke pendientes;
-- falta package-lock versionado;
+- validador integral pendiente de ejecución real;
+- clean builds pendientes;
+- Maven/Testcontainers/Flyway/Hibernate pendientes;
+- package-lock pendiente de generación y versión;
+- npm ci pendiente de evidencia real;
+- CI no muestra runs visibles;
 - HTTP Basic temporal;
 - sin usuarios persistentes/RBAC;
 - sin resolución UI de DuplicateReview;
@@ -363,4 +418,5 @@ La segunda operación es destructiva.
 - `docs/containerized-quickstart.md` — Docker;
 - `docs/local-development-and-usage.md` — procesos separados y flujo;
 - `scripts/README.md` — automatización;
-- `docs/validation/SEG-001.md` — matriz.
+- `docs/validation/SEG-001.md` — matriz;
+- `docs/validation/SEG-001-complete-validation-automation-2026-07-20.md` — contrato del validador integral.
