@@ -88,16 +88,16 @@ public class ProspectImportRowProcessor {
     }
     if (deduplication.kind() == Kind.REVIEW_REQUIRED) {
       row.requireReview();
-      if (!dryRun) {
-        duplicateReviewRepository.save(
-            DuplicateReview.create(
-                row,
-                deduplication.existingProspect(),
-                deduplication.matchType(),
-                BigDecimal.valueOf(deduplication.confidence())
-                    .setScale(4, RoundingMode.HALF_UP),
-                "Ambiguous nominal match; automatic merge is forbidden"));
-      }
+      duplicateReviewRepository.save(
+          DuplicateReview.create(
+              row,
+              deduplication.existingProspect(),
+              deduplication.matchType(),
+              BigDecimal.valueOf(deduplication.confidence())
+                  .setScale(4, RoundingMode.HALF_UP),
+              dryRun
+                  ? "Ambiguous nominal match detected during preview; automatic merge is forbidden"
+                  : "Ambiguous nominal match; automatic merge is forbidden"));
       return RowOutcome.REVIEW_REQUIRED;
     }
 
