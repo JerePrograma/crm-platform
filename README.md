@@ -6,15 +6,16 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 
 Todo el código y la documentación vigentes están consolidados en `main`.
 
-`SEG-001 — Vertical slice persistente de prospectos` está implementado. La validación real produjo:
+`SEG-001 — Vertical slice persistente de prospectos` está implementado y endurecido. La validación real produjo:
 
 - preflight Docker: `PASS`;
 - primer build frontend: `FAIL` con tres errores TypeScript;
 - errores frontend: corregidos en `main`;
 - imágenes frontend/backend: exportadas desde caché;
-- stack: bloqueado por el puerto host PostgreSQL 5432;
-- puerto PostgreSQL configurable: corregido en `main`;
-- build limpio, stack, migraciones, tests y smoke: pendientes.
+- primer arranque: bloqueado por el puerto host PostgreSQL 5432;
+- PostgreSQL, backend y frontend con puertos configurables: implementado;
+- validador Docker Windows: implementado;
+- build limpio, stack, migraciones, tests, smoke y lockfile: pendientes.
 
 Evidencias:
 
@@ -22,12 +23,15 @@ Evidencias:
 docs/validation/SEG-001.md
 docs/validation/SEG-001-container-build-2026-07-20.md
 docs/validation/SEG-001-rerun-2026-07-20.md
+docs/validation/SEG-001-local-orchestration-2026-07-20.md
 ```
 
-El sistema incluye:
+Estado detallado: `docs/status.md`.
+
+## Alcance
 
 - backend Java 21 y Spring Boot;
-- PostgreSQL 17, Flyway V1–V5 y JPA validate;
+- PostgreSQL 17, Flyway V1–V5 y Hibernate validate;
 - instituciones, contactos, canales, prospectos y exclusiones;
 - normalización, elegibilidad y deduplicación exacta/ambigua;
 - importaciones CSV/XLSX persistentes e idempotentes;
@@ -35,14 +39,12 @@ El sistema incluye:
 - auditoría JSONB;
 - API REST, OpenAPI y RFC 7807;
 - React, TypeScript y Vite;
-- Compose para PostgreSQL, backend, frontend y smoke;
+- Docker Compose para PostgreSQL, backend, frontend y smoke;
 - GitHub Actions, Testcontainers, preflight y smoke tests.
-
-Estado detallado: `docs/status.md`.
 
 ## Seguridad de envío
 
-No existe adaptador de correo, Gmail o SMTP. Valores obligatorios:
+No existe adaptador Gmail, SMTP o de correo.
 
 ```text
 SENDING_ENABLED=false
@@ -53,141 +55,89 @@ SENDING_KILL_SWITCH=true
 
 PostgreSQL contiene además un kill switch persistente. Ninguna operación disponible puede enviar mensajes.
 
-## Inicio rápido recomendado: Docker
+## Inicio recomendado en Windows: un comando
 
 ### Requisitos
 
 - Git;
-- Docker Desktop o Docker Engine;
+- Docker Desktop;
 - Docker Compose v2.
 
-Java, Node y Maven no son necesarios en el host para esta modalidad.
+Java, Node y Maven no son necesarios para validar el stack Docker. Java 21 sí es necesario después para ejecutar Maven verify desde el host.
 
-### 1. Clonar o actualizar `main`
+### 1. Actualizar `main`
 
-```bash
-git clone https://github.com/JerePrograma/crm-platform.git
-cd crm-platform
+```powershell
+Set-Location C:\laburo\crm-platform
 git switch main
+git fetch origin
 git pull --ff-only
+git status
 git rev-parse HEAD
 ```
 
-En un checkout existente:
+Si `mvnw.cmd` aparece modificado sin intención:
 
-```bash
-git status
-git diff -- mvnw.cmd
-git pull --ff-only
-```
-
-Restaurar `mvnw.cmd` únicamente si su modificación local no fue intencional:
-
-```bash
+```powershell
+git diff --ignore-space-at-eol -- mvnw.cmd
 git restore -- mvnw.cmd
 ```
 
-### 2. Crear o actualizar `.env`
-
-Linux/macOS:
-
-```bash
-cp .env.example .env
-```
-
-Windows PowerShell:
+### 2. Crear `.env` solo si no existe
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-No sobrescribir `.env` si ya contiene credenciales válidas.
+Editar las credenciales bootstrap y conservar las guardas de envío.
 
-Configuración recomendada:
+Variables de puertos:
 
 ```dotenv
-POSTGRES_DB=gestudio_crm
 POSTGRES_HOST_PORT=55432
+BACKEND_HOST_PORT=8080
+FRONTEND_HOST_PORT=5173
 DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
-DATABASE_USER=gestudio
-DATABASE_PASSWORD=gestudio_local_only
-DATABASE_POOL_SIZE=10
-DATABASE_MIN_IDLE=1
-CRM_BOOTSTRAP_USERNAME=gestudio-admin
-CRM_BOOTSTRAP_PASSWORD=una-clave-local-segura
-SENDING_ENABLED=false
-SENDING_DRY_RUN=true
-SENDING_DAILY_LIMIT=0
-SENDING_KILL_SWITCH=true
-PORT=8080
 ```
 
-`POSTGRES_HOST_PORT` afecta únicamente al host. El backend contenedorizado conecta internamente a `postgres:5432`.
-
-### 3. Ejecutar preflight
-
-Linux/macOS:
-
-```bash
-sh scripts/preflight.sh --container-only
-```
-
-Windows:
+### 3. Ejecutar validación Docker automatizada
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
+powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173 `
+  -KeepRunning
 ```
 
-Con Make:
+El script:
 
-```bash
-make preflight-container
+1. actualiza puertos sin tocar contraseñas;
+2. ejecuta preflight;
+3. limpia contenedores incompletos sin borrar volumen;
+4. construye frontend y backend sin caché;
+5. levanta los tres servicios;
+6. espera health checks;
+7. ejecuta smoke PowerShell;
+8. ejecuta smoke contenedorizado;
+9. guarda evidencia en `validation-output/`;
+10. deja el stack activo.
+
+Si 8080 o 5173 están ocupados:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 18080 `
+  -FrontendPort 15173 `
+  -KeepRunning
 ```
 
-### 4. Build limpio de validación
+Los smoke tests usan automáticamente los puertos configurados.
 
-Frontend:
+### 4. Abrir
 
-```bash
-docker compose --progress plain --profile app build --no-cache frontend
-```
-
-Backend:
-
-```bash
-docker compose --progress plain --profile app build --no-cache backend
-```
-
-`--progress` es una opción global y debe ir antes de `build`.
-
-### 5. Levantar
-
-```bash
-docker compose --profile app up -d
-docker compose --profile app ps
-```
-
-Con Make:
-
-```bash
-make app-up
-```
-
-Puertos:
-
-```text
-PostgreSQL  127.0.0.1:55432
-Backend     127.0.0.1:8080
-Frontend    127.0.0.1:5173
-```
-
-Logs:
-
-```bash
-docker compose --profile app logs -f
-```
-
-### 6. Abrir
+Con puertos predeterminados:
 
 ```text
 Frontend: http://localhost:5173
@@ -197,106 +147,123 @@ Swagger:  http://localhost:8080/swagger-ui/index.html
 
 Ingresar con `CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`.
 
-### 7. Smoke
+## Validaciones posteriores
 
-Linux/macOS:
-
-```bash
-sh scripts/smoke-test.sh
-```
-
-Windows:
+### Maven verify
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
+.\mvnw.cmd -B -f backend\pom.xml verify
 ```
 
-Con Make:
+Debe cubrir compilación, Spotless, unit tests, ArchUnit, Testcontainers, Flyway y Hibernate.
 
-```bash
-make smoke
-make smoke-container
-```
-
-Guía completa: `docs/containerized-quickstart.md`.
-
-## Generar package-lock sin Node local
-
-Linux/macOS:
-
-```bash
-sh scripts/generate-frontend-lock.sh
-```
-
-Windows:
+### Generar package-lock
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
 ```
 
-Con Make:
-
-```bash
-make frontend-lock
-```
-
 Revisar:
 
-```bash
+```powershell
+Test-Path frontend\package-lock.json
 git status --short
-git diff -- frontend/package-lock.json
+git diff -- frontend\package-lock.json
 ```
 
-El lockfile debe versionarse antes de cambiar Dockerfile y CI a `npm ci`.
+Dockerfile, Makefile y CI ya seleccionan automáticamente:
+
+```text
+package-lock presente -> npm ci
+package-lock ausente  -> npm install
+```
+
+## Inicio manual con Docker
+
+Configurar puertos:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173
+```
+
+Preflight:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
+```
+
+Builds limpios:
+
+```powershell
+docker compose --progress plain --profile app build --no-cache frontend
+docker compose --progress plain --profile app build --no-cache backend
+```
+
+Levantar:
+
+```powershell
+docker compose --profile app up -d
+docker compose --profile app ps
+```
+
+Smoke:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
+docker compose --profile app --profile smoke run --rm smoke
+```
+
+No utilizar `docker compose down -v` salvo que se pretenda eliminar la base local.
+
+## Linux/macOS
+
+```bash
+git switch main
+git pull --ff-only
+sh scripts/set-local-host-ports.sh 55432 8080 5173
+sh scripts/preflight.sh --container-only
+docker compose --profile app --profile smoke down --remove-orphans
+docker compose --progress plain --profile app build --no-cache frontend
+docker compose --progress plain --profile app build --no-cache backend
+docker compose --profile app up -d
+sh scripts/smoke-test.sh
+docker compose --profile app --profile smoke run --rm smoke
+```
+
+Maven y lockfile:
+
+```bash
+sh ./mvnw -B -f backend/pom.xml verify
+sh scripts/generate-frontend-lock.sh
+```
 
 ## Desarrollo con procesos separados
 
 Requiere Java 21, Docker, Node 22 y npm.
 
-Preflight:
-
 ```bash
 sh scripts/preflight.sh --local
-```
-
-PostgreSQL:
-
-```bash
 docker compose up -d postgres
-docker compose ps
-```
-
-Backend Linux/macOS:
-
-```bash
 set -a && . ./.env && set +a
 sh ./mvnw -f backend/pom.xml spring-boot:run
 ```
 
-Backend Windows:
-
-```powershell
-Get-Content .env | ForEach-Object {
-  if ($_ -match '^(?<name>[^#][^=]*)=(?<value>.*)$') {
-    [Environment]::SetEnvironmentVariable($matches.name.Trim(), $matches.value, 'Process')
-  }
-}
-.\mvnw.cmd -f backend\pom.xml spring-boot:run
-```
-
-Frontend:
+En otra terminal:
 
 ```bash
 cd frontend
-npm install
+if [ -f package-lock.json ]; then npm ci; else npm install; fi
 npm run dev
 ```
 
-Abrir `http://localhost:5173`.
+Guía completa: `docs/local-development-and-usage.md`.
 
 ## Flujo operativo
 
-1. ingresar al Dashboard y comprobar envíos bloqueados;
+1. ingresar al Dashboard y comprobar que los envíos figuran bloqueados;
 2. registrar canales en `Exclusiones`;
 3. preparar CSV o XLSX de hasta 10 MB;
 4. ejecutar `Preview`;
@@ -312,7 +279,7 @@ La ejecución exige:
 X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
 ```
 
-## Formatos
+## Formatos de importación
 
 - CSV UTF-8 con coma o punto y coma;
 - XLSX con hoja `Prospectos` y hoja opcional `Exclusiones`;
@@ -322,7 +289,7 @@ X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
 
 Los datos reales no se versionan.
 
-## API
+## API principal
 
 ```text
 GET  /actuator/health
@@ -340,11 +307,13 @@ GET  /api/v1/exclusions/{id}
 GET  /api/v1/audit
 ```
 
-## Automatización
+## Automatización Make
 
 ```bash
 make preflight
 make preflight-container
+make postgres-port
+make local-ports
 make db-up
 make app-up
 make app-logs
@@ -357,31 +326,6 @@ make app-down
 
 Detalles: `scripts/README.md`.
 
-## Validación completa
-
-Backend Linux/macOS:
-
-```bash
-sh ./mvnw -B -f backend/pom.xml verify
-```
-
-Backend Windows:
-
-```powershell
-.\mvnw.cmd -B -f backend\pom.xml verify
-```
-
-Infraestructura:
-
-```bash
-docker compose --profile app --profile smoke config
-docker compose --progress plain --profile app build --no-cache frontend
-docker compose --progress plain --profile app build --no-cache backend
-make smoke-container
-```
-
-Testcontainers requiere Docker.
-
 ## Detener
 
 Conservar datos:
@@ -390,21 +334,20 @@ Conservar datos:
 docker compose --profile app down
 ```
 
-Eliminar también la base:
+Eliminar base local:
 
 ```bash
 docker compose --profile app --profile smoke down -v --remove-orphans
 ```
 
-`down -v` destruye el volumen.
+La segunda operación es destructiva.
 
 ## Limitaciones actuales
 
-- builds limpios posteriores a las correcciones pendientes;
-- stack bloqueado previamente por 5432, pendiente de reejecución con 55432;
+- clean builds posteriores a las correcciones pendientes;
+- PowerShell nuevo pendiente de ejecución real;
 - Flyway, Hibernate, tests y smoke pendientes;
-- falta package-lock;
-- Dockerfile/CI usan npm install hasta versionarlo;
+- falta package-lock versionado;
 - HTTP Basic temporal;
 - sin usuarios persistentes/RBAC;
 - sin resolución UI de DuplicateReview;
@@ -415,9 +358,9 @@ docker compose --profile app --profile smoke down -v --remove-orphans
 ## Documentación
 
 - `docs/README.md` — índice;
-- `docs/status.md` — estado real;
+- `docs/status.md` — alcance, progreso, tareas y riesgos;
 - `docs/next-step.md` — siguiente acción;
 - `docs/containerized-quickstart.md` — Docker;
-- `docs/local-development-and-usage.md` — procesos separados;
+- `docs/local-development-and-usage.md` — procesos separados y flujo;
 - `scripts/README.md` — automatización;
 - `docs/validation/SEG-001.md` — matriz.
