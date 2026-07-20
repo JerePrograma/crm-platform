@@ -68,6 +68,7 @@ jobs:
           scripts/generate-frontend-lock.sh
           scripts/set-postgres-host-port.sh
           scripts/set-local-host-ports.sh
+          scripts/verify-backend-container.sh
       - name: Validate PowerShell script syntax
         shell: pwsh
         run: |
@@ -77,7 +78,9 @@ jobs:
             'scripts/generate-frontend-lock.ps1',
             'scripts/set-postgres-host-port.ps1',
             'scripts/set-local-host-ports.ps1',
-            'scripts/validate-docker-stack.ps1'
+            'scripts/validate-docker-stack.ps1',
+            'scripts/verify-backend-container.ps1',
+            'scripts/validate-seg001.ps1'
           )
           foreach ($scriptPath in $scriptPaths) {
             $tokens = $null
@@ -91,6 +94,13 @@ jobs:
               throw "$scriptPath`n$($errors | Out-String)"
             }
           }
+      - name: Check repository safety invariants
+        run: |
+          git diff --check
+          if git ls-files | grep -E '(^\.env$|^validation-output/|^gestudio_lote_.*_prospectos\.xlsx$)'; then
+            echo 'Forbidden local or operational file is tracked.' >&2
+            exit 1
+          fi
       - name: Run fail-closed preflight
         run: |
           cp .env.example .env
