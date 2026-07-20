@@ -7,7 +7,7 @@
 - `next-step.md` — única próxima acción;
 - `backlog.md` — segmentos y dependencias;
 - `segments/SEG-001.md` — checklist activo;
-- `validation/SEG-001.md` — evidencia de ejecución.
+- `validation/SEG-001.md` — evidencia ejecutada, revisión estática y bloqueos.
 
 ## Diseño
 
@@ -15,7 +15,12 @@
 - `domain.md` — lenguaje ubicuo e invariantes;
 - `data-model.md` — tablas, relaciones y migraciones;
 - `roadmap.md` — fases de entrega;
-- `adr/` — decisiones arquitectónicas.
+- `adr/0001-modular-monolith.md`;
+- `adr/0002-postgresql-source-of-truth.md`;
+- `adr/0003-react-vite-frontend.md`;
+- `adr/0004-fail-closed-sending.md`;
+- `adr/0005-idempotent-imports.md`;
+- `adr/0006-preview-parity-and-excluded-metrics.md`.
 
 ## Seguridad y operación
 
@@ -28,7 +33,8 @@
 
 ## Datos e integraciones
 
-- `import-existing-data.md` — importación segura;
+- `import-existing-data.md` — incorporación segura del lote operativo;
+- `import-hardening.md` — contrato normativo del parser, preview, ejecución, métricas y recuperación;
 - `google-integration.md` — OAuth, Workspace, Gmail, Sheets y Drive;
 - `gmail-deliverability.md` — autenticación de dominio, volumen y métricas.
 
@@ -40,14 +46,15 @@
 - `../SECURITY.md` — reporte de vulnerabilidades;
 - `../CHANGELOG.md` — cambios.
 
-## Regla
+## Regla de precedencia
 
 Cuando exista contradicción:
 
 1. seguridad y ADR aceptados;
 2. `status.md`;
 3. `next-step.md`;
-4. documentación de segmento;
-5. resto de documentos.
+4. documentación de segmento y validación;
+5. contratos normativos de módulo;
+6. resto de documentos.
 
 Actualizar referencias cruzadas al mover o reemplazar documentos.
