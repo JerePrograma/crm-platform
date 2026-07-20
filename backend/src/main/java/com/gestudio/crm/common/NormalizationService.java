@@ -15,6 +15,8 @@ public class NormalizationService {
   private static final Pattern NON_ALPHANUMERIC = Pattern.compile("[^a-z0-9]+");
   private static final Pattern WHITESPACE = Pattern.compile("\\s+");
   private static final Pattern NON_DIGIT = Pattern.compile("\\D+");
+  private static final Pattern EMAIL =
+      Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", Pattern.CASE_INSENSITIVE);
 
   public String normalizeName(String value) {
     String normalized = normalizeText(value);
@@ -26,7 +28,14 @@ public class NormalizationService {
 
   public String normalizeEmail(String value) {
     String normalized = trimToNull(value);
-    return normalized == null ? null : normalized.toLowerCase(Locale.ROOT);
+    if (normalized == null) {
+      return null;
+    }
+    String lowerCase = normalized.toLowerCase(Locale.ROOT);
+    if (!EMAIL.matcher(lowerCase).matches()) {
+      throw new IllegalArgumentException("Invalid email address");
+    }
+    return lowerCase;
   }
 
   public String normalizePhone(String value) {
