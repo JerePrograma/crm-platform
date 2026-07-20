@@ -14,8 +14,10 @@ set -a
 . ./.env
 set +a
 
-BACKEND_URL=${BACKEND_URL:-http://localhost:8080}
-FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+BACKEND_HOST_PORT=${BACKEND_HOST_PORT:-8080}
+FRONTEND_HOST_PORT=${FRONTEND_HOST_PORT:-5173}
+BACKEND_URL=${BACKEND_URL:-http://localhost:$BACKEND_HOST_PORT}
+FRONTEND_URL=${FRONTEND_URL:-http://localhost:$FRONTEND_HOST_PORT}
 
 [ -n "${CRM_BOOTSTRAP_USERNAME:-}" ] || fail "CRM_BOOTSTRAP_USERNAME is required"
 [ -n "${CRM_BOOTSTRAP_PASSWORD:-}" ] || fail "CRM_BOOTSTRAP_PASSWORD is required"
@@ -35,6 +37,8 @@ printf '%s' "$frontend_response" | grep -qi '<div id="root"></div>' \
   || fail "Frontend root document was not served"
 
 printf 'Smoke test passed.\n'
+printf 'Backend URL: %s\n' "$BACKEND_URL"
+printf 'Frontend URL: %s\n' "$FRONTEND_URL"
 printf 'Backend health: UP\n'
 printf 'Authenticated API: reachable\n'
 printf 'Frontend: reachable\n'
