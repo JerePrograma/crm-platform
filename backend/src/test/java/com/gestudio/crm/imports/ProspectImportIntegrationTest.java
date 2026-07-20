@@ -77,6 +77,7 @@ class ProspectImportIntegrationTest {
     assertThat(first.status()).isEqualTo(ImportJob.Status.COMPLETED);
     assertThat(first.totalRows()).isEqualTo(116);
     assertThat(first.acceptedRows()).isEqualTo(116);
+    assertThat(first.excludedRows()).isZero();
     assertThat(first.rejectedRows()).isZero();
     assertThat(first.duplicateRows()).isZero();
     assertThat(first.reviewRows()).isZero();
@@ -97,6 +98,7 @@ class ProspectImportIntegrationTest {
     assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
     assertThat(summary.totalRows()).isEqualTo(3);
     assertThat(summary.acceptedRows()).isEqualTo(3);
+    assertThat(summary.excludedRows()).isZero();
     assertThat(prospectRepository.count()).isZero();
     assertThat(institutionRepository.count()).isZero();
     assertThat(exclusionRepository.count()).isZero();
@@ -117,7 +119,8 @@ class ProspectImportIntegrationTest {
     ImportRow row = importRowRepository.findAll().getFirst();
     assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
     assertThat(summary.totalRows()).isEqualTo(1);
-    assertThat(summary.acceptedRows()).isEqualTo(1);
+    assertThat(summary.acceptedRows()).isZero();
+    assertThat(summary.excludedRows()).isEqualTo(1);
     assertThat(row.getStatus()).isEqualTo(ImportRow.Status.EXCLUDED);
     assertThat(prospectRepository.count()).isZero();
     assertThat(institutionRepository.count()).isZero();
@@ -134,6 +137,7 @@ class ProspectImportIntegrationTest {
     var reloaded = prospectRepository.findById(existing.id()).orElseThrow();
     assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
     assertThat(summary.acceptedRows()).isEqualTo(1);
+    assertThat(summary.excludedRows()).isZero();
     assertThat(reloaded.isContactEligible()).isFalse();
     assertThat(reloaded.getStatus()).isEqualTo(ProspectStatus.DO_NOT_CONTACT);
     assertThat(
@@ -155,6 +159,7 @@ class ProspectImportIntegrationTest {
     ImportRow row = importRowRepository.findAll().getFirst();
     assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
     assertThat(summary.totalRows()).isEqualTo(1);
+    assertThat(summary.excludedRows()).isZero();
     assertThat(summary.rejectedRows()).isEqualTo(1);
     assertThat(row.getStatus()).isEqualTo(ImportRow.Status.REJECTED);
     assertThat(row.getNormalizedEmail()).isNull();
