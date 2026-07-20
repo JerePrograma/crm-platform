@@ -3,7 +3,6 @@ package com.gestudio.crm.imports;
 import com.gestudio.crm.common.ResourceNotFoundException;
 import com.gestudio.crm.imports.DuplicateReview.MatchType;
 import com.gestudio.crm.imports.DuplicateReview.Status;
-import com.gestudio.crm.imports.ImportRowRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -31,7 +30,9 @@ public class ImportOperationsQueryService {
     if (!importJobRepository.existsById(jobId)) {
       throw new ResourceNotFoundException("Import job not found: " + jobId);
     }
-    return importRowRepository.findAllByImportJobIdOrderByRowNumber(jobId).stream()
+    return importRowRepository
+        .findAllByImportJobIdOrderBySourceSheetAscRowNumberAsc(jobId)
+        .stream()
         .map(
             row ->
                 new ImportRowView(
