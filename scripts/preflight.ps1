@@ -1,12 +1,24 @@
+param(
+  [switch]$ContainerOnly
+)
+
 $ErrorActionPreference = 'Stop'
 
 function Fail([string]$Message) {
   throw "Preflight failed: $Message"
 }
 
-foreach ($commandName in @('git', 'docker', 'java', 'node', 'npm')) {
+foreach ($commandName in @('git', 'docker')) {
   if (-not (Get-Command $commandName -ErrorAction SilentlyContinue)) {
     Fail "Required command not found: $commandName"
+  }
+}
+
+if (-not $ContainerOnly) {
+  foreach ($commandName in @('java', 'node', 'npm')) {
+    if (-not (Get-Command $commandName -ErrorAction SilentlyContinue)) {
+      Fail "Required command not found: $commandName"
+    }
   }
 }
 
@@ -21,6 +33,7 @@ Get-Content .env | ForEach-Object {
 }
 
 foreach ($name in @(
+  'POSTGRES_DB',
   'DATABASE_URL',
   'DATABASE_USER',
   'DATABASE_PASSWORD',
@@ -42,10 +55,13 @@ if ($env:SENDING_KILL_SWITCH -ne 'true') { Fail 'SENDING_KILL_SWITCH must remain
 & docker compose --profile app config | Out-Null
 
 Write-Host 'Preflight passed.'
-Write-Host "Java: $((& java -version 2>&1 | Select-Object -First 1))"
-Write-Host "Node: $(& node --version)"
-Write-Host "npm: $(& npm --version)"
+Write-Host "Mode: $(if ($ContainerOnly) { 'container-only' } else { 'local-tools' })"
 Write-Host "Docker: $(& docker --version)"
+if (-not $ContainerOnly) {
+  Write-Host "Java: $((& java -version 2>&1 | Select-Object -First 1))"
+  Write-Host "Node: $(& node --version)"
+  Write-Host "npm: $(& npm --version)"
+}
 Write-Host "Database URL: $env:DATABASE_URL"
 Write-Host 'Bootstrap user configured: yes'
 Write-Host 'Sending controls: enabled=false dry-run=true daily-limit=0 kill-switch=true'
