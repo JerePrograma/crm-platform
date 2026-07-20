@@ -25,16 +25,17 @@ Maven: no disponible
 
 ### Docker Compose — parseo YAML
 
-Se cargó el contenido de `docker-compose.yml` con PyYAML.
+Se cargó el contenido actualizado de `docker-compose.yml` con PyYAML.
 
 Resultado:
 
 ```text
 PASS
-services presentes: postgres, backend, frontend
+services presentes: postgres, backend, frontend, smoke
+dependencia smoke -> frontend healthy: presente
 ```
 
-Este control confirma estructura YAML básica. No equivale a `docker compose --profile app config`.
+Este control confirma estructura YAML básica y relaciones declaradas. No equivale a `docker compose --profile app --profile smoke config`.
 
 ### GitHub Actions — parseo YAML
 
@@ -44,10 +45,11 @@ Resultado:
 
 ```text
 PASS
-jobs: backend, frontend, scripts, compose-and-images
+jobs: backend, frontend, scripts, compose-images-and-smoke
+paso Run containerized smoke test: presente
 ```
 
-Este control no confirma que las actions externas o los comandos ejecuten correctamente.
+Este control no confirma que las actions externas, imágenes o comandos ejecuten correctamente.
 
 ### Scripts Unix — sintaxis
 
@@ -65,9 +67,7 @@ preflight.sh: PASS
 smoke-test.sh: PASS
 ```
 
-### Makefile — parseo
-
-Se utilizaron targets representativos en modo no ejecutable:
+### Makefile — parseo inicial
 
 ```bash
 make -n preflight-container app-up verify smoke
@@ -79,19 +79,32 @@ Resultado:
 PASS
 ```
 
-El control confirma que Make puede interpretar los targets y recetas. No ejecuta Docker, Maven o npm.
+### Makefile — smoke contenedorizado
+
+```bash
+make -n smoke-container verify
+```
+
+Resultado:
+
+```text
+PASS
+```
+
+Los controles Make confirman que se interpretan targets y recetas. No ejecutan Docker, Maven o npm.
 
 ## Controles no ejecutados
 
 - sintaxis PowerShell, porque `pwsh` no está instalado;
-- `docker compose config`;
+- `docker compose config` semántico;
+- pull de `curlimages/curl`;
 - builds de imágenes;
+- ejecución del servicio `smoke`;
 - Maven/Spotless/tests;
 - frontend install/typecheck/build;
 - preflight real;
-- stack completo;
-- smoke test real.
+- stack completo.
 
 ## Conclusión
 
-Los archivos YAML y la automatización Unix superaron los controles estáticos disponibles. SEG-001 continúa `PENDING_EXECUTION` hasta completar la matriz real en un entorno con Docker, red y dependencias.
+Compose, CI, scripts Unix y Makefile superaron los controles estáticos disponibles, incluido el nuevo smoke E2E contenedorizado a nivel de sintaxis y estructura. SEG-001 continúa `PENDING_EXECUTION` hasta completar la matriz real en un entorno con Docker, red y dependencias.
