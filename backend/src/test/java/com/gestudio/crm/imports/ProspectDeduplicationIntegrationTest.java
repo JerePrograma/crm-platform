@@ -97,6 +97,27 @@ class ProspectDeduplicationIntegrationTest {
     assertThat(institutionRepository.count()).isEqualTo(1);
   }
 
+  @Test
+  void exactDuplicateRowRetainsTheExistingProspectReference() {
+    var existing = prospectApplicationService.create(existingCommand());
+    var job =
+        importJobLifecycleService.start(
+            "exact-duplicate.xlsx",
+            "1".repeat(64),
+            "exact-duplicate-fixture",
+            SourceType.XLSX,
+            true);
+
+    RowOutcome outcome = rowProcessor.processProspect(job.jobId(), exactDuplicateCandidate(), true);
+
+    ImportRow row = importRowRepository.findAll().getFirst();
+    assertThat(outcome).isEqualTo(RowOutcome.DUPLICATE);
+    assertThat(row.getStatus()).isEqualTo(ImportRow.Status.DUPLICATE);
+    assertThat(row.getProspect()).isNotNull();
+    assertThat(row.getProspect().getId()).isEqualTo(existing.id());
+    assertThat(prospectRepository.count()).isEqualTo(1);
+  }
+
   private ProspectCandidate ambiguousCandidate() {
     return new ProspectCandidate(
         2,
@@ -115,6 +136,26 @@ class ProspectDeduplicationIntegrationTest {
         null,
         2,
         "Variación nominal ficticia");
+  }
+
+  private ProspectCandidate exactDuplicateCandidate() {
+    return new ProspectCandidate(
+        3,
+        Map.of("institucion", "Estudio Aurora"),
+        "EXISTING-SOURCE",
+        "Estudio Aurora",
+        "Junín",
+        "Buenos Aires",
+        "Academia de danza",
+        null,
+        null,
+        "otro-exacto@example.test",
+        null,
+        "fixture",
+        null,
+        null,
+        1,
+        "Coincidencia exacta ficticia");
   }
 
   private CreateProspectCommand existingCommand() {
