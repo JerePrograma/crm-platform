@@ -2,17 +2,53 @@
 
 ## Regla de evidencia
 
-Un test versionado no equivale a un test ejecutado. El estado debe distinguir:
+Un test versionado no equivale a un test ejecutado.
 
-- `IMPLEMENTED`: existe código de prueba;
-- `EXECUTED_PASS`: se ejecutó y finalizó correctamente;
-- `EXECUTED_FAIL`: se ejecutó y falló;
-- `BLOCKED`: no pudo ejecutarse por entorno;
+Estados:
+
+- `IMPLEMENTED`: existe código o automatización;
+- `EXECUTED_PASS`: ejecución real con código de salida cero;
+- `EXECUTED_FAIL`: ejecución real fallida;
+- `PASS_FROM_CACHE`: imagen exportada sin recompilación limpia;
+- `PASS_SYNTAX`: parser o sintaxis;
+- `PASS_STRUCTURE`: estructura YAML/configuración;
+- `BLOCKED`: entorno insuficiente;
+- `NOT_RUN`: no ejecutado;
 - `NOT_IMPLEMENTED`.
 
-## Comando principal
+## Comando integral Windows
 
-Linux/macOS:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173 `
+  -KeepRunning
+```
+
+Este recorrido ejecuta:
+
+- builds limpios frontend/backend;
+- Compose config;
+- health PostgreSQL/backend/frontend;
+- Flyway/Hibernate durante arranque;
+- smoke host/contenedor;
+- Maven verify dentro de Docker;
+- Spotless;
+- unit tests;
+- ArchUnit;
+- Testcontainers;
+- package-lock-only;
+- build frontend con npm ci;
+- smoke final;
+- seguridad del repositorio;
+- JSON y transcript.
+
+No requiere Java, Maven, Node o npm instalados en el host.
+
+## Backend con herramientas locales
+
+Unix:
 
 ```bash
 sh ./mvnw -B -f backend/pom.xml verify
@@ -24,110 +60,257 @@ Windows:
 .\mvnw.cmd -B -f backend\pom.xml verify
 ```
 
-Frontend:
+## Backend contenedorizado
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify-backend-container.ps1
+```
+
+Unix:
+
+```bash
+sh scripts/verify-backend-container.sh
+```
+
+Con Make:
+
+```bash
+make backend-verify-container
+```
+
+Características:
+
+- Maven 3.9.16 y Java 21;
+- repositorio montado en solo lectura;
+- `backend/target` en volumen efímero;
+- caché Maven en `crm_maven_cache`;
+- socket Docker para Testcontainers;
+- `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`;
+- cleanup de contenedor y target.
+
+Advertencia: el socket Docker concede privilegios elevados. Ejecutar solo sobre código propio y revisado.
+
+## Frontend
+
+Con lockfile:
+
+```bash
+cd frontend
+npm ci
+npm run typecheck
+npm run build
+```
+
+Sin lockfile, únicamente durante transición:
 
 ```bash
 cd frontend
 npm install
+npm run typecheck
 npm run build
 ```
+
+Dockerfile, CI y Makefile seleccionan automáticamente el comando correcto.
+
+## Generación de package-lock
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
+```
+
+```bash
+sh scripts/generate-frontend-lock.sh
+```
+
+Comando npm:
+
+```text
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+```
+
+No ejecuta lifecycle scripts ni debe crear node_modules.
 
 ## Pruebas implementadas
 
 ### Unitarias
 
 - `SendingPropertiesTest`
-  - configuración cerrada permite construir propiedades;
-  - no sustituye pruebas del safety gate futuro.
+  - configuración cerrada;
+  - no sustituye safety gate futuro.
 - `NormalizationServiceTest`
   - nombres, diacríticos y puntuación;
   - email;
   - teléfono;
   - dominio;
-  - dispatch por tipo de canal.
+  - dispatch por canal.
 - `NameSimilarityServiceTest`
   - error tipográfico probable;
-  - sufijos numéricos distintos no superan el umbral.
+  - protección de sufijos numéricos.
 - `ProspectImportFileParserTest`
-  - fixture anónima con 100 prospectos y 16 exclusiones;
+  - fixture ficticia 100/16;
   - reconocimiento por encabezados;
-  - marcadores no publicados.
+  - marcadores no publicados;
+  - CSV delimitadores/comillas/headers.
 
-### Integración con PostgreSQL/Testcontainers
+### Integración PostgreSQL/Testcontainers
 
 - `ProspectPersistenceIntegrationTest`
-  - Flyway y validación JPA;
+  - Flyway;
+  - Hibernate/JPA validate;
   - persistencia normalizada;
-  - exclusión dominante al crear;
+  - exclusión dominante;
   - ID externo repetido.
 - `ProspectImportIntegrationTest`
-  - 100 prospectos + 16 exclusiones;
-  - conteos de trabajo;
-  - reimportación idempotente;
-  - dry-run sin escrituras de dominio.
+  - fixture 100/16;
+  - conteos;
+  - idempotencia;
+  - preview sin escritura de dominio;
+  - exclusiones importadas;
+  - error aislado por fila.
 - `ProspectDeduplicationIntegrationTest`
-  - coincidencia nominal ambigua;
+  - coincidencia ambigua;
   - revisión humana;
-  - ausencia de fusión automática.
+  - sin fusión automática;
+  - duplicado exacto enlazado.
 - `ExclusionIntegrationTest`
   - exclusión retroactiva;
-  - transición a `DO_NOT_CONTACT`;
+  - `DO_NOT_CONTACT`;
   - auditoría sin canal completo.
 - `SecurityAuthorizationIntegrationTest`
   - health público;
   - API anónima rechazada;
-  - bootstrap explícito autorizado.
+  - bootstrap autorizado.
 
-## Validaciones de build configuradas
+### Arquitectura
 
-Maven `verify` ejecuta:
+- ArchUnit valida límites del monolito modular.
 
+### Smoke
+
+- health backend;
+- API autenticada;
+- frontend;
+- smoke host;
+- smoke contenedor;
+- sin creación de datos.
+
+## Maven verify
+
+Ejecuta:
+
+- Maven Enforcer;
 - compilación;
 - JUnit;
 - Testcontainers;
-- Spotless check.
+- ArchUnit;
+- Spotless check;
+- packaging.
 
-GitHub Actions configura:
+El Dockerfile backend usa `-DskipTests`; construir la imagen no sustituye Maven verify.
 
-- backend Maven;
-- frontend TypeScript/Vite;
-- `docker compose config`;
-- build de imagen backend.
+## Validación del stack
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173 `
+  -KeepRunning
+```
+
+Valida:
+
+- Compose config;
+- imágenes;
+- health;
+- Flyway/Hibernate durante arranque;
+- smoke host;
+- smoke contenedor;
+- evidencia JSON/transcript.
+
+## Makefile
+
+```bash
+make verify
+make verify-container
+make backend-verify-container
+make smoke-container
+make repository-safety
+```
+
+`verify-container` permite un recorrido Unix sin Java/Node local.
+
+## CI
+
+Jobs:
+
+- backend Maven verify;
+- frontend npm ci/install, typecheck y build;
+- scripts shell/PowerShell, seguridad y preflight;
+- imágenes, stack y smoke E2E.
+
+GitHub no muestra runs visibles para los commits consultados. No declarar CI verde hasta observar resultados.
 
 ## Estado de ejecución actual
 
-Las pruebas están implementadas, pero todavía no existe evidencia consultable de una ejecución CI para el último commit de la rama. El entorno de la sesión no dispone de acceso Git directo ni Docker/Maven local suficiente para afirmar un resultado.
+### Real
 
-Hasta observar CI:
+```text
+preflight: PASS
+npm install: PASS
+frontend inicial: FAIL reproducido
+correcciones: aplicadas
+imágenes: PASS_FROM_CACHE
+stack: FAIL por 5432
+```
 
-- estado global: `IMPLEMENTED / EXECUTION_PENDING`;
-- no marcar SEG-001 como completo;
-- cualquier error de compilación encontrado por CI tiene prioridad sobre nuevas funciones.
+### Estático o aislado
 
-## Pruebas pendientes de SEG-001
+```text
+shell: PASS_SYNTAX
+Make: PASS_PARSE
+CI YAML: PASS_PARSE
+configurador Unix: PASS_FUNCTIONAL_ISOLATED
+backend verify Unix: PASS_SYNTAX
+lockfile seguro Unix: PASS_SYNTAX
+```
 
-- API RFC 7807 con MockMvc;
-- POST de importación con y sin confirmación;
-- equivalencia PHONE/WHATSAPP en exclusión;
-- auditoría de fallo de importación;
-- concurrencia de la clave idempotente;
-- archivo mayor a 10 MB;
+### Pendiente
+
+- validador integral PowerShell;
+- Maven verify real;
+- Testcontainers real;
+- Flyway/Hibernate real;
+- clean builds;
+- stack healthy;
+- smoke real;
+- package-lock;
+- npm ci real;
+- CI visible.
+
+## Pruebas pendientes de SEG-001 no bloqueantes
+
+- RFC 7807 con MockMvc más exhaustivo;
+- endpoints importación con/sin confirmación;
+- equivalencia PHONE/WHATSAPP adicional;
+- auditoría de fallo;
+- concurrencia de clave idempotente;
 - archivo corrupto;
-- encabezado obligatorio ausente;
-- CSV con comillas, comas y saltos de línea;
-- paginación y filtro de estado;
-- build frontend con lockfile.
+- paginación/filtros adicionales;
+- accesibilidad frontend.
 
 ## Pruebas futuras
 
 - autorización por rol;
 - safety gate acumulativo;
 - MIME multipart;
-- idempotencia de envío ante caída después de Gmail;
+- idempotencia de envío;
 - reintentos Cloud Tasks;
 - reconciliación Gmail;
 - conflictos Sheets;
-- follow-ups en días hábiles;
+- follow-ups hábiles;
 - kill switch concurrente;
-- carga y rate limiting;
+- carga/rate limiting;
 - E2E staging.
