@@ -2,50 +2,27 @@
 
 ## Estado
 
-Producto, hardening, documentación y automatización están consolidados en `main`.
+- producto y hardening: consolidados en `main`;
+- preflight inicial: PASS;
+- errores TypeScript: reproducidos y corregidos;
+- imágenes frontend/backend: exportadas desde caché;
+- build limpio: pendiente;
+- stack: falló por puerto host 5432;
+- puerto configurable: corregido;
+- Flyway/Hibernate/tests/smoke: pendientes.
 
-Evidencia real disponible:
+No iniciar SEG-002, campañas, Gmail, Sheets, workers o cloud.
 
-- preflight PowerShell container-only: `PASS`;
-- primer frontend build: `FAIL` por tres errores TypeScript;
-- errores TypeScript: corregidos en `main`;
-- segunda exportación frontend: `PASS_FROM_CACHE`;
-- segunda exportación backend: `PASS_FROM_CACHE`;
-- arranque del stack: `FAIL` por conflicto del puerto host `5432`;
-- puerto configurable: corregido en `main`;
-- build limpio, stack, Flyway, Hibernate, pruebas y smoke: pendientes.
-
-No iniciar SEG-002, campañas, Gmail, Sheets, workers o cloud antes de estabilizar SEG-001.
-
-## Fuentes canónicas
+## Fuentes
 
 ```text
-branch: main
 estado: docs/status.md
-validación principal: docs/validation/SEG-001.md
+matriz: docs/validation/SEG-001.md
 primer build: docs/validation/SEG-001-container-build-2026-07-20.md
-segunda reejecución: docs/validation/SEG-001-rerun-2026-07-20.md
-Docker-only: docs/containerized-quickstart.md
-automatización: scripts/README.md
-backlog: docs/backlog.md
+reejecución: docs/validation/SEG-001-rerun-2026-07-20.md
+Docker: docs/containerized-quickstart.md
+scripts: scripts/README.md
 ```
-
-## Correcciones ya aplicadas
-
-### Frontend
-
-- referencia no anulable `activeCredentials`;
-- tipos Vite y módulos CSS;
-- `excludedRows` visible como `Bloqueadas`;
-- `strict: true` conservado.
-
-### PostgreSQL local
-
-- nuevo `POSTGRES_HOST_PORT`;
-- puerto recomendado `55432`;
-- Compose publica `${POSTGRES_HOST_PORT}:5432`;
-- backend contenedorizado mantiene `postgres:5432`;
-- preflight valida puerto y `DATABASE_URL` coherentes.
 
 ## Orden inmediato — Windows PowerShell
 
@@ -60,58 +37,47 @@ git status
 git rev-parse HEAD
 ```
 
-### 2. Revisar la modificación local de `mvnw.cmd`
+### 2. Revisar `mvnw.cmd`
 
 ```powershell
-git diff -- mvnw.cmd
+git diff --ignore-space-at-eol -- mvnw.cmd
+git diff --numstat -- mvnw.cmd
 ```
 
-Si no fue una modificación intencional:
+Si no fue un cambio intencional:
 
 ```powershell
 git restore -- mvnw.cmd
 git status --short
 ```
 
-No incluir `mvnw.cmd` en commits salvo que exista un cambio deliberado y revisado.
-
-### 3. Ajustar `.env` sin sobrescribir credenciales
+### 3. Configurar el puerto PostgreSQL sin tocar credenciales
 
 No copiar nuevamente `.env.example`.
 
-Añadir o reemplazar:
-
-```dotenv
-POSTGRES_HOST_PORT=55432
-DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
-```
-
-Con PowerShell:
+Ejecutar:
 
 ```powershell
-$envPath = '.env'
-$content = Get-Content $envPath
-
-if ($content -match '^POSTGRES_HOST_PORT=') {
-  $content = $content -replace '^POSTGRES_HOST_PORT=.*$', 'POSTGRES_HOST_PORT=55432'
-} else {
-  $dbLine = [Array]::IndexOf($content, 'POSTGRES_DB=gestudio_crm')
-  if ($dbLine -ge 0) {
-    $before = $content[0..$dbLine]
-    $after = if ($dbLine + 1 -lt $content.Count) { $content[($dbLine + 1)..($content.Count - 1)] } else { @() }
-    $content = @($before + 'POSTGRES_HOST_PORT=55432' + $after)
-  } else {
-    $content += 'POSTGRES_HOST_PORT=55432'
-  }
-}
-
-$content = $content -replace '^DATABASE_URL=.*$', 'DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm'
-Set-Content -Path $envPath -Value $content -Encoding utf8
+powershell -ExecutionPolicy Bypass -File scripts/set-postgres-host-port.ps1 -Port 55432
 ```
 
-No imprimir ni reemplazar `CRM_BOOTSTRAP_PASSWORD`.
+El script:
 
-### 4. Ejecutar preflight
+- añade o reemplaza `POSTGRES_HOST_PORT`;
+- actualiza `DATABASE_URL`;
+- conserva usuario y contraseñas;
+- conserva `SENDING_*`;
+- escribe UTF-8 sin BOM.
+
+Resultado esperado:
+
+```text
+PostgreSQL host port: 55432
+Database URL: jdbc:postgresql://localhost:55432/gestudio_crm
+Existing passwords and sending controls were preserved.
+```
+
+### 4. Preflight
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
@@ -125,25 +91,21 @@ PostgreSQL host port: 55432
 Sending controls: enabled=false dry-run=true daily-limit=0 kill-switch=true
 ```
 
-### 5. Limpiar contenedores incompletos
-
-Conservar el volumen:
+### 5. Limpiar el intento incompleto
 
 ```powershell
 docker compose --profile app --profile smoke down --remove-orphans
 ```
 
-No usar `-v` salvo que se quiera eliminar la base local.
+No usar `-v`; borraría la base local.
 
-### 6. Reconstruir frontend sin caché
-
-La sintaxis correcta coloca `--progress` antes del subcomando:
+### 6. Build limpio frontend
 
 ```powershell
 docker compose --progress plain --profile app build --no-cache frontend
 ```
 
-Debe verse una ejecución real de:
+Debe ejecutar realmente:
 
 ```text
 npm install
@@ -152,24 +114,24 @@ tsc -b
 vite build
 ```
 
-No aceptar como evidencia definitiva una salida donde todos esos stages aparezcan `CACHED`.
+No aceptar una salida completamente `CACHED` como prueba limpia.
 
-### 7. Reconstruir backend sin caché
+### 7. Build limpio backend
 
 ```powershell
 docker compose --progress plain --profile app build --no-cache backend
 ```
 
-Debe verse una ejecución real de:
+Debe ejecutar:
 
 ```text
 dependency:go-offline
 mvn -B -DskipTests package
 ```
 
-El Dockerfile genera la imagen, pero no sustituye `mvn verify`.
+Este build no reemplaza `mvn verify`.
 
-### 8. Levantar el stack
+### 8. Levantar stack
 
 ```powershell
 docker compose --profile app up -d
@@ -184,7 +146,7 @@ backend    healthy   127.0.0.1:8080->8080
 frontend   healthy   127.0.0.1:5173->8080
 ```
 
-### 9. Logs ante fallo
+### 9. Logs si falla
 
 ```powershell
 docker compose logs postgres
@@ -211,9 +173,7 @@ docker compose --profile app --profile smoke up --abort-on-container-exit --exit
 docker compose --profile app --profile smoke down --remove-orphans
 ```
 
-### 12. Maven verify completo
-
-Con Docker activo:
+### 12. Maven verify
 
 ```powershell
 .\mvnw.cmd -B -f backend\pom.xml verify
@@ -244,51 +204,36 @@ git status --short
 
 Después:
 
-- versionar el lockfile;
-- migrar Dockerfile y CI a `npm ci`;
-- habilitar caché npm por lockfile;
-- repetir frontend, imágenes y smoke.
+- versionar lockfile;
+- migrar Dockerfile/CI a npm ci;
+- habilitar caché npm;
+- repetir builds y smoke.
 
-## Diagnóstico opcional del puerto 5432
-
-Para identificar quién lo utiliza:
+## Diagnóstico opcional del 5432
 
 ```powershell
 Get-NetTCPConnection -LocalPort 5432 -ErrorAction SilentlyContinue |
   Select-Object LocalAddress, LocalPort, State, OwningProcess
 ```
 
-Luego:
-
-```powershell
-Get-Process -Id <OwningProcess>
-```
-
-Puertos reservados por Windows:
-
 ```powershell
 netsh interface ipv4 show excludedportrange protocol=tcp
 ```
 
-No es necesario detener otro PostgreSQL si se utiliza `POSTGRES_HOST_PORT=55432`.
+No es necesario detener otro servicio al usar 55432.
 
-## Ruta Linux/macOS
+## Linux/macOS
 
 ```bash
 git switch main
 git pull --ff-only
-
-# editar .env:
-# POSTGRES_HOST_PORT=55432
-# DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
-
+sh scripts/set-postgres-host-port.sh 55432
 sh scripts/preflight.sh --container-only
-
+docker compose --profile app --profile smoke down --remove-orphans
 docker compose --progress plain --profile app build --no-cache frontend
 docker compose --progress plain --profile app build --no-cache backend
 docker compose --profile app up -d
 docker compose --profile app ps
-
 sh scripts/smoke-test.sh
 sh ./mvnw -B -f backend/pom.xml verify
 sh scripts/generate-frontend-lock.sh
@@ -296,41 +241,41 @@ sh scripts/generate-frontend-lock.sh
 
 ## Evidencia a registrar
 
-- SHA exacto;
-- diff o restauración de `mvnw.cmd`;
-- puerto host PostgreSQL;
+- SHA;
+- estado de `mvnw.cmd`;
+- salida del actualizador de puerto;
 - preflight;
-- build frontend sin caché;
-- build backend sin caché;
+- builds limpios;
 - Compose config;
-- health de los tres servicios;
+- health;
 - Flyway/Hibernate;
-- smoke host;
-- smoke contenedorizado;
+- smoke host/container;
 - Maven verify/Testcontainers;
 - lockfile;
-- cualquier nuevo fallo y corrección.
+- nuevos errores y correcciones.
 
-## Criterios de cierre
+## Cierre
 
-- frontend build limpio: `PASS`;
-- backend build limpio: `PASS`;
-- Maven verify/Spotless/tests: `PASS`;
-- Flyway/Hibernate/Testcontainers: `PASS`;
-- lockfile y `npm ci`: `PASS`;
-- stack saludable: `PASS`;
-- smoke E2E: `PASS`;
-- secretos/datos: `PASS`;
+Requiere:
+
+- frontend clean build PASS;
+- backend clean build PASS;
+- Maven/Spotless/tests PASS;
+- Flyway/Hibernate/Testcontainers PASS;
+- lockfile/npm ci PASS;
+- stack healthy;
+- smoke PASS;
+- secretos/datos PASS;
 - evidencia registrada;
-- SEG-001 `COMPLETE`;
-- SEG-002 `ACTIVE`.
+- SEG-001 COMPLETE;
+- SEG-002 ACTIVE.
 
 ## Restricciones
 
-- no desplegar producción;
-- no habilitar envíos;
-- no incorporar XLSX real a Git, CI o imágenes;
-- no declarar build limpio usando solo caché;
-- no usar `docker compose down -v` sin intención de borrar la base;
+- no producción;
+- no envíos;
+- no XLSX real en Git/CI/imágenes;
+- no declarar clean build desde caché;
+- no usar `down -v` sin intención destructiva;
 - no iniciar SEG-002 con bloqueantes;
-- no desactivar controles TypeScript.
+- no desactivar TypeScript strict.
