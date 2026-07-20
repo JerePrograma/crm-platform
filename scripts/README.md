@@ -4,79 +4,89 @@
 
 Scripts reproducibles para preparar, construir y comprobar Gestudio CRM. No despliegan, no importan datos y no realizan comunicaciones.
 
-## Preflight
-
-### Herramientas locales
-
-Linux/macOS:
-
-```bash
-sh scripts/preflight.sh --local
-```
+## Configurar el puerto PostgreSQL host
 
 Windows:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1
+powershell -ExecutionPolicy Bypass -File scripts/set-postgres-host-port.ps1 -Port 55432
 ```
-
-Comprueba Git, Docker, Compose, Java, Node, npm, `.env`, variables y guardas.
-
-### Solo contenedores
 
 Linux/macOS:
 
 ```bash
-sh scripts/preflight.sh --container-only
+sh scripts/set-postgres-host-port.sh 55432
 ```
 
-Windows:
+Con Make:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
+```bash
+make postgres-port
 ```
 
-No requiere Java, Node o npm en el host.
+Los scripts:
 
-### Validaciones comunes
+- añaden o actualizan `POSTGRES_HOST_PORT`;
+- actualizan `DATABASE_URL` con el mismo puerto;
+- conservan `POSTGRES_DB`;
+- conservan usuarios y contraseñas;
+- conservan las cuatro variables `SENDING_*`;
+- no imprimen secretos;
+- PowerShell escribe UTF-8 sin BOM.
 
-- `.env` presente;
-- `POSTGRES_DB`;
-- `POSTGRES_HOST_PORT` entero entre 1 y 65535;
-- `DATABASE_URL` con el mismo puerto host;
-- usuario y contraseña de base;
-- credenciales bootstrap;
-- cuatro guardas de envío cerradas;
-- parseo de Compose.
-
-Configuración recomendada:
+Configuración resultante recomendada:
 
 ```dotenv
 POSTGRES_HOST_PORT=55432
 DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
 ```
 
-Compose publica el puerto host configurado hacia el `5432` interno. El backend contenedorizado utiliza `postgres:5432`.
+Compose publica el puerto host hacia el `5432` interno. El backend contenedorizado usa `postgres:5432`.
 
-Los scripts no imprimen contraseñas ni inician servicios.
+## Preflight
+
+Herramientas locales:
+
+```bash
+sh scripts/preflight.sh --local
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1
+```
+
+Solo contenedores:
+
+```bash
+sh scripts/preflight.sh --container-only
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
+```
+
+Valida:
+
+- `.env`;
+- `POSTGRES_DB`;
+- `POSTGRES_HOST_PORT` entre 1 y 65535;
+- `DATABASE_URL` con el mismo puerto;
+- credenciales DB y bootstrap;
+- guardas de envío;
+- Compose.
+
+No imprime contraseñas ni inicia servicios.
 
 ## Builds limpios
 
-Frontend:
-
 ```bash
 docker compose --progress plain --profile app build --no-cache frontend
-```
-
-Backend:
-
-```bash
 docker compose --progress plain --profile app build --no-cache backend
 ```
 
-`--progress` debe ir antes de `build`. Los builds completamente `CACHED` no sustituyen una validación limpia.
+`--progress` debe ir antes de `build`. Una salida completamente `CACHED` no demuestra compilación limpia.
 
-## Smoke contra stack activo
+## Smoke host
 
 Linux/macOS:
 
@@ -90,23 +100,15 @@ Windows:
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
 ```
 
-Comprueba:
-
-- `/actuator/health` con `UP`;
-- API de prospectos autenticada;
-- documento raíz del frontend.
-
-No crea datos.
+Comprueba health, API autenticada y frontend. No crea datos.
 
 ## Smoke contenedorizado
-
-Con Make:
 
 ```bash
 make smoke-container
 ```
 
-Comando equivalente:
+Equivalente:
 
 ```bash
 docker compose --profile app --profile smoke up \
@@ -116,21 +118,13 @@ docker compose --profile app --profile smoke up \
   smoke
 ```
 
-Retirar después:
+Retirar:
 
 ```bash
 docker compose --profile app --profile smoke down --remove-orphans
 ```
 
-El target Make conserva el volumen. CI elimina su volumen efímero.
-
-## Generar package-lock mediante Docker
-
-Linux/macOS:
-
-```bash
-sh scripts/generate-frontend-lock.sh
-```
+## Generar package-lock
 
 Windows:
 
@@ -138,20 +132,17 @@ Windows:
 powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
 ```
 
+Linux/macOS:
+
+```bash
+sh scripts/generate-frontend-lock.sh
+```
+
 Con Make:
 
 ```bash
 make frontend-lock
 ```
-
-Los scripts:
-
-1. comprueban Docker;
-2. localizan `frontend/package.json`;
-3. montan `frontend` en `node:22-alpine`;
-4. ejecutan `npm install --no-audit --no-fund`;
-5. verifican `frontend/package-lock.json`;
-6. no realizan commits.
 
 Revisar:
 
@@ -162,9 +153,7 @@ git diff -- frontend/package-lock.json
 
 Después se debe migrar Dockerfile/CI a `npm ci` y repetir la matriz.
 
-## Variables del smoke host
-
-Predeterminadas:
+## Variables smoke host
 
 ```text
 BACKEND_URL=http://localhost:8080
@@ -178,6 +167,7 @@ Pueden sobrescribirse en la sesión.
 ```bash
 make preflight
 make preflight-container
+make postgres-port
 make db-up
 make db-down
 make app-up
@@ -194,60 +184,52 @@ make reset-db
 
 | Target | Acción |
 |---|---|
-| `preflight` | valida herramientas locales y configuración |
-| `preflight-container` | valida modalidad solo Docker |
+| `preflight` | valida herramientas locales |
+| `preflight-container` | valida modalidad Docker-only |
+| `postgres-port` | configura 55432 y DATABASE_URL |
 | `db-up` | inicia PostgreSQL |
 | `db-down` | detiene PostgreSQL conservando volumen |
 | `app-up` | construye e inicia stack |
 | `app-down` | retira stack conservando volumen |
 | `app-logs` | sigue logs |
-| `backend` | Spring Boot mediante Maven Wrapper |
-| `frontend` | instala y ejecuta Vite |
-| `frontend-lock` | genera lockfile con Node en Docker |
-| `verify` | backend, frontend, Compose e imágenes |
-| `smoke` | prueba stack activo desde host |
-| `smoke-container` | construye, prueba y retira stack efímero |
+| `backend` | ejecuta Spring Boot |
+| `frontend` | ejecuta Vite |
+| `frontend-lock` | genera package-lock con Docker |
+| `verify` | backend, frontend, Compose y clean builds |
+| `smoke` | prueba stack activo |
+| `smoke-container` | prueba stack efímero |
 | `reset-db` | elimina stack y volumen |
 
-## Evidencia real
-
-### Primer build
+## Evidencias
 
 ```text
 docs/validation/SEG-001-container-build-2026-07-20.md
-```
-
-- preflight PASS;
-- npm install PASS;
-- tres errores TypeScript reproducidos y corregidos.
-
-### Reejecución
-
-```text
 docs/validation/SEG-001-rerun-2026-07-20.md
+docs/validation/SEG-001-static-automation-2026-07-20.md
 ```
 
+Estado demostrado:
+
+- preflight real PASS;
+- npm install PASS;
+- fallo TypeScript reproducido y corregido;
 - imágenes exportadas desde caché;
-- build limpio no demostrado;
-- stack bloqueado por puerto host 5432;
-- puerto configurable corregido en `main`.
+- conflicto 5432 reproducido;
+- puerto configurable corregido;
+- actualizador Unix probado preservando secretos y UTF-8.
 
-## Diagnóstico del puerto
-
-Windows:
+## Diagnóstico 5432
 
 ```powershell
 Get-NetTCPConnection -LocalPort 5432 -ErrorAction SilentlyContinue |
   Select-Object LocalAddress, LocalPort, State, OwningProcess
 ```
 
-Puertos reservados:
-
 ```powershell
 netsh interface ipv4 show excludedportrange protocol=tcp
 ```
 
-Usar `POSTGRES_HOST_PORT=55432` evita detener otro servicio local.
+Usar 55432 evita detener otro servicio.
 
 ## Advertencia destructiva
 
@@ -276,16 +258,6 @@ El preflight falla si alguno cambia.
 
 ## CI
 
-CI valida:
+Valida scripts Unix/PowerShell, actualizador de puerto, preflight, frontend, backend, Compose, imágenes, stack, smoke, logs y cleanup.
 
-- shell y PowerShell;
-- preflight fail-closed;
-- frontend typecheck/build;
-- backend verify;
-- Compose app/smoke;
-- imágenes;
-- stack;
-- smoke;
-- logs y cleanup.
-
-Hasta versionar el lockfile, CI usa `npm install` sin caché npm.
+Hasta versionar package-lock, CI usa `npm install` sin caché npm.
