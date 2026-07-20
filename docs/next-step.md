@@ -1,56 +1,112 @@
-# SEG-001 — Ejecución real, corrección y cierre
+# SEG-001 — Validación ejecutada y cierre desde `main`
 
 ## Estado
 
-La implementación fue endurecida mediante revisión estática y pruebas de regresión versionadas. La validación ejecutada continúa bloqueada por el entorno: no hay Maven, Docker, cachés ni acceso de red, y el conector no expone `workflow_dispatch` ni checks visibles.
+Todo el código y la documentación están consolidados en `main`. El hardening estático y la documentación de arranque están completos.
+
+La única brecha bloqueante es obtener una ejecución técnica real y corregir cualquier fallo observado. Los commits del conector no muestran checks visibles y el entorno actual no dispone de Maven, Docker, cachés ni acceso a registros externos.
 
 ## Objetivo del próximo `continuar`
 
-Conseguir una ejecución real de la matriz técnica, corregir todos los fallos observados y cerrar `SEG-001`. No añadir módulos comerciales, Gmail, campañas ni RBAC antes de estabilizar el árbol.
+Trabajar exclusivamente desde `main`, ejecutar la matriz completa, corregir todos los fallos reales y cerrar `SEG-001`.
 
-## No repetir
+No iniciar identidad/RBAC, campañas, Gmail, Sheets o infraestructura cloud antes de estabilizar el árbol.
 
-Ya fueron revisados y corregidos:
+## Fuente canónica
+
+```text
+branch: main
+startup: docs/local-development-and-usage.md
+status: docs/status.md
+validation: docs/validation/SEG-001.md
+backlog: docs/backlog.md
+```
+
+## No repetir sin evidencia de fallo
+
+Ya están implementados y revisados:
 
 - exclusiones importadas retroactivas y auditadas;
-- revisiones ambiguas del preview;
+- revisiones ambiguas persistidas en preview;
 - referencias de duplicados exactos;
 - límites multipart y HTTP 413;
 - validación de correo y recuperación por fila;
-- CSV `,`/`;`, comillas y encabezados duplicados;
+- CSV con coma o punto y coma;
+- comillas y encabezados duplicados;
 - fechas Excel UTC;
 - preview con exclusiones;
 - métrica `excludedRows`;
-- saneamiento de nombre de archivo;
-- orden hoja/fila;
-- Basic Auth UTF-8.
+- saneamiento del nombre de archivo;
+- orden por hoja y fila;
+- Basic Auth UTF-8;
+- configuración local compartida entre Compose y backend;
+- guía de arranque y uso.
 
-Reabrir estos puntos solo si una ejecución real demuestra un fallo.
+Reabrir estos puntos solo cuando una ejecución real demuestre un defecto.
 
 ## Orden obligatorio
 
-1. resolver un checkout de la rama en un entorno con red o usar CI;
-2. registrar commit exacto antes de ejecutar;
-3. ejecutar Maven/Spotless/tests;
-4. corregir primero errores de compilación;
-5. confirmar Flyway V1–V5, Hibernate y Testcontainers;
-6. instalar frontend y generar `package-lock.json`;
-7. ejecutar TypeScript/Vite;
-8. validar Compose;
-9. construir imagen Docker;
-10. ejecutar escaneo local de secretos y datos reales;
-11. registrar cada comando, salida y fecha en `docs/validation/SEG-001.md`;
-12. repetir la matriz después de cada corrección;
-13. cerrar `SEG-001` solo si todo queda verde.
+1. clonar o actualizar `main` en un entorno con red;
+2. registrar el commit exacto;
+3. copiar `.env.example` a `.env` y mantener envíos bloqueados;
+4. ejecutar `docker compose config`;
+5. levantar PostgreSQL;
+6. ejecutar Maven, Spotless y todas las pruebas;
+7. corregir primero errores de compilación;
+8. confirmar Flyway V1–V5, Hibernate y Testcontainers;
+9. instalar dependencias frontend;
+10. generar y versionar `package-lock.json`;
+11. ejecutar typecheck y build;
+12. construir la imagen Docker;
+13. realizar escaneo local de secretos y datos reales;
+14. registrar comandos, fecha, commit y salida en `docs/validation/SEG-001.md`;
+15. repetir toda la matriz después de cada corrección;
+16. cerrar SEG-001 únicamente cuando todos los controles principales estén en `PASS`.
 
-## Comandos Linux/macOS
+## Preparación Linux/macOS
 
 ```bash
-git fetch origin
-git switch feat/seg-001-prospect-vertical-slice
+git clone https://github.com/JerePrograma/crm-platform.git
+cd crm-platform
+git switch main
 git pull --ff-only
-
 git rev-parse HEAD
+
+cp .env.example .env
+# Editar .env y cambiar CRM_BOOTSTRAP_PASSWORD.
+# Mantener todas las variables SENDING_* cerradas.
+
+set -a
+. ./.env
+set +a
+```
+
+## Preparación Windows PowerShell
+
+```powershell
+git clone https://github.com/JerePrograma/crm-platform.git
+Set-Location crm-platform
+git switch main
+git pull --ff-only
+git rev-parse HEAD
+
+Copy-Item .env.example .env
+# Editar .env y cambiar CRM_BOOTSTRAP_PASSWORD.
+
+Get-Content .env | ForEach-Object {
+  if ($_ -match '^(?<name>[^#][^=]*)=(?<value>.*)$') {
+    [Environment]::SetEnvironmentVariable($matches.name.Trim(), $matches.value, 'Process')
+  }
+}
+```
+
+## Matriz Linux/macOS
+
+```bash
+docker compose config
+docker compose up -d postgres
+docker compose ps
+
 sh ./mvnw -B -f backend/pom.xml verify
 
 cd frontend
@@ -59,18 +115,16 @@ npm run typecheck
 npm run build
 cd ..
 
-docker compose config
 docker build -t gestudio-crm:seg-001 .
 ```
 
-## Comandos Windows PowerShell
+## Matriz Windows PowerShell
 
 ```powershell
-git fetch origin
-git switch feat/seg-001-prospect-vertical-slice
-git pull --ff-only
+docker compose config
+docker compose up -d postgres
+docker compose ps
 
-git rev-parse HEAD
 .\mvnw.cmd -B -f backend\pom.xml verify
 
 Push-Location frontend
@@ -79,58 +133,90 @@ npm run typecheck
 npm run build
 Pop-Location
 
-docker compose config
 docker build -t gestudio-crm:seg-001 .
 ```
+
+## Comprobación manual mínima
+
+Backend:
+
+```bash
+sh ./mvnw -f backend/pom.xml spring-boot:run
+```
+
+En otra terminal:
+
+```bash
+curl http://localhost:8080/actuator/health
+curl -u "$CRM_BOOTSTRAP_USERNAME:$CRM_BOOTSTRAP_PASSWORD" \
+  "http://localhost:8080/api/v1/prospects?size=5"
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Abrir `http://localhost:5173`, ingresar y completar el flujo descrito en `docs/local-development-and-usage.md`.
 
 ## Escaneo mínimo
 
 ```bash
 git grep -n -I -E 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|client_secret|refresh_token|api[_-]?key'
 git ls-files | grep -E '\.(xlsx|xls|csv|env|pem|key|p12|pfx)$' || true
-git diff --check main...HEAD
+git diff --check
+git status --short
 ```
 
-## Correcciones permitidas
+El resultado esperado no debe incluir `.env`, archivos reales de prospectos, claves ni tokens.
 
-- compilación Java/Spring Boot 4;
+## Correcciones autorizadas dentro de SEG-001
+
+- compilación Java/Spring Boot;
 - formato Spotless;
 - mapeos JPA/Flyway;
-- aislamiento/limpieza de tests;
+- tests y limpieza de datos;
+- compatibilidad Testcontainers;
 - tipos TypeScript;
 - lockfile;
 - configuración Vite;
-- rutas Docker/Compose;
-- fallos de las pruebas de regresión existentes;
-- documentación de evidencia.
+- Docker y Compose;
+- representación de `excludedRows`;
+- documentación de evidencia;
+- fallos demostrados por la matriz.
 
 ## Mejoras permitidas después de verde
 
-- prueba HTTP de confirmación de importación y 413;
-- mostrar `excludedRows` en UI;
-- resolución auditada de DuplicateReview;
-- retry explícito de ImportJob fallido;
-- frontend containerizado o publicación estática;
-- accesibilidad básica.
+- mostrar `excludedRows` como tarjeta independiente;
+- pruebas HTTP para confirmación y 413;
+- resolución auditada de `DuplicateReview`;
+- retry explícito de `ImportJob` fallido;
+- accesibilidad básica;
+- estrategia de publicación del frontend.
 
 ## Criterios de cierre
 
-- Maven, Spotless y tests: PASS;
-- Flyway V1–V5 y Hibernate: PASS;
-- Testcontainers: PASS;
-- frontend y lockfile: PASS;
-- Compose e imagen: PASS;
-- secretos/datos reales: PASS;
-- resultados documentados;
+- Maven y Spotless: `PASS`;
+- unit tests: `PASS`;
+- Testcontainers: `PASS`;
+- Flyway V1–V5: `PASS`;
+- Hibernate validate: `PASS`;
+- frontend, typecheck y lockfile: `PASS`;
+- Compose: `PASS`;
+- imagen Docker: `PASS`;
+- escaneo de secretos/datos: `PASS`;
+- arranque y smoke test: `PASS`;
+- resultados documentados con commit y fecha;
 - `SEG-001` marcado `COMPLETE`;
 - `SEG-002` marcado `ACTIVE`;
-- nuevo `docs/next-step.md` para identidad, organizaciones y RBAC.
+- `docs/next-step.md` reemplazado por el plan de identidad, organizaciones y RBAC.
 
 ## Restricciones
 
-- no abrir PR;
-- no fusionar a `main`;
-- no desplegar;
+- no desplegar producción;
 - no habilitar envíos;
-- no importar el XLSX real en CI;
-- no declarar éxito sin salida ejecutada.
+- no incorporar el XLSX real al repositorio o CI;
+- no declarar éxito sin salida ejecutada;
+- no iniciar SEG-002 con controles bloqueantes pendientes.
