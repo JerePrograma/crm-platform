@@ -96,11 +96,13 @@ public class ImportRow extends BaseEntity {
   }
 
   public void reject(String message) {
+    prospect = null;
     status = Status.REJECTED;
     errorMessage = message;
   }
 
-  public void markDuplicate() {
+  public void markDuplicate(Prospect existingProspect) {
+    prospect = existingProspect;
     status = Status.DUPLICATE;
     errorMessage = null;
   }
