@@ -2,9 +2,22 @@
 
 ## Objetivo
 
-Esta ruta levanta PostgreSQL, backend y frontend con Docker Compose. En el host solo requiere Git y Docker con Compose v2.
+Levantar PostgreSQL, backend y frontend con Docker Compose, validar health y smoke, y conservar todas las guardas de envío cerradas.
 
-No habilita comunicaciones. El backend no contiene adaptadores Gmail o SMTP y las cuatro guardas de envío deben permanecer cerradas.
+En el host solo requiere Git y Docker con Compose v2. Java 21 se necesita después para Maven verify desde el host.
+
+## Seguridad
+
+No existe adaptador Gmail, SMTP o de correo.
+
+```text
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
+```
+
+No modificar esos valores.
 
 ## 1. Obtener el repositorio
 
@@ -15,72 +28,113 @@ git switch main
 git pull --ff-only
 ```
 
-En un checkout existente:
+Checkout existente:
 
 ```bash
 git status
-git diff -- mvnw.cmd
+git diff --ignore-space-at-eol -- mvnw.cmd
 git pull --ff-only
 ```
 
-Restaurar `mvnw.cmd` solo si su modificación local no fue intencional:
+Restaurar `mvnw.cmd` solo si su modificación no fue intencional:
 
 ```bash
 git restore -- mvnw.cmd
 ```
 
-## 2. Crear el entorno local
+## 2. Crear `.env`
 
 Linux/macOS:
 
 ```bash
-cp .env.example .env
+[ -f .env ] || cp .env.example .env
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-No volver a copiar el archivo si `.env` ya contiene credenciales elegidas.
+Configurar credenciales bootstrap locales.
 
-Configuración recomendada:
+Puertos predeterminados:
 
 ```dotenv
-POSTGRES_DB=gestudio_crm
 POSTGRES_HOST_PORT=55432
+BACKEND_HOST_PORT=8080
+FRONTEND_HOST_PORT=5173
+POSTGRES_DB=gestudio_crm
 DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
-DATABASE_USER=gestudio
-DATABASE_PASSWORD=gestudio_local_only
-DATABASE_POOL_SIZE=10
-DATABASE_MIN_IDLE=1
-CRM_BOOTSTRAP_USERNAME=gestudio-admin
-CRM_BOOTSTRAP_PASSWORD=una-clave-local-segura
-SENDING_ENABLED=false
-SENDING_DRY_RUN=true
-SENDING_DAILY_LIMIT=0
-SENDING_KILL_SWITCH=true
-PORT=8080
 ```
 
-`POSTGRES_HOST_PORT` controla únicamente el puerto publicado en el host. Dentro de Compose, el backend siempre conecta a `postgres:5432`.
+Compose publica únicamente en loopback:
 
-El valor `55432` evita conflictos comunes con PostgreSQL local, otros contenedores y reservas de Windows.
+| Servicio | Host | Interno |
+|---|---:|---:|
+| PostgreSQL | `127.0.0.1:55432` | `5432` |
+| Backend | `127.0.0.1:8080` | `8080` |
+| Frontend | `127.0.0.1:5173` | `8080` |
 
-## 3. Ejecutar preflight
+La red interna usa `postgres:5432`, `backend:8080` y `frontend:8080`.
+
+## 3. Ruta recomendada Windows — validador automático
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173 `
+  -KeepRunning
+```
+
+El script:
+
+1. actualiza los tres puertos y `DATABASE_URL`;
+2. conserva contraseñas y `SENDING_*`;
+3. ejecuta preflight container-only;
+4. retira contenedores incompletos sin borrar volumen;
+5. construye frontend sin caché;
+6. construye backend sin caché;
+7. levanta el perfil `app`;
+8. espera health de PostgreSQL, backend y frontend;
+9. ejecuta smoke PowerShell;
+10. ejecuta smoke dentro de Compose;
+11. guarda transcript en `validation-output/`;
+12. deja el stack activo por `-KeepRunning`.
+
+No usar `-UseBuildCache` como evidencia de cierre.
+
+Puertos alternativos:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 18080 `
+  -FrontendPort 15173 `
+  -KeepRunning
+```
+
+## 4. Ruta manual
+
+### Configurar puertos
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
+  -PostgresPort 55432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173
+```
 
 Linux/macOS:
 
 ```bash
-sh scripts/preflight.sh --container-only
+sh scripts/set-local-host-ports.sh 55432 8080 5173
 ```
 
-Con Make:
-
-```bash
-make preflight-container
-```
+### Preflight
 
 Windows:
 
@@ -88,94 +142,73 @@ Windows:
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
 ```
 
-El preflight comprueba:
+Linux/macOS:
+
+```bash
+sh scripts/preflight.sh --container-only
+```
+
+Comprueba:
 
 - Git, Docker y Compose;
 - `.env`;
-- base, usuario y contraseña;
-- `POSTGRES_HOST_PORT` entre 1 y 65535;
-- coincidencia del puerto con `DATABASE_URL`;
-- credenciales bootstrap;
-- cuatro guardas de envío cerradas;
-- parseo de Compose.
+- tres puertos válidos y distintos;
+- coherencia de `DATABASE_URL`;
+- credenciales DB/bootstrap;
+- guardas de envío;
+- perfiles `app` y `smoke`.
 
-## 4. Construir e iniciar el stack
-
-Ruta habitual:
+### Build limpio
 
 ```bash
-docker compose --profile app up -d --build
-```
-
-Con Make:
-
-```bash
-make app-up
-```
-
-Servicios:
-
-| Servicio | Puerto host predeterminado | Puerto interno | Función |
-|---|---:|---:|---|
-| PostgreSQL | `127.0.0.1:55432` | `5432` | fuente de verdad |
-| Backend | `127.0.0.1:8080` | `8080` | API, Flyway y seguridad |
-| Frontend | `127.0.0.1:5173` | `8080` | SPA y proxy al backend |
-
-Orden de inicio:
-
-1. PostgreSQL saludable;
-2. backend aplica Flyway y responde health;
-3. frontend inicia después del backend saludable.
-
-## 5. Build limpio para validación
-
-Una salida completamente `CACHED` confirma que una imagen puede exportarse, pero no demuestra que el código actual compile desde cero.
-
-Frontend:
-
-```bash
+docker compose --profile app --profile smoke down --remove-orphans
 docker compose --progress plain --profile app build --no-cache frontend
-```
-
-Backend:
-
-```bash
 docker compose --progress plain --profile app build --no-cache backend
 ```
 
-`--progress` es una opción global y debe ir antes de `build`.
+Una salida completamente `CACHED` no demuestra clean build.
 
-El Dockerfile backend usa `-DskipTests`; las pruebas completas se ejecutan después con Maven Wrapper.
-
-## 6. Comprobar estado
+### Levantar
 
 ```bash
+docker compose --profile app up -d
 docker compose --profile app ps
 ```
 
-Los tres servicios deben aparecer activos y saludables.
+Esperado:
 
-Logs combinados:
+```text
+postgres   healthy
+backend    healthy
+frontend   healthy
+```
+
+Orden:
+
+1. PostgreSQL;
+2. backend aplica Flyway y responde health;
+3. frontend inicia después del backend saludable.
+
+### Logs
 
 ```bash
 docker compose --profile app logs -f
+docker compose logs postgres
+docker compose logs backend
+docker compose logs frontend
 ```
 
-Logs individuales:
+## 5. Abrir el sistema
 
-```bash
-docker compose logs -f postgres
-docker compose logs -f backend
-docker compose logs -f frontend
-```
-
-## 7. Abrir el sistema
-
-Frontend:
+Con puertos predeterminados:
 
 ```text
-http://localhost:5173
+Frontend: http://localhost:5173
+Health:   http://localhost:8080/actuator/health
+Swagger:  http://localhost:8080/swagger-ui/index.html
 ```
+
+Con puertos alternativos, reemplazar 8080/5173 por `BACKEND_HOST_PORT` y `FRONTEND_HOST_PORT`.
 
 Ingresar con:
 
@@ -184,86 +217,58 @@ CRM_BOOTSTRAP_USERNAME
 CRM_BOOTSTRAP_PASSWORD
 ```
 
-Health:
+## 6. Smoke
 
-```text
-http://localhost:8080/actuator/health
-```
-
-Swagger autenticado:
-
-```text
-http://localhost:8080/swagger-ui/index.html
-```
-
-## 8. Smoke contra stack activo
-
-Linux/macOS:
-
-```bash
-sh scripts/smoke-test.sh
-```
-
-Con Make:
-
-```bash
-make smoke
-```
-
-Windows:
+Host Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
 ```
 
-Comprueba health, API autenticada y frontend. No crea datos.
+Host Unix:
 
-## 9. Smoke efímero contenedorizado
+```bash
+sh scripts/smoke-test.sh
+```
 
-Con Make:
+Contenedor contra stack activo:
+
+```bash
+docker compose --profile app --profile smoke run --rm smoke
+```
+
+Smoke efímero con Make:
 
 ```bash
 make smoke-container
 ```
 
-Comando directo:
-
-```bash
-docker compose --profile app --profile smoke up \
-  --build \
-  --abort-on-container-exit \
-  --exit-code-from smoke \
-  smoke
-```
-
-Retirar después:
-
-```bash
-docker compose --profile app --profile smoke down --remove-orphans
-```
-
-El contenedor smoke verifica desde la red interna:
+Comprueba:
 
 - backend health;
 - Basic Auth contra prospectos;
-- documento raíz de Nginx.
+- documento raíz frontend;
+- sin crear datos.
 
-## 10. Flujo funcional
+## 7. Pruebas backend
 
-1. ingresar al dashboard;
-2. comprobar que los envíos estén bloqueados;
-3. registrar exclusiones conocidas;
-4. preparar CSV o XLSX de hasta 10 MB;
-5. ejecutar preview;
-6. revisar `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
-7. corregir el archivo;
-8. ejecutar importación confirmada;
-9. revisar prospectos y elegibilidad;
-10. revisar auditoría.
+Windows:
 
-La descripción completa está en `docs/local-development-and-usage.md`.
+```powershell
+.\mvnw.cmd -B -f backend\pom.xml verify
+```
 
-## 11. Generar package-lock sin Node local
+Linux/macOS:
+
+```bash
+sh ./mvnw -B -f backend/pom.xml verify
+```
+
+Debe cubrir compilación, Spotless, unit tests, ArchUnit, Testcontainers, Flyway y Hibernate.
+
+El Dockerfile backend usa `-DskipTests`; el build de imagen no sustituye este control.
+
+## 8. Generar package-lock
 
 Windows:
 
@@ -283,79 +288,69 @@ Con Make:
 make frontend-lock
 ```
 
-Después:
+Dockerfile, CI y Makefile detectan automáticamente:
+
+```text
+package-lock presente -> npm ci
+package-lock ausente  -> npm install
+```
+
+Después de generar el lockfile:
 
 ```bash
 git status --short
+git diff -- frontend/package-lock.json
+docker compose --progress plain --profile app build --no-cache frontend
 ```
 
-El lockfile debe versionarse antes de migrar Docker y CI a `npm ci`.
+## 9. Flujo funcional
 
-## 12. Pruebas backend completas
+1. ingresar al Dashboard;
+2. comprobar envíos bloqueados;
+3. registrar exclusiones conocidas;
+4. preparar CSV o XLSX de hasta 10 MB;
+5. ejecutar preview;
+6. revisar `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
+7. corregir el archivo;
+8. ejecutar importación confirmada;
+9. revisar prospectos y elegibilidad;
+10. revisar auditoría.
 
-Windows:
+Guía completa: `docs/local-development-and-usage.md`.
 
-```powershell
-.\mvnw.cmd -B -f backend\pom.xml verify
-```
+## 10. Detener
 
-Linux/macOS:
-
-```bash
-sh ./mvnw -B -f backend/pom.xml verify
-```
-
-Requieren Docker para Testcontainers.
-
-## 13. Detener conservando datos
+Conservar datos:
 
 ```bash
 docker compose --profile app down
 ```
 
-Con Make:
-
-```bash
-make app-down
-```
-
-El volumen `crm_postgres` se conserva.
-
-## 14. Eliminar la base local
+Eliminar también la base:
 
 ```bash
 docker compose --profile app --profile smoke down -v --remove-orphans
 ```
 
-Con Make:
+La segunda operación es destructiva.
 
-```bash
-make reset-db
-```
+## 11. Diagnóstico
 
-Esta operación es destructiva.
+### Puerto ocupado
 
-## 15. Diagnóstico
+Cambiar los tres puertos coordinadamente:
 
-### Puerto PostgreSQL ocupado
-
-Error típico:
-
-```text
-listen tcp4 127.0.0.1:5432: bind ...
-```
-
-Solución recomendada en `.env`:
-
-```dotenv
-POSTGRES_HOST_PORT=55432
-DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
+  -PostgresPort 55433 `
+  -BackendPort 18080 `
+  -FrontendPort 15173
 ```
 
 Windows, identificar proceso:
 
 ```powershell
-Get-NetTCPConnection -LocalPort 5432 -ErrorAction SilentlyContinue |
+Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
   Select-Object LocalAddress, LocalPort, State, OwningProcess
 ```
 
@@ -365,31 +360,22 @@ Puertos reservados:
 netsh interface ipv4 show excludedportrange protocol=tcp
 ```
 
-No es necesario detener otro PostgreSQL si se usa un puerto host distinto.
-
 ### Backend no saludable
 
 ```bash
 docker compose logs backend
 ```
 
-Revisar:
+Revisar PostgreSQL, credenciales, Flyway, Hibernate y memoria Docker.
 
-- PostgreSQL saludable;
-- credenciales;
-- Flyway;
-- Hibernate validate;
-- memoria Docker.
-
-### Frontend devuelve 502
+### Frontend 502
 
 ```bash
-docker compose --profile app ps
 docker compose logs backend
 docker compose logs frontend
 ```
 
-Nginx necesita resolver `backend:8080`.
+Nginx necesita resolver `backend:8080` dentro de Compose.
 
 ### Smoke falla
 
@@ -397,31 +383,30 @@ Nginx necesita resolver `backend:8080`.
 docker compose --profile app --profile smoke logs --no-color
 ```
 
-Revisar credenciales, health y respuesta de prospectos.
-
 ### Contraseña PostgreSQL cambiada
 
-La contraseña queda fijada en el volumen. Para un entorno descartable:
+La contraseña se fija al crear el volumen. Solo para un entorno descartable:
 
 ```bash
 docker compose --profile app --profile smoke down -v --remove-orphans
 docker compose --profile app up -d --build
 ```
 
-## 16. Seguridad
+## 12. Evidencia
 
-- puertos solo en `127.0.0.1`;
-- `.env` fuera de Git;
-- credenciales bootstrap locales;
-- guardas de envío cerradas;
-- XLSX real fuera del repositorio e imágenes;
-- contextos Docker sin claves, planillas o cachés;
-- smoke solo lectura;
-- stack no apto para producción.
+El validador Windows escribe:
+
+```text
+validation-output/seg001-docker-YYYYMMDD-HHMMSS.log
+```
+
+El directorio está ignorado por Git. Resumir el resultado en `docs/validation/SEG-001.md`.
 
 ## Limitaciones actuales
 
-- falta versionar `package-lock.json`;
-- imagen frontend y CI usan `npm install` hasta el lockfile;
-- HTTP Basic es temporal;
-- SEG-001 requiere build limpio, pruebas, migraciones y smoke verdes.
+- clean builds y orquestador pendientes de ejecución real;
+- Maven/Testcontainers/Flyway/Hibernate pendientes;
+- falta versionar package-lock;
+- npm ci preparado, pero pendiente de lockfile;
+- HTTP Basic temporal;
+- stack local, no productivo.
