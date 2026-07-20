@@ -62,6 +62,7 @@ export type ImportSummary = {
   status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
   totalRows: number;
   acceptedRows: number;
+  excludedRows: number;
   rejectedRows: number;
   duplicateRows: number;
   reviewRows: number;
