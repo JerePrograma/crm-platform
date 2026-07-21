@@ -16,11 +16,12 @@
 - `validation/SEG-001-container-build-2026-07-20.md` — primer build real y errores TypeScript;
 - `validation/SEG-001-rerun-2026-07-20.md` — exportación cacheada y conflicto 5432;
 - `validation/SEG-001-local-orchestration-2026-07-20.md` — tres puertos, orquestador Docker y npm ci condicional;
-- `validation/SEG-001-complete-validation-automation-2026-07-20.md` — Maven/Testcontainers contenedorizado, lockfile seguro, seguridad y validador integral.
+- `validation/SEG-001-complete-validation-automation-2026-07-20.md` — Maven/Testcontainers contenedorizado, lockfile seguro, seguridad y validador integral;
+- `validation/SEG-001-cross-platform-validation-2026-07-20.md` — paridad PowerShell/Bash, propiedad del lockfile Unix y CI/Make.
 
 ## Inicio y operación
 
-- `containerized-quickstart.md` — validación integral y stack Docker;
+- `containerized-quickstart.md` — validación integral y stack Docker en Windows/Linux/macOS;
 - `local-development-and-usage.md` — procesos separados y flujo funcional;
 - `../scripts/README.md` — puertos, preflight, validadores, Maven Docker, smoke, lockfile, seguridad y Makefile;
 - `manual-operations.md` — procedimientos operativos diarios;
@@ -59,7 +60,7 @@
 
 ## Entradas principales
 
-- `../README.md` — inicio rápido;
+- `../README.md` — inicio rápido y flujo de uso;
 - `../Makefile` — comandos repetibles Unix;
 - `../CONTRIBUTING.md` — contribución;
 - `../CHANGELOG.md` — cambios acumulados.
@@ -71,6 +72,15 @@
 1. `next-step.md`;
 2. `../scripts/README.md`;
 3. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
+4. `validation/SEG-001-cross-platform-validation-2026-07-20.md`;
+5. `validation/SEG-001.md`;
+6. `containerized-quickstart.md`.
+
+### Ejecutar validación integral en Linux/macOS
+
+1. `next-step.md`;
+2. `../scripts/README.md`;
+3. `validation/SEG-001-cross-platform-validation-2026-07-20.md`;
 4. `validation/SEG-001.md`;
 5. `containerized-quickstart.md`.
 
@@ -93,10 +103,11 @@
 1. `validation/SEG-001.md`;
 2. `next-step.md`;
 3. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
-4. `validation/SEG-001-container-build-2026-07-20.md`;
-5. `validation/SEG-001-rerun-2026-07-20.md`;
-6. `validation/SEG-001-local-orchestration-2026-07-20.md`;
-7. `containerized-quickstart.md`.
+4. `validation/SEG-001-cross-platform-validation-2026-07-20.md`;
+5. `validation/SEG-001-container-build-2026-07-20.md`;
+6. `validation/SEG-001-rerun-2026-07-20.md`;
+7. `validation/SEG-001-local-orchestration-2026-07-20.md`;
+8. `containerized-quickstart.md`.
 
 ### Continuar desarrollo
 
