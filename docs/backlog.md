@@ -10,7 +10,16 @@ Rama canónica: `main`.
 |---|---|---|---|---|
 | SEG-000 | Repositorio y continuidad | COMPLETE | — | fuente canónica, reglas y documentación |
 | SEG-001 | Vertical slice persistente de prospectos | COMPLETE | SEG-000 | importación, exclusiones, UI y stack con matriz verde |
-| SEG-002 | Prospección operativa segura | PLANNED | SEG-001 COMPLETE | flujo comercial sin envío automático |
+| SEG-002 | Identidad, usuarios y RBAC | ACTIVE | SEG-001 COMPLETE | sesión segura, permisos y aislamiento por organización |
+| SEG-003 | Prospectos operativos y contactos | PLANNED | SEG-002 | CRUD, ciclo comercial y búsqueda |
+| SEG-004 | Actividades, tareas y timeline | PLANNED | SEG-003 | seguimiento comercial trazable |
+| SEG-005 | Resolución de duplicados | PLANNED | SEG-004 | bandeja y merge transaccional |
+| SEG-006 | Oportunidades y pipeline | PLANNED | SEG-003 | ciclo de venta y forecast |
+| SEG-007 | Campañas y plantillas | PLANNED | SEG-003, SEG-006 | audiencia congelada y simulación |
+| SEG-008 | Mensajería segura y adaptadores | PLANNED | SEG-007 | no-op, fake, manual y red deshabilitada |
+| SEG-009 | Outbox, workers e inbound | PLANNED | SEG-008 | async idempotente y respuesta fake |
+| SEG-010 | Reportes, seguridad y producción | PLANNED | SEG-002–009 | operación local endurecida |
+| SEG-011 | Validación integral y cierre | PLANNED | SEG-010 | recorrido reproducible y evidencia |
 
 ## SEG-001 — Completado
 
@@ -100,17 +109,21 @@ Evidencia:
 docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 ```
 
-## SEG-002 — Planificado
+## SEG-002 — Activo
 
-No implementar sin activación y autorización explícitas:
+- [ ] organización bootstrap y backfill seguro;
+- [ ] usuarios persistentes con contraseña hasheada;
+- [ ] roles, permisos y membresías;
+- [ ] sesión cookie same-origin con CSRF;
+- [ ] login, logout, expiración e invalidación;
+- [ ] bloqueo temporal y usuario inactivo;
+- [ ] tenant isolation;
+- [ ] auditoría de autenticación;
+- [ ] UI de login y usuarios;
+- [ ] migración desde vacío y V1-V5;
+- [ ] pruebas y checkpoint verde.
 
-- campañas;
-- Gmail/SMTP;
-- Sheets/Drive;
-- workers de envío;
-- despliegues cloud;
-- automatizaciones comerciales reales;
-- importación del lote operativo real.
+Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 
 ## Restricciones permanentes durante SEG-001
 

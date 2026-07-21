@@ -6,6 +6,10 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 
 ### Added
 
+- plan vivo, progreso y matriz ejecutable para completar SEG-002–SEG-011;
+- activación formal de SEG-002 en la rama de integración
+  `feat/complete-crm-platform` después de repetir el baseline SEG-001;
+
 - Java 21, Spring Boot 4.1, Maven Wrapper, PostgreSQL y Flyway;
 - instituciones, contactos, canales, prospectos y exclusiones;
 - normalización y deduplicación exacta/ambigua;

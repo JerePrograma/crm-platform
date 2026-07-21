@@ -9,7 +9,8 @@ Todo el código y la documentación vigentes están consolidados en `main`.
 ```text
 SEG-000: COMPLETE
 SEG-001: COMPLETE — validación local integral y CI verdes
-SEG-002: PLANNED
+SEG-002: ACTIVE — identidad, usuarios y RBAC
+SEG-003–SEG-011: PLANNED — ejecución integral autorizada
 ```
 
 Evidencia real disponible:
@@ -33,6 +34,9 @@ docs/validation/SEG-001.md
 docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
+docs/execution/complete-crm-platform-plan.md
+docs/execution/complete-crm-platform-progress.md
+docs/validation/COMPLETE-CRM-matrix.md
 ```
 
 ## Alcance

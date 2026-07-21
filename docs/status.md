@@ -23,7 +23,16 @@ limpia de SEG-001 se ejecutó sobre
 |---|---|---|
 | SEG-000 | COMPLETE | repositorio, continuidad y documentación canónica |
 | SEG-001 | COMPLETE | vertical slice, seguridad, validación local integral y CI verdes |
-| SEG-002 | PLANNED | siguiente segmento; todavía no implementado ni activado |
+| SEG-002 | ACTIVE | identidad, organizaciones, usuarios, sesiones y RBAC |
+| SEG-003 | PLANNED | prospectos operativos, contactos y ciclo comercial |
+| SEG-004 | PLANNED | actividades, notas, tareas y timeline |
+| SEG-005 | PLANNED | resolución transaccional de duplicados |
+| SEG-006 | PLANNED | oportunidades y pipeline |
+| SEG-007 | PLANNED | campañas, audiencias, plantillas y simulación |
+| SEG-008 | PLANNED | mensajería segura y adaptadores deshabilitados |
+| SEG-009 | PLANNED | outbox, workers e inbound |
+| SEG-010 | PLANNED | reportes, seguridad, observabilidad y producción local |
+| SEG-011 | PLANNED | validación integral y cierre |
 
 ## Estados operativos
 
@@ -136,10 +145,11 @@ También permanece prohibido:
 - usar `docker system prune` como diagnóstico normal;
 - iniciar SEG-002 antes del cierre de SEG-001.
 
-## Próxima acción canónica
+## Ejecución integral activa
 
-SEG-001 está cerrado. No modificarlo salvo una regresión demostrada. SEG-002
-permanece `PLANNED`: revisar su alcance y solicitar autorización explícita antes
-de activarlo o implementar campañas, integraciones o envíos.
+La misión autorizada el 2026-07-21 activó SEG-002 en la rama
+`feat/complete-crm-platform`. El baseline SEG-001 se repitió sobre `7db7e4c` y
+pasó integralmente antes de cambios. El plan, progreso y matriz vigentes están
+en `docs/execution/` y `docs/validation/COMPLETE-CRM-matrix.md`.
 
-Comandos de continuidad: `docs/next-step.md`.
+Las comunicaciones reales y producción continúan fuera de autorización.

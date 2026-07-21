@@ -1,0 +1,72 @@
+# Matriz de validación integral del CRM
+
+Actualizado: 2026-07-21
+
+Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUTED_PASS`,
+`EXECUTED_FAIL`, `BLOCKED_EXTERNAL`, `NOT_APPLICABLE`.
+
+| Capacidad | Estado | Evidencia actual |
+|---|---|---|
+| baseline SEG-001 Windows | EXECUTED_PASS | validador 2026-07-21, commit `7db7e4c`, 29/29 |
+| inventario/gap analysis | EXECUTED_PASS | plan integral y análisis de código completo |
+| documentación viva | IN_PROGRESS | plan, progreso y esta matriz creados |
+| organización/tenant | NOT_STARTED | — |
+| usuarios persistentes | NOT_STARTED | — |
+| roles y permisos | NOT_STARTED | — |
+| sesión cookie/CSRF | NOT_STARTED | — |
+| login/logout/bloqueo | NOT_STARTED | — |
+| aislamiento entre tenants | NOT_STARTED | — |
+| bootstrap admin seguro | NOT_STARTED | — |
+| auditoría de identidad | NOT_STARTED | — |
+| prospect CRUD | NOT_STARTED | creación/listado SEG-001 no alcanza el contrato integral |
+| contactos CRUD | NOT_STARTED | — |
+| archivo/restauración | NOT_STARTED | — |
+| búsqueda/filtros/paginación | NOT_STARTED | — |
+| exportación CSV segura | NOT_STARTED | — |
+| optimistic locking 409 | NOT_STARTED | entidad versionada, conflicto/UI no probado |
+| ciclo comercial | NOT_STARTED | — |
+| historial de estados | NOT_STARTED | — |
+| notas y sanitización | NOT_STARTED | — |
+| actividades | NOT_STARTED | — |
+| tareas/seguimientos | NOT_STARTED | — |
+| timeline | NOT_STARTED | — |
+| importación sintética | EXECUTED_PASS | SEG-001 100 prospectos/16 exclusiones |
+| preview/exclusiones | EXECUTED_PASS | SEG-001 integración |
+| resolución de duplicados | NOT_STARTED | bandeja read-only existente |
+| merge transaccional | NOT_STARTED | — |
+| oportunidades | NOT_STARTED | — |
+| pipeline/forecast | NOT_STARTED | — |
+| campañas | NOT_STARTED | esquema V1 sin casos de uso |
+| audiencias congeladas | NOT_STARTED | — |
+| plantillas versionadas | NOT_STARTED | esquema parcial V1 |
+| renderer seguro | NOT_STARTED | — |
+| secuencias declarativas | NOT_STARTED | — |
+| aprobación/simulación | NOT_STARTED | — |
+| email no-op | NOT_STARTED | — |
+| email fake | NOT_STARTED | — |
+| email real adapter | NOT_STARTED | requerirá credenciales para conexión |
+| WhatsApp no-op | NOT_STARTED | — |
+| WhatsApp fake | NOT_STARTED | — |
+| WhatsApp real adapter | NOT_STARTED | requerirá credenciales para conexión |
+| policy/kill switch persistente | IN_PROGRESS | settings V1 existen; no hay punto de salida |
+| outbox | NOT_STARTED | — |
+| workers/retry/dead-letter | NOT_STARTED | — |
+| idempotencia asíncrona | NOT_STARTED | — |
+| inbound/webhook fake | NOT_STARTED | — |
+| frontend integral | NOT_STARTED | cinco secciones SEG-001 |
+| frontend E2E | NOT_STARTED | cero tests frontend al inicio |
+| dashboard/reportes | NOT_STARTED | — |
+| búsqueda PostgreSQL | NOT_STARTED | — |
+| configuración/etiquetas | NOT_STARTED | — |
+| threat model | NOT_STARTED | — |
+| controles de seguridad | NOT_STARTED | — |
+| observabilidad integral | NOT_STARTED | health/logs base solamente |
+| preview XLSX real | NOT_STARTED | archivo externo no inspeccionado todavía |
+| backup/restore | NOT_STARTED | — |
+| perfil producción local | NOT_STARTED | — |
+| CI integral | NOT_STARTED | cuatro jobs SEG-001 |
+| validador completo Windows | NOT_STARTED | — |
+| validador completo Unix | NOT_STARTED | — |
+| repetición limpia | NOT_STARTED | — |
+| despliegue producción | NOT_APPLICABLE | no autorizado |
+| envío real | NOT_APPLICABLE | deshabilitado por política |
