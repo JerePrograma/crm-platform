@@ -1,12 +1,13 @@
 package com.gestudio.crm.audit;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class AuditEventWriter {
@@ -26,13 +27,12 @@ public class AuditEventWriter {
     this.objectMapper = objectMapper;
   }
 
-  public UUID record(
-      String action, String entityType, UUID entityId, Map<String, ?> payload) {
+  public UUID record(String action, String entityType, UUID entityId, Map<String, ?> payload) {
     if (action == null || action.isBlank() || entityType == null || entityType.isBlank()) {
       throw new IllegalArgumentException("Audit action and entity type are required");
     }
     UUID auditId = UUID.randomUUID();
-    Instant now = Instant.now();
+    Timestamp now = Timestamp.from(Instant.now());
     jdbcTemplate.update(
         INSERT_SQL,
         auditId,
@@ -48,7 +48,7 @@ public class AuditEventWriter {
   private String json(Map<String, ?> payload) {
     try {
       return objectMapper.writeValueAsString(payload == null ? Map.of() : payload);
-    } catch (JsonProcessingException exception) {
+    } catch (JacksonException exception) {
       throw new IllegalArgumentException("Audit payload could not be serialized", exception);
     }
   }

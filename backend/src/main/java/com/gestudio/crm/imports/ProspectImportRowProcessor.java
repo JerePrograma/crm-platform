@@ -1,7 +1,5 @@
 package com.gestudio.crm.imports;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gestudio.crm.common.NormalizationService;
 import com.gestudio.crm.contact.ContactChannelType;
 import com.gestudio.crm.exclusion.ContactEligibilityService;
@@ -27,6 +25,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class ProspectImportRowProcessor {
@@ -100,8 +100,7 @@ public class ProspectImportRowProcessor {
               row,
               deduplication.existingProspect(),
               deduplication.matchType(),
-              BigDecimal.valueOf(deduplication.confidence())
-                  .setScale(4, RoundingMode.HALF_UP),
+              BigDecimal.valueOf(deduplication.confidence()).setScale(4, RoundingMode.HALF_UP),
               dryRun
                   ? "Ambiguous nominal match detected during preview; automatic merge is forbidden"
                   : "Ambiguous nominal match; automatic merge is forbidden"));
@@ -278,7 +277,7 @@ public class ProspectImportRowProcessor {
   private String rawJson(java.util.Map<String, String> rawData) {
     try {
       return objectMapper.writeValueAsString(rawData);
-    } catch (JsonProcessingException exception) {
+    } catch (JacksonException exception) {
       throw new IllegalArgumentException("Import row could not be serialized", exception);
     }
   }
