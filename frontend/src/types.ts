@@ -276,3 +276,80 @@ export type PipelineMetrics = {
   stalledCount: number;
   byStage: Record<OpportunityStage, number>;
 };
+
+export type CampaignChannel = "EMAIL" | "WHATSAPP";
+
+export type CampaignState =
+  | "DRAFT"
+  | "READY_FOR_REVIEW"
+  | "APPROVED"
+  | "SIMULATED"
+  | "SCHEDULED"
+  | "RUNNING"
+  | "PAUSED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "FAILED";
+
+export type MessageTemplate = {
+  id: string;
+  name: string;
+  channel: CampaignChannel;
+  versionId: string;
+  versionNumber: number;
+  subject: string;
+  textBody: string;
+  htmlBody: string;
+  variables: string[];
+  createdAt: string;
+};
+
+export type Campaign = {
+  id: string;
+  version: number;
+  name: string;
+  description: string | null;
+  objective: string | null;
+  channel: CampaignChannel;
+  status: CampaignState;
+  dryRun: boolean;
+  dailyLimit: number;
+  approved: boolean;
+  templateVersionId: string;
+  templateName: string;
+  recipientCount: number;
+  excludedCount: number;
+  frozenAt: string | null;
+  approvedAt: string | null;
+  simulatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AudienceRecipient = {
+  prospectId: string;
+  prospectName: string;
+  contactId: string | null;
+  contactName: string | null;
+  included: boolean;
+  exclusionReason: string | null;
+  channel: CampaignChannel;
+  validationStatus: "VALID" | "MISSING_CHANNEL" | "EXCLUDED" | "INELIGIBLE";
+  frozenAt: string;
+};
+
+export type CampaignSimulation = {
+  id: string;
+  campaignId: string;
+  idempotencyKey: string;
+  includedCount: number;
+  excludedCount: number;
+  status: "SIMULATED";
+  createdAt: string;
+};
+
+export type RenderedTemplate = {
+  subject: string;
+  textBody: string;
+  htmlBody: string;
+};

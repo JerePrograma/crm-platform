@@ -326,6 +326,19 @@ public class DuplicateResolutionService {
   }
 
   private void moveReferences(UUID survivorId, UUID absorbedId) {
+    jdbcTemplate.update(
+        """
+        UPDATE opportunity SET primary_active = FALSE
+        WHERE organization_id = ? AND prospect_id = ? AND primary_active
+          AND EXISTS (
+            SELECT 1 FROM opportunity survivor
+            WHERE survivor.organization_id = opportunity.organization_id
+              AND survivor.prospect_id = ? AND survivor.primary_active
+          )
+        """,
+        currentActor.organizationId(),
+        absorbedId,
+        survivorId);
     for (String table :
         List.of(
             "prospect_note", "activity", "crm_task", "prospect_status_history", "opportunity")) {
@@ -335,6 +348,43 @@ public class DuplicateResolutionService {
           absorbedId,
           currentActor.organizationId());
     }
+    jdbcTemplate.update(
+        """
+        DELETE FROM campaign_audience_recipient absorbed
+        WHERE absorbed.organization_id = ? AND absorbed.prospect_id = ?
+          AND EXISTS (
+            SELECT 1 FROM campaign_audience_recipient survivor
+            WHERE survivor.organization_id = absorbed.organization_id
+              AND survivor.campaign_id = absorbed.campaign_id AND survivor.prospect_id = ?
+          )
+        """,
+        currentActor.organizationId(),
+        absorbedId,
+        survivorId);
+    jdbcTemplate.update(
+        "UPDATE campaign_audience_recipient SET prospect_id = ? WHERE prospect_id = ? AND organization_id = ?",
+        survivorId,
+        absorbedId,
+        currentActor.organizationId());
+    jdbcTemplate.update(
+        """
+        DELETE FROM campaign_simulation_result absorbed
+        WHERE absorbed.organization_id = ? AND absorbed.prospect_id = ?
+          AND EXISTS (
+            SELECT 1 FROM campaign_simulation_result survivor
+            WHERE survivor.organization_id = absorbed.organization_id
+              AND survivor.simulation_run_id = absorbed.simulation_run_id
+              AND survivor.prospect_id = ?
+          )
+        """,
+        currentActor.organizationId(),
+        absorbedId,
+        survivorId);
+    jdbcTemplate.update(
+        "UPDATE campaign_simulation_result SET prospect_id = ? WHERE prospect_id = ? AND organization_id = ?",
+        survivorId,
+        absorbedId,
+        currentActor.organizationId());
     jdbcTemplate.update(
         "UPDATE import_row SET prospect_id = ? WHERE prospect_id = ? AND organization_id = ?",
         survivorId,

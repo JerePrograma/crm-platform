@@ -1,10 +1,15 @@
 import type {
   AuditEvent,
+  AudienceRecipient,
+  Campaign,
+  CampaignChannel,
+  CampaignSimulation,
   DuplicateResolutionAction,
   DuplicateReview,
   Exclusion,
   ImportRow,
   ImportSummary,
+  MessageTemplate,
   Opportunity,
   OpportunityStage,
   PipelineMetrics,
@@ -15,6 +20,7 @@ import type {
   Task,
   TimelineItem,
   SessionUser,
+  RenderedTemplate,
   User,
 } from "./types";
 
@@ -284,6 +290,78 @@ export function transitionOpportunity(
   return request(`/api/v1/opportunities/${id}/transitions`, {
     method: "POST",
     body: JSON.stringify({ version, stage, reason, comment: "Transición desde pipeline" }),
+  });
+}
+
+export function listTemplates(): Promise<MessageTemplate[]> {
+  return request("/api/v1/templates");
+}
+
+export function createTemplate(input: {
+  name: string;
+  channel: CampaignChannel;
+  subject: string;
+  textBody: string;
+  htmlBody: string;
+}): Promise<MessageTemplate> {
+  return request("/api/v1/templates", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function previewTemplate(
+  versionId: string,
+  variables: Record<string, string>,
+): Promise<RenderedTemplate> {
+  return request(`/api/v1/template-versions/${versionId}/preview`, {
+    method: "POST",
+    body: JSON.stringify(variables),
+  });
+}
+
+export function listCampaigns(): Promise<Campaign[]> {
+  return request("/api/v1/campaigns");
+}
+
+export function createCampaign(input: {
+  name: string;
+  description?: string;
+  objective?: string;
+  channel: CampaignChannel;
+  templateVersionId: string;
+}): Promise<Campaign> {
+  return request("/api/v1/campaigns", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function freezeCampaignAudience(
+  campaign: Campaign,
+  filter: { province?: string; scoreAtLeast?: number },
+): Promise<Campaign> {
+  return request(`/api/v1/campaigns/${campaign.id}/audience/freeze`, {
+    method: "POST",
+    body: JSON.stringify({
+      version: campaign.version,
+      eligibility: "ELIGIBLE",
+      excludeCustomers: true,
+      requireActiveOpportunity: false,
+      ...filter,
+    }),
+  });
+}
+
+export function getCampaignAudience(id: string): Promise<AudienceRecipient[]> {
+  return request(`/api/v1/campaigns/${id}/audience`);
+}
+
+export function approveCampaign(campaign: Campaign): Promise<Campaign> {
+  return request(`/api/v1/campaigns/${campaign.id}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ version: campaign.version }),
+  });
+}
+
+export function simulateCampaign(campaign: Campaign): Promise<CampaignSimulation> {
+  return request(`/api/v1/campaigns/${campaign.id}/simulate`, {
+    method: "POST",
+    headers: { "Idempotency-Key": crypto.randomUUID() },
   });
 }
 

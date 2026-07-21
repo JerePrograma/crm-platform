@@ -143,6 +143,8 @@ class SecurityAuthorizationIntegrationTest {
     MockHttpSession session = session(login("read-only-user", "viewer-password-1").andReturn());
 
     mockMvc.perform(get("/api/v1/prospects").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/templates").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/campaigns").session(session)).andExpect(status().isOk());
     mockMvc
         .perform(
             post("/api/v1/prospects")
@@ -150,6 +152,23 @@ class SecurityAuthorizationIntegrationTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"institutionName\":\"Viewer cannot create\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            post("/api/v1/templates")
+                .session(session)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name":"Viewer cannot create template",
+                      "channel":"EMAIL",
+                      "subject":"Subject",
+                      "textBody":"Text",
+                      "htmlBody":"<p>Text</p>"
+                    }
+                    """))
         .andExpect(status().isForbidden());
   }
 

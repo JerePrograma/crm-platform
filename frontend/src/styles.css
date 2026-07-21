@@ -167,6 +167,58 @@ h2 {
   align-items: start;
 }
 
+.two-column.equal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.preview-box {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #dce2ea;
+  border-radius: 12px;
+  background: #f8fafc;
+  white-space: pre-wrap;
+}
+
+.form-grid,
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.entity-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #dce2ea;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.entity-card > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.entity-card p,
+.entity-card small {
+  margin: 0;
+  color: #657187;
+}
+
+.alert.safety {
+  border-color: #d6b04a;
+  background: #fff8df;
+  color: #6f5200;
+}
+
 .panel,
 .metric-card {
   border: 1px solid #dce2ea;
@@ -617,7 +669,9 @@ dd {
   }
 
   .metric-grid,
-  .detail-grid {
+  .detail-grid,
+  .form-grid,
+  .card-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -625,6 +679,8 @@ dd {
 @media (max-width: 480px) {
   .metric-grid,
   .detail-grid,
+  .form-grid,
+  .card-grid,
   .sidebar nav {
     grid-template-columns: 1fr;
   }

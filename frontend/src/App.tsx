@@ -6,16 +6,20 @@ import {
   type FormEvent,
 } from "react";
 import {
+  approveCampaign,
   changePassword,
   changeTaskStatus,
   createContact,
+  createCampaign,
   createExclusion,
   createNote,
   createOpportunity,
   createProspect,
+  createTemplate,
   createTask,
   createUser,
   getImportRows,
+  getCampaignAudience,
   getPendingDuplicateReviews,
   getPipelineMetrics,
   getProspect,
@@ -23,8 +27,10 @@ import {
   getSession,
   importProspects,
   listAuditEvents,
+  listCampaigns,
   listExclusions,
   listOpportunities,
+  listTemplates,
   listProspects,
   listContacts,
   listTasks,
@@ -32,24 +38,33 @@ import {
   login,
   logout,
   resolveDuplicateReview,
+  previewTemplate,
   setUserActive,
+  simulateCampaign,
   transitionProspect,
   transitionOpportunity,
+  freezeCampaignAudience,
   updateProspect,
 } from "./api";
 import type {
   AuditEvent,
+  AudienceRecipient,
+  Campaign,
+  CampaignChannel,
+  CampaignSimulation,
   Contact,
   DuplicateReview,
   DuplicateResolutionAction,
   Exclusion,
   ImportRow,
   ImportSummary,
+  MessageTemplate,
   Opportunity,
   OpportunityStage,
   PipelineMetrics,
   Prospect,
   ProspectStatus,
+  RenderedTemplate,
   SessionUser,
   Task,
   TimelineItem,
@@ -60,6 +75,7 @@ type Tab =
   | "dashboard"
   | "prospects"
   | "pipeline"
+  | "campaigns"
   | "imports"
   | "exclusions"
   | "audit"
@@ -115,6 +131,8 @@ export function App() {
   const [duplicateReviews, setDuplicateReviews] = useState<DuplicateReview[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [pipelineMetrics, setPipelineMetrics] = useState<PipelineMetrics | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [statusFilter, setStatusFilter] = useState<ProspectStatus | "">("");
   const [loading, setLoading] = useState(false);
@@ -125,7 +143,16 @@ export function App() {
       setLoading(true);
       setError(null);
       try {
-        const [prospectPage, exclusionPage, audits, reviews, opportunityList, metrics] =
+        const [
+          prospectPage,
+          exclusionPage,
+          audits,
+          reviews,
+          opportunityList,
+          metrics,
+          campaignList,
+          templateList,
+        ] =
           await Promise.all([
           listProspects(filter || undefined),
           listExclusions(),
@@ -137,6 +164,12 @@ export function App() {
           session?.permissions.includes("REPORT_READ")
             ? getPipelineMetrics()
             : Promise.resolve(null),
+          session?.permissions.includes("CAMPAIGN_READ")
+            ? listCampaigns()
+            : Promise.resolve([]),
+          session?.permissions.includes("CAMPAIGN_READ")
+            ? listTemplates()
+            : Promise.resolve([]),
         ]);
         setProspects(prospectPage.content);
         setExclusions(exclusionPage.content);
@@ -144,6 +177,8 @@ export function App() {
         setDuplicateReviews(reviews);
         setOpportunities(opportunityList);
         setPipelineMetrics(metrics);
+        setCampaigns(campaignList);
+        setTemplates(templateList);
       } catch (caught) {
         setError(message(caught));
       } finally {
@@ -217,6 +252,11 @@ export function App() {
           <NavButton active={tab === "pipeline"} onClick={() => setTab("pipeline")}>
             Pipeline
           </NavButton>
+          {session.permissions.includes("CAMPAIGN_READ") && (
+            <NavButton active={tab === "campaigns"} onClick={() => setTab("campaigns")}>
+              Campañas
+            </NavButton>
+          )}
           {session.permissions.includes("IMPORT_PREVIEW") && (
             <NavButton active={tab === "imports"} onClick={() => setTab("imports")}>
               Importaciones
@@ -281,6 +321,14 @@ export function App() {
               <Metric label="Revisiones pendientes" value={duplicateReviews.length} />
               <Metric label="Oportunidades activas" value={pipelineMetrics?.activeCount ?? 0} />
               <Metric label="Estancadas" value={pipelineMetrics?.stalledCount ?? 0} />
+              <Metric
+                label="Campañas en borrador"
+                value={campaigns.filter((campaign) => campaign.status === "DRAFT").length}
+              />
+              <Metric
+                label="Mensajes bloqueados"
+                value={campaigns.reduce((total, campaign) => total + campaign.recipientCount, 0)}
+              />
             </div>
             <Panel title="Controles activos">
               <div className="control-grid">
@@ -378,6 +426,15 @@ export function App() {
             prospects={prospects}
             opportunities={opportunities}
             metrics={pipelineMetrics}
+            session={session}
+            onChanged={() => refresh()}
+          />
+        )}
+
+        {tab === "campaigns" && (
+          <CampaignsPanel
+            campaigns={campaigns}
+            templates={templates}
             session={session}
             onChanged={() => refresh()}
           />
@@ -653,6 +710,263 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: SessionUser) =>
         </button>
       </form>
     </main>
+  );
+}
+
+function CampaignsPanel({
+  campaigns,
+  templates,
+  session,
+  onChanged,
+}: {
+  campaigns: Campaign[];
+  templates: MessageTemplate[];
+  session: SessionUser;
+  onChanged: () => Promise<void>;
+}) {
+  const [templateName, setTemplateName] = useState("");
+  const [templateChannel, setTemplateChannel] = useState<CampaignChannel>("EMAIL");
+  const [subject, setSubject] = useState("Hola {{prospect.displayName}}");
+  const [textBody, setTextBody] = useState(
+    "Hola {{contact.firstName}}, te contactamos por {{campaign.name}}.",
+  );
+  const [htmlBody, setHtmlBody] = useState(
+    "<p>Hola <strong>{{contact.firstName}}</strong>, te contactamos por {{campaign.name}}.</p>",
+  );
+  const [campaignName, setCampaignName] = useState("");
+  const [templateVersionId, setTemplateVersionId] = useState("");
+  const [province, setProvince] = useState("");
+  const [scoreAtLeast, setScoreAtLeast] = useState("");
+  const [audience, setAudience] = useState<AudienceRecipient[]>([]);
+  const [preview, setPreview] = useState<RenderedTemplate | null>(null);
+  const [simulation, setSimulation] = useState<CampaignSimulation | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const writable = session.permissions.includes("CAMPAIGN_WRITE");
+
+  async function run(action: () => Promise<void>) {
+    setError(null);
+    setNotice(null);
+    try {
+      await action();
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  async function submitTemplate(event: FormEvent) {
+    event.preventDefault();
+    await run(async () => {
+      const created = await createTemplate({
+        name: templateName,
+        channel: templateChannel,
+        subject,
+        textBody,
+        htmlBody,
+      });
+      setTemplateName("");
+      setTemplateVersionId(created.versionId);
+      setNotice(`Plantilla ${created.name} v${created.versionNumber} creada.`);
+      await onChanged();
+    });
+  }
+
+  async function submitCampaign(event: FormEvent) {
+    event.preventDefault();
+    const selected = templates.find((template) => template.versionId === templateVersionId);
+    if (!selected) {
+      setError("Seleccioná una plantilla.");
+      return;
+    }
+    await run(async () => {
+      const created = await createCampaign({
+        name: campaignName,
+        objective: "Prospección comercial simulada",
+        channel: selected.channel,
+        templateVersionId: selected.versionId,
+      });
+      setCampaignName("");
+      setNotice(`Campaña ${created.name} creada en borrador.`);
+      await onChanged();
+    });
+  }
+
+  async function showPreview(template: MessageTemplate) {
+    await run(async () => {
+      setPreview(
+        await previewTemplate(template.versionId, {
+          "prospect.displayName": "Institución de ejemplo",
+          "prospect.city": "Rosario",
+          "contact.firstName": "Ana",
+          "contact.lastName": "Pérez",
+          "owner.name": session.displayName,
+          "campaign.name": campaignName || "Campaña de ejemplo",
+        }),
+      );
+      setNotice("Preview renderizado con datos sintéticos.");
+    });
+  }
+
+  async function freeze(campaign: Campaign) {
+    if (!window.confirm("¿Congelar esta audiencia? Los filtros quedarán materializados.")) {
+      return;
+    }
+    await run(async () => {
+      const frozen = await freezeCampaignAudience(campaign, {
+        province: province || undefined,
+        scoreAtLeast: scoreAtLeast ? Number(scoreAtLeast) : undefined,
+      });
+      setAudience(await getCampaignAudience(frozen.id));
+      setNotice(
+        `Audiencia congelada: ${frozen.recipientCount} incluidos, ${frozen.excludedCount} excluidos.`,
+      );
+      await onChanged();
+    });
+  }
+
+  async function approve(campaign: Campaign) {
+    if (!window.confirm("¿Aprobar esta campaña para simulación? Esto no habilita envíos reales.")) {
+      return;
+    }
+    await run(async () => {
+      const approved = await approveCampaign(campaign);
+      setNotice(`Campaña ${approved.name} aprobada solo para simulación.`);
+      await onChanged();
+    });
+  }
+
+  async function simulate(campaign: Campaign) {
+    await run(async () => {
+      const result = await simulateCampaign(campaign);
+      setSimulation(result);
+      setNotice(
+        `Simulación completa: ${result.includedCount} borradores fake y ${result.excludedCount} bloqueados.`,
+      );
+      await onChanged();
+    });
+  }
+
+  return (
+    <section className="stack">
+      <div className="alert safety">
+        Esta sección solo crea borradores y simulaciones. Los cuatro controles de envío
+        permanecen bloqueados y no existe una acción “Enviar”.
+      </div>
+      {error && <div className="alert error">{error}</div>}
+      {notice && <div className="alert success">{notice}</div>}
+      {writable && (
+        <div className="two-column equal">
+          <Panel title="Nueva plantilla versionada">
+            <form className="form-grid" onSubmit={(event) => void submitTemplate(event)}>
+              <label>
+                Nombre
+                <input required value={templateName} onChange={(event) => setTemplateName(event.target.value)} />
+              </label>
+              <label>
+                Canal
+                <select value={templateChannel} onChange={(event) => setTemplateChannel(event.target.value as CampaignChannel)}>
+                  <option value="EMAIL">EMAIL</option>
+                  <option value="WHATSAPP">WHATSAPP</option>
+                </select>
+              </label>
+              <label className="full-width">
+                Asunto
+                <input required value={subject} onChange={(event) => setSubject(event.target.value)} />
+              </label>
+              <label className="full-width">
+                Texto
+                <textarea required value={textBody} onChange={(event) => setTextBody(event.target.value)} />
+              </label>
+              <label className="full-width">
+                HTML seguro
+                <textarea required value={htmlBody} onChange={(event) => setHtmlBody(event.target.value)} />
+              </label>
+              <button className="primary-button" type="submit">Crear versión 1</button>
+            </form>
+          </Panel>
+          <Panel title="Nueva campaña">
+            <form className="form-grid" onSubmit={(event) => void submitCampaign(event)}>
+              <label className="full-width">
+                Nombre
+                <input required value={campaignName} onChange={(event) => setCampaignName(event.target.value)} />
+              </label>
+              <label className="full-width">
+                Plantilla
+                <select required value={templateVersionId} onChange={(event) => setTemplateVersionId(event.target.value)}>
+                  <option value="">Seleccionar…</option>
+                  {templates.map((template) => (
+                    <option key={template.versionId} value={template.versionId}>
+                      {template.name} · v{template.versionNumber} · {template.channel}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Provincia (opcional)
+                <input value={province} onChange={(event) => setProvince(event.target.value)} />
+              </label>
+              <label>
+                Score mínimo
+                <input type="number" min="0" max="100" value={scoreAtLeast} onChange={(event) => setScoreAtLeast(event.target.value)} />
+              </label>
+              <button className="primary-button" type="submit">Crear borrador</button>
+            </form>
+          </Panel>
+        </div>
+      )}
+      <Panel title="Plantillas disponibles">
+        <div className="card-grid">
+          {templates.map((template) => (
+            <article className="entity-card" key={template.versionId}>
+              <div><strong>{template.name}</strong><Badge value={`${template.channel} · v${template.versionNumber}`} /></div>
+              <p>{template.subject}</p>
+              <small>Variables: {template.variables.join(", ") || "ninguna"}</small>
+              <button className="secondary-button" type="button" onClick={() => void showPreview(template)}>Previsualizar</button>
+            </article>
+          ))}
+          {templates.length === 0 && <EmptyState text="Todavía no hay plantillas." />}
+        </div>
+        {preview && (
+          <div className="preview-box" aria-live="polite">
+            <strong>{preview.subject}</strong>
+            <p>{preview.textBody}</p>
+          </div>
+        )}
+      </Panel>
+      <Panel title="Campañas y audiencias">
+        <div className="card-grid">
+          {campaigns.map((campaign) => (
+            <article className="entity-card" key={campaign.id}>
+              <div><strong>{campaign.name}</strong><Badge value={campaign.status} /></div>
+              <p>{campaign.channel} · {campaign.templateName}</p>
+              <small>{campaign.recipientCount} incluidos · {campaign.excludedCount} excluidos · dry-run</small>
+              <div className="action-row">
+                {writable && ["DRAFT", "READY_FOR_REVIEW"].includes(campaign.status) && (
+                  <button className="secondary-button" type="button" onClick={() => void freeze(campaign)}>Congelar audiencia</button>
+                )}
+                <button className="secondary-button" type="button" onClick={() => void run(async () => setAudience(await getCampaignAudience(campaign.id)))}>Ver audiencia</button>
+                {campaign.status === "READY_FOR_REVIEW" && session.permissions.includes("CAMPAIGN_APPROVE") && (
+                  <button className="primary-button" type="button" onClick={() => void approve(campaign)}>Aprobar</button>
+                )}
+                {["APPROVED", "SIMULATED"].includes(campaign.status) && session.permissions.includes("MESSAGE_SIMULATE") && (
+                  <button className="primary-button" type="button" onClick={() => void simulate(campaign)}>Simular</button>
+                )}
+              </div>
+            </article>
+          ))}
+          {campaigns.length === 0 && <EmptyState text="No hay campañas." />}
+        </div>
+      </Panel>
+      {audience.length > 0 && (
+        <Panel title="Audiencia congelada">
+          <div className="table-scroll"><table><thead><tr><th>Prospecto</th><th>Contacto</th><th>Decisión</th><th>Motivo</th></tr></thead><tbody>
+            {audience.map((recipient) => <tr key={recipient.prospectId}><td>{recipient.prospectName}</td><td>{recipient.contactName || "—"}</td><td><Badge value={recipient.validationStatus} /></td><td>{recipient.exclusionReason || "Incluido"}</td></tr>)}
+          </tbody></table></div>
+        </Panel>
+      )}
+      {simulation && <div className="alert success">Run fake {simulation.id}: ningún envío de red; {simulation.includedCount} actividades de borrador.</div>}
+    </section>
   );
 }
 
@@ -1498,6 +1812,7 @@ function title(tab: Tab): string {
     dashboard: "Dashboard",
     prospects: "Prospectos",
     pipeline: "Pipeline",
+    campaigns: "Campañas y plantillas",
     imports: "Importaciones",
     exclusions: "Exclusiones",
     audit: "Auditoría",
