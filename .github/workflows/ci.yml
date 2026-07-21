@@ -72,6 +72,12 @@ jobs:
           scripts/check-repository-safety.sh
       - name: Validate Bash orchestrator syntax
         run: bash -n scripts/validate-seg001.sh
+      - name: Reject ambiguous PowerShell exit-code interpolation
+        run: |
+          if grep -RInF '$LASTEXITCODE:' scripts --include='*.ps1'; then
+            echo 'Use a format expression or ${LASTEXITCODE} before a colon.' >&2
+            exit 1
+          fi
       - name: Validate PowerShell script syntax
         shell: pwsh
         run: |
