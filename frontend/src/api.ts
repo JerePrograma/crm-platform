@@ -7,6 +7,9 @@ import type {
   Page,
   Prospect,
   ProspectStatus,
+  Contact,
+  Task,
+  TimelineItem,
   SessionUser,
   User,
 } from "./types";
@@ -100,12 +103,103 @@ export function setUserActive(id: string, active: boolean): Promise<void> {
   });
 }
 
-export function listProspects(status?: ProspectStatus): Promise<Page<Prospect>> {
+export function listProspects(status?: ProspectStatus, query?: string): Promise<Page<Prospect>> {
   const params = new URLSearchParams({ size: "100", sort: "createdAt,desc" });
   if (status) {
     params.set("status", status);
   }
+  if (query?.trim()) {
+    params.set("query", query.trim());
+  }
   return request(`/api/v1/prospects?${params.toString()}`);
+}
+
+export function createProspect(input: {
+  institutionName: string;
+  locality?: string;
+  province?: string;
+  country?: string;
+  website?: string;
+  source?: string;
+}): Promise<Prospect> {
+  return request("/api/v1/prospects", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function updateProspect(id: string, input: Partial<Prospect> & { version: number; displayName: string }): Promise<Prospect> {
+  return request(`/api/v1/prospects/${id}`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export function transitionProspect(id: string, version: number, status: ProspectStatus): Promise<Prospect> {
+  return request(`/api/v1/prospects/${id}/transitions`, {
+    method: "POST",
+    body: JSON.stringify({
+      version,
+      status,
+      reason: status === "LOST" ? "OTHER" : null,
+      comment: status === "PROPOSAL" ? "Excepción manual documentada desde CRM" : "Cambio manual desde CRM",
+      scheduledAt: status === "DEMO_SCHEDULED" ? new Date().toISOString() : null,
+      proposalException: status === "PROPOSAL",
+    }),
+  });
+}
+
+export function listContacts(prospectId: string): Promise<Contact[]> {
+  return request(`/api/v1/prospects/${prospectId}/contacts`);
+}
+
+export function createContact(
+  prospectId: string,
+  input: { firstName: string; lastName?: string; role?: string; email?: string },
+): Promise<Contact> {
+  const channels = input.email
+    ? [{ type: "EMAIL", value: input.email, primary: true, valid: true, verified: false, consent: "UNKNOWN", preferred: true }]
+    : [];
+  return request(`/api/v1/prospects/${prospectId}/contacts`, {
+    method: "POST",
+    body: JSON.stringify({
+      firstName: input.firstName,
+      lastName: input.lastName,
+      role: input.role,
+      primary: true,
+      verified: false,
+      preferredChannel: input.email ? "EMAIL" : null,
+      consent: "UNKNOWN",
+      source: "MANUAL",
+      channels,
+    }),
+  });
+}
+
+export function createNote(prospectId: string, body: string): Promise<void> {
+  return request(`/api/v1/prospects/${prospectId}/notes`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
+}
+
+export function createTask(
+  prospectId: string,
+  input: { ownerUserId: string; title: string; dueAt: string },
+): Promise<Task> {
+  return request(`/api/v1/prospects/${prospectId}/tasks`, {
+    method: "POST",
+    body: JSON.stringify({ ...input, priority: "MEDIUM", taskType: "FOLLOW_UP" }),
+  });
+}
+
+export function changeTaskStatus(task: Task, status: Task["status"]): Promise<Task> {
+  return request(`/api/v1/tasks/${task.id}/status`, {
+    method: "POST",
+    body: JSON.stringify({ version: task.version, status }),
+  });
+}
+
+export function listTasks(status?: Task["status"]): Promise<Task[]> {
+  return request(`/api/v1/tasks${status ? `?status=${status}` : ""}`);
+}
+
+export function getTimeline(prospectId: string): Promise<Page<TimelineItem>> {
+  return request(`/api/v1/prospects/${prospectId}/timeline?size=100`);
 }
 
 export function getProspect(id: string): Promise<Prospect> {

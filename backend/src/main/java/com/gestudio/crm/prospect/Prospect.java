@@ -26,6 +26,10 @@ public class Prospect extends BaseEntity {
   @Column(nullable = false)
   private ProspectStatus status;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private ProspectEligibility eligibility;
+
   private Integer priority;
   private Integer score;
   private Integer estimatedStudents;
@@ -60,6 +64,8 @@ public class Prospect extends BaseEntity {
     this.institution = institution;
     this.externalSourceId = blankToNull(externalSourceId);
     this.status = status;
+    this.eligibility =
+        contactEligible ? ProspectEligibility.ELIGIBLE : ProspectEligibility.EXCLUDED;
     this.priority = priority;
     this.score = score;
     this.estimatedStudents = estimatedStudents;
@@ -130,6 +136,10 @@ public class Prospect extends BaseEntity {
 
   public ProspectStatus getStatus() {
     return status;
+  }
+
+  public ProspectEligibility getEligibility() {
+    return eligibility;
   }
 
   public Integer getPriority() {

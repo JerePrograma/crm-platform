@@ -18,18 +18,18 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | aislamiento entre tenants | EXECUTED_PASS | segundo tenant persistente devuelve 404 |
 | bootstrap admin seguro | EXECUTED_PASS | solo sin admin y con variables completas |
 | auditoría de identidad | EXECUTED_PASS | login/fallo/logout/usuario/contraseña |
-| prospect CRUD | NOT_STARTED | creación/listado SEG-001 no alcanza el contrato integral |
-| contactos CRUD | NOT_STARTED | — |
-| archivo/restauración | NOT_STARTED | — |
-| búsqueda/filtros/paginación | NOT_STARTED | — |
-| exportación CSV segura | NOT_STARTED | — |
-| optimistic locking 409 | NOT_STARTED | entidad versionada, conflicto/UI no probado |
-| ciclo comercial | NOT_STARTED | — |
-| historial de estados | NOT_STARTED | — |
-| notas y sanitización | NOT_STARTED | — |
-| actividades | NOT_STARTED | — |
-| tareas/seguimientos | NOT_STARTED | — |
-| timeline | NOT_STARTED | — |
+| prospect CRUD | EXECUTED_PASS | integración PostgreSQL y UI real |
+| contactos CRUD | EXECUTED_PASS | create/update/delete y normalización integrados |
+| archivo/restauración | EXECUTED_PASS | estado previo y elegibilidad preservados |
+| búsqueda/filtros/paginación | EXECUTED_PASS | JDBC paginado, allow-list y prueba integrada |
+| exportación CSV segura | EXECUTED_PASS | prueba de neutralización de fórmula |
+| optimistic locking 409 | EXECUTED_PASS | conflicto integrado y Problem Details |
+| ciclo comercial | EXECUTED_PASS | máquina explícita y flujo integrado |
+| historial de estados | EXECUTED_PASS | persistencia y timeline verificados |
+| notas y sanitización | EXECUTED_PASS | script escapado en integración |
+| actividades | EXECUTED_PASS | actividad outbound y metadata JSONB |
+| tareas/seguimientos | EXECUTED_PASS | create/complete/próxima acción y UI |
+| timeline | EXECUTED_PASS | paginado combinado y recorrido Playwright |
 | importación sintética | EXECUTED_PASS | SEG-001 100 prospectos/16 exclusiones |
 | preview/exclusiones | EXECUTED_PASS | SEG-001 integración |
 | resolución de duplicados | NOT_STARTED | bandeja read-only existente |
@@ -53,7 +53,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | workers/retry/dead-letter | NOT_STARTED | — |
 | idempotencia asíncrona | NOT_STARTED | — |
 | inbound/webhook fake | NOT_STARTED | — |
-| frontend integral | NOT_STARTED | cinco secciones SEG-001 |
+| frontend integral | IN_PROGRESS | prospectos/contactos/tareas/timeline operativos; dominios SEG-005+ pendientes |
 | frontend E2E | NOT_STARTED | cero tests frontend al inicio |
 | dashboard/reportes | NOT_STARTED | — |
 | búsqueda PostgreSQL | NOT_STARTED | — |

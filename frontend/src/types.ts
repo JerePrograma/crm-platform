@@ -1,5 +1,12 @@
 export type ProspectStatus =
   | "NEW"
+  | "QUALIFYING"
+  | "READY_TO_CONTACT"
+  | "FOLLOW_UP"
+  | "DEMO_PROPOSED"
+  | "DEMO_SCHEDULED"
+  | "PROPOSAL"
+  | "CUSTOMER"
   | "NEEDS_ENRICHMENT"
   | "READY_FOR_REVIEW"
   | "APPROVED"
@@ -36,9 +43,8 @@ export type Prospect = {
   id: string;
   version: number;
   institutionId: string;
-  institutionName: string;
-  category: string | null;
-  locality: string | null;
+  displayName: string;
+  legalName: string | null;
   province: string | null;
   country: string | null;
   website: string | null;
@@ -47,10 +53,84 @@ export type Prospect = {
   score: number | null;
   estimatedStudents: number | null;
   source: string | null;
-  owner: string | null;
+  sourceDetail: string | null;
+  ownerUserId: string | null;
+  ownerName: string | null;
+  address: string | null;
+  city: string | null;
+  timezone: string | null;
+  notesSummary: string | null;
+  nextActionAt: string | null;
+  lastContactAt: string | null;
+  eligibility: "ELIGIBLE" | "EXCLUDED" | "CUSTOMER";
+  lostReason: string | null;
+  statusDetailAt: string | null;
+  archivedAt: string | null;
   contactEligible: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ContactChannel = {
+  id: string;
+  version: number;
+  type: "EMAIL" | "PHONE" | "WHATSAPP" | "WEBSITE" | "SOCIAL" | "OTHER";
+  value: string;
+  normalizedValue: string;
+  primary: boolean;
+  valid: boolean;
+  verified: boolean;
+  consent: "UNKNOWN" | "GRANTED" | "DENIED";
+  preferred: boolean;
+  lastValidatedAt: string | null;
+};
+
+export type Contact = {
+  id: string;
+  version: number;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string;
+  role: string | null;
+  primary: boolean;
+  verified: boolean;
+  preferredChannel: ContactChannel["type"] | null;
+  consent: "UNKNOWN" | "GRANTED" | "DENIED";
+  source: string | null;
+  lastValidatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  channels: ContactChannel[];
+};
+
+export type Task = {
+  id: string;
+  version: number;
+  prospectId: string;
+  ownerUserId: string;
+  creatorUserId: string | null;
+  title: string;
+  description: string | null;
+  dueAt: string;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  status: "OPEN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  taskType: string;
+  reminderAt: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  outcome: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TimelineItem = {
+  id: string;
+  eventAt: string;
+  eventType: "STATUS" | "NOTE" | "ACTIVITY" | "TASK" | "AUDIT";
+  title: string;
+  detail: string | null;
+  actorUserId: string | null;
+  metadata: string;
 };
 
 export type ImportSummary = {

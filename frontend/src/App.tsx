@@ -7,23 +7,34 @@ import {
 } from "react";
 import {
   changePassword,
+  changeTaskStatus,
+  createContact,
   createExclusion,
+  createNote,
+  createProspect,
+  createTask,
   createUser,
   getImportRows,
   getPendingDuplicateReviews,
   getProspect,
+  getTimeline,
   getSession,
   importProspects,
   listAuditEvents,
   listExclusions,
   listProspects,
+  listContacts,
+  listTasks,
   listUsers,
   login,
   logout,
   setUserActive,
+  transitionProspect,
+  updateProspect,
 } from "./api";
 import type {
   AuditEvent,
+  Contact,
   DuplicateReview,
   Exclusion,
   ImportRow,
@@ -31,6 +42,8 @@ import type {
   Prospect,
   ProspectStatus,
   SessionUser,
+  Task,
+  TimelineItem,
   User,
 } from "./types";
 
@@ -45,6 +58,13 @@ type Tab =
 
 const prospectStatuses: ProspectStatus[] = [
   "NEW",
+  "QUALIFYING",
+  "READY_TO_CONTACT",
+  "FOLLOW_UP",
+  "DEMO_PROPOSED",
+  "DEMO_SCHEDULED",
+  "PROPOSAL",
+  "CUSTOMER",
   "NEEDS_ENRICHMENT",
   "READY_FOR_REVIEW",
   "APPROVED",
@@ -239,6 +259,14 @@ export function App() {
         {tab === "prospects" && (
           <section className="two-column">
             <Panel title="Prospectos">
+              {session.permissions.includes("PROSPECT_WRITE") && (
+                <CreateProspectForm
+                  onCreated={async (created) => {
+                    await refresh();
+                    setSelectedProspect(created);
+                  }}
+                />
+              )}
               <div className="toolbar">
                 <label>
                   Estado
@@ -274,8 +302,8 @@ export function App() {
                         className={selectedProspect?.id === prospect.id ? "selected" : undefined}
                         onClick={() => void selectProspect(prospect.id)}
                       >
-                        <td>{prospect.institutionName}</td>
-                        <td>{prospect.locality ?? "—"}</td>
+                        <td>{prospect.displayName}</td>
+                        <td>{prospect.city ?? "—"}</td>
                         <td>
                           <Badge value={prospect.status} />
                         </td>
@@ -288,7 +316,14 @@ export function App() {
             </Panel>
             <Panel title="Ficha integral">
               {selectedProspect ? (
-                <ProspectDetail prospect={selectedProspect} />
+                <ProspectDetail
+                  prospect={selectedProspect}
+                  session={session}
+                  onChanged={async () => {
+                    setSelectedProspect(await getProspect(selectedProspect.id));
+                    await refresh();
+                  }}
+                />
               ) : (
                 <EmptyState text="Seleccioná un prospecto para ver su ficha." />
               )}
@@ -548,12 +583,13 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: SessionUser) =>
         {error && <div className="alert error">{error}</div>}
         <label>
           Usuario
-          <input value={username} onChange={(event) => setUsername(event.target.value)} required />
+          <input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required />
         </label>
         <label>
           Contraseña
           <input
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -776,24 +812,285 @@ function ExclusionsPanel({
   );
 }
 
-function ProspectDetail({ prospect }: { prospect: Prospect }) {
+function CreateProspectForm({ onCreated }: { onCreated: (prospect: Prospect) => Promise<void> }) {
+  const [name, setName] = useState("");
+  const [city, setCity] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await createProspect({
+        institutionName: name,
+        locality: city || undefined,
+        country: "Argentina",
+        source: "MANUAL",
+      });
+      setName("");
+      setCity("");
+      await onCreated(created);
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <dl className="detail-grid">
-      <Detail label="Institución" value={prospect.institutionName} />
-      <Detail label="Categoría" value={prospect.category} />
-      <Detail label="Ubicación" value={[prospect.locality, prospect.province].filter(Boolean).join(", ")} />
-      <Detail label="País" value={prospect.country} />
-      <Detail label="Sitio" value={prospect.website} />
-      <Detail label="Estado" value={prospect.status} />
-      <Detail label="Elegible" value={prospect.contactEligible ? "Sí" : "No"} />
-      <Detail label="Prioridad" value={prospect.priority?.toString()} />
-      <Detail label="Puntuación" value={prospect.score?.toString()} />
-      <Detail label="Alumnos estimados" value={prospect.estimatedStudents?.toString()} />
-      <Detail label="Fuente" value={prospect.source} />
-      <Detail label="Propietario" value={prospect.owner} />
-      <Detail label="Actualizado" value={dateTime(prospect.updatedAt)} />
-    </dl>
+    <form className="inline-form compact-form" onSubmit={(event) => void submit(event)}>
+      <label className="grow">
+        Nueva institución
+        <input value={name} onChange={(event) => setName(event.target.value)} required />
+      </label>
+      <label>
+        Localidad
+        <input value={city} onChange={(event) => setCity(event.target.value)} />
+      </label>
+      <button className="primary-button" disabled={busy}>
+        {busy ? "Creando…" : "Crear prospecto"}
+      </button>
+      {error && <span className="inline-error" role="alert">{error}</span>}
+    </form>
   );
+}
+
+function ProspectDetail({
+  prospect,
+  session,
+  onChanged,
+}: {
+  prospect: Prospect;
+  session: SessionUser;
+  onChanged: () => Promise<void>;
+}) {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [name, setName] = useState(prospect.displayName);
+  const [city, setCity] = useState(prospect.city ?? "");
+  const [firstName, setFirstName] = useState("");
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDueAt, setTaskDueAt] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const canWrite = session.permissions.includes("PROSPECT_WRITE");
+  const canWriteActivity = session.permissions.includes("ACTIVITY_WRITE");
+
+  const loadRelated = useCallback(async () => {
+    try {
+      const [contactList, taskList, timelinePage] = await Promise.all([
+        listContacts(prospect.id),
+        listTasks(),
+        getTimeline(prospect.id),
+      ]);
+      setContacts(contactList);
+      setTasks(taskList.filter((task) => task.prospectId === prospect.id));
+      setTimeline(timelinePage.content);
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }, [prospect.id]);
+
+  useEffect(() => {
+    setName(prospect.displayName);
+    setCity(prospect.city ?? "");
+    void loadRelated();
+  }, [prospect.displayName, prospect.city, loadRelated]);
+
+  async function run(action: () => Promise<unknown>, success: string) {
+    setError(null);
+    setNotice(null);
+    try {
+      await action();
+      setNotice(success);
+      await onChanged();
+      await loadRelated();
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await run(
+      () =>
+        updateProspect(prospect.id, {
+          version: prospect.version,
+          displayName: name,
+          legalName: prospect.legalName,
+          priority: prospect.priority,
+          score: prospect.score,
+          estimatedStudents: prospect.estimatedStudents,
+          source: prospect.source,
+          sourceDetail: prospect.sourceDetail,
+          ownerUserId: prospect.ownerUserId,
+          website: prospect.website,
+          address: prospect.address,
+          city,
+          province: prospect.province,
+          country: prospect.country,
+          timezone: prospect.timezone,
+          notesSummary: prospect.notesSummary,
+          nextActionAt: prospect.nextActionAt,
+        }),
+      "Prospecto actualizado.",
+    );
+  }
+
+  const transitions = allowedTransitions(prospect.status);
+
+  return (
+    <div className="stack detail-workspace">
+      {error && <div className="alert error" role="alert">{error}</div>}
+      {notice && <div className="alert success" role="status">{notice}</div>}
+      <dl className="detail-grid">
+        <Detail label="Institución" value={prospect.displayName} />
+        <Detail label="Razón social" value={prospect.legalName} />
+        <Detail label="Ubicación" value={[prospect.city, prospect.province].filter(Boolean).join(", ")} />
+        <Detail label="Estado" value={prospect.status} />
+        <Detail label="Elegibilidad" value={prospect.eligibility} />
+        <Detail label="Prioridad" value={prospect.priority?.toString()} />
+        <Detail label="Puntuación" value={prospect.score?.toString()} />
+        <Detail label="Responsable" value={prospect.ownerName} />
+        <Detail label="Próxima acción" value={prospect.nextActionAt ? dateTime(prospect.nextActionAt) : null} />
+        <Detail label="Último contacto" value={prospect.lastContactAt ? dateTime(prospect.lastContactAt) : null} />
+      </dl>
+
+      {canWrite && (
+        <form className="inline-form compact-form" onSubmit={(event) => void save(event)}>
+          <label className="grow">
+            Nombre visible
+            <input value={name} onChange={(event) => setName(event.target.value)} required />
+          </label>
+          <label>
+            Localidad
+            <input value={city} onChange={(event) => setCity(event.target.value)} />
+          </label>
+          <button className="secondary-button">Guardar</button>
+        </form>
+      )}
+
+      {canWrite && transitions.length > 0 && (
+        <div className="action-row" aria-label="Transiciones permitidas">
+          {transitions.map((status) => (
+            <button
+              className="secondary-button"
+              key={status}
+              onClick={() => void run(() => transitionProspect(prospect.id, prospect.version, status), `Estado cambiado a ${status}.`)}
+            >
+              Pasar a {status}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <section className="subsection">
+        <h3>Contactos</h3>
+        {contacts.length === 0 ? <EmptyState text="No hay contactos." /> : contacts.map((contact) => (
+          <article className="timeline-item" key={contact.id}>
+            <strong>{contact.displayName}</strong>
+            <span>{contact.role ?? "Sin cargo"}</span>
+            {contact.channels.map((channel) => <small key={channel.id}>{channel.type}: {channel.value}</small>)}
+          </article>
+        ))}
+        {canWrite && (
+          <form className="inline-form compact-form" onSubmit={(event) => {
+            event.preventDefault();
+            void run(() => createContact(prospect.id, { firstName, email }), "Contacto agregado.").then(() => {
+              setFirstName("");
+              setEmail("");
+            });
+          }}>
+            <label>
+              Nombre
+              <input value={firstName} onChange={(event) => setFirstName(event.target.value)} required />
+            </label>
+            <label className="grow">
+              Email
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            </label>
+            <button className="secondary-button">Agregar contacto</button>
+          </form>
+        )}
+      </section>
+
+      <section className="subsection">
+        <h3>Tareas</h3>
+        {tasks.length === 0 ? <EmptyState text="No hay tareas." /> : tasks.map((task) => (
+          <article className="timeline-item" key={task.id}>
+            <strong>{task.title}</strong>
+            <span>{task.status} · vence {dateTime(task.dueAt)}</span>
+            {canWriteActivity && task.status !== "COMPLETED" && task.status !== "CANCELLED" && (
+              <button className="secondary-button" onClick={() => void run(() => changeTaskStatus(task, "COMPLETED"), "Tarea completada.")}>Completar</button>
+            )}
+          </article>
+        ))}
+        {canWriteActivity && (
+          <form className="inline-form compact-form" onSubmit={(event) => {
+            event.preventDefault();
+            void run(() => createTask(prospect.id, { ownerUserId: session.userId, title: taskTitle, dueAt: new Date(taskDueAt).toISOString() }), "Tarea creada.").then(() => {
+              setTaskTitle("");
+              setTaskDueAt("");
+            });
+          }}>
+            <label className="grow">
+              Nueva tarea
+              <input value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required />
+            </label>
+            <label>
+              Vencimiento
+              <input type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} required />
+            </label>
+            <button className="secondary-button">Crear tarea</button>
+          </form>
+        )}
+      </section>
+
+      <section className="subsection">
+        <h3>Timeline</h3>
+        {canWriteActivity && (
+          <form className="inline-form compact-form" onSubmit={(event) => {
+            event.preventDefault();
+            void run(() => createNote(prospect.id, note), "Nota registrada.").then(() => setNote(""));
+          }}>
+            <label className="grow">
+              Nota
+              <input value={note} onChange={(event) => setNote(event.target.value)} required />
+            </label>
+            <button className="secondary-button">Agregar nota</button>
+          </form>
+        )}
+        {timeline.length === 0 ? <EmptyState text="Todavía no hay eventos." /> : timeline.map((item) => (
+          <article className="timeline-item" key={`${item.eventType}-${item.id}`}>
+            <small>{dateTime(item.eventAt)} · {item.eventType}</small>
+            <strong>{item.title}</strong>
+            {item.detail && <span>{item.detail}</span>}
+          </article>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function allowedTransitions(status: ProspectStatus): ProspectStatus[] {
+  const transitions: Partial<Record<ProspectStatus, ProspectStatus[]>> = {
+    NEW: ["QUALIFYING", "DO_NOT_CONTACT"],
+    QUALIFYING: ["READY_TO_CONTACT", "LOST", "DO_NOT_CONTACT"],
+    READY_TO_CONTACT: ["CONTACTED", "DO_NOT_CONTACT"],
+    CONTACTED: ["REPLIED", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
+    REPLIED: ["INTERESTED", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
+    INTERESTED: ["DEMO_PROPOSED", "PROPOSAL", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
+    DEMO_PROPOSED: ["DEMO_SCHEDULED", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
+    DEMO_SCHEDULED: ["PROPOSAL", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
+    PROPOSAL: ["NEGOTIATION", "LOST", "DO_NOT_CONTACT"],
+    NEGOTIATION: ["CUSTOMER", "LOST", "DO_NOT_CONTACT"],
+  };
+  return transitions[status] ?? [];
 }
 
 function ImportSummaryView({ summary }: { summary: ImportSummary }) {

@@ -10,10 +10,10 @@ Rama canónica: `main`.
 |---|---|---|---|---|
 | SEG-000 | Repositorio y continuidad | COMPLETE | — | fuente canónica, reglas y documentación |
 | SEG-001 | Vertical slice persistente de prospectos | COMPLETE | SEG-000 | importación, exclusiones, UI y stack con matriz verde |
-| SEG-002 | Identidad, usuarios y RBAC | ACTIVE | SEG-001 COMPLETE | sesión segura, permisos y aislamiento por organización |
-| SEG-003 | Prospectos operativos y contactos | PLANNED | SEG-002 | CRUD, ciclo comercial y búsqueda |
-| SEG-004 | Actividades, tareas y timeline | PLANNED | SEG-003 | seguimiento comercial trazable |
-| SEG-005 | Resolución de duplicados | PLANNED | SEG-004 | bandeja y merge transaccional |
+| SEG-002 | Identidad, usuarios y RBAC | COMPLETE | SEG-001 COMPLETE | sesión segura, permisos y aislamiento por organización |
+| SEG-003 | Prospectos operativos y contactos | COMPLETE | SEG-002 | CRUD, ciclo comercial y búsqueda |
+| SEG-004 | Actividades, tareas y timeline | COMPLETE | SEG-003 | seguimiento comercial trazable |
+| SEG-005 | Resolución de duplicados | ACTIVE | SEG-004 | bandeja y merge transaccional |
 | SEG-006 | Oportunidades y pipeline | PLANNED | SEG-003 | ciclo de venta y forecast |
 | SEG-007 | Campañas y plantillas | PLANNED | SEG-003, SEG-006 | audiencia congelada y simulación |
 | SEG-008 | Mensajería segura y adaptadores | PLANNED | SEG-007 | no-op, fake, manual y red deshabilitada |
@@ -123,16 +123,33 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] migración desde vacío y V1-V5;
 - [x] pruebas y checkpoint verde.
 
-## SEG-003 — Activo
+## SEG-003 — Completo
 
-- [ ] CRUD integral y archivo/restauración de prospectos;
-- [ ] múltiples contactos normalizados;
-- [ ] propietario persistente, prioridad, score y próxima acción;
-- [ ] búsqueda, filtros, orden, paginación y CSV seguro;
-- [ ] optimistic locking con `409` y manejo UI;
-- [ ] ciclo comercial e historial de transiciones;
-- [ ] autorización, auditoría y tenant isolation;
-- [ ] migración, backend, frontend, smoke y regresiones.
+- [x] CRUD integral y archivo/restauración de prospectos;
+- [x] múltiples contactos normalizados;
+- [x] propietario persistente, prioridad, score y próxima acción;
+- [x] búsqueda, filtros, orden, paginación y CSV seguro;
+- [x] optimistic locking con `409` y manejo UI;
+- [x] ciclo comercial e historial de transiciones;
+- [x] autorización, auditoría y tenant isolation;
+- [x] migración, backend, frontend, smoke y regresiones.
+
+## SEG-004 — Completo
+
+- [x] notas sanitizadas y eliminación lógica;
+- [x] actividades tipadas con metadata JSONB;
+- [x] tareas, responsables, recordatorios y estados;
+- [x] próxima acción derivada;
+- [x] timeline paginado y tenant-scoped;
+- [x] integración PostgreSQL y recorrido UI ejecutado.
+
+## SEG-005 — Activo
+
+- [ ] acciones completas sobre revisiones ambiguas;
+- [ ] comparación lado a lado;
+- [ ] merge transaccional e idempotente;
+- [ ] preservación de referencias y redirect del absorbido;
+- [ ] API, permisos, auditoría, UI y pruebas E2E.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 

@@ -74,6 +74,7 @@ public class NormalizationService {
       case PHONE, WHATSAPP -> normalizePhone(value);
       case WEBSITE -> normalizeDomain(value);
       case SOCIAL -> normalizeSocial(value);
+      case OTHER -> normalizeText(value);
     };
   }
 

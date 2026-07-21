@@ -113,3 +113,48 @@ Evidencia ejecutada:
 - repository safety, 11 scripts PowerShell, Bash smoke syntax y Compose config: PASS.
 
 Los checkpoints posteriores se agregan aquí al ejecutarse. Ninguna fila se anticipa como PASS.
+
+## CHECKPOINT_2_PROSPECTS_CONTACTS
+
+```text
+CHECKPOINT_ID=CHECKPOINT_2
+PHASE=operational_prospects_and_contacts
+START_COMMIT=bf64bb0
+END_COMMIT=working_tree_pending_local_commit
+FILES_CHANGED=backend prospect/contact/common, frontend App/api/types/styles, V7, tests and canonical docs
+MIGRATIONS=V7__operational_prospects_contacts_and_timeline.sql
+TEST_COMMANDS=focused integration; mvn verify; npm run build; Docker build/up; smoke; repository safety; Playwright
+TEST_RESULT=EXECUTED_PASS
+KNOWN_WARNINGS=deprecated API and Mockito dynamic-agent notices; anonymous auth/me logs expected 401 in browser console
+RESIDUAL_RISKS=bulk actions and configurable columns remain part of later frontend hardening
+```
+
+## CHECKPOINT_3_COMMERCIAL_LIFECYCLE
+
+```text
+CHECKPOINT_ID=CHECKPOINT_3
+PHASE=explicit_commercial_lifecycle
+START_COMMIT=bf64bb0
+END_COMMIT=working_tree_pending_local_commit
+FILES_CHANGED=ProspectLifecycle, ProspectOperationsService, V7 status history, tests and UI transitions
+MIGRATIONS=V7 status history and lifecycle columns
+TEST_COMMANDS=ProspectLifecycleTest; OperationalProspectIntegrationTest; Maven verify; Playwright transition
+TEST_RESULT=EXECUTED_PASS
+KNOWN_WARNINGS=opportunity-aware PROPOSAL uses a documented exception until SEG-006 provides opportunities
+RESIDUAL_RISKS=opportunity linkage intentionally belongs to SEG-006
+```
+
+## CHECKPOINT_4_ACTIVITIES_TASKS_TIMELINE
+
+```text
+CHECKPOINT_ID=CHECKPOINT_4
+PHASE=notes_activities_tasks_timeline
+START_COMMIT=bf64bb0
+END_COMMIT=working_tree_pending_local_commit
+FILES_CHANGED=activity module, TimelineController/Service, V7, integration test and operational frontend
+MIGRATIONS=V7 prospect_note activity crm_task
+TEST_COMMANDS=OperationalProspectIntegrationTest; Maven verify 39/39; frontend build; Docker smoke; Playwright flow
+TEST_RESULT=EXECUTED_PASS
+KNOWN_WARNINGS=timeline uses generic event categories plus typed titles by contract
+RESIDUAL_RISKS=automated frontend regression suite remains for SEG-011; current flow was executed by Playwright CLI
+```

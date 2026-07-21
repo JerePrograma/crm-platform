@@ -25,9 +25,9 @@ limpia de SEG-001 se ejecutó sobre
 | SEG-000 | COMPLETE | repositorio, continuidad y documentación canónica |
 | SEG-001 | COMPLETE | vertical slice, seguridad, validación local integral y CI verdes |
 | SEG-002 | COMPLETE | identidad, organizaciones, usuarios, sesiones y RBAC |
-| SEG-003 | ACTIVE | prospectos operativos, contactos y ciclo comercial |
-| SEG-004 | PLANNED | actividades, notas, tareas y timeline |
-| SEG-005 | PLANNED | resolución transaccional de duplicados |
+| SEG-003 | COMPLETE | prospectos operativos, contactos y ciclo comercial |
+| SEG-004 | COMPLETE | actividades, notas, tareas y timeline |
+| SEG-005 | ACTIVE | resolución transaccional de duplicados |
 | SEG-006 | PLANNED | oportunidades y pipeline |
 | SEG-007 | PLANNED | campañas, audiencias, plantillas y simulación |
 | SEG-008 | PLANNED | mensajería segura y adaptadores deshabilitados |
@@ -73,6 +73,16 @@ MAVEN_VERIFY_TESTS_36_OF_36_PASS
 FRONTEND_SESSION_BUILD_PASS
 SMOKE_COOKIE_CSRF_HOST_AND_CONTAINER_PASS
 SEG_002_COMPLETE
+FLYWAY_V1_V7_PASS
+PROSPECT_CONTACT_CRUD_PASS
+OPTIMISTIC_LOCKING_AND_CSV_PASS
+COMMERCIAL_LIFECYCLE_PASS
+ACTIVITY_TASK_TIMELINE_PASS
+MAVEN_VERIFY_TESTS_39_OF_39_PASS
+FRONTEND_OPERATIONAL_BUILD_PASS
+PLAYWRIGHT_OPERATIONAL_FLOW_PASS
+SEG_003_COMPLETE
+SEG_004_COMPLETE
 ```
 
 ## Fallo Jackson corregido
@@ -152,7 +162,7 @@ También permanece prohibido:
 - versionar `.env` o `validation-output/`;
 - usar `docker compose down -v` salvo destrucción intencional;
 - usar `docker system prune` como diagnóstico normal;
-- iniciar SEG-002 antes del cierre de SEG-001.
+- alterar los segmentos ya cerrados sin una regresión y nueva evidencia.
 
 ## Ejecución integral activa
 

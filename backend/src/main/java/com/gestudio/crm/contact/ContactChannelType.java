@@ -5,5 +5,6 @@ public enum ContactChannelType {
   PHONE,
   WHATSAPP,
   WEBSITE,
-  SOCIAL
+  SOCIAL,
+  OTHER
 }

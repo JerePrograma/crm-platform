@@ -28,6 +28,17 @@ public class ApiExceptionHandler {
             : "The operation conflicts with an existing normalized record");
   }
 
+  @ExceptionHandler(OptimisticConflictException.class)
+  ProblemDetail handleOptimisticConflict(OptimisticConflictException exception) {
+    return problem(HttpStatus.CONFLICT, "Concurrent update", exception.getMessage());
+  }
+
+  @ExceptionHandler(UnprocessableEntityException.class)
+  ProblemDetail handleUnprocessable(UnprocessableEntityException exception) {
+    return problem(
+        HttpStatus.UNPROCESSABLE_ENTITY, "Business rule rejected", exception.getMessage());
+  }
+
   @ExceptionHandler(IllegalArgumentException.class)
   ProblemDetail handleBadRequest(IllegalArgumentException exception) {
     return problem(HttpStatus.BAD_REQUEST, "Invalid request", exception.getMessage());

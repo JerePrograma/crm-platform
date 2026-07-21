@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-21 — SEG-003 y SEG-004
+
+- agregó el modelo operativo V7 de prospectos, contactos, estados, notas,
+  actividades, tareas y timeline;
+- agregó CRUD tenant-scoped, control optimista, CSV seguro y ciclo comercial;
+- conectó formularios React para alta, edición, contacto, nota, tarea y transición;
+- validó Flyway V1–V7, Maven 39/39, frontend, Docker, smoke y Playwright.
+
 Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene una versión publicada.
 
 ## Unreleased
