@@ -81,6 +81,13 @@ jobs:
       - name: Validate PowerShell script syntax
         shell: pwsh
         run: ./scripts/check-powershell-syntax.ps1
+      - name: Exercise PowerShell host port checker
+        shell: pwsh
+        run: >-
+          ./scripts/check-host-ports.ps1
+          -PostgresPort 25432
+          -BackendPort 28080
+          -FrontendPort 25173
       - name: Parse Make targets
         run: make -n repository-safety backend-verify-container validate-seg001
       - name: Check repository safety invariants
