@@ -112,9 +112,11 @@ Rama canónica: `main`.
 - [x] repetición smoke después de npm ci;
 - [x] evidencia JSON estructurada;
 - [x] escaneo centralizado de seguridad Unix/PowerShell;
-- [x] bloqueo de `.env`, evidencia, datos privados, lote, claves y credenciales;
+- [x] checker local `check-powershell-syntax.ps1`;
+- [x] regresión CI contra `$LASTEXITCODE:`;
+- [x] normalización de `mvnw.cmd`;
 - [x] targets `repository-safety`, `backend-verify-container`, `verify-container` y `validate-seg001`;
-- [x] CI con sintaxis POSIX, Bash y parser PowerShell.
+- [x] CI con sintaxis POSIX, Bash y PowerShell.
 
 ## SEG-001 — evidencia ejecutada
 
@@ -127,7 +129,10 @@ Rama canónica: `main`.
 - [x] fallo TypeScript reproducido;
 - [x] correcciones aplicadas;
 - [x] imágenes exportadas desde caché;
-- [x] conflicto 5432 reproducido.
+- [x] conflicto 5432 reproducido;
+- [x] checkout actualizado por fast-forward el 2026-07-21;
+- [x] fallo de parser PowerShell reproducido dos veces;
+- [x] alcance del fallo documentado como anterior a Docker.
 
 ### Estática o funcional aislada
 
@@ -137,23 +142,28 @@ Rama canónica: `main`.
 - [x] backend verify Unix revisado;
 - [x] lockfile seguro Unix revisado;
 - [x] seguridad del repositorio revisada;
-- [x] Make backend-verify-container;
-- [x] Make verify-container;
 - [x] read-back remoto de validadores integrales;
-- [x] paridad Windows/Unix documentada.
+- [x] paridad Windows/Unix documentada;
+- [x] corrección de las tres interpolaciones revisada;
+- [x] checker PowerShell revisado;
+- [x] regresión CI revisada.
 
 ### Pendiente de ejecución nueva
 
-- [ ] `bash -n scripts/validate-seg001.sh` mediante CI o checkout;
-- [ ] `sh -n scripts/generate-frontend-lock.sh` después del hardening UID/GID;
-- [ ] parser PowerShell de la automatización actual;
-- [ ] target Make `validate-seg001` en CI;
-- [ ] ejecución funcional de uno de los validadores integrales.
+- [ ] actualizar al commit que contiene las correcciones del parser;
+- [ ] confirmar `mvnw.cmd` limpio después de la renormalización;
+- [ ] ejecutar `scripts/check-powershell-syntax.ps1`;
+- [ ] ejecutar preflight endurecido;
+- [ ] ejecutar funcionalmente uno de los validadores integrales;
+- [ ] ejecutar `bash -n scripts/validate-seg001.sh` mediante CI o checkout;
+- [ ] ejecutar el target Make `validate-seg001` mediante CI o checkout.
 
 ## SEG-001 — bloqueantes de cierre
 
 - [ ] actualizar checkout local al último `main`;
-- [ ] restaurar cambio accidental de `mvnw.cmd` si continúa presente;
+- [ ] confirmar árbol rastreado limpio;
+- [ ] confirmar sintaxis PowerShell `PASS`;
+- [ ] confirmar preflight actualizado `PASS`;
 - [ ] ejecutar `scripts/validate-seg001.ps1` o `scripts/validate-seg001.sh`;
 - [ ] confirmar build limpio frontend;
 - [ ] confirmar build limpio backend;
