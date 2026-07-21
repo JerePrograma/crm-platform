@@ -32,8 +32,8 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | timeline | EXECUTED_PASS | paginado combinado y recorrido Playwright |
 | importación sintética | EXECUTED_PASS | SEG-001 100 prospectos/16 exclusiones |
 | preview/exclusiones | EXECUTED_PASS | SEG-001 integración |
-| resolución de duplicados | NOT_STARTED | bandeja read-only existente |
-| merge transaccional | NOT_STARTED | — |
+| resolución de duplicados | EXECUTED_PASS | V8, seis acciones, API/UI y Playwright |
+| merge transaccional | EXECUTED_PASS | 3/3 Testcontainers: referencias, idempotencia y rollback |
 | oportunidades | NOT_STARTED | — |
 | pipeline/forecast | NOT_STARTED | — |
 | campañas | NOT_STARTED | esquema V1 sin casos de uso |

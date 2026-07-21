@@ -158,3 +158,31 @@ TEST_RESULT=EXECUTED_PASS
 KNOWN_WARNINGS=timeline uses generic event categories plus typed titles by contract
 RESIDUAL_RISKS=automated frontend regression suite remains for SEG-011; current flow was executed by Playwright CLI
 ```
+
+## CHECKPOINT_5_DUPLICATE_RESOLUTION
+
+```text
+CHECKPOINT_ID=CHECKPOINT_5
+PHASE=duplicate_review_and_transactional_merge
+START_COMMIT=c57652c
+END_COMMIT=157f3a5
+FILES_CHANGED=deduplication module, DuplicateReview status, V8, integration test, frontend and canonical docs
+MIGRATIONS=V8__duplicate_resolution_and_merge_trace.sql
+TEST_COMMANDS=focused Testcontainers test; Maven verify; npm build; Docker build/up; smoke; repository safety; Playwright
+TEST_RESULT=EXECUTED_PASS
+KNOWN_WARNINGS=deprecated API and Mockito dynamic-agent notices; expected anonymous auth/me 401 in browser console
+RESIDUAL_RISKS=opportunity and campaign references will be added to merge propagation when their tables are introduced
+```
+
+Fallos encontrados y corregidos:
+
+1. los conteos iniciales del fixture de merge eran globales y dependían del
+   orden de tests: quedaron acotados por `duplicate_review_id`;
+2. el enum JPA heredado no reconocía estados V8: se agregaron `DEFERRED` y
+   `RESOLVED` sin eliminar valores históricos;
+3. un usuario `VIEWER` hacía consultas globales a auditoría y duplicados que el
+   backend rechazaba correctamente: la UI ahora consulta y navega según permisos.
+
+El recorrido Playwright ejecutó un preview sintético que produjo una revisión
+ambigua, verificó comparación lado a lado y resolvió por vínculo al prospecto
+existente. El merge completo y su rollback se probaron en PostgreSQL real.

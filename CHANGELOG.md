@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-21 — SEG-005
+
+- agregó V8 con resolución trazable, mapas de merge y redirect del absorbido;
+- implementó seis acciones tenant-scoped, merge transaccional e idempotente y
+  preservación de referencias;
+- convirtió la bandeja de duplicados en una comparación accionable;
+- validó Flyway V1–V8, Maven 42/42, frontend, Docker, smoke y Playwright.
+
 ## 2026-07-21 — SEG-003 y SEG-004
 
 - agregó el modelo operativo V7 de prospectos, contactos, estados, notas,

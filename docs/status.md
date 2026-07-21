@@ -27,8 +27,8 @@ limpia de SEG-001 se ejecutó sobre
 | SEG-002 | COMPLETE | identidad, organizaciones, usuarios, sesiones y RBAC |
 | SEG-003 | COMPLETE | prospectos operativos, contactos y ciclo comercial |
 | SEG-004 | COMPLETE | actividades, notas, tareas y timeline |
-| SEG-005 | ACTIVE | resolución transaccional de duplicados |
-| SEG-006 | PLANNED | oportunidades y pipeline |
+| SEG-005 | COMPLETE | resolución transaccional de duplicados |
+| SEG-006 | ACTIVE | oportunidades y pipeline |
 | SEG-007 | PLANNED | campañas, audiencias, plantillas y simulación |
 | SEG-008 | PLANNED | mensajería segura y adaptadores deshabilitados |
 | SEG-009 | PLANNED | outbox, workers e inbound |
@@ -83,6 +83,12 @@ FRONTEND_OPERATIONAL_BUILD_PASS
 PLAYWRIGHT_OPERATIONAL_FLOW_PASS
 SEG_003_COMPLETE
 SEG_004_COMPLETE
+FLYWAY_V1_V8_PASS
+DUPLICATE_RESOLUTION_ACTIONS_PASS
+TRANSACTIONAL_IDEMPOTENT_MERGE_PASS
+MAVEN_VERIFY_TESTS_42_OF_42_PASS
+PLAYWRIGHT_DUPLICATE_REVIEW_PASS
+SEG_005_COMPLETE
 ```
 
 ## Fallo Jackson corregido

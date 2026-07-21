@@ -13,8 +13,8 @@ Rama canónica: `main`.
 | SEG-002 | Identidad, usuarios y RBAC | COMPLETE | SEG-001 COMPLETE | sesión segura, permisos y aislamiento por organización |
 | SEG-003 | Prospectos operativos y contactos | COMPLETE | SEG-002 | CRUD, ciclo comercial y búsqueda |
 | SEG-004 | Actividades, tareas y timeline | COMPLETE | SEG-003 | seguimiento comercial trazable |
-| SEG-005 | Resolución de duplicados | ACTIVE | SEG-004 | bandeja y merge transaccional |
-| SEG-006 | Oportunidades y pipeline | PLANNED | SEG-003 | ciclo de venta y forecast |
+| SEG-005 | Resolución de duplicados | COMPLETE | SEG-004 | bandeja y merge transaccional |
+| SEG-006 | Oportunidades y pipeline | ACTIVE | SEG-003 | ciclo de venta y forecast |
 | SEG-007 | Campañas y plantillas | PLANNED | SEG-003, SEG-006 | audiencia congelada y simulación |
 | SEG-008 | Mensajería segura y adaptadores | PLANNED | SEG-007 | no-op, fake, manual y red deshabilitada |
 | SEG-009 | Outbox, workers e inbound | PLANNED | SEG-008 | async idempotente y respuesta fake |
@@ -143,13 +143,21 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] timeline paginado y tenant-scoped;
 - [x] integración PostgreSQL y recorrido UI ejecutado.
 
-## SEG-005 — Activo
+## SEG-005 — Completo
 
-- [ ] acciones completas sobre revisiones ambiguas;
-- [ ] comparación lado a lado;
-- [ ] merge transaccional e idempotente;
-- [ ] preservación de referencias y redirect del absorbido;
-- [ ] API, permisos, auditoría, UI y pruebas E2E.
+- [x] acciones completas sobre revisiones ambiguas;
+- [x] comparación lado a lado;
+- [x] merge transaccional e idempotente;
+- [x] preservación de referencias y redirect del absorbido;
+- [x] API, permisos, auditoría, UI y recorrido Playwright.
+
+## SEG-006 — Activo
+
+- [ ] oportunidades con control optimista e historial;
+- [ ] etapas y transiciones ganada/perdida;
+- [ ] sincronización con prospecto y tareas;
+- [ ] pipeline, tabla, filtros, forecast y aging;
+- [ ] API, permisos, auditoría, UI y E2E.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 
