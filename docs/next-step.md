@@ -4,15 +4,15 @@
 
 ```text
 IMPLEMENTACIÓN COMPLETA
-VALIDACIÓN INTEGRAL AUTOMATIZADA
-EJECUCIÓN REAL PENDIENTE
+VALIDACIÓN INTEGRAL WINDOWS/UNIX IMPLEMENTADA
+EJECUCIÓN FUNCIONAL PENDIENTE
 ```
 
 No iniciar SEG-002, campañas, Gmail, Sheets, workers, cloud o producción.
 
 ## Objetivo
 
-Ejecutar desde Windows/Docker el recorrido completo que valida:
+Ejecutar un único recorrido integral que valide:
 
 - builds limpios frontend/backend;
 - Compose config;
@@ -35,6 +35,7 @@ Ejecutar desde Windows/Docker el recorrido completo que valida:
 estado: docs/status.md
 matriz: docs/validation/SEG-001.md
 automatización completa: docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
+paridad Windows/Unix: docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 primer build: docs/validation/SEG-001-container-build-2026-07-20.md
 segunda reejecución: docs/validation/SEG-001-rerun-2026-07-20.md
 puertos/orquestación: docs/validation/SEG-001-local-orchestration-2026-07-20.md
@@ -43,6 +44,8 @@ scripts: scripts/README.md
 ```
 
 ## 1. Actualizar `main`
+
+Windows PowerShell:
 
 ```powershell
 Set-Location C:\laburo\crm-platform
@@ -55,9 +58,22 @@ git status
 git rev-parse HEAD
 ```
 
-## 2. Resolver el cambio local de `mvnw.cmd`
+Linux/macOS:
 
-Inspeccionar:
+```bash
+cd /ruta/a/crm-platform
+git switch main
+git fetch origin
+git pull --ff-only
+git status
+git rev-parse HEAD
+```
+
+No fusionar ni copiar nada desde `feat/seg-001-prospect-vertical-slice`: está detrás y no contiene trabajo exclusivo.
+
+## 2. Resolver cambios locales
+
+En Windows, inspeccionar especialmente `mvnw.cmd`:
 
 ```powershell
 git diff --ignore-space-at-eol -- mvnw.cmd
@@ -71,15 +87,29 @@ git restore -- mvnw.cmd
 git status --short
 ```
 
-El validador integral exige archivos rastreados limpios. No restaura ni descarta cambios automáticamente.
+En cualquier plataforma, el validador integral exige un árbol limpio. No descarta cambios automáticamente.
+
+Se permite únicamente un `frontend/package-lock.json` no rastreado generado por una ejecución anterior.
 
 ## 3. Confirmar `.env`
 
 No copiar nuevamente `.env.example` cuando `.env` ya contiene credenciales locales.
 
-El script actualizará únicamente puertos y `DATABASE_URL`.
+Crear el archivo solo si no existe.
 
-Guardas obligatorias:
+Windows:
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+Linux/macOS:
+
+```bash
+[ -f .env ] || cp .env.example .env
+```
+
+Configurar credenciales bootstrap locales y conservar:
 
 ```text
 SENDING_ENABLED=false
@@ -88,9 +118,11 @@ SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
 ```
 
+Los validadores actualizan únicamente los puertos y `DATABASE_URL`.
+
 ## 4. Ejecutar validación integral
 
-Comando recomendado:
+### Windows PowerShell
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
@@ -100,13 +132,31 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -KeepRunning
 ```
 
-Este comando no requiere Java, Maven, Node o npm instalados en el host.
+### Linux/macOS Bash
 
-No usar `-UseBuildCache` como evidencia de cierre.
+```bash
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 8080 \
+  --frontend-port 5173 \
+  --keep-running
+```
+
+También disponible mediante Make, con cleanup final predeterminado:
+
+```bash
+make validate-seg001
+```
+
+Ninguna variante requiere Java, Maven, Node o npm instalados en el host. Requieren Git, Docker y Docker Compose v2.
+
+No usar `-UseBuildCache` ni `--use-build-cache` como evidencia de cierre.
 
 ## 5. Puertos alternativos
 
 Si `8080` o `5173` están ocupados:
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
@@ -116,16 +166,27 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -KeepRunning
 ```
 
+Linux/macOS:
+
+```bash
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 18080 \
+  --frontend-port 15173 \
+  --keep-running
+```
+
 Los smoke tests toman las URLs desde `.env`.
 
-## 6. Fases ejecutadas automáticamente
+## 6. Fases automáticas
 
 ### Fase A — precondiciones
 
 - rama `main`;
 - commit registrado;
-- archivos rastreados limpios;
-- Docker disponible;
+- working tree sin cambios inesperados;
+- daemon Docker accesible;
+- Compose v2;
 - `.env` presente;
 - puertos válidos y distintos;
 - guardas cerradas;
@@ -134,19 +195,19 @@ Los smoke tests toman las URLs desde `.env`.
 ### Fase B — stack Docker inicial
 
 - cleanup sin `-v`;
-- build frontend sin caché;
-- build backend sin caché;
+- frontend build sin caché;
+- backend build sin caché;
 - arranque del perfil `app`;
 - health de PostgreSQL;
 - health del backend;
 - health del frontend;
-- smoke PowerShell;
+- smoke desde el host;
 - smoke contenedorizado.
 
 ### Fase C — backend completo
 
 - Maven 3.9.16/Java 21 dentro de Docker;
-- repositorio de solo lectura;
+- repositorio montado en solo lectura;
 - Maven verify;
 - Spotless;
 - unit tests;
@@ -157,9 +218,10 @@ Los smoke tests toman las URLs desde `.env`.
 ### Fase D — lockfile y npm ci
 
 - `npm install --package-lock-only --ignore-scripts`;
-- verificación de ausencia de `node_modules`;
+- ausencia de `node_modules`;
+- UID/GID preservados en Unix;
 - SHA-256 del lockfile;
-- build frontend sin caché;
+- frontend build sin caché;
 - selección automática de `npm ci`;
 - recreación del frontend;
 - health;
@@ -207,18 +269,17 @@ frontend/package-lock.json
 
 `validation-output/` está ignorado por Git.
 
-No compartir el transcript sin revisarlo. Puede contener logs de aplicación, aunque los scripts no imprimen contraseñas.
+No compartir transcripts sin revisarlos. Pueden contener logs técnicos, aunque los scripts no imprimen contraseñas.
 
 ## 9. Si falla
 
-El script:
+Los validadores:
 
-- marca la fase incompleta;
-- registra el error en JSON;
-- imprime `docker compose ps`;
-- imprime logs del stack;
-- conserva el transcript;
-- retira el stack salvo `-KeepRunning`.
+- marcan la fase incompleta;
+- registran el error;
+- imprimen estado y logs del stack;
+- conservan evidencia local;
+- retiran el stack salvo opción explícita de mantenerlo.
 
 Conservar:
 
@@ -231,19 +292,19 @@ Conservar:
 - stack trace completo;
 - estado de los servicios.
 
-No corregir mediante:
+No corregir desactivando:
 
-- desactivar TypeScript strict;
-- omitir tests;
-- desactivar health checks;
-- desactivar Testcontainers;
-- relajar guardas;
-- habilitar envíos;
-- usar builds cacheados como evidencia.
+- TypeScript strict;
+- tests;
+- health checks;
+- Testcontainers;
+- guardas;
+- seguridad;
+- builds limpios.
 
 ## 10. Revisar package-lock
 
-Después de PASS:
+Windows:
 
 ```powershell
 Test-Path frontend\package-lock.json
@@ -252,29 +313,44 @@ git status --short
 git diff -- frontend\package-lock.json
 ```
 
-Esperado:
+Linux/macOS:
+
+```bash
+test -f frontend/package-lock.json
+sha256sum frontend/package-lock.json 2>/dev/null || shasum -a 256 frontend/package-lock.json
+git status --short
+git diff -- frontend/package-lock.json
+```
+
+Esperado en la primera ejecución:
 
 ```text
 ?? frontend/package-lock.json
 ```
 
-O una modificación controlada si el archivo ya estaba versionado.
+O una modificación controlada cuando el archivo ya esté versionado.
 
 ## 11. Versionar lockfile
 
 Solo después de revisar:
 
-```powershell
+```bash
 git add frontend/package-lock.json
 git commit -m "build: lock frontend dependencies"
 git push origin main
 ```
 
-No agregar `.env` ni `validation-output/`.
+No agregar:
 
-## 12. Repetir sobre lockfile versionado
+```text
+.env
+validation-output/
+gestudio_lote_100_prospectos.xlsx
+```
 
-Actualizar y repetir:
+## 12. Repetir con lockfile versionado
+
+Windows:
 
 ```powershell
 git pull --ff-only
@@ -284,17 +360,30 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -FrontendPort 5173
 ```
 
-Esta segunda ejecución debe comenzar con un árbol rastreado limpio y utilizar `npm ci` desde el inicio.
+Linux/macOS:
+
+```bash
+git pull --ff-only
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 8080 \
+  --frontend-port 5173
+```
+
+La segunda ejecución debe comenzar con árbol limpio y usar `npm ci` desde el primer build.
 
 ## 13. CI
 
-Después del push:
+Después del push, verificar:
 
-- verificar job backend;
-- verificar frontend con npm ci;
-- verificar scripts y seguridad;
-- verificar imágenes/stack/smoke;
-- no marcar SEG-001 completo mientras no exista evidencia CI visible o una decisión explícita documentada sobre su indisponibilidad.
+- backend;
+- frontend con npm ci;
+- scripts POSIX/Bash/PowerShell;
+- Makefile;
+- seguridad;
+- imágenes/stack/smoke.
+
+No marcar SEG-001 completo mientras no exista evidencia CI visible o una excepción explícita documentada sobre su indisponibilidad.
 
 ## 14. Criterios de cierre
 
@@ -325,6 +414,6 @@ Después del push:
 - no habilitar envíos;
 - no incorporar XLSX real a Git, CI o imágenes;
 - no usar `docker compose down -v` salvo intención destructiva;
-- no ejecutar verificación backend contenedorizada sobre código no confiable porque monta el socket Docker;
+- no ejecutar backend verify contenedorizado sobre código no confiable porque monta el socket Docker;
 - no versionar transcripts;
 - no comenzar SEG-002 con bloqueantes.
