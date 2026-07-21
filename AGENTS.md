@@ -3,8 +3,9 @@
 ## Rama canónica
 
 - `main` es la única fuente de verdad del repositorio.
-- Antes de trabajar, ejecutar `git switch main` y `git pull --ff-only` cuando exista checkout local.
+- Antes de trabajar, ejecutar `git switch main`, `git fetch origin` y `git pull --ff-only` cuando exista checkout local.
 - Las ramas temáticas son transitorias y no deben contradecir la documentación canónica.
+- `feat/seg-001-prospect-vertical-slice` está detrás de `main` y no contiene cambios exclusivos; no copiar ni fusionar contenido desde ella.
 
 ## Continuidad obligatoria
 
@@ -14,20 +15,24 @@ Antes de modificar el repositorio, leer en este orden:
 2. `docs/next-step.md`;
 3. `docs/backlog.md`;
 4. `docs/validation/SEG-001.md` mientras SEG-001 esté activo;
-5. `docs/validation/SEG-001-complete-validation-automation-2026-07-20.md` para tareas de cierre;
-6. ADR y documentación del módulo afectado;
-7. `docs/containerized-quickstart.md` o `docs/local-development-and-usage.md` para arranque y operación.
+5. `docs/validation/SEG-001-complete-validation-automation-2026-07-20.md` para el contrato integral;
+6. `docs/validation/SEG-001-cross-platform-validation-2026-07-20.md` para paridad Windows/Unix;
+7. ADR y documentación del módulo afectado;
+8. `docs/containerized-quickstart.md` o `docs/local-development-and-usage.md` para arranque y operación.
 
 Cuando el usuario indique `continuar`, ejecutar el segmento descrito en `docs/next-step.md` y actualizar todas las fuentes canónicas al finalizar.
 
 ## Validación SEG-001
 
-- El comando canónico de cierre local en Windows es `scripts/validate-seg001.ps1`.
+- Comando canónico Windows: `scripts/validate-seg001.ps1`.
+- Comando canónico Linux/macOS: `scripts/validate-seg001.sh`.
+- Target Make canónico Unix: `make validate-seg001`.
 - Un build cacheado no es evidencia de compilación limpia.
-- Un script implementado o parseado no equivale a un PASS funcional.
-- El validador integral debe comenzar desde `main` con archivos rastreados limpios.
+- Un script implementado, leído o parseado no equivale a un PASS funcional.
+- El validador integral debe comenzar desde `main` con working tree sin cambios inesperados.
 - El único cambio esperado después del recorrido es `frontend/package-lock.json`.
 - El lockfile debe revisarse, versionarse y volver a validarse desde un árbol limpio.
+- En Unix, el generador debe preservar UID/GID y el lockfile debe quedar editable por el usuario actual.
 - `scripts/check-repository-safety.ps1` o `.sh` debe pasar antes del cierre.
 - `validation-output/` es evidencia local, no fuente canónica y no debe versionarse.
 - Los transcripts deben revisarse antes de compartirse.
