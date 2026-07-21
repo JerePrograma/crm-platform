@@ -90,10 +90,11 @@ Spring Boot modular monolith
 
 ### `security`
 
-- acceso bootstrap solo cuando existen credenciales explícitas;
-- API stateless con HTTP Basic temporal;
-- salud pública y resto denegado por defecto;
-- CSRF ignorado exclusivamente en `/api/**`, donde la autorización se envía explícitamente.
+- organización bootstrap y usuarios/roles/permisos persistentes;
+- sesión same-origin mediante cookie HttpOnly y CSRF;
+- rotación, expiración, invalidación y bloqueo de intentos;
+- salud pública, API autenticada y resto denegado por defecto;
+- tenant y permiso resueltos siempre en backend.
 
 ## Separación futura
 
@@ -109,8 +110,7 @@ La separación solo debe ocurrir cuando concurrencia, aislamiento, escalado o pe
 
 ## Decisiones no tomadas todavía
 
-- proveedor de identidad productivo;
-- mecanismo final de sesiones del frontend;
+- proveedor de identidad externo opcional;
 - estrategia exacta de Cloud Tasks local;
 - motor de búsqueda avanzada;
 - almacenamiento productivo de adjuntos;

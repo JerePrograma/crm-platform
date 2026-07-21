@@ -4,13 +4,15 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 
 ## Estado actual
 
-Todo el código y la documentación vigentes están consolidados en `main`.
+`main` continúa como fuente canónica. La ejecución integral autorizada avanza en
+`feat/complete-crm-platform` sin push, PR, merge ni despliegue.
 
 ```text
 SEG-000: COMPLETE
 SEG-001: COMPLETE — validación local integral y CI verdes
-SEG-002: ACTIVE — identidad, usuarios y RBAC
-SEG-003–SEG-011: PLANNED — ejecución integral autorizada
+SEG-002: COMPLETE — identidad, usuarios, sesión, RBAC y tenant
+SEG-003: ACTIVE — prospectos operativos y contactos
+SEG-004–SEG-011: PLANNED — ejecución integral autorizada
 ```
 
 Evidencia real disponible:
@@ -24,6 +26,10 @@ Evidencia real disponible:
   `PASS`;
 - repository safety: `PASS`;
 - GitHub Actions run `29848718163`: `success`.
+- Flyway V1–V6, sesión cookie/CSRF, RBAC y tenant isolation: `PASS`;
+- Maven verify SEG-002, 36/36 tests: `PASS`;
+- frontend sin credenciales persistidas y smoke cookie/CSRF host/contenedor:
+  `PASS`.
 
 Fuentes:
 
@@ -34,6 +40,7 @@ docs/validation/SEG-001.md
 docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
+docs/validation/SEG-002-identity-rbac-2026-07-21.md
 docs/execution/complete-crm-platform-plan.md
 docs/execution/complete-crm-platform-progress.md
 docs/validation/COMPLETE-CRM-matrix.md
@@ -42,7 +49,10 @@ docs/validation/COMPLETE-CRM-matrix.md
 ## Alcance
 
 - Java 21 y Spring Boot;
-- PostgreSQL 17, Flyway V1–V5 y Hibernate validate;
+- PostgreSQL 17, Flyway V1–V6 y Hibernate validate;
+- organizaciones, usuarios persistentes, roles y permisos;
+- sesión cookie HttpOnly same-origin, CSRF, bloqueo e invalidación;
+- tenant isolation y auditoría de identidad;
 - instituciones, contactos, canales, prospectos y exclusiones;
 - normalización, elegibilidad y deduplicación exacta/ambigua;
 - importaciones CSV/XLSX persistentes e idempotentes;
@@ -565,8 +575,7 @@ La segunda operación es destructiva.
   valida scripts y estructura multiplataforma;
 - advertencias Hikari de contextos Testcontainers ya cerrados, sin fallos;
 - Mockito deberá configurarse como agente antes de una futura restricción de Java;
-- HTTP Basic temporal;
-- sin usuarios persistentes/RBAC;
+- sesión cookie/CSRF y usuarios/RBAC persistentes implementados en SEG-002;
 - sin resolución UI de DuplicateReview;
 - sin retry de trabajos fallidos;
 - sin campañas, Gmail, Sheets, workers o cloud;

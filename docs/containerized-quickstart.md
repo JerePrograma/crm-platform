@@ -510,5 +510,5 @@ docker compose --profile app up -d --build
 - package-lock pendiente;
 - npm ci pendiente de evidencia real;
 - CI no muestra runs visibles;
-- HTTP Basic temporal;
+- sesión cookie/CSRF y usuarios/RBAC persistentes implementados en SEG-002;
 - stack local, no productivo.

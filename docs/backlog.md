@@ -109,19 +109,30 @@ Evidencia:
 docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 ```
 
-## SEG-002 — Activo
+## SEG-002 — Completo
 
-- [ ] organización bootstrap y backfill seguro;
-- [ ] usuarios persistentes con contraseña hasheada;
-- [ ] roles, permisos y membresías;
-- [ ] sesión cookie same-origin con CSRF;
-- [ ] login, logout, expiración e invalidación;
-- [ ] bloqueo temporal y usuario inactivo;
-- [ ] tenant isolation;
-- [ ] auditoría de autenticación;
-- [ ] UI de login y usuarios;
-- [ ] migración desde vacío y V1-V5;
-- [ ] pruebas y checkpoint verde.
+- [x] organización bootstrap y backfill seguro;
+- [x] usuarios persistentes con contraseña hasheada;
+- [x] roles, permisos y membresías;
+- [x] sesión cookie same-origin con CSRF;
+- [x] login, logout, expiración e invalidación;
+- [x] bloqueo temporal y usuario inactivo;
+- [x] tenant isolation;
+- [x] auditoría de autenticación;
+- [x] UI de login y usuarios;
+- [x] migración desde vacío y V1-V5;
+- [x] pruebas y checkpoint verde.
+
+## SEG-003 — Activo
+
+- [ ] CRUD integral y archivo/restauración de prospectos;
+- [ ] múltiples contactos normalizados;
+- [ ] propietario persistente, prioridad, score y próxima acción;
+- [ ] búsqueda, filtros, orden, paginación y CSV seguro;
+- [ ] optimistic locking con `409` y manejo UI;
+- [ ] ciclo comercial e historial de transiciones;
+- [ ] autorización, auditoría y tenant isolation;
+- [ ] migración, backend, frontend, smoke y regresiones.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 

@@ -77,8 +77,22 @@ Valores que no se interpretan como canales:
 
 ## Preview
 
+Primero iniciar una sesión cookie/CSRF. La forma canónica es ejecutar
+`scripts/smoke-test.sh` o `scripts/smoke-test.ps1` y reutilizar el mismo patrón.
+
 ```bash
-curl --user "$CRM_BOOTSTRAP_USERNAME:$CRM_BOOTSTRAP_PASSWORD" \
+cookie_jar=$(mktemp)
+csrf_json=$(curl --fail --silent --cookie-jar "$cookie_jar" \
+  http://localhost:8080/api/v1/auth/csrf)
+csrf_token=$(printf '%s' "$csrf_json" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+csrf_header=$(printf '%s' "$csrf_json" | sed -n 's/.*"headerName":"\([^"]*\)".*/\1/p')
+login_body=$(printf '{"username":"%s","password":"%s"}' \
+  "$CRM_BOOTSTRAP_USERNAME" "$CRM_BOOTSTRAP_PASSWORD")
+curl --fail --silent --cookie "$cookie_jar" --cookie-jar "$cookie_jar" \
+  --header "$csrf_header: $csrf_token" --header 'Content-Type: application/json' \
+  --data "$login_body" http://localhost:8080/api/v1/auth/login >/dev/null
+curl --fail --silent --cookie "$cookie_jar" \
+  --header "$csrf_header: $csrf_token" \
   --form "file=@/ruta/prospectos.xlsx" \
   http://localhost:8080/api/v1/imports/prospects/preview
 ```
@@ -86,12 +100,27 @@ curl --user "$CRM_BOOTSTRAP_USERNAME:$CRM_BOOTSTRAP_PASSWORD" \
 PowerShell:
 
 ```powershell
-$pair = "$env:CRM_BOOTSTRAP_USERNAME`:$env:CRM_BOOTSTRAP_PASSWORD"
-$token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
+$session = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
+$csrf = Invoke-RestMethod `
+  -Uri http://localhost:8080/api/v1/auth/csrf `
+  -WebSession $session
+$headers = @{}
+$headers[$csrf.headerName] = $csrf.token
+Invoke-RestMethod `
+  -Uri http://localhost:8080/api/v1/auth/login `
+  -Method Post `
+  -WebSession $session `
+  -Headers $headers `
+  -ContentType 'application/json' `
+  -Body (@{
+    username = $env:CRM_BOOTSTRAP_USERNAME
+    password = $env:CRM_BOOTSTRAP_PASSWORD
+  } | ConvertTo-Json -Compress)
 Invoke-RestMethod `
   -Uri http://localhost:8080/api/v1/imports/prospects/preview `
   -Method Post `
-  -Headers @{ Authorization = "Basic $token" } `
+  -WebSession $session `
+  -Headers $headers `
   -Form @{ file = Get-Item 'C:\ruta\prospectos.xlsx' }
 ```
 
@@ -108,7 +137,8 @@ El preview:
 Debe revisarse primero el preview. Luego:
 
 ```bash
-curl --user "$CRM_BOOTSTRAP_USERNAME:$CRM_BOOTSTRAP_PASSWORD" \
+curl --cookie "$cookie_jar" \
+  --header "$csrf_header: $csrf_token" \
   --header "X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT" \
   --form "file=@/ruta/prospectos.xlsx" \
   http://localhost:8080/api/v1/imports/prospects/execute
@@ -117,13 +147,14 @@ curl --user "$CRM_BOOTSTRAP_USERNAME:$CRM_BOOTSTRAP_PASSWORD" \
 PowerShell:
 
 ```powershell
+$executeHeaders = @{}
+$executeHeaders[$csrf.headerName] = $csrf.token
+$executeHeaders['X-Import-Confirmation'] = 'EXECUTE_PROSPECT_IMPORT'
 Invoke-RestMethod `
   -Uri http://localhost:8080/api/v1/imports/prospects/execute `
   -Method Post `
-  -Headers @{
-    Authorization = "Basic $token"
-    'X-Import-Confirmation' = 'EXECUTE_PROSPECT_IMPORT'
-  } `
+  -WebSession $session `
+  -Headers $executeHeaders `
   -Form @{ file = Get-Item 'C:\ruta\prospectos.xlsx' }
 ```
 

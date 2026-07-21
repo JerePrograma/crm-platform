@@ -180,7 +180,7 @@ Windows:
 
 Durante el arranque:
 
-- Flyway aplica V1–V5;
+- Flyway aplica V1–V6;
 - Hibernate valida el esquema;
 - Spring Security configura bootstrap si ambas credenciales existen;
 - backend responde en `http://localhost:${PORT}`.
@@ -202,11 +202,25 @@ http://localhost:8080/actuator/health
 PowerShell autenticado:
 
 ```powershell
-$pair = "$($env:CRM_BOOTSTRAP_USERNAME):$($env:CRM_BOOTSTRAP_PASSWORD)"
-$encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pair))
+$session = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
+$csrf = Invoke-RestMethod `
+  -Uri 'http://localhost:8080/api/v1/auth/csrf' `
+  -WebSession $session
+$headers = @{}
+$headers[$csrf.headerName] = $csrf.token
+Invoke-RestMethod `
+  -Uri 'http://localhost:8080/api/v1/auth/login' `
+  -Method Post `
+  -WebSession $session `
+  -Headers $headers `
+  -ContentType 'application/json' `
+  -Body (@{
+    username = $env:CRM_BOOTSTRAP_USERNAME
+    password = $env:CRM_BOOTSTRAP_PASSWORD
+  } | ConvertTo-Json -Compress)
 Invoke-RestMethod `
   -Uri 'http://localhost:8080/api/v1/prospects?size=5' `
-  -Headers @{ Authorization = "Basic $encoded" }
+  -WebSession $session
 ```
 
 Swagger:
@@ -450,8 +464,7 @@ El archivo supera 10 MB. Dividir el lote.
 
 - no existe envío de correo;
 - no existen Gmail, SMTP, Cloud Tasks ni campañas;
-- HTTP Basic es temporal;
-- no existe RBAC persistente;
+- sesión cookie/CSRF y RBAC persistente están activos;
 - no usar datos reales en pruebas o CI;
 - no exponer servicios fuera de localhost;
 - no desplegar sin cerrar `docs/validation/SEG-001.md`.

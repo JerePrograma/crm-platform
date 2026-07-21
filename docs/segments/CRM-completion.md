@@ -4,8 +4,8 @@ Actualizado: 2026-07-21
 
 | Segmento | Estado | Gate ejecutable |
 |---|---|---|
-| SEG-002 — Identidad, usuarios y RBAC | ACTIVE | sesión/RBAC/tenant/Flyway/security tests PASS |
-| SEG-003 — Prospectos operativos y contactos | PLANNED | CRUD/ciclo/búsqueda/409/smoke PASS |
+| SEG-002 — Identidad, usuarios y RBAC | COMPLETE | 36/36, sesión/RBAC/tenant/Flyway/smoke PASS |
+| SEG-003 — Prospectos operativos y contactos | ACTIVE | CRUD/ciclo/búsqueda/409/smoke PASS |
 | SEG-004 — Actividades, tareas y timeline | PLANNED | recorrido de seguimiento E2E PASS |
 | SEG-005 — Resolución de duplicados | PLANNED | acciones y merge transaccional/idempotente PASS |
 | SEG-006 — Oportunidades y pipeline | PLANNED | oportunidad ganada/perdida E2E PASS |

@@ -8,6 +8,7 @@ Actualizado: 2026-07-21
 repositorio: JerePrograma/crm-platform
 rama predeterminada: main
 rama canónica: main
+rama de ejecución actual: feat/complete-crm-platform
 producción: NO DESPLEGADA
 comunicaciones: DESHABILITADAS
 lote real: FUERA DE GIT/CI/IMÁGENES
@@ -23,8 +24,8 @@ limpia de SEG-001 se ejecutó sobre
 |---|---|---|
 | SEG-000 | COMPLETE | repositorio, continuidad y documentación canónica |
 | SEG-001 | COMPLETE | vertical slice, seguridad, validación local integral y CI verdes |
-| SEG-002 | ACTIVE | identidad, organizaciones, usuarios, sesiones y RBAC |
-| SEG-003 | PLANNED | prospectos operativos, contactos y ciclo comercial |
+| SEG-002 | COMPLETE | identidad, organizaciones, usuarios, sesiones y RBAC |
+| SEG-003 | ACTIVE | prospectos operativos, contactos y ciclo comercial |
 | SEG-004 | PLANNED | actividades, notas, tareas y timeline |
 | SEG-005 | PLANNED | resolución transaccional de duplicados |
 | SEG-006 | PLANNED | oportunidades y pipeline |
@@ -64,6 +65,14 @@ NPM_CI_CLEAN_RUN_PASS
 REPOSITORY_SAFETY_PASS
 CI_VISIBLE_GREEN
 SEG_001_COMPLETE
+FLYWAY_V1_V6_PASS
+AUTH_COOKIE_CSRF_PASS
+RBAC_AND_TENANT_ISOLATION_PASS
+SECURITY_TESTS_10_OF_10_PASS
+MAVEN_VERIFY_TESTS_36_OF_36_PASS
+FRONTEND_SESSION_BUILD_PASS
+SMOKE_COOKIE_CSRF_HOST_AND_CONTAINER_PASS
+SEG_002_COMPLETE
 ```
 
 ## Fallo Jackson corregido

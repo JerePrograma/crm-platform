@@ -8,24 +8,31 @@ La plataforma opera con política fail-closed:
 - health es público;
 - API y OpenAPI requieren autenticación;
 - cualquier otra ruta se deniega;
-- sesiones HTTP stateless;
-- credenciales frontend solo en memoria;
+- sesiones de servidor con cookie HttpOnly, CSRF y rotación;
+- contraseñas frontend no persistidas;
+- usuarios, roles, permisos y membresías persistentes;
+- tenant isolation en backend;
+- sesiones invalidadas por logout, cambio de contraseña o desactivación;
 - envíos inexistentes y bloqueados;
 - secretos y datos operativos excluidos de Git;
 - puertos locales publicados solo en loopback.
 
-## Autenticación temporal
+## Autenticación y bootstrap
 
-SEG-001 utiliza HTTP Basic únicamente para desarrollo.
+SEG-002 eliminó HTTP Basic. El primer administrador se crea únicamente cuando
+la base todavía no contiene administradores y existen ambas variables:
 
 ```text
 CRM_BOOTSTRAP_USERNAME
 CRM_BOOTSTRAP_PASSWORD
 ```
 
-No tienen valores productivos por defecto. Sin ambas variables, la API de negocio queda cerrada.
+No tienen valores productivos por defecto. La contraseña se codifica con el
+encoder delegado de Spring Security y no se registra. La política mínima es
+configurable mediante `CRM_MINIMUM_PASSWORD_LENGTH`.
 
-HTTP Basic no es aceptable para producción. SEG-002 implementará usuarios persistentes, hashing, RBAC y una estrategia de autenticación adecuada.
+La sesión expira tras ocho horas de inactividad, rota al autenticar y usa cookie
+`Secure` cuando `SESSION_COOKIE_SECURE=true` (obligatorio en producción TLS).
 
 ## Autorización
 
@@ -37,11 +44,14 @@ Estado actual:
 - `/v3/api-docs/**`: autenticado;
 - resto: denegado.
 
-La matriz de roles todavía no está implementada.
+Roles: `ADMIN`, `MANAGER`, `SALES`, `VIEWER`. La autorización se aplica por
+permisos persistentes en métodos backend. `MESSAGE_SEND` existe en el catálogo
+pero no habilita ningún envío.
 
 ## CSRF y CORS
 
-La API es stateless y exige `Authorization` explícita. `/api/**` se excluye de CSRF. Las demás rutas conservan protección por defecto.
+Toda mutación autenticada exige CSRF. El frontend obtiene token y nombre de
+header desde `/api/v1/auth/csrf`; no debe fijar el nombre del header.
 
 No existe CORS global. Desarrollo utiliza proxy Vite/Nginx. Cualquier apertura futura debe definir orígenes exactos; nunca `*` con credenciales.
 

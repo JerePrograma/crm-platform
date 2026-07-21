@@ -10,14 +10,14 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | baseline SEG-001 Windows | EXECUTED_PASS | validador 2026-07-21, commit `7db7e4c`, 29/29 |
 | inventario/gap analysis | EXECUTED_PASS | plan integral y análisis de código completo |
 | documentación viva | IN_PROGRESS | plan, progreso y esta matriz creados |
-| organización/tenant | NOT_STARTED | — |
-| usuarios persistentes | NOT_STARTED | — |
-| roles y permisos | NOT_STARTED | — |
-| sesión cookie/CSRF | NOT_STARTED | — |
-| login/logout/bloqueo | NOT_STARTED | — |
-| aislamiento entre tenants | NOT_STARTED | — |
-| bootstrap admin seguro | NOT_STARTED | — |
-| auditoría de identidad | NOT_STARTED | — |
+| organización/tenant | EXECUTED_PASS | V6 desde vacío y V1-V5; FK/índices/backfill |
+| usuarios persistentes | EXECUTED_PASS | hash, alta, activación y cambio de contraseña |
+| roles y permisos | EXECUTED_PASS | ADMIN/MANAGER/SALES/VIEWER y 18 permisos |
+| sesión cookie/CSRF | EXECUTED_PASS | tests MockMvc y smoke host/contenedor |
+| login/logout/bloqueo | EXECUTED_PASS | 10/10 security integration tests |
+| aislamiento entre tenants | EXECUTED_PASS | segundo tenant persistente devuelve 404 |
+| bootstrap admin seguro | EXECUTED_PASS | solo sin admin y con variables completas |
+| auditoría de identidad | EXECUTED_PASS | login/fallo/logout/usuario/contraseña |
 | prospect CRUD | NOT_STARTED | creación/listado SEG-001 no alcanza el contrato integral |
 | contactos CRUD | NOT_STARTED | — |
 | archivo/restauración | NOT_STARTED | — |
