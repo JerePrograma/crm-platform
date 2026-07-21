@@ -269,6 +269,21 @@ public class DuplicateResolutionService {
           currentActor.organizationId());
       jdbcTemplate.update(
           """
+          UPDATE message_record message SET contact_id = ?, contact_channel_id = survivor.id
+          FROM contact_channel absorbed, contact_channel survivor
+          WHERE message.organization_id = ? AND message.contact_id = ?
+            AND message.contact_channel_id = absorbed.id AND absorbed.contact_id = ?
+            AND survivor.organization_id = message.organization_id
+            AND survivor.contact_id = ? AND survivor.type = absorbed.type
+            AND survivor.normalized_value = absorbed.normalized_value
+          """,
+          survivorContact,
+          currentActor.organizationId(),
+          absorbedContact,
+          absorbedContact,
+          survivorContact);
+      jdbcTemplate.update(
+          """
           DELETE FROM contact_channel absorbed
           USING contact_channel survivor
           WHERE absorbed.contact_id = ? AND survivor.contact_id = ?
@@ -280,6 +295,11 @@ public class DuplicateResolutionService {
           currentActor.organizationId());
       jdbcTemplate.update(
           "UPDATE contact_channel SET contact_id = ?, updated_at = now(), version = version + 1 WHERE contact_id = ? AND organization_id = ?",
+          survivorContact,
+          absorbedContact,
+          currentActor.organizationId());
+      jdbcTemplate.update(
+          "UPDATE message_record SET contact_id = ? WHERE contact_id = ? AND organization_id = ?",
           survivorContact,
           absorbedContact,
           currentActor.organizationId());
@@ -341,7 +361,12 @@ public class DuplicateResolutionService {
         survivorId);
     for (String table :
         List.of(
-            "prospect_note", "activity", "crm_task", "prospect_status_history", "opportunity")) {
+            "prospect_note",
+            "activity",
+            "crm_task",
+            "prospect_status_history",
+            "opportunity",
+            "message_record")) {
       jdbcTemplate.update(
           "UPDATE " + table + " SET prospect_id = ? WHERE prospect_id = ? AND organization_id = ?",
           survivorId,

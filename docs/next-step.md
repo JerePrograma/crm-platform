@@ -13,7 +13,8 @@ SEG-004 COMPLETE
 SEG-005 COMPLETE
 SEG-006 COMPLETE
 SEG-007 COMPLETE
-SEG-008 ACTIVE
+SEG-008 COMPLETE
+SEG-009 ACTIVE
 BRANCH feat/complete-crm-platform
 BASELINE 7db7e4c EXECUTED_PASS
 IDENTITY_COMMIT 0546e6e EXECUTED_PASS
@@ -23,9 +24,9 @@ COMUNICACIONES REALES DISABLED_BY_POLICY
 
 ## Siguiente checkpoint canónico
 
-Completar SEG-008: contratos de mensajería, políticas fail-closed en cada punto de
-salida, providers no-op/fake, borradores manuales, adaptadores Gmail/WhatsApp
-deshabilitados por defecto y contract tests sin llamadas reales.
+Completar SEG-009: transactional outbox, worker PostgreSQL con leases,
+reintentos/dead-letter e idempotencia; recepción inbound por webhook fake con
+firma/replay protection, quarantine, actividad, transición y tarea.
 
 Contrato y evidencia viva:
 
@@ -38,6 +39,7 @@ docs/validation/SEG-003-004-operational-crm-2026-07-21.md
 docs/validation/SEG-005-duplicate-resolution-2026-07-21.md
 docs/validation/SEG-006-opportunities-pipeline-2026-07-21.md
 docs/validation/SEG-007-campaign-simulation-2026-07-21.md
+docs/validation/SEG-008-safe-messaging-2026-07-21.md
 docs/segments/CRM-completion.md
 ```
 

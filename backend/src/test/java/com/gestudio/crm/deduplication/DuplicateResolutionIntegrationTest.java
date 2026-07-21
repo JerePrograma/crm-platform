@@ -105,6 +105,39 @@ class DuplicateResolutionIntegrationTest {
             TaskPriority.MEDIUM,
             "FOLLOW_UP",
             null));
+    UUID absorbedContact =
+        jdbcTemplate.queryForObject(
+            """
+            SELECT c.id FROM prospect p JOIN contact c
+              ON c.organization_id = p.organization_id AND c.institution_id = p.institution_id
+            WHERE p.id = ? AND p.organization_id = ? AND c.deleted_at IS NULL
+            """,
+            UUID.class,
+            absorbed,
+            principal.organizationId());
+    UUID absorbedChannel =
+        jdbcTemplate.queryForObject(
+            "SELECT id FROM contact_channel WHERE contact_id = ? AND organization_id = ? AND type = 'EMAIL'",
+            UUID.class,
+            absorbedContact,
+            principal.organizationId());
+    UUID messageId = UUID.randomUUID();
+    jdbcTemplate.update(
+        """
+        INSERT INTO message_record (
+          id, version, organization_id, prospect_id, contact_id, contact_channel_id,
+          created_by, channel, direction, status, sending_block_reason, subject,
+          body_text, provider, idempotency_key, created_at, updated_at
+        ) VALUES (?, 0, ?, ?, ?, ?, ?, 'EMAIL', 'OUTBOUND', 'DRAFT_CREATED',
+          'BLOCKED_BY_KILL_SWITCH', 'Synthetic', 'Synthetic preserved draft', 'NOOP', ?, now(), now())
+        """,
+        messageId,
+        principal.organizationId(),
+        absorbed,
+        absorbedContact,
+        absorbedChannel,
+        principal.userId(),
+        "merge-message-" + suffix);
 
     UUID reviewId = createReview(survivor, absorbed, 1);
     String key = "merge-" + suffix;
@@ -128,6 +161,13 @@ class DuplicateResolutionIntegrationTest {
     assertThat(count("prospect_note", survivor)).isEqualTo(1);
     assertThat(count("activity", survivor)).isEqualTo(1);
     assertThat(count("crm_task", survivor)).isEqualTo(1);
+    assertThat(count("message_record", survivor)).isEqualTo(1);
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT c.deleted_at IS NULL FROM message_record m JOIN contact c ON c.id = m.contact_id WHERE m.id = ?",
+                Boolean.class,
+                messageId))
+        .isTrue();
     assertThat(
             jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM prospect_merge_map WHERE survivor_prospect_id = ? AND absorbed_prospect_id = ?",

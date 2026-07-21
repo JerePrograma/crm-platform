@@ -11,8 +11,10 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 SEG-000: COMPLETE
 SEG-001: COMPLETE — validación local integral y CI verdes
 SEG-002: COMPLETE — identidad, usuarios, sesión, RBAC y tenant
-SEG-003: ACTIVE — prospectos operativos y contactos
-SEG-004–SEG-011: PLANNED — ejecución integral autorizada
+SEG-003–SEG-007: COMPLETE — CRM operativo, pipeline y campañas simuladas
+SEG-008: COMPLETE — mensajería no-op/fake/manual y adapters desconectados
+SEG-009: ACTIVE — outbox, workers e inbound
+SEG-010–SEG-011: PLANNED — hardening y cierre integral
 ```
 
 Evidencia real disponible:
@@ -30,6 +32,9 @@ Evidencia real disponible:
 - Maven verify SEG-002, 36/36 tests: `PASS`;
 - frontend sin credenciales persistidas y smoke cookie/CSRF host/contenedor:
   `PASS`.
+- Flyway V1–V11, mensajería safe-by-default y contract tests loopback: `PASS`;
+- Docker V10→V11, health completo y simulación visual fake: `PASS`;
+- Gmail/WhatsApp reales: `IMPLEMENTED_NOT_CONNECTED`.
 
 Fuentes:
 
@@ -41,6 +46,7 @@ docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 docs/validation/SEG-002-identity-rbac-2026-07-21.md
+docs/validation/SEG-008-safe-messaging-2026-07-21.md
 docs/execution/complete-crm-platform-plan.md
 docs/execution/complete-crm-platform-progress.md
 docs/validation/COMPLETE-CRM-matrix.md
@@ -49,13 +55,18 @@ docs/validation/COMPLETE-CRM-matrix.md
 ## Alcance
 
 - Java 21 y Spring Boot;
-- PostgreSQL 17, Flyway V1–V6 y Hibernate validate;
+- PostgreSQL 17, Flyway V1–V11 y Hibernate validate;
 - organizaciones, usuarios persistentes, roles y permisos;
 - sesión cookie HttpOnly same-origin, CSRF, bloqueo e invalidación;
 - tenant isolation y auditoría de identidad;
 - instituciones, contactos, canales, prospectos y exclusiones;
 - normalización, elegibilidad y deduplicación exacta/ambigua;
 - importaciones CSV/XLSX persistentes e idempotentes;
+- prospectos/contactos operativos, timeline, tareas y ciclo comercial;
+- merge trazable de duplicados, oportunidades y pipeline;
+- campañas, audiencias congeladas, plantillas y secuencias limitadas;
+- borradores, simulaciones fake y enlaces manuales;
+- adapters Gmail/WhatsApp aislados y desconectados;
 - preview, ejecución confirmada y evidencia por fila;
 - auditoría JSONB;
 - API REST, OpenAPI y RFC 7807;
@@ -66,16 +77,23 @@ docs/validation/COMPLETE-CRM-matrix.md
 
 ## Seguridad de envío
 
-No existe adaptador Gmail, SMTP o de correo.
+Existen adapters Gmail draft-only y WhatsApp Cloud para contract testing y
+conexión futura, pero no están conectados ni pueden inicializarse con la
+configuración canónica. La API no expone endpoint de envío.
 
 ```text
 SENDING_ENABLED=false
 SENDING_DRY_RUN=true
 SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
+EMAIL_PROVIDER_MODE=NOOP
+WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 ```
 
-PostgreSQL contiene además un kill switch persistente. Ninguna operación disponible puede enviar mensajes.
+PostgreSQL contiene además un kill switch persistente. La operación disponible
+solo crea borradores, simulaciones `FAKE` y enlaces manuales; ninguna ruta puede
+persistir `SENT`.
 
 ## Requisitos recomendados
 
@@ -152,6 +170,9 @@ SENDING_ENABLED=false
 SENDING_DRY_RUN=true
 SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
+EMAIL_PROVIDER_MODE=NOOP
+WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 ```
 
 No volver a copiar `.env.example` sobre un `.env` que ya contiene credenciales elegidas.

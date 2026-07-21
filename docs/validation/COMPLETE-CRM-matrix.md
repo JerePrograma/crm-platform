@@ -42,12 +42,15 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | renderer seguro | EXECUTED_PASS | allow-list, escaping e inyección rechazada |
 | secuencias declarativas | EXECUTED_PASS | tipos/condiciones limitados, API/test y UI |
 | aprobación/simulación | EXECUTED_PASS | RBAC, idempotencia, fake activity y Playwright |
-| email no-op | NOT_STARTED | — |
-| email fake | NOT_STARTED | — |
-| email real adapter | NOT_STARTED | requerirá credenciales para conexión |
-| WhatsApp no-op | NOT_STARTED | — |
-| WhatsApp fake | NOT_STARTED | — |
-| WhatsApp real adapter | NOT_STARTED | requerirá credenciales para conexión |
+| email no-op | EXECUTED_PASS | provider seleccionado, integración y UI |
+| email fake | EXECUTED_PASS | simulación persistida, actividad y recorrido visual |
+| email real adapter | BLOCKED_EXTERNAL | draft-only implementado/contract test; OAuth no conectado |
+| WhatsApp no-op | EXECUTED_PASS | NOOP seleccionado por DEEPLINK_ONLY |
+| WhatsApp fake | EXECUTED_PASS | contract/integration fake sin red |
+| WhatsApp real adapter | BLOCKED_EXTERNAL | contrato implementado; Meta/credenciales no conectados |
+| borradores y enlaces manuales | EXECUTED_PASS | API/UI mailto y wa.me sin apertura automática |
+| message policy tenant/exclusión | EXECUTED_PASS | PostgreSQL, consentimiento y bloqueo antes de persistir cuerpo |
+| inexistencia de endpoint send | EXECUTED_PASS | MockMvc administrador autenticado obtiene 404 |
 | policy/kill switch persistente | EXECUTED_PASS | ambiente + DB verificados antes de simular |
 | outbox | NOT_STARTED | — |
 | workers/retry/dead-letter | NOT_STARTED | — |

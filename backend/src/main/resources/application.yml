@@ -66,6 +66,23 @@ sending:
   daily-limit: ${SENDING_DAILY_LIMIT:0}
   environment-kill-switch: ${SENDING_KILL_SWITCH:true}
 
+messaging:
+  email-mode: ${EMAIL_PROVIDER_MODE:NOOP}
+  whatsapp-mode: ${WHATSAPP_PROVIDER_MODE:DEEPLINK_ONLY}
+  real-network-allowed: ${MESSAGING_REAL_NETWORK_ALLOWED:false}
+  timeout: ${MESSAGING_HTTP_TIMEOUT:5s}
+  gmail:
+    base-url: ${GMAIL_API_BASE_URL:https://gmail.googleapis.com}
+    access-token: ${GMAIL_ACCESS_TOKEN:}
+    scopes: ${GMAIL_SCOPES:}
+  whatsapp:
+    base-url: ${WHATSAPP_GRAPH_BASE_URL:https://graph.facebook.com}
+    api-version: ${WHATSAPP_GRAPH_API_VERSION:}
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+    business-account-id: ${WHATSAPP_BUSINESS_ACCOUNT_ID:}
+    access-token: ${WHATSAPP_ACCESS_TOKEN:}
+    max-text-length: ${WHATSAPP_MAX_TEXT_LENGTH:4096}
+
 logging:
   structured:
     format:

@@ -23,6 +23,9 @@ import type {
   SessionUser,
   RenderedTemplate,
   User,
+  ManualMessageLink,
+  MessageRecord,
+  MessagingSafety,
 } from "./types";
 
 type Csrf = { token: string; headerName: string };
@@ -402,4 +405,40 @@ export function createExclusion(input: {
 
 export function listAuditEvents(limit = 100): Promise<AuditEvent[]> {
   return request(`/api/v1/audit?limit=${limit}`);
+}
+
+export function getMessagingSafety(): Promise<MessagingSafety> {
+  return request("/api/v1/messages/safety");
+}
+
+export type MessageInput = {
+  prospectId: string;
+  contactId: string;
+  channel: "EMAIL" | "WHATSAPP";
+  subject?: string;
+  textBody: string;
+  htmlBody?: string;
+};
+
+export function createMessageDraft(input: MessageInput): Promise<MessageRecord> {
+  return request("/api/v1/messages/drafts", {
+    method: "POST",
+    headers: { "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify(input),
+  });
+}
+
+export function simulateMessage(input: MessageInput): Promise<MessageRecord> {
+  return request("/api/v1/messages/simulations", {
+    method: "POST",
+    headers: { "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify(input),
+  });
+}
+
+export function createManualMessageLink(input: MessageInput): Promise<ManualMessageLink> {
+  return request("/api/v1/messages/manual-link", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }

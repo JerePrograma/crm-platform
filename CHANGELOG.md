@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-07-21 — SEG-008
+
+- agregó V11 con conexiones externas, mensajes e intentos tenant-scoped;
+- implementó contratos, policy fail-closed, providers no-op/fake y enlaces
+  manuales;
+- agregó adapters Gmail draft-only y WhatsApp Cloud detrás de red real
+  deshabilitada y configuración completa obligatoria;
+- incorporó UI de mensajes/integraciones, contract tests loopback y regresión de
+  merge;
+- migró el volumen sintético V10→V11, ejecutó frontend/Docker/health/Playwright
+  y demostró cero estados `SENT`.
+
 ## 2026-07-21 — SEG-007
 
 - agregó V10 con campañas, audiencia congelada, secuencias y resultados de

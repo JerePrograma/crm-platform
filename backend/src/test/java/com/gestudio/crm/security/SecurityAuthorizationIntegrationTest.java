@@ -145,6 +145,7 @@ class SecurityAuthorizationIntegrationTest {
     mockMvc.perform(get("/api/v1/prospects").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/templates").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/campaigns").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/messages/safety").session(session)).andExpect(status().isOk());
     mockMvc
         .perform(
             post("/api/v1/prospects")
@@ -152,6 +153,24 @@ class SecurityAuthorizationIntegrationTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"institutionName\":\"Viewer cannot create\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            post("/api/v1/messages/drafts")
+                .session(session)
+                .with(csrf())
+                .header("Idempotency-Key", "viewer-cannot-draft")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "prospectId":"00000000-0000-0000-0000-000000000001",
+                      "contactId":"00000000-0000-0000-0000-000000000002",
+                      "channel":"EMAIL",
+                      "subject":"Denied",
+                      "textBody":"Denied"
+                    }
+                    """))
         .andExpect(status().isForbidden());
     mockMvc
         .perform(
@@ -170,6 +189,19 @@ class SecurityAuthorizationIntegrationTest {
                     }
                     """))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void authenticatedAdminStillHasNoRealSendEndpoint() throws Exception {
+    MockHttpSession session = session(login("test-owner", "test-password").andReturn());
+    mockMvc
+        .perform(
+            post("/api/v1/messages/send")
+                .session(session)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isNotFound());
   }
 
   @Test

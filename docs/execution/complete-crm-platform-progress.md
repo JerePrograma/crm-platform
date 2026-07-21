@@ -224,3 +224,41 @@ RESIDUAL_RISKS=real providers intentionally absent until SEG-008; no real networ
 Playwright creó una plantilla, verificó preview sintético, congeló dos
 destinatarios, aprobó y simuló. PostgreSQL registró dos actividades
 `EMAIL_DRAFTED`, cero envíos y los cuatro bloqueos activos.
+
+## CHECKPOINT_8_SAFE_MESSAGING
+
+```text
+CHECKPOINT_ID=CHECKPOINT_8
+PHASE=safe_messaging_and_disabled_adapters
+START_COMMIT=cf3e8ed4a5c78ceecffdb91cf9487ae0537d5b06
+END_COMMIT=working_tree_validated_before_local_commit
+FILES_CHANGED=messaging module, duplicate merge propagation, V11, frontend messages/integrations, tests and docs
+MIGRATIONS=V11__safe_messaging_and_integrations.sql
+TEST_COMMANDS=focused 20 tests; mvn verify; npm build; Docker no-cache build/up; smoke; repository safety; Playwright; PostgreSQL policy query
+TEST_RESULT=EXECUTED_PASS
+KNOWN_WARNINGS=Mockito dynamic-agent and closed Testcontainer Hikari notices; Meta docs access/rate limit
+RESIDUAL_RISKS=Gmail OAuth and WhatsApp Cloud require external accounts, credentials, domain and provider verification
+```
+
+Fallos encontrados y corregidos:
+
+1. el runtime Playwright no incluía su Chromium descargado: se reutilizó Chrome
+   del sistema sin instalar dependencias;
+2. la primera captura se hizo antes de que terminara la carga asíncrona de
+   prospectos: el recorrido esperó condiciones de opciones reales;
+3. el merge de contactos podía dejar referencias de mensajes en canales
+   absorbidos: ahora remapea mensajes antes de consolidar canales y tiene
+   regresión PostgreSQL;
+4. el primer comando Maven focalizado fue interpretado por PowerShell debido a
+   la coma: el selector `-Dtest` quedó entre comillas y ejecutó 20/20.
+
+Evidencia ejecutada:
+
+- Flyway V1–V11 desde vacío y V10→V11 sobre volumen local: PASS;
+- focused messaging/provider/merge/security: 20/20;
+- Maven verify integral: 57/57 en 03:04 min, Spotless 119/119 y ArchUnit PASS;
+- frontend TypeScript/Vite: PASS;
+- Docker PostgreSQL/backend/frontend healthy y smoke autenticado: PASS;
+- Playwright fake simulation con `BLOCKED_BY_KILL_SWITCH`: PASS;
+- configuración ambiente/DB bloqueada y filas `SENT`: cero;
+- repository safety y `git diff --check`: PASS.

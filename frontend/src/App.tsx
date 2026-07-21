@@ -12,6 +12,8 @@ import {
   createContact,
   createCampaign,
   createExclusion,
+  createManualMessageLink,
+  createMessageDraft,
   createNote,
   createOpportunity,
   createProspect,
@@ -19,6 +21,7 @@ import {
   createTask,
   createUser,
   getImportRows,
+  getMessagingSafety,
   getCampaignAudience,
   getCampaignSequence,
   getPendingDuplicateReviews,
@@ -43,6 +46,7 @@ import {
   previewTemplate,
   setUserActive,
   simulateCampaign,
+  simulateMessage,
   transitionProspect,
   transitionOpportunity,
   freezeCampaignAudience,
@@ -62,6 +66,9 @@ import type {
   ImportRow,
   ImportSummary,
   MessageTemplate,
+  ManualMessageLink,
+  MessageRecord,
+  MessagingSafety,
   Opportunity,
   OpportunityStage,
   PipelineMetrics,
@@ -79,6 +86,7 @@ type Tab =
   | "prospects"
   | "pipeline"
   | "campaigns"
+  | "messages"
   | "imports"
   | "exclusions"
   | "audit"
@@ -258,6 +266,11 @@ export function App() {
           {session.permissions.includes("CAMPAIGN_READ") && (
             <NavButton active={tab === "campaigns"} onClick={() => setTab("campaigns")}>
               Campañas
+            </NavButton>
+          )}
+          {session.permissions.includes("CAMPAIGN_READ") && (
+            <NavButton active={tab === "messages"} onClick={() => setTab("messages")}>
+              Mensajes e integraciones
             </NavButton>
           )}
           {session.permissions.includes("IMPORT_PREVIEW") && (
@@ -441,6 +454,10 @@ export function App() {
             session={session}
             onChanged={() => refresh()}
           />
+        )}
+
+        {tab === "messages" && (
+          <MessagesPanel prospects={prospects} session={session} />
         )}
 
         {tab === "imports" && (
@@ -713,6 +730,229 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: SessionUser) =>
         </button>
       </form>
     </main>
+  );
+}
+
+function MessagesPanel({
+  prospects,
+  session,
+}: {
+  prospects: Prospect[];
+  session: SessionUser;
+}) {
+  const [safety, setSafety] = useState<MessagingSafety | null>(null);
+  const [prospectId, setProspectId] = useState(prospects[0]?.id ?? "");
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contactId, setContactId] = useState("");
+  const [channel, setChannel] = useState<CampaignChannel>("EMAIL");
+  const [subject, setSubject] = useState("Borrador comercial");
+  const [body, setBody] = useState("");
+  const [result, setResult] = useState<MessageRecord | null>(null);
+  const [manualLink, setManualLink] = useState<ManualMessageLink | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const canDraft = session.permissions.includes("MESSAGE_DRAFT");
+  const canSimulate = session.permissions.includes("MESSAGE_SIMULATE");
+  const compatibleContacts = useMemo(
+    () =>
+      contacts.filter((contact) =>
+        contact.channels.some((item) => item.type === channel && item.valid),
+      ),
+    [channel, contacts],
+  );
+
+  useEffect(() => {
+    void getMessagingSafety().then(setSafety).catch((caught) => setError(message(caught)));
+  }, []);
+
+  useEffect(() => {
+    if (!prospectId && prospects[0]) {
+      setProspectId(prospects[0].id);
+      return;
+    }
+    if (!prospectId) {
+      setContacts([]);
+      setContactId("");
+      return;
+    }
+    void listContacts(prospectId)
+      .then((items) => {
+        setContacts(items);
+        setContactId((current) =>
+          items.some((item) => item.id === current) ? current : (items[0]?.id ?? ""),
+        );
+      })
+      .catch((caught) => setError(message(caught)));
+  }, [prospectId, prospects]);
+
+  useEffect(() => {
+    if (!compatibleContacts.some((contact) => contact.id === contactId)) {
+      setContactId(compatibleContacts[0]?.id ?? "");
+    }
+  }, [compatibleContacts, contactId]);
+
+  function input() {
+    return {
+      prospectId,
+      contactId,
+      channel,
+      subject: channel === "EMAIL" ? subject : undefined,
+      textBody: body,
+      htmlBody: channel === "EMAIL" ? `<p>${escapeText(body)}</p>` : undefined,
+    };
+  }
+
+  async function run(operation: "draft" | "simulate" | "manual") {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    setManualLink(null);
+    try {
+      if (operation === "draft") {
+        setResult(await createMessageDraft(input()));
+      } else if (operation === "simulate") {
+        setResult(await simulateMessage(input()));
+      } else {
+        setManualLink(await createManualMessageLink(input()));
+      }
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="stack">
+      <div className="alert safety" role="status">
+        No existe endpoint de envío. Los proveedores reales no pueden inicializarse mientras la red
+        real esté bloqueada, y PostgreSQL conserva un segundo kill switch.
+      </div>
+      {error && <div className="alert error">{error}</div>}
+      <div className="control-grid">
+        <Control label="Email" value={safety?.selectedEmailProvider ?? "Consultando…"} />
+        <Control label="WhatsApp" value={safety?.selectedWhatsAppProvider ?? "Consultando…"} />
+        <Control
+          label="Red real"
+          value={safety?.realNetworkAllowed ? "HABILITADA" : "BLOQUEADA"}
+        />
+        <Control
+          label="Endpoint de envío"
+          value={safety?.sendEndpointAvailable ? "DISPONIBLE" : "INEXISTENTE"}
+        />
+      </div>
+      {(canDraft || canSimulate) && (
+        <Panel title="Borrador seguro o simulación">
+          <form className="form-grid" onSubmit={(event) => event.preventDefault()}>
+            <label>
+              Prospecto
+              <select
+                value={prospectId}
+                onChange={(event) => setProspectId(event.target.value)}
+                required
+              >
+                <option value="">Seleccionar…</option>
+                {prospects.map((prospect) => (
+                  <option key={prospect.id} value={prospect.id}>
+                    {prospect.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Canal
+              <select
+                value={channel}
+                onChange={(event) => setChannel(event.target.value as CampaignChannel)}
+              >
+                <option value="EMAIL">EMAIL</option>
+                <option value="WHATSAPP">WHATSAPP</option>
+              </select>
+            </label>
+            <label className="full-width">
+              Contacto con canal válido
+              <select
+                value={contactId}
+                onChange={(event) => setContactId(event.target.value)}
+                required
+              >
+                <option value="">Seleccionar…</option>
+                {compatibleContacts.map((contact) => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {channel === "EMAIL" && (
+              <label className="full-width">
+                Asunto
+                <input
+                  value={subject}
+                  onChange={(event) => setSubject(event.target.value)}
+                  required
+                />
+              </label>
+            )}
+            <label className="full-width">
+              Mensaje
+              <textarea value={body} onChange={(event) => setBody(event.target.value)} required />
+            </label>
+            <div className="action-row full-width">
+              {canDraft && (
+                <button
+                  className="secondary-button"
+                  disabled={busy || !contactId}
+                  onClick={() => void run("draft")}
+                >
+                  Crear borrador local
+                </button>
+              )}
+              {canSimulate && (
+                <button
+                  className="primary-button"
+                  disabled={busy || !contactId}
+                  onClick={() => void run("simulate")}
+                >
+                  Simular con fake
+                </button>
+              )}
+              {canDraft && (
+                <button
+                  className="secondary-button"
+                  disabled={busy || !contactId}
+                  onClick={() => void run("manual")}
+                >
+                  Generar enlace manual
+                </button>
+              )}
+            </div>
+          </form>
+        </Panel>
+      )}
+      {result && (
+        <div className="alert success" aria-live="polite">
+          {result.status} mediante {result.provider}. Bloqueo de envío: {result.sendingBlockReason}.
+        </div>
+      )}
+      {manualLink && (
+        <div className="alert safety" aria-live="polite">
+          Enlace manual generado; el CRM no lo abrió ni registró un envío. {" "}
+          <a href={manualLink.url} target="_blank" rel="noreferrer">
+            Abrir aplicación local
+          </a>
+        </div>
+      )}
+      <Panel title="Integraciones externas">
+        <div className="control-grid">
+          <Control label="Gmail OAuth" value="IMPLEMENTED_NOT_CONNECTED" />
+          <Control label="WhatsApp Cloud" value="IMPLEMENTED_NOT_CONNECTED" />
+          <Control label="Modo email" value={safety?.emailMode ?? "NOOP"} />
+          <Control label="Modo WhatsApp" value={safety?.whatsAppMode ?? "DEEPLINK_ONLY"} />
+        </div>
+      </Panel>
+    </section>
   );
 }
 
@@ -1838,6 +2078,7 @@ function title(tab: Tab): string {
     prospects: "Prospectos",
     pipeline: "Pipeline",
     campaigns: "Campañas y plantillas",
+    messages: "Mensajes e integraciones",
     imports: "Importaciones",
     exclusions: "Exclusiones",
     audit: "Auditoría",
@@ -1859,4 +2100,13 @@ function dateTime(value: string): string {
 
 function message(caught: unknown): string {
   return caught instanceof Error ? caught.message : "Ocurrió un error inesperado";
+}
+
+function escapeText(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }

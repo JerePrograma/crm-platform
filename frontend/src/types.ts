@@ -360,3 +360,36 @@ export type RenderedTemplate = {
   textBody: string;
   htmlBody: string;
 };
+
+export type MessagingSafety = {
+  emailMode: string;
+  whatsAppMode: string;
+  realNetworkAllowed: boolean;
+  selectedEmailProvider: string;
+  selectedWhatsAppProvider: string;
+  sendEndpointAvailable: boolean;
+};
+
+export type MessageRecord = {
+  id: string;
+  channel: CampaignChannel;
+  status:
+    | "DRAFT_CREATED"
+    | "SIMULATED"
+    | "PROVIDER_DRAFT_CREATED"
+    | "BLOCKED_BY_KILL_SWITCH"
+    | "BLOCKED_BY_CONFIGURATION"
+    | "BLOCKED_BY_EXCLUSION"
+    | "BLOCKED_BY_POLICY";
+  sendingBlockReason: string;
+  provider: string;
+  externalMessageId: string | null;
+  externalThreadId: string | null;
+};
+
+export type ManualMessageLink = {
+  channel: CampaignChannel;
+  status: "DRAFT_CREATED";
+  url: string;
+  sendingBlockReason: string;
+};

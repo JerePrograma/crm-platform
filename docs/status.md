@@ -30,8 +30,8 @@ limpia de SEG-001 se ejecutó sobre
 | SEG-005 | COMPLETE | resolución transaccional de duplicados |
 | SEG-006 | COMPLETE | oportunidades y pipeline |
 | SEG-007 | COMPLETE | campañas, audiencias, plantillas y simulación |
-| SEG-008 | ACTIVE | mensajería segura y adaptadores deshabilitados |
-| SEG-009 | PLANNED | outbox, workers e inbound |
+| SEG-008 | COMPLETE | mensajería segura y adaptadores deshabilitados |
+| SEG-009 | ACTIVE | outbox, workers e inbound |
 | SEG-010 | PLANNED | reportes, seguridad, observabilidad y producción local |
 | SEG-011 | PLANNED | validación integral y cierre |
 
@@ -105,6 +105,14 @@ PERSISTENT_SENDING_BLOCKADE_PASS
 MAVEN_VERIFY_TESTS_50_OF_50_PASS
 PLAYWRIGHT_CAMPAIGN_SIMULATION_PASS
 SEG_007_COMPLETE
+FLYWAY_V1_V11_PASS
+SAFE_MESSAGING_CONTRACTS_PASS
+NOOP_AND_FAKE_PROVIDERS_PASS
+MESSAGE_POLICY_AND_PERSISTENT_KILL_SWITCH_PASS
+REAL_PROVIDER_INITIALIZATION_FAIL_CLOSED_PASS
+MESSAGE_SEND_ENDPOINT_ABSENT_PASS
+PLAYWRIGHT_FAKE_MESSAGE_SIMULATION_PASS
+SEG_008_COMPLETE
 ```
 
 ## Fallo Jackson corregido
