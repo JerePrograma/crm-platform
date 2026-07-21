@@ -20,7 +20,7 @@ Evidencia real disponible:
 - imágenes frontend/backend: exportadas desde caché;
 - primer arranque: bloqueado por puerto 5432;
 - tres puertos host configurables: implementados;
-- validación integral Docker/Maven/Testcontainers/npm ci: automatizada y pendiente de ejecución.
+- validación integral Docker/Maven/Testcontainers/npm ci: automatizada en Windows y Unix, pendiente de ejecución funcional.
 
 Fuentes:
 
@@ -29,6 +29,7 @@ docs/status.md
 docs/next-step.md
 docs/validation/SEG-001.md
 docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
+docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 ```
 
 ## Alcance
@@ -59,21 +60,32 @@ SENDING_KILL_SWITCH=true
 
 PostgreSQL contiene además un kill switch persistente. Ninguna operación disponible puede enviar mensajes.
 
-## Validación completa recomendada en Windows
+## Requisitos recomendados
 
-### Requisitos
+Para levantar y validar todo en contenedores:
 
 - Git;
-- Docker Desktop con contenedores Linux;
+- Docker Desktop o Docker Engine;
 - Docker Compose v2;
-- Windows PowerShell.
+- PowerShell en Windows o Bash en Linux/macOS.
 
-No requiere Java, Maven, Node o npm instalados en el host.
+No se requiere Java, Maven, Node o npm instalados en el host para el recorrido integral.
 
-### 1. Actualizar `main`
+Docker Desktop debe utilizar contenedores Linux.
 
-```powershell
-Set-Location C:\laburo\crm-platform
+## 1. Obtener o actualizar `main`
+
+Checkout nuevo:
+
+```bash
+git clone https://github.com/JerePrograma/crm-platform.git
+cd crm-platform
+git switch main
+```
+
+Checkout existente:
+
+```bash
 git switch main
 git fetch origin
 git pull --ff-only
@@ -81,7 +93,9 @@ git status
 git rev-parse HEAD
 ```
 
-Si `mvnw.cmd` aparece modificado sin intención:
+La rama `feat/seg-001-prospect-vertical-slice` está detrás y no contiene trabajo exclusivo. No copiar ni fusionar nada desde ella.
+
+En Windows, si `mvnw.cmd` aparece modificado sin intención:
 
 ```powershell
 git diff --ignore-space-at-eol -- mvnw.cmd
@@ -89,24 +103,43 @@ git restore -- mvnw.cmd
 git status --short
 ```
 
-### 2. Crear `.env` solamente cuando no exista
+## 2. Crear `.env`
+
+Crear solo si no existe.
+
+Windows:
 
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-Editar `CRM_BOOTSTRAP_PASSWORD` y conservar las cuatro guardas de envío.
+Linux/macOS:
 
-Puertos predeterminados:
+```bash
+[ -f .env ] || cp .env.example .env
+```
+
+Editar como mínimo:
 
 ```dotenv
+POSTGRES_DB=gestudio_crm
 POSTGRES_HOST_PORT=55432
 BACKEND_HOST_PORT=8080
 FRONTEND_HOST_PORT=5173
 DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
+DATABASE_USER=gestudio
+DATABASE_PASSWORD=gestudio_local_only
+CRM_BOOTSTRAP_USERNAME=gestudio-admin
+CRM_BOOTSTRAP_PASSWORD=una-clave-local-segura
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
 ```
 
-### 3. Ejecutar el recorrido integral
+No volver a copiar `.env.example` sobre un `.env` que ya contiene credenciales elegidas.
+
+## 3. Levantar y validar todo — Windows
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
@@ -116,26 +149,50 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -KeepRunning
 ```
 
-El script:
+## 4. Levantar y validar todo — Linux/macOS
 
-1. exige `main` y archivos rastreados limpios;
-2. actualiza puertos sin tocar contraseñas;
-3. ejecuta preflight fail-closed;
-4. construye frontend/backend sin caché;
-5. levanta PostgreSQL, backend y frontend;
-6. espera los health checks;
-7. ejecuta smoke host y contenedor;
-8. ejecuta Maven verify/Spotless/tests/ArchUnit/Testcontainers en Docker;
-9. genera package-lock sin lifecycle scripts ni node_modules;
-10. reconstruye frontend mediante npm ci;
-11. repite health y smoke;
-12. escanea archivos sensibles rastreados;
-13. produce transcript y JSON;
-14. deja `frontend/package-lock.json` sin commit para revisión.
+```bash
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 8080 \
+  --frontend-port 5173 \
+  --keep-running
+```
 
-No usar `-UseBuildCache` como evidencia de cierre.
+Con Make, dejando cleanup final:
 
-### 4. Puertos alternativos
+```bash
+make validate-seg001
+```
+
+## 5. Qué ejecutan los validadores
+
+1. exigen rama `main`;
+2. rechazan cambios locales inesperados;
+3. coordinan los tres puertos y `DATABASE_URL`;
+4. ejecutan preflight fail-closed;
+5. validan Compose;
+6. retiran contenedores incompletos sin borrar el volumen;
+7. construyen frontend/backend sin caché;
+8. levantan PostgreSQL, backend y frontend;
+9. esperan los tres health checks;
+10. ejecutan smoke host y contenedor;
+11. ejecutan Maven verify, Spotless, unit tests, ArchUnit y Testcontainers en Docker;
+12. generan `package-lock.json` sin lifecycle scripts ni `node_modules`;
+13. calculan SHA-256 del lockfile;
+14. reconstruyen frontend mediante `npm ci`;
+15. recrean frontend y repiten health/smoke;
+16. escanean archivos sensibles;
+17. producen transcript y JSON;
+18. no realizan commits.
+
+No usar `-UseBuildCache` o `--use-build-cache` como evidencia de cierre.
+
+## 6. Puertos alternativos
+
+Si `8080` o `5173` están ocupados:
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
@@ -145,11 +202,24 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -KeepRunning
 ```
 
+Linux/macOS:
+
+```bash
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 18080 \
+  --frontend-port 15173 \
+  --keep-running
+```
+
 Los smoke tests derivan las URLs desde `.env`.
 
-### 5. Resultado esperado
+## 7. Resultado esperado
 
 ```text
+postgres health: healthy
+backend health: healthy
+frontend health: healthy
 SEG-001 Docker validation passed.
 Containerized backend verification passed.
 Frontend lockfile generated.
@@ -157,7 +227,24 @@ Repository safety scan passed.
 Complete SEG-001 validation passed.
 ```
 
-### 6. Evidencia
+## 8. Abrir el sistema
+
+Con puertos predeterminados:
+
+```text
+Frontend: http://localhost:5173
+Health:   http://localhost:8080/actuator/health
+Swagger:  http://localhost:8080/swagger-ui/index.html
+```
+
+Ingresar con:
+
+```text
+CRM_BOOTSTRAP_USERNAME
+CRM_BOOTSTRAP_PASSWORD
+```
+
+## 9. Evidencia local
 
 ```text
 validation-output/seg001-docker-*.json
@@ -168,19 +255,9 @@ frontend/package-lock.json
 
 `validation-output/` está ignorado por Git. Revisar transcripts antes de compartirlos.
 
-### 7. Abrir el sistema
+## 10. Revisar y versionar package-lock
 
-Con puertos predeterminados:
-
-```text
-Frontend: http://localhost:5173
-Health:   http://localhost:8080/actuator/health
-Swagger:  http://localhost:8080/swagger-ui/index.html
-```
-
-Ingresar con `CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`.
-
-### 8. Revisar y versionar package-lock
+Windows:
 
 ```powershell
 Test-Path frontend\package-lock.json
@@ -189,31 +266,159 @@ git status --short
 git diff -- frontend\package-lock.json
 ```
 
+Linux/macOS:
+
+```bash
+test -f frontend/package-lock.json
+sha256sum frontend/package-lock.json 2>/dev/null || shasum -a 256 frontend/package-lock.json
+git status --short
+git diff -- frontend/package-lock.json
+```
+
 Después de revisarlo:
 
-```powershell
+```bash
 git add frontend/package-lock.json
 git commit -m "build: lock frontend dependencies"
 git push origin main
 ```
 
-No agregar `.env` ni `validation-output/`.
+No agregar:
 
-### 9. Repetir desde árbol limpio
-
-```powershell
-git pull --ff-only
-powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
-  -PostgresPort 55432 `
-  -BackendPort 8080 `
-  -FrontendPort 5173
+```text
+.env
+validation-output/
+gestudio_lote_100_prospectos.xlsx
 ```
 
-La segunda ejecución debe usar npm ci desde el primer build.
+Repetir luego el validador desde un árbol limpio. Esa ejecución debe usar `npm ci` desde el primer build.
 
-## Comandos separados
+## 11. Flujo para usar Gestudio CRM
 
-### Validar solo Docker stack
+### Paso 1 — Ingresar
+
+Abrir el frontend e iniciar sesión con las credenciales bootstrap.
+
+Las credenciales permanecen solo en memoria del navegador.
+
+### Paso 2 — Revisar el Dashboard
+
+Confirmar:
+
+- prospectos visibles;
+- cantidad de exclusiones;
+- contactos bloqueados;
+- revisiones ambiguas;
+- envíos bloqueados.
+
+### Paso 3 — Registrar exclusiones antes de importar
+
+Canales admitidos:
+
+```text
+EMAIL
+PHONE
+WHATSAPP
+WEBSITE
+SOCIAL
+```
+
+Una exclusión es dominante. Si coincide con un prospecto existente, lo vuelve no elegible y lo lleva a `DO_NOT_CONTACT`.
+
+### Paso 4 — Preparar el archivo
+
+Formatos:
+
+- CSV UTF-8 con coma o punto y coma;
+- XLSX con hoja `Prospectos`;
+- hoja opcional `Exclusiones`;
+- máximo 10 MB;
+- CSV requiere la columna `Institución`;
+- encabezados se interpretan por nombre normalizado.
+
+No utilizar el lote operativo real durante validaciones técnicas.
+
+### Paso 5 — Ejecutar Preview
+
+El preview persiste evidencia de importación, pero no crea entidades de dominio procedentes del archivo.
+
+Revisar estados:
+
+```text
+ACCEPTED
+EXCLUDED
+REJECTED
+DUPLICATE
+REVIEW_REQUIRED
+```
+
+Métricas visibles:
+
+```text
+Aceptadas
+Bloqueadas
+Rechazadas
+Duplicadas
+A revisión
+```
+
+### Paso 6 — Corregir problemas
+
+Antes de ejecutar definitivamente:
+
+- corregir filas rechazadas;
+- revisar canales inválidos;
+- resolver coincidencias ambiguas modificando el archivo;
+- confirmar que las exclusiones sean esperadas;
+- evitar fusiones automáticas.
+
+La UI actual muestra revisiones pendientes, pero todavía no permite resolver `DuplicateReview` directamente.
+
+### Paso 7 — Ejecutar importación confirmada
+
+Usar el botón `Importar con confirmación`.
+
+La API exige:
+
+```text
+X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
+```
+
+La ejecución procesa por fila, aplica exclusiones, crea prospectos elegibles y registra auditoría.
+
+### Paso 8 — Revisar Prospectos
+
+Comprobar:
+
+- institución;
+- localidad;
+- estado comercial;
+- elegibilidad;
+- prioridad;
+- puntuación;
+- alumnos estimados;
+- fuente;
+- propietario.
+
+### Paso 9 — Revisar Auditoría
+
+Eventos principales:
+
+```text
+PROSPECT_CREATED
+EXCLUSION_CREATED
+IMPORT_STARTED
+IMPORT_COMPLETED
+IMPORT_FAILED
+```
+
+### Paso 10 — Mantener envíos bloqueados
+
+No modificar las cuatro variables `SENDING_*`. El sistema no contiene adaptador de envío.
+
+## 12. Comandos separados
+
+### Validar solo el stack Docker — Windows
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
@@ -225,6 +430,8 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
 
 ### Maven verify/Testcontainers sin Java local
 
+Windows:
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/verify-backend-container.ps1
 ```
@@ -235,9 +442,11 @@ Unix:
 sh scripts/verify-backend-container.sh
 ```
 
-Este control monta el socket Docker. Ejecutarlo solamente sobre código propio y revisado.
+Este control monta el socket Docker. Ejecutarlo únicamente sobre código propio y revisado.
 
-### Generar package-lock de forma segura
+### Generar package-lock
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/generate-frontend-lock.ps1
@@ -249,13 +458,9 @@ Unix:
 sh scripts/generate-frontend-lock.sh
 ```
 
-Usa:
-
-```text
-npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-```
-
 ### Seguridad del repositorio
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/check-repository-safety.ps1
@@ -267,28 +472,7 @@ Unix:
 sh scripts/check-repository-safety.sh
 ```
 
-## Linux/macOS
-
-Recorrido contenedorizado equivalente mediante Make:
-
-```bash
-git switch main
-git pull --ff-only
-sh scripts/set-local-host-ports.sh 55432 8080 5173
-make verify-container
-```
-
-Targets individuales:
-
-```bash
-make preflight-container
-make repository-safety
-make backend-verify-container
-make frontend-lock
-make smoke-container
-```
-
-## Desarrollo con procesos separados
+## 13. Desarrollo con procesos separados
 
 Requiere Java 21, Docker, Node 22 y npm.
 
@@ -309,35 +493,7 @@ npm run dev
 
 Guía completa: `docs/local-development-and-usage.md`.
 
-## Flujo operativo
-
-1. ingresar al Dashboard y comprobar que los envíos figuran bloqueados;
-2. registrar canales en `Exclusiones`;
-3. preparar CSV o XLSX de hasta 10 MB;
-4. ejecutar `Preview`;
-5. revisar `EXCLUDED`, `REJECTED`, `DUPLICATE` y `REVIEW_REQUIRED`;
-6. corregir el archivo;
-7. ejecutar `Importar con confirmación`;
-8. revisar prospectos, elegibilidad y métrica `Bloqueadas`;
-9. revisar `Auditoría`.
-
-La ejecución exige:
-
-```text
-X-Import-Confirmation: EXECUTE_PROSPECT_IMPORT
-```
-
-## Formatos de importación
-
-- CSV UTF-8 con coma o punto y coma;
-- XLSX con hoja `Prospectos` y hoja opcional `Exclusiones`;
-- máximo 10 MB;
-- CSV requiere `Institución`;
-- parser por encabezados normalizados.
-
-Los datos reales no se versionan.
-
-## API principal
+## 14. API principal
 
 ```text
 GET  /actuator/health
@@ -355,7 +511,7 @@ GET  /api/v1/exclusions/{id}
 GET  /api/v1/audit
 ```
 
-## Makefile
+## 15. Makefile
 
 ```text
 preflight
@@ -374,12 +530,13 @@ frontend
 frontend-lock
 verify
 verify-container
+validate-seg001
 smoke
 smoke-container
 reset-db
 ```
 
-## Detener
+## 16. Detener
 
 Conservar datos:
 
@@ -387,7 +544,7 @@ Conservar datos:
 docker compose --profile app down
 ```
 
-Eliminar base local:
+Eliminar también la base local:
 
 ```bash
 docker compose --profile app --profile smoke down -v --remove-orphans
@@ -397,7 +554,7 @@ La segunda operación es destructiva.
 
 ## Limitaciones actuales
 
-- validador integral pendiente de ejecución real;
+- validadores integrales pendientes de ejecución funcional;
 - clean builds pendientes;
 - Maven/Testcontainers/Flyway/Hibernate pendientes;
 - package-lock pendiente de generación y versión;
@@ -419,4 +576,5 @@ La segunda operación es destructiva.
 - `docs/local-development-and-usage.md` — procesos separados y flujo;
 - `scripts/README.md` — automatización;
 - `docs/validation/SEG-001.md` — matriz;
-- `docs/validation/SEG-001-complete-validation-automation-2026-07-20.md` — contrato del validador integral.
+- `docs/validation/SEG-001-complete-validation-automation-2026-07-20.md` — contrato integral;
+- `docs/validation/SEG-001-cross-platform-validation-2026-07-20.md` — paridad Windows/Unix.
