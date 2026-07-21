@@ -16,6 +16,25 @@ if (($ports | Select-Object -Unique).Count -ne $ports.Count) {
   throw 'PostgresPort, BackendPort and FrontendPort must be different.'
 }
 
+function Assert-DockerPortNotPublished([string]$Name, [int]$Port) {
+  $containers = @(& docker ps --format '{{.ID}}|{{.Names}}|{{.Ports}}')
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Could not inspect Docker containers and their published ports.'
+  }
+
+  $portPattern = ':' + [regex]::Escape($Port.ToString()) + '->'
+  $owners = @($containers | Where-Object { $_ -match $portPattern })
+  if ($owners.Count -gt 0) {
+    throw @"
+$Name host port $Port is already published by another Docker container:
+$($owners -join "`n")
+Stop or reconfigure the owning container, or choose another host port.
+"@
+  }
+
+  Write-Host "$Name Docker publication available: $Port"
+}
+
 function Assert-LoopbackPortAvailable([string]$Name, [int]$Port) {
   $listener = [System.Net.Sockets.TcpListener]::new(
     [System.Net.IPAddress]::Loopback,
@@ -35,6 +54,8 @@ Inspect listeners with:
   Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
 Inspect excluded ranges with:
   netsh interface ipv4 show excludedportrange protocol=tcp
+Inspect Docker publications with:
+  docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
 Choose another port and rerun the checker before starting Docker.
 Underlying error: $message
 "@
@@ -43,8 +64,12 @@ Underlying error: $message
   }
 }
 
+Assert-DockerPortNotPublished 'PostgreSQL' $PostgresPort
+Assert-DockerPortNotPublished 'Backend' $BackendPort
+Assert-DockerPortNotPublished 'Frontend' $FrontendPort
+
 Assert-LoopbackPortAvailable 'PostgreSQL' $PostgresPort
 Assert-LoopbackPortAvailable 'Backend' $BackendPort
 Assert-LoopbackPortAvailable 'Frontend' $FrontendPort
 
-Write-Host 'All requested loopback host ports are available.'
+Write-Host 'All requested host ports are available to Windows and not published by Docker.'
