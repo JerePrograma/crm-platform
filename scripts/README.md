@@ -14,17 +14,34 @@ Ningún script:
 
 ## Estado de validación actual
 
-Evidencia real disponible:
+Evidencia real acumulada:
 
 ```text
-PowerShell syntax: PASS
+PowerShell syntax sobre f903a9e: PASS, 11 scripts
 preflight container-only: PASS
-frontend clean build: PASS
-backend clean image build: PASS
-último fallo: 127.0.0.1:55432 no enlazable en Windows
+frontend clean build --no-cache: PASS
+TypeScript strict/Vite: PASS
+backend clean image build --no-cache: PASS
+Maven package con tests omitidos: PASS_PARTIAL
+último fallo: Docker ya tenía asignado el host port 15432
+stack/health/smoke: PENDING
+Maven verify/Testcontainers: PENDING
+package-lock/npm ci: PENDING
 ```
 
-La próxima ejecución debe comprobar primero puertos alternativos mediante `check-host-ports.ps1`.
+El checker anterior comprobó que Windows podía enlazar `127.0.0.1:15432`, pero Docker respondió:
+
+```text
+Bind for 0.0.0.0:15432 failed: port is already allocated
+```
+
+El checker actualizado inspecciona publicaciones Docker y la pila Windows. El validador inicia PostgreSQL antes de los builds para probar la publicación real sin desperdiciar una reconstrucción completa.
+
+Evidencia:
+
+```text
+docs/validation/SEG-001-docker-port-owner-failure-2026-07-21.md
+```
 
 ## Sintaxis PowerShell
 
@@ -34,7 +51,7 @@ powershell -ExecutionPolicy Bypass -File scripts/check-powershell-syntax.ps1
 
 Parsea todos los archivos `.ps1` y reporta archivo, línea, columna y mensaje. No continuar con Docker si falla.
 
-## Comprobar puertos Windows
+## Comprobar puertos Windows y Docker
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/check-host-ports.ps1 `
@@ -43,16 +60,31 @@ powershell -ExecutionPolicy Bypass -File scripts/check-host-ports.ps1 `
   -FrontendPort 5173
 ```
 
-El checker intenta enlazar cada valor sobre `127.0.0.1` mediante `TcpListener`.
+Por cada puerto, el checker:
 
-Cuando falla, diagnosticar:
+1. ejecuta `docker ps`;
+2. detecta publicaciones activas `:<puerto>->`;
+3. informa ID, nombre y puertos del contenedor propietario;
+4. prueba el enlace exclusivo sobre `127.0.0.1` mediante `TcpListener`;
+5. falla antes de builds.
+
+Diagnóstico manual:
 
 ```powershell
-Get-NetTCPConnection -LocalPort 55432 -ErrorAction SilentlyContinue
+docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
+docker ps --filter publish=15432 --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
+Get-NetTCPConnection -LocalPort 15432 -ErrorAction SilentlyContinue
 netsh interface ipv4 show excludedportrange protocol=tcp
 ```
 
-No modificar rangos excluidos de Windows como parte de la validación. Elegir otro puerto.
+Interpretación:
+
+- aparece un contenedor Docker: detener o reconfigurar únicamente ese contenedor;
+- aparece un listener Windows: detener el proceso propietario o elegir otro puerto;
+- el puerto pertenece a un rango excluido: elegir otro puerto;
+- no modificar rangos excluidos ni usar `docker system prune` como parte de la validación.
+
+Un `TcpListener` verde por sí solo no demuestra que Docker Desktop pueda publicar el puerto.
 
 ## Validación integral recomendada
 
@@ -65,6 +97,8 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -FrontendPort 5173 `
   -KeepRunning
 ```
+
+Cuando `15432` esté ocupado, validar primero otro valor, por ejemplo `25432`, y usarlo en el validador.
 
 ### Linux/macOS Bash
 
@@ -94,30 +128,32 @@ Requisitos:
 
 No requiere Java, Maven, Node o npm instalados en el host.
 
-Los validadores ejecutan:
+El validador Windows ejecuta:
 
 1. rama y working tree;
 2. configuración segura de puertos;
 3. preflight container-only;
 4. Compose config;
 5. cleanup sin `-v`;
-6. comprobación real de enlace Windows antes de builds;
-7. builds frontend/backend sin caché;
-8. arranque y health de tres servicios;
-9. smoke host y contenedor;
-10. Maven verify/Spotless/tests/ArchUnit/Testcontainers en Docker;
-11. generación package-lock-only;
-12. SHA-256;
-13. build frontend mediante npm ci;
-14. recreación y health frontend;
-15. smoke final;
-16. seguridad del repositorio;
-17. JSON y transcript;
-18. cleanup opcional.
+6. publicaciones Docker y enlace Windows;
+7. arranque real de PostgreSQL;
+8. health de PostgreSQL;
+9. builds frontend/backend sin caché;
+10. arranque y health backend/frontend;
+11. smoke host y contenedor;
+12. Maven verify/Spotless/tests/ArchUnit/Testcontainers en Docker;
+13. generación package-lock-only;
+14. SHA-256;
+15. build frontend mediante npm ci;
+16. recreación y health frontend;
+17. smoke final;
+18. seguridad del repositorio;
+19. JSON y transcript;
+20. cleanup opcional.
 
 No usar `-UseBuildCache` ni `--use-build-cache` como evidencia de cierre.
 
-Evidencia:
+Evidencia local:
 
 ```text
 validation-output/seg001-complete-*.log
@@ -125,6 +161,8 @@ validation-output/seg001-complete-*.json
 validation-output/seg001-docker-*.json
 frontend/package-lock.json
 ```
+
+`validation-output/` permanece fuera de Git.
 
 ## Configurar puertos host
 
@@ -198,7 +236,7 @@ Valida:
 - cuatro guardas de envío;
 - perfiles `app` y `smoke`.
 
-No inicia servicios. La disponibilidad real de puertos Windows se comprueba después del cleanup mediante `check-host-ports.ps1`.
+No inicia servicios. Tampoco sustituye la comprobación real de publicaciones Docker.
 
 ## Validación Docker del stack
 
@@ -216,13 +254,15 @@ Fases:
 2. preflight;
 3. Compose config;
 4. cleanup no destructivo;
-5. comprobación de enlace de puertos;
-6. builds limpios;
-7. arranque;
-8. health;
-9. smoke host;
-10. smoke contenedor;
-11. JSON y transcript.
+5. checker Docker/Windows;
+6. `docker compose up -d postgres`;
+7. health PostgreSQL;
+8. builds limpios;
+9. `docker compose up -d backend frontend`;
+10. health backend/frontend;
+11. smoke host;
+12. smoke contenedor;
+13. JSON y transcript.
 
 Parámetros:
 
@@ -242,6 +282,7 @@ El JSON incluye:
 ```text
 ports
 hostPorts
+postgresBinding
 cleanBuilds
 services
 smokeHost
@@ -250,7 +291,15 @@ stackKeptRunning
 error
 ```
 
-`stackKeptRunning=true` solo cuando existen contenedores ejecutándose.
+`stackKeptRunning=true` solo cuando Compose reporta contenedores del proyecto. La presencia de `-KeepRunning` no basta.
+
+Ante un fallo, el script imprime:
+
+```text
+docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
+docker compose ... ps
+docker compose ... logs
+```
 
 Este script no ejecuta Maven verify ni genera package-lock; el validador integral sí.
 
@@ -379,6 +428,12 @@ Bloquea que Git rastree:
 
 ## Docker Compose manual
 
+Levantar solo PostgreSQL:
+
+```bash
+docker compose --profile app up -d postgres
+```
+
 Levantar app:
 
 ```bash
@@ -408,6 +463,8 @@ Borrar también volumen PostgreSQL, solo con intención destructiva:
 ```bash
 docker compose --profile app --profile smoke down -v --remove-orphans
 ```
+
+No usar `docker system prune` como procedimiento normal de diagnóstico.
 
 ## Makefile
 
