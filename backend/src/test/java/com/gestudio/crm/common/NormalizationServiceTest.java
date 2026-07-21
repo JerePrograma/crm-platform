@@ -20,8 +20,7 @@ class NormalizationServiceTest {
   void normalizesEmailPhoneAndDomain() {
     assertThat(service.normalizeEmail(" Secretaria@Example.COM "))
         .isEqualTo("secretaria@example.com");
-    assertThat(service.normalizePhone("+54 9 (11) 5555-1212"))
-        .isEqualTo("5491155551212");
+    assertThat(service.normalizePhone("+54 9 (11) 5555-1212")).isEqualTo("5491155551212");
     assertThat(service.normalizeDomain("https://www.Example.com/contacto"))
         .isEqualTo("example.com");
   }

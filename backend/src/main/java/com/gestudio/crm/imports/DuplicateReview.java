@@ -63,8 +63,7 @@ public class DuplicateReview extends BaseEntity {
     if (importRow == null || matchType == null || confidence == null) {
       throw new IllegalArgumentException("Import row, match type and confidence are required");
     }
-    if (confidence.compareTo(BigDecimal.ZERO) < 0
-        || confidence.compareTo(BigDecimal.ONE) > 0) {
+    if (confidence.compareTo(BigDecimal.ZERO) < 0 || confidence.compareTo(BigDecimal.ONE) > 0) {
       throw new IllegalArgumentException("Duplicate confidence must be between zero and one");
     }
     return new DuplicateReview(importRow, existingProspect, matchType, confidence, notes);

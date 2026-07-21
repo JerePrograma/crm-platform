@@ -30,9 +30,7 @@ public class ImportOperationsQueryService {
     if (!importJobRepository.existsById(jobId)) {
       throw new ResourceNotFoundException("Import job not found: " + jobId);
     }
-    return importRowRepository
-        .findAllByImportJobIdOrderBySourceSheetAscRowNumberAsc(jobId)
-        .stream()
+    return importRowRepository.findAllByImportJobIdOrderBySourceSheetAscRowNumberAsc(jobId).stream()
         .map(
             row ->
                 new ImportRowView(

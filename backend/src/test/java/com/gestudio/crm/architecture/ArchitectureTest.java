@@ -8,8 +8,7 @@ import org.junit.jupiter.api.Test;
 
 class ArchitectureTest {
 
-  private final JavaClasses classes =
-      new ClassFileImporter().importPackages("com.gestudio.crm");
+  private final JavaClasses classes = new ClassFileImporter().importPackages("com.gestudio.crm");
 
   @Test
   void controllersDoNotAccessRepositoriesDirectly() {

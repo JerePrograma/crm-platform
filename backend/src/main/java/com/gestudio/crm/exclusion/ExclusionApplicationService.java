@@ -88,10 +88,8 @@ public class ExclusionApplicationService {
     return exclusionRepository.findAll(pageable).map(this::toView);
   }
 
-  private boolean isAlreadyExcluded(
-      ContactChannelType channelType, String normalizedValue) {
-    if (exclusionRepository.existsByChannelTypeAndNormalizedValue(
-        channelType, normalizedValue)) {
+  private boolean isAlreadyExcluded(ContactChannelType channelType, String normalizedValue) {
+    if (exclusionRepository.existsByChannelTypeAndNormalizedValue(channelType, normalizedValue)) {
       return true;
     }
     if (channelType == ContactChannelType.PHONE) {

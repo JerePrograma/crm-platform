@@ -19,11 +19,9 @@ class ProspectImportFileParserTest {
 
     assertThat(parsed.prospects()).hasSize(100);
     assertThat(parsed.exclusions()).hasSize(16);
-    assertThat(parsed.prospects().getFirst().institutionName())
-        .isEqualTo("Institución Fixture 1");
+    assertThat(parsed.prospects().getFirst().institutionName()).isEqualTo("Institución Fixture 1");
     assertThat(parsed.prospects().getFirst().social()).isNull();
-    assertThat(parsed.exclusions().getFirst().email())
-        .isEqualTo("excluido1@example.test");
+    assertThat(parsed.exclusions().getFirst().email()).isEqualTo("excluido1@example.test");
   }
 
   @Test

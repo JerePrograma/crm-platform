@@ -6,9 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record SecurityBootstrapProperties(String username, String password) {
 
   public boolean configured() {
-    return username != null
-        && !username.isBlank()
-        && password != null
-        && !password.isBlank();
+    return username != null && !username.isBlank() && password != null && !password.isBlank();
   }
 }

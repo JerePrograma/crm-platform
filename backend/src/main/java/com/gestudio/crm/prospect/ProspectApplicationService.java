@@ -207,8 +207,7 @@ public class ProspectApplicationService {
     for (PreparedChannel channel : channels) {
       if (contactChannelRepository.existsByTypeAndNormalizedValue(
           channel.type(), channel.normalizedValue())) {
-        throw new DuplicateResourceException(
-            "Contact channel already exists: " + channel.type());
+        throw new DuplicateResourceException("Contact channel already exists: " + channel.type());
       }
     }
   }

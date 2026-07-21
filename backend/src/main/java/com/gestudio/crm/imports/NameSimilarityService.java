@@ -21,8 +21,7 @@ public class NameSimilarityService {
       return 1;
     }
 
-    double characterSimilarity =
-        1d - ((double) levenshteinDistance(left, right) / maximumLength);
+    double characterSimilarity = 1d - ((double) levenshteinDistance(left, right) / maximumLength);
     Set<String> leftTokens = tokens(left);
     Set<String> rightTokens = tokens(right);
     Set<String> union = new HashSet<>(leftTokens);

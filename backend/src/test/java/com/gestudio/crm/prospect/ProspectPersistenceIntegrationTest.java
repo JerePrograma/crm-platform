@@ -29,8 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class ProspectPersistenceIntegrationTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>("postgres:17-alpine");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
 
   @DynamicPropertySource
   static void postgresProperties(DynamicPropertyRegistry registry) {
@@ -57,7 +56,8 @@ class ProspectPersistenceIntegrationTest {
 
   @Test
   void persistsNormalizedInstitutionContactAndProspect() {
-    ProspectView created = prospectApplicationService.create(command("SRC-001", "Admin@Aurora.TEST"));
+    ProspectView created =
+        prospectApplicationService.create(command("SRC-001", "Admin@Aurora.TEST"));
 
     assertThat(created.status()).isEqualTo(ProspectStatus.NEW);
     assertThat(created.contactEligible()).isTrue();
@@ -79,10 +79,10 @@ class ProspectPersistenceIntegrationTest {
   @Test
   void exclusionDominatesEligibilityAndCommercialStatus() {
     exclusionRepository.save(
-        Exclusion.create(
-            ContactChannelType.EMAIL, "admin@aurora.test", ExclusionReason.MANUAL));
+        Exclusion.create(ContactChannelType.EMAIL, "admin@aurora.test", ExclusionReason.MANUAL));
 
-    ProspectView created = prospectApplicationService.create(command("SRC-002", "Admin@Aurora.TEST"));
+    ProspectView created =
+        prospectApplicationService.create(command("SRC-002", "Admin@Aurora.TEST"));
 
     assertThat(created.contactEligible()).isFalse();
     assertThat(created.status()).isEqualTo(ProspectStatus.DO_NOT_CONTACT);

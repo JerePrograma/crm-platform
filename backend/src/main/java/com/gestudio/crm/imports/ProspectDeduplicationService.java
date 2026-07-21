@@ -76,8 +76,7 @@ public class ProspectDeduplicationService {
       Optional<Prospect> exactProspect =
           prospectRepository.findFirstByInstitutionId(exactInstitution.get().getId());
       if (exactProspect.isPresent()) {
-        return DeduplicationOutcome.exact(
-            MatchType.NAME_LOCATION, exactProspect.get(), normalized);
+        return DeduplicationOutcome.exact(MatchType.NAME_LOCATION, exactProspect.get(), normalized);
       }
     }
 

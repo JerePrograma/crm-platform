@@ -31,8 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class ProspectImportIntegrationTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>("postgres:17-alpine");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
 
   @DynamicPropertySource
   static void postgresProperties(DynamicPropertyRegistry registry) {
@@ -93,7 +92,8 @@ class ProspectImportIntegrationTest {
   void dryRunPersistsEvidenceWithoutWritingProspectsOrExclusions() {
     byte[] workbook = TestProspectWorkbookFactory.workbook(2, 1);
 
-    ImportSummary summary = prospectImportService.importFile("fixture-preview.xlsx", workbook, true);
+    ImportSummary summary =
+        prospectImportService.importFile("fixture-preview.xlsx", workbook, true);
 
     assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
     assertThat(summary.totalRows()).isEqualTo(3);
@@ -132,7 +132,8 @@ class ProspectImportIntegrationTest {
     var existing = prospectApplicationService.create(existingProspectCommand());
     byte[] workbook = TestProspectWorkbookFactory.workbook(0, 1);
 
-    ImportSummary summary = prospectImportService.importFile("fixture-exclusion.xlsx", workbook, false);
+    ImportSummary summary =
+        prospectImportService.importFile("fixture-exclusion.xlsx", workbook, false);
 
     var reloaded = prospectRepository.findById(existing.id()).orElseThrow();
     assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
@@ -150,8 +151,7 @@ class ProspectImportIntegrationTest {
   @Test
   void malformedEmailRejectsOnlyItsRowAndKeepsTheJobCompleted() {
     byte[] csv =
-        ("Institución,Correo publicado,Localidad\n"
-                + "Academia inválida,not-an-email,Córdoba\n")
+        ("Institución,Correo publicado,Localidad\n" + "Academia inválida,not-an-email,Córdoba\n")
             .getBytes(StandardCharsets.UTF_8);
 
     ImportSummary summary = prospectImportService.importFile("malformed-email.csv", csv, false);

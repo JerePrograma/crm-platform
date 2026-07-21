@@ -25,8 +25,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class SecurityAuthorizationIntegrationTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>("postgres:17-alpine");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
 
   @DynamicPropertySource
   static void postgresProperties(DynamicPropertyRegistry registry) {

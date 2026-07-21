@@ -75,12 +75,7 @@ public class ImportRow extends BaseEntity {
           "Import job, source sheet, positive row number and raw data are required");
     }
     return new ImportRow(
-        importJob,
-        sourceSheet,
-        rowNumber,
-        rawData,
-        normalizedEmail,
-        normalizedPhone);
+        importJob, sourceSheet, rowNumber, rawData, normalizedEmail, normalizedPhone);
   }
 
   public void accept(Prospect prospect) {
