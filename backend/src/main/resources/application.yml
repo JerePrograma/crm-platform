@@ -11,6 +11,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    fail-on-missing-locations: true
     validate-migration-naming: true
   jpa:
     hibernate:
