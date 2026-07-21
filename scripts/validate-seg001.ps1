@@ -18,7 +18,7 @@ function Invoke-Checked([string]$Command, [string[]]$Arguments) {
   Write-Host "> $Command $($Arguments -join ' ')"
   & $Command @Arguments
   if ($LASTEXITCODE -ne 0) {
-    throw "Command failed with exit code $LASTEXITCODE: $Command $($Arguments -join ' ')"
+    throw ('Command failed with exit code {0}: {1} {2}' -f $LASTEXITCODE, $Command, ($Arguments -join ' '))
   }
 }
 
