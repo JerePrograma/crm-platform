@@ -17,13 +17,15 @@
 - `validation/SEG-001-rerun-2026-07-20.md` — exportación cacheada y conflicto 5432;
 - `validation/SEG-001-local-orchestration-2026-07-20.md` — tres puertos, orquestador Docker y npm ci condicional;
 - `validation/SEG-001-complete-validation-automation-2026-07-20.md` — Maven/Testcontainers contenedorizado, lockfile seguro, seguridad y validador integral;
-- `validation/SEG-001-cross-platform-validation-2026-07-20.md` — paridad PowerShell/Bash, propiedad del lockfile Unix y CI/Make.
+- `validation/SEG-001-cross-platform-validation-2026-07-20.md` — paridad PowerShell/Bash, propiedad del lockfile Unix y CI/Make;
+- `validation/SEG-001-powershell-parser-failure-2026-07-21.md` — tercer intento real, fallo `$LASTEXITCODE:`, correcciones y alcance no ejecutado.
 
 ## Inicio y operación
 
 - `containerized-quickstart.md` — validación integral y stack Docker en Windows/Linux/macOS;
 - `local-development-and-usage.md` — procesos separados y flujo funcional;
 - `../scripts/README.md` — puertos, preflight, validadores, Maven Docker, smoke, lockfile, seguridad y Makefile;
+- `../scripts/check-powershell-syntax.ps1` — parser local previo a Docker;
 - `manual-operations.md` — procedimientos operativos diarios;
 - `runbook.md` — respuesta ante incidentes;
 - `disaster-recovery.md` — backups y restauración;
@@ -67,12 +69,12 @@
 
 ## Lectura recomendada
 
-### Ejecutar validación integral en Windows
+### Reintentar validación integral en Windows
 
 1. `next-step.md`;
-2. `../scripts/README.md`;
-3. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
-4. `validation/SEG-001-cross-platform-validation-2026-07-20.md`;
+2. `validation/SEG-001-powershell-parser-failure-2026-07-21.md`;
+3. `../scripts/check-powershell-syntax.ps1`;
+4. `../scripts/README.md`;
 5. `validation/SEG-001.md`;
 6. `containerized-quickstart.md`.
 
@@ -102,12 +104,13 @@
 
 1. `validation/SEG-001.md`;
 2. `next-step.md`;
-3. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
-4. `validation/SEG-001-cross-platform-validation-2026-07-20.md`;
-5. `validation/SEG-001-container-build-2026-07-20.md`;
-6. `validation/SEG-001-rerun-2026-07-20.md`;
-7. `validation/SEG-001-local-orchestration-2026-07-20.md`;
-8. `containerized-quickstart.md`.
+3. `validation/SEG-001-powershell-parser-failure-2026-07-21.md`;
+4. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
+5. `validation/SEG-001-cross-platform-validation-2026-07-20.md`;
+6. `validation/SEG-001-container-build-2026-07-20.md`;
+7. `validation/SEG-001-rerun-2026-07-20.md`;
+8. `validation/SEG-001-local-orchestration-2026-07-20.md`;
+9. `containerized-quickstart.md`.
 
 ### Continuar desarrollo
 
