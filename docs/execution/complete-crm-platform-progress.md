@@ -186,3 +186,22 @@ Fallos encontrados y corregidos:
 El recorrido Playwright ejecutó un preview sintético que produjo una revisión
 ambigua, verificó comparación lado a lado y resolvió por vínculo al prospecto
 existente. El merge completo y su rollback se probaron en PostgreSQL real.
+
+## CHECKPOINT_6_OPPORTUNITIES_PIPELINE
+
+```text
+CHECKPOINT_ID=CHECKPOINT_6
+PHASE=opportunities_and_sales_pipeline
+START_COMMIT=1e32a90a34c3fb457284071dc1b73ade2a9f4c0a
+END_COMMIT=6f7b7a727684e672269433a70f881e15dedc1388
+FILES_CHANGED=sales module, duplicate merge propagation, V9, integration test and frontend pipeline
+MIGRATIONS=V9__opportunities_and_sales_pipeline.sql
+TEST_COMMANDS=focused Testcontainers test; Maven verify; npm build; Docker build/up; smoke; repository safety; Playwright
+TEST_RESULT=EXECUTED_PASS
+KNOWN_WARNINGS=Hikari emitted closed Testcontainer connection warnings during long suite; no test failure or data impact
+RESIDUAL_RISKS=custom pipelines and cross-currency aggregation intentionally belong to organization settings; V9 enforces one tenant currency
+```
+
+El recorrido Playwright creó una oportunidad ARS 250.000, verificó forecast
+ponderado, avanzó por etapas permitidas hasta `WON`, comprobó probabilidad
+100 %, cierre de la oportunidad y transición del prospecto a `CUSTOMER`.

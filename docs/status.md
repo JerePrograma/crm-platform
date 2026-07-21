@@ -28,8 +28,8 @@ limpia de SEG-001 se ejecutó sobre
 | SEG-003 | COMPLETE | prospectos operativos, contactos y ciclo comercial |
 | SEG-004 | COMPLETE | actividades, notas, tareas y timeline |
 | SEG-005 | COMPLETE | resolución transaccional de duplicados |
-| SEG-006 | ACTIVE | oportunidades y pipeline |
-| SEG-007 | PLANNED | campañas, audiencias, plantillas y simulación |
+| SEG-006 | COMPLETE | oportunidades y pipeline |
+| SEG-007 | ACTIVE | campañas, audiencias, plantillas y simulación |
 | SEG-008 | PLANNED | mensajería segura y adaptadores deshabilitados |
 | SEG-009 | PLANNED | outbox, workers e inbound |
 | SEG-010 | PLANNED | reportes, seguridad, observabilidad y producción local |
@@ -89,6 +89,13 @@ TRANSACTIONAL_IDEMPOTENT_MERGE_PASS
 MAVEN_VERIFY_TESTS_42_OF_42_PASS
 PLAYWRIGHT_DUPLICATE_REVIEW_PASS
 SEG_005_COMPLETE
+FLYWAY_V1_V9_PASS
+OPPORTUNITY_TRANSITIONS_AND_HISTORY_PASS
+WON_LOST_DOMAIN_RULES_PASS
+PIPELINE_FORECAST_AND_AGING_PASS
+MAVEN_VERIFY_TESTS_45_OF_45_PASS
+PLAYWRIGHT_PIPELINE_FLOW_PASS
+SEG_006_COMPLETE
 ```
 
 ## Fallo Jackson corregido

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-21 — SEG-006
+
+- agregó V9 con oportunidades, historial de etapas y unicidad de oportunidad
+  activa principal;
+- implementó transiciones, control optimista, reglas de cierre y sincronización
+  con prospectos y tareas;
+- incorporó pipeline kanban, tabla, forecast, aging y oportunidades estancadas;
+- validó Flyway V1–V9, Maven 45/45, frontend, Docker, smoke y Playwright.
+
 ## 2026-07-21 — SEG-005
 
 - agregó V8 con resolución trazable, mapas de merge y redirect del absorbido;

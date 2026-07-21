@@ -14,8 +14,8 @@ Rama canónica: `main`.
 | SEG-003 | Prospectos operativos y contactos | COMPLETE | SEG-002 | CRUD, ciclo comercial y búsqueda |
 | SEG-004 | Actividades, tareas y timeline | COMPLETE | SEG-003 | seguimiento comercial trazable |
 | SEG-005 | Resolución de duplicados | COMPLETE | SEG-004 | bandeja y merge transaccional |
-| SEG-006 | Oportunidades y pipeline | ACTIVE | SEG-003 | ciclo de venta y forecast |
-| SEG-007 | Campañas y plantillas | PLANNED | SEG-003, SEG-006 | audiencia congelada y simulación |
+| SEG-006 | Oportunidades y pipeline | COMPLETE | SEG-003 | ciclo de venta y forecast |
+| SEG-007 | Campañas y plantillas | ACTIVE | SEG-003, SEG-006 | audiencia congelada y simulación |
 | SEG-008 | Mensajería segura y adaptadores | PLANNED | SEG-007 | no-op, fake, manual y red deshabilitada |
 | SEG-009 | Outbox, workers e inbound | PLANNED | SEG-008 | async idempotente y respuesta fake |
 | SEG-010 | Reportes, seguridad y producción | PLANNED | SEG-002–009 | operación local endurecida |
@@ -151,13 +151,21 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] preservación de referencias y redirect del absorbido;
 - [x] API, permisos, auditoría, UI y recorrido Playwright.
 
-## SEG-006 — Activo
+## SEG-006 — Completo
 
-- [ ] oportunidades con control optimista e historial;
-- [ ] etapas y transiciones ganada/perdida;
-- [ ] sincronización con prospecto y tareas;
-- [ ] pipeline, tabla, filtros, forecast y aging;
-- [ ] API, permisos, auditoría, UI y E2E.
+- [x] oportunidades con control optimista e historial;
+- [x] etapas y transiciones ganada/perdida;
+- [x] sincronización con prospecto y tareas;
+- [x] pipeline, tabla, forecast y aging;
+- [x] API, permisos, auditoría, UI y E2E.
+
+## SEG-007 — Activo
+
+- [ ] campañas tenant-scoped y estados seguros;
+- [ ] audiencias materializadas y reproducibles;
+- [ ] plantillas versionadas y renderer limitado;
+- [ ] secuencias declarativas;
+- [ ] aprobación y simulación sin envío.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 

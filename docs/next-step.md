@@ -11,7 +11,8 @@ SEG-002 COMPLETE
 SEG-003 COMPLETE
 SEG-004 COMPLETE
 SEG-005 COMPLETE
-SEG-006 ACTIVE
+SEG-006 COMPLETE
+SEG-007 ACTIVE
 BRANCH feat/complete-crm-platform
 BASELINE 7db7e4c EXECUTED_PASS
 IDENTITY_COMMIT 0546e6e EXECUTED_PASS
@@ -21,9 +22,9 @@ COMUNICACIONES REALES DISABLED_BY_POLICY
 
 ## Siguiente checkpoint canónico
 
-Completar SEG-006: oportunidades tenant-scoped, etapas y transiciones explícitas,
-historial, cierre ganado/perdido, sincronización segura con el prospecto,
-pipeline kanban/tabla, forecast, aging y pruebas integradas/E2E.
+Completar SEG-007: campañas tenant-scoped, audiencias congeladas y reproducibles,
+plantillas versionadas con renderer seguro, secuencias declarativas, aprobación
+por permiso y simulación integral sin comunicaciones reales.
 
 Contrato y evidencia viva:
 
@@ -34,6 +35,7 @@ docs/validation/COMPLETE-CRM-matrix.md
 docs/validation/SEG-002-identity-rbac-2026-07-21.md
 docs/validation/SEG-003-004-operational-crm-2026-07-21.md
 docs/validation/SEG-005-duplicate-resolution-2026-07-21.md
+docs/validation/SEG-006-opportunities-pipeline-2026-07-21.md
 docs/segments/CRM-completion.md
 ```
 

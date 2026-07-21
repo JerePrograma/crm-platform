@@ -34,8 +34,8 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | preview/exclusiones | EXECUTED_PASS | SEG-001 integración |
 | resolución de duplicados | EXECUTED_PASS | V8, seis acciones, API/UI y Playwright |
 | merge transaccional | EXECUTED_PASS | 3/3 Testcontainers: referencias, idempotencia y rollback |
-| oportunidades | NOT_STARTED | — |
-| pipeline/forecast | NOT_STARTED | — |
+| oportunidades | EXECUTED_PASS | V9, 3/3 integración, API/UI y Playwright |
+| pipeline/forecast | EXECUTED_PASS | kanban, métricas exactas, aging y cierre WON |
 | campañas | NOT_STARTED | esquema V1 sin casos de uso |
 | audiencias congeladas | NOT_STARTED | — |
 | plantillas versionadas | NOT_STARTED | esquema parcial V1 |
