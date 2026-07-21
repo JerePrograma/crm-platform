@@ -31,7 +31,8 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - generadores Docker de `package-lock.json`;
 - validadores integrales PowerShell y Bash;
 - checker local `scripts/check-powershell-syntax.ps1`;
-- checker Windows `scripts/check-host-ports.ps1` para enlace real en loopback;
+- checker Windows `scripts/check-host-ports.ps1` para publicaciones Docker y enlace real en loopback;
+- diagnóstico de ID, nombre y puertos del contenedor propietario;
 - evidencia integral JSON y transcript;
 - escaneo centralizado del repositorio Windows/Unix;
 - targets Make `repository-safety`, `backend-verify-container`, `verify-container` y `validate-seg001`;
@@ -42,7 +43,8 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - documentación técnica, operativa y evidencias fechadas;
 - evidencia de paridad `SEG-001-cross-platform-validation-2026-07-20.md`;
 - evidencia `SEG-001-powershell-parser-failure-2026-07-21.md`;
-- evidencia `SEG-001-port-bind-failure-2026-07-21.md`.
+- evidencia `SEG-001-port-bind-failure-2026-07-21.md`;
+- evidencia `SEG-001-docker-port-owner-failure-2026-07-21.md`.
 
 ### Changed
 
@@ -66,11 +68,14 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - Maven verify puede ejecutarse sin Java instalado en el host;
 - generador Unix de lockfile conserva UID/GID;
 - `mvnw.cmd` fue renormalizado para `*.cmd text eol=crlf`;
-- el validador Docker ejecuta cleanup y verifica enlace de los tres puertos antes de builds;
-- evidencia Docker registra `hostPorts`;
-- `-KeepRunning` solo informa stack conservado cuando hay contenedores ejecutándose;
+- el checker de puertos consulta `docker ps` antes de probar `TcpListener`;
+- el validador Docker ejecuta cleanup y verifica propiedad Docker/enlace Windows antes de builds;
+- PostgreSQL se inicia y debe alcanzar health antes de construir frontend/backend;
+- evidencia Docker registra `hostPorts` y `postgresBinding`;
+- ambos validadores imprimen publicaciones Docker en fallos;
+- `-KeepRunning` solo informa stack conservado cuando hay contenedores ejecutándose en ambos niveles;
 - contextos Docker excluyen secretos, datos y cachés;
-- puertos se publican solo en loopback;
+- puertos se declaran solo en loopback;
 - resultados de importación se ordenan por hoja/fila;
 - Basic Auth frontend usa UTF-8;
 - CSV admite coma/punto y coma;
@@ -104,7 +109,10 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - rutas con espacios en el escaneo Unix;
 - interpolación inválida `$LASTEXITCODE:` en tres scripts;
 - detección tardía de puertos ocupados o reservados en Windows;
-- mensaje engañoso de `-KeepRunning` cuando no existía stack activo.
+- falso negativo cuando Docker Desktop ya tenía publicado un puerto no visible para `TcpListener`;
+- builds desperdiciados antes de descubrir que PostgreSQL no podía publicar el puerto;
+- mensaje engañoso de `-KeepRunning` en el validador Docker;
+- mensaje engañoso de `-KeepRunning` en el orquestador integral.
 
 ### Validation
 
@@ -119,20 +127,28 @@ Ejecución real acumulada:
 - arranque inicial: `FAIL` por 5432;
 - checkout Windows actualizado por fast-forward el 2026-07-21: `PASS`;
 - intento 3: `EXECUTED_FAIL — POWERSHELL_PARSE_ERROR`;
-- parser corregido y `check-powershell-syntax.ps1`: `EXECUTED_PASS — 10 scripts`;
+- parser corregido y `check-powershell-syntax.ps1`: `EXECUTED_PASS`;
 - preflight container-only endurecido: `EXECUTED_PASS`;
-- Compose config: `EXECUTED_PASS`;
+- intento 4: frontend/backend clean builds `PASS`, arranque `FAIL` por rango excluido `55432`;
+- checker Windows de puertos: implementado y luego ejecutado;
+- intento 5 sobre `f903a9e1278697af53e0bcbee3bd10b16e10b991`;
+- PowerShell syntax para 11 scripts: `EXECUTED_PASS`;
+- preflight, Docker daemon y Compose config: `EXECUTED_PASS`;
+- guardas de envío: `EXECUTED_PASS`;
+- `TcpListener` para 15432/8080/5173: `EXECUTED_PASS`;
 - frontend clean build sin caché: `EXECUTED_PASS`;
 - TypeScript/Vite production build: `EXECUTED_PASS`;
 - frontend image export: `EXECUTED_PASS`;
 - backend clean image build sin caché: `EXECUTED_PASS`;
-- backend runtime image export: `EXECUTED_PASS`;
-- intento 4: `EXECUTED_FAIL — WINDOWS_HOST_PORT_BIND` en `127.0.0.1:55432`;
-- stack, health, Flyway, Hibernate y smoke: `NOT_RUN` en el intento 4;
+- Maven package con tests omitidos: `EXECUTED_PASS_PARTIAL`;
+- intento 5: `EXECUTED_FAIL — DOCKER_HOST_PORT_ALREADY_ALLOCATED` en `15432`;
+- PostgreSQL health, backend/frontend health, Flyway, Hibernate y smoke: `NOT_RUN`;
 - Maven verify, Spotless, unit tests, ArchUnit y Testcontainers: `NOT_RUN`;
 - package-lock y npm ci: `NOT_RUN`;
-- working tree después del fallo: `PASS — limpio`;
-- checker de puertos: implementado, ejecución local pendiente;
+- JSON y transcript de fallo: `GENERATED`;
+- checker de publicaciones Docker: implementado, ejecución local pendiente;
+- PostgreSQL-antes-de-builds: implementado, ejecución local pendiente;
+- mensajes `KeepRunning` veraces: implementados, ejecución local pendiente;
 - validador integral Bash: implementado, ejecución pendiente;
 - GitHub Actions: sin run visible desde el conector.
 
@@ -147,15 +163,16 @@ docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 docs/validation/SEG-001-powershell-parser-failure-2026-07-21.md
 docs/validation/SEG-001-port-bind-failure-2026-07-21.md
+docs/validation/SEG-001-docker-port-owner-failure-2026-07-21.md
 ```
 
 ### Documentation
 
 - estado, backlog, siguiente paso, segmento y matriz sincronizados;
 - instalación Windows/Linux/macOS/Docker-only;
-- puertos variables, enlace real y diagnóstico de rangos excluidos;
+- puertos variables, publicaciones Docker, enlace real y diagnóstico de rangos excluidos;
 - validadores integrales Windows/Unix;
-- checker de sintaxis y checker de puertos;
+- checker de sintaxis y checker combinado de puertos;
 - Maven/Testcontainers sin Java local;
 - package-lock-only, propiedad Unix y npm ci;
 - formato de evidencia JSON/transcript;
@@ -172,7 +189,7 @@ docs/validation/SEG-001-port-bind-failure-2026-07-21.md
 - Maven Wrapper verificado con SHA-512;
 - datos reales fuera de Git, CI e imágenes;
 - contextos Docker sin `.env`, planillas o claves;
-- servicios solo en localhost;
+- servicios declarados solo en localhost;
 - smoke realiza lecturas;
 - scripts de puertos preservan contraseñas;
 - lockfile se genera con lifecycle scripts deshabilitados;
@@ -184,7 +201,8 @@ docs/validation/SEG-001-port-bind-failure-2026-07-21.md
 
 ### Known limitations
 
-- puerto alternativo aún no fue comprobado en el checkout Windows;
+- el hardening de propiedad Docker todavía no fue ejecutado en el checkout Windows;
+- debe identificarse o detenerse el contenedor que publica `15432`, o elegirse otro puerto;
 - stack, health, migraciones y smoke no están verdes;
 - Maven verify y Testcontainers no están ejecutados;
 - falta `package-lock.json` versionado;
