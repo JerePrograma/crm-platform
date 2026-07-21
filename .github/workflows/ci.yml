@@ -80,30 +80,7 @@ jobs:
           fi
       - name: Validate PowerShell script syntax
         shell: pwsh
-        run: |
-          $scriptPaths = @(
-            'scripts/preflight.ps1',
-            'scripts/smoke-test.ps1',
-            'scripts/generate-frontend-lock.ps1',
-            'scripts/set-postgres-host-port.ps1',
-            'scripts/set-local-host-ports.ps1',
-            'scripts/validate-docker-stack.ps1',
-            'scripts/verify-backend-container.ps1',
-            'scripts/check-repository-safety.ps1',
-            'scripts/validate-seg001.ps1'
-          )
-          foreach ($scriptPath in $scriptPaths) {
-            $tokens = $null
-            $errors = $null
-            [System.Management.Automation.Language.Parser]::ParseFile(
-              $scriptPath,
-              [ref]$tokens,
-              [ref]$errors
-            ) | Out-Null
-            if ($errors -and $errors.Count -gt 0) {
-              throw "$scriptPath`n$($errors | Out-String)"
-            }
-          }
+        run: ./scripts/check-powershell-syntax.ps1
       - name: Parse Make targets
         run: make -n repository-safety backend-verify-container validate-seg001
       - name: Check repository safety invariants
