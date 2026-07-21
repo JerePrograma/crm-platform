@@ -11,17 +11,20 @@ import {
   createContact,
   createExclusion,
   createNote,
+  createOpportunity,
   createProspect,
   createTask,
   createUser,
   getImportRows,
   getPendingDuplicateReviews,
+  getPipelineMetrics,
   getProspect,
   getTimeline,
   getSession,
   importProspects,
   listAuditEvents,
   listExclusions,
+  listOpportunities,
   listProspects,
   listContacts,
   listTasks,
@@ -31,6 +34,7 @@ import {
   resolveDuplicateReview,
   setUserActive,
   transitionProspect,
+  transitionOpportunity,
   updateProspect,
 } from "./api";
 import type {
@@ -41,6 +45,9 @@ import type {
   Exclusion,
   ImportRow,
   ImportSummary,
+  Opportunity,
+  OpportunityStage,
+  PipelineMetrics,
   Prospect,
   ProspectStatus,
   SessionUser,
@@ -52,11 +59,22 @@ import type {
 type Tab =
   | "dashboard"
   | "prospects"
+  | "pipeline"
   | "imports"
   | "exclusions"
   | "audit"
   | "users"
   | "account";
+
+const opportunityStages: OpportunityStage[] = [
+  "QUALIFICATION",
+  "DISCOVERY",
+  "DEMO",
+  "PROPOSAL",
+  "NEGOTIATION",
+  "WON",
+  "LOST",
+];
 
 const prospectStatuses: ProspectStatus[] = [
   "NEW",
@@ -95,6 +113,8 @@ export function App() {
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [duplicateReviews, setDuplicateReviews] = useState<DuplicateReview[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [pipelineMetrics, setPipelineMetrics] = useState<PipelineMetrics | null>(null);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [statusFilter, setStatusFilter] = useState<ProspectStatus | "">("");
   const [loading, setLoading] = useState(false);
@@ -105,18 +125,25 @@ export function App() {
       setLoading(true);
       setError(null);
       try {
-        const [prospectPage, exclusionPage, audits, reviews] = await Promise.all([
+        const [prospectPage, exclusionPage, audits, reviews, opportunityList, metrics] =
+          await Promise.all([
           listProspects(filter || undefined),
           listExclusions(),
           session?.permissions.includes("AUDIT_READ") ? listAuditEvents() : Promise.resolve([]),
           session?.permissions.includes("DUPLICATE_RESOLVE")
             ? getPendingDuplicateReviews()
             : Promise.resolve([]),
+          listOpportunities(),
+          session?.permissions.includes("REPORT_READ")
+            ? getPipelineMetrics()
+            : Promise.resolve(null),
         ]);
         setProspects(prospectPage.content);
         setExclusions(exclusionPage.content);
         setAuditEvents(audits);
         setDuplicateReviews(reviews);
+        setOpportunities(opportunityList);
+        setPipelineMetrics(metrics);
       } catch (caught) {
         setError(message(caught));
       } finally {
@@ -187,6 +214,9 @@ export function App() {
           <NavButton active={tab === "prospects"} onClick={() => setTab("prospects")}>
             Prospectos
           </NavButton>
+          <NavButton active={tab === "pipeline"} onClick={() => setTab("pipeline")}>
+            Pipeline
+          </NavButton>
           {session.permissions.includes("IMPORT_PREVIEW") && (
             <NavButton active={tab === "imports"} onClick={() => setTab("imports")}>
               Importaciones
@@ -249,6 +279,8 @@ export function App() {
               <Metric label="Contacto bloqueado" value={dashboard.blocked} />
               <Metric label="Exclusiones" value={exclusions.length} />
               <Metric label="Revisiones pendientes" value={duplicateReviews.length} />
+              <Metric label="Oportunidades activas" value={pipelineMetrics?.activeCount ?? 0} />
+              <Metric label="Estancadas" value={pipelineMetrics?.stalledCount ?? 0} />
             </div>
             <Panel title="Controles activos">
               <div className="control-grid">
@@ -339,6 +371,16 @@ export function App() {
               )}
             </Panel>
           </section>
+        )}
+
+        {tab === "pipeline" && (
+          <PipelinePanel
+            prospects={prospects}
+            opportunities={opportunities}
+            metrics={pipelineMetrics}
+            session={session}
+            onChanged={() => refresh()}
+          />
         )}
 
         {tab === "imports" && (
@@ -612,6 +654,168 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: SessionUser) =>
       </form>
     </main>
   );
+}
+
+function PipelinePanel({
+  prospects,
+  opportunities,
+  metrics,
+  session,
+  onChanged,
+}: {
+  prospects: Prospect[];
+  opportunities: Opportunity[];
+  metrics: PipelineMetrics | null;
+  session: SessionUser;
+  onChanged: () => Promise<void>;
+}) {
+  const [prospectId, setProspectId] = useState(prospects[0]?.id ?? "");
+  const [name, setName] = useState("");
+  const [estimatedValue, setEstimatedValue] = useState("0");
+  const [expectedCloseDate, setExpectedCloseDate] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canWrite = session.permissions.includes("OPPORTUNITY_WRITE");
+
+  useEffect(() => {
+    if (!prospectId && prospects[0]) setProspectId(prospects[0].id);
+  }, [prospectId, prospects]);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await createOpportunity({
+        prospectId,
+        name,
+        ownerId: session.userId,
+        estimatedValue: Number(estimatedValue),
+        currency: "ARS",
+        probability: 10,
+        expectedCloseDate: expectedCloseDate || undefined,
+        source: "MANUAL",
+        primaryActive: true,
+      });
+      setName("");
+      setEstimatedValue("0");
+      setExpectedCloseDate("");
+      await onChanged();
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function move(opportunity: Opportunity, stage: OpportunityStage) {
+    let reason: string | undefined;
+    if (stage === "LOST" || stage === "WON") {
+      reason = window.prompt(stage === "LOST" ? "Motivo de pérdida:" : "Motivo de cierre ganado:")?.trim();
+      if (!reason) return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await transitionOpportunity(opportunity.id, opportunity.version, stage, reason);
+      await onChanged();
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="stack">
+      <div className="metric-grid">
+        <Metric label="Oportunidades activas" value={metrics?.activeCount ?? 0} />
+        <Metric label="Estancadas +30 días" value={metrics?.stalledCount ?? 0} />
+        <article className="metric-card">
+          <span>Pipeline</span>
+          <strong>{money(metrics?.totalValue ?? 0)}</strong>
+        </article>
+        <article className="metric-card">
+          <span>Forecast ponderado</span>
+          <strong>{money(metrics?.weightedValue ?? 0)}</strong>
+        </article>
+      </div>
+      <Panel title="Nueva oportunidad">
+        {error && <div className="alert error">{error}</div>}
+        {canWrite ? (
+          <form className="inline-form" onSubmit={(event) => void submit(event)}>
+            <label className="grow">
+              Prospecto
+              <select value={prospectId} onChange={(event) => setProspectId(event.target.value)} required>
+                {prospects.map((prospect) => (
+                  <option key={prospect.id} value={prospect.id}>{prospect.displayName}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grow">
+              Nombre
+              <input value={name} onChange={(event) => setName(event.target.value)} required />
+            </label>
+            <label>
+              Valor estimado ARS
+              <input type="number" min="0" step="0.01" value={estimatedValue} onChange={(event) => setEstimatedValue(event.target.value)} required />
+            </label>
+            <label>
+              Cierre esperado
+              <input type="date" value={expectedCloseDate} onChange={(event) => setExpectedCloseDate(event.target.value)} />
+            </label>
+            <button className="primary-button" disabled={busy || prospects.length === 0}>Crear oportunidad</button>
+          </form>
+        ) : (
+          <p className="muted">Acceso de solo lectura al pipeline.</p>
+        )}
+      </Panel>
+      <Panel title="Pipeline por etapa">
+        <div className="kanban" aria-label="Pipeline de oportunidades">
+          {opportunityStages.map((stage) => (
+            <section className="kanban-column" key={stage}>
+              <header><strong>{stage}</strong><span>{metrics?.byStage[stage] ?? 0}</span></header>
+              {opportunities.filter((item) => item.stage === stage).map((opportunity) => (
+                <article className="opportunity-card" key={opportunity.id}>
+                  <strong>{opportunity.name}</strong>
+                  <span>{opportunity.prospectName}</span>
+                  <span>{money(opportunity.estimatedValue)} · {opportunity.probability}%</span>
+                  <small>{opportunity.ownerName}{opportunity.primaryActive ? " · Principal" : ""}</small>
+                  {canWrite && !["WON", "LOST"].includes(opportunity.stage) && (
+                    <div className="review-actions">
+                      {nextOpportunityStages(opportunity.stage).map((next) => (
+                        <button key={next} className={next === "LOST" ? "danger-button" : "secondary-button"} disabled={busy} onClick={() => void move(opportunity, next)}>
+                          {next}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </section>
+          ))}
+        </div>
+      </Panel>
+      <Panel title="Tabla de oportunidades">
+        {opportunities.length === 0 ? <EmptyState text="Todavía no hay oportunidades." /> : (
+          <div className="table-scroll"><table><thead><tr><th>Oportunidad</th><th>Prospecto</th><th>Etapa</th><th>Valor</th><th>Probabilidad</th><th>Cierre</th><th>Responsable</th></tr></thead>
+          <tbody>{opportunities.map((opportunity) => <tr key={opportunity.id}><td>{opportunity.name}</td><td>{opportunity.prospectName}</td><td><Badge value={opportunity.stage} /></td><td>{money(opportunity.estimatedValue)}</td><td>{opportunity.probability}%</td><td>{opportunity.actualCloseDate ?? opportunity.expectedCloseDate ?? "—"}</td><td>{opportunity.ownerName}</td></tr>)}</tbody></table></div>
+        )}
+      </Panel>
+    </section>
+  );
+}
+
+function nextOpportunityStages(stage: OpportunityStage): OpportunityStage[] {
+  return {
+    QUALIFICATION: ["DISCOVERY", "LOST"],
+    DISCOVERY: ["QUALIFICATION", "DEMO", "PROPOSAL", "LOST"],
+    DEMO: ["DISCOVERY", "PROPOSAL", "LOST"],
+    PROPOSAL: ["DEMO", "NEGOTIATION", "WON", "LOST"],
+    NEGOTIATION: ["PROPOSAL", "WON", "LOST"],
+    WON: [],
+    LOST: [],
+  }[stage] as OpportunityStage[];
 }
 
 function ImportsPanel({
@@ -1293,12 +1497,17 @@ function title(tab: Tab): string {
   return {
     dashboard: "Dashboard",
     prospects: "Prospectos",
+    pipeline: "Pipeline",
     imports: "Importaciones",
     exclusions: "Exclusiones",
     audit: "Auditoría",
     users: "Usuarios",
     account: "Mi cuenta",
   }[tab];
+}
+
+function money(value: number): string {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(value);
 }
 
 function dateTime(value: string): string {

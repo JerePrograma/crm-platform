@@ -5,6 +5,9 @@ import type {
   Exclusion,
   ImportRow,
   ImportSummary,
+  Opportunity,
+  OpportunityStage,
+  PipelineMetrics,
   Page,
   Prospect,
   ProspectStatus,
@@ -243,6 +246,44 @@ export function resolveDuplicateReview(
   return request(`/api/v1/duplicate-reviews/${reviewId}/resolution`, {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export function listOpportunities(prospectId?: string): Promise<Opportunity[]> {
+  const params = prospectId ? `?prospectId=${encodeURIComponent(prospectId)}` : "";
+  return request(`/api/v1/opportunities${params}`);
+}
+
+export function getPipelineMetrics(): Promise<PipelineMetrics> {
+  return request("/api/v1/opportunities/metrics");
+}
+
+export function createOpportunity(input: {
+  prospectId: string;
+  name: string;
+  ownerId: string;
+  estimatedValue: number;
+  currency: string;
+  probability: number;
+  expectedCloseDate?: string;
+  source?: string;
+  primaryActive: boolean;
+}): Promise<Opportunity> {
+  return request("/api/v1/opportunities", {
+    method: "POST",
+    body: JSON.stringify({ version: 0, ...input }),
+  });
+}
+
+export function transitionOpportunity(
+  id: string,
+  version: number,
+  stage: OpportunityStage,
+  reason?: string,
+): Promise<Opportunity> {
+  return request(`/api/v1/opportunities/${id}/transitions`, {
+    method: "POST",
+    body: JSON.stringify({ version, stage, reason, comment: "Transición desde pipeline" }),
   });
 }
 

@@ -327,7 +327,8 @@ public class DuplicateResolutionService {
 
   private void moveReferences(UUID survivorId, UUID absorbedId) {
     for (String table :
-        List.of("prospect_note", "activity", "crm_task", "prospect_status_history")) {
+        List.of(
+            "prospect_note", "activity", "crm_task", "prospect_status_history", "opportunity")) {
       jdbcTemplate.update(
           "UPDATE " + table + " SET prospect_id = ? WHERE prospect_id = ? AND organization_id = ?",
           survivorId,

@@ -236,3 +236,43 @@ export type User = {
   createdAt: string;
   lastLoginAt: string | null;
 };
+
+export type OpportunityStage =
+  | "QUALIFICATION"
+  | "DISCOVERY"
+  | "DEMO"
+  | "PROPOSAL"
+  | "NEGOTIATION"
+  | "WON"
+  | "LOST";
+
+export type Opportunity = {
+  id: string;
+  version: number;
+  prospectId: string;
+  prospectName: string;
+  name: string;
+  ownerId: string;
+  ownerName: string;
+  stage: OpportunityStage;
+  estimatedValue: number;
+  currency: string;
+  probability: number;
+  expectedCloseDate: string | null;
+  actualCloseDate: string | null;
+  lostReason: string | null;
+  wonReason: string | null;
+  source: string | null;
+  primaryActive: boolean;
+  stageChangedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PipelineMetrics = {
+  activeCount: number;
+  totalValue: number;
+  weightedValue: number;
+  stalledCount: number;
+  byStage: Record<OpportunityStage, number>;
+};
