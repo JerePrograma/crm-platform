@@ -74,6 +74,7 @@ $summary = [ordered]@{
     frontend = $FrontendPort
   }
   hostPorts = 'NOT_RUN'
+  postgresBinding = 'NOT_RUN'
   cleanBuilds = (-not $UseBuildCache)
   services = [ordered]@{
     postgres = 'NOT_RUN'
@@ -119,6 +120,11 @@ try {
     -FrontendPort $FrontendPort
   $summary.hostPorts = 'PASS'
 
+  Write-Host 'Starting PostgreSQL before image builds to validate the exact Docker port publication.'
+  Invoke-Checked 'docker' @('compose', '--profile', 'app', 'up', '-d', 'postgres')
+  $summary.services.postgres = Wait-ServiceHealth 'postgres'
+  $summary.postgresBinding = 'PASS'
+
   $buildArguments = @('compose', '--progress', 'plain', '--profile', 'app', 'build')
   if (-not $UseBuildCache) {
     $buildArguments += '--no-cache'
@@ -126,9 +132,8 @@ try {
 
   Invoke-Checked 'docker' ($buildArguments + 'frontend')
   Invoke-Checked 'docker' ($buildArguments + 'backend')
-  Invoke-Checked 'docker' @('compose', '--profile', 'app', 'up', '-d')
+  Invoke-Checked 'docker' @('compose', '--profile', 'app', 'up', '-d', 'backend', 'frontend')
 
-  $summary.services.postgres = Wait-ServiceHealth 'postgres'
   $summary.services.backend = Wait-ServiceHealth 'backend'
   $summary.services.frontend = Wait-ServiceHealth 'frontend'
 
@@ -142,13 +147,14 @@ try {
   $summary.status = 'PASS'
 
   Write-Host 'SEG-001 Docker validation passed.'
-  Write-Host 'Covered: host port binding, image builds, Compose config, stack health and smoke tests.'
+  Write-Host 'Covered: Windows/Docker port ownership, PostgreSQL publication, image builds, stack health and smoke tests.'
   Write-Host 'Backend Maven verify/Testcontainers and package-lock validation remain separate controls.'
 } catch {
   $summary.status = 'FAIL'
   $summary.error = $_.Exception.Message
   Write-Host 'SEG-001 Docker validation failed.' -ForegroundColor Red
   Write-Host $_.Exception.Message -ForegroundColor Red
+  & docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Ports}}'
   & docker compose --profile app --profile smoke ps
   & docker compose --profile app --profile smoke logs --no-color
   throw
@@ -163,7 +169,7 @@ try {
     if ($summary.stackKeptRunning) {
       Write-Host 'Stack left running because -KeepRunning was specified.'
     } else {
-      Write-Host 'No running stack was available to keep after the failed validation.'
+      Write-Host 'No running stack was available to keep after validation.'
     }
   }
 
