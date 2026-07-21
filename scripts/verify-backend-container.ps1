@@ -17,6 +17,11 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
   throw 'Docker is required.'
 }
 
+$dockerApiVersion = (& docker version --format '{{.Server.APIVersion}}').Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($dockerApiVersion)) {
+  throw 'Unable to determine the Docker daemon API version.'
+}
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $targetVolume = "crm_backend_verify_target_$PID"
 $containerName = "gestudio-crm-backend-verify-$PID"
@@ -30,8 +35,9 @@ try {
     'run', '--rm',
     '--name', $containerName,
     '--add-host', 'host.docker.internal:host-gateway',
-    '--environment', 'DOCKER_HOST=unix:///var/run/docker.sock',
-    '--environment', 'TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal',
+    '--env', 'DOCKER_HOST=unix:///var/run/docker.sock',
+    '--env', 'TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal',
+    '--env', "JAVA_TOOL_OPTIONS=-Dapi.version=$dockerApiVersion",
     '--mount', "type=bind,source=$repoRoot,target=/workspace,readonly",
     '--mount', 'type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock',
     '--mount', "type=volume,source=$MavenCacheVolume,target=/root/.m2",
@@ -45,7 +51,11 @@ try {
   Write-Host 'Containerized backend verification passed.'
   Write-Host 'Covered: compilation, Spotless, unit tests, ArchUnit and Testcontainers.'
 } finally {
-  & docker rm -f $containerName 2>$null | Out-Null
-  & docker volume rm -f $targetVolume 2>$null | Out-Null
+  if (& docker ps --all --quiet --filter "name=$containerName") {
+    & docker rm -f $containerName | Out-Null
+  }
+  if (& docker volume ls --quiet --filter "name=^$targetVolume$") {
+    & docker volume rm -f $targetVolume | Out-Null
+  }
   Pop-Location
 }

@@ -12,6 +12,12 @@ command -v docker >/dev/null 2>&1 || {
   exit 1
 }
 
+docker_api_version=$(docker version --format '{{.Server.APIVersion}}')
+[ -n "$docker_api_version" ] || {
+  printf 'ERROR: Unable to determine the Docker daemon API version.\n' >&2
+  exit 1
+}
+
 cleanup() {
   docker rm -f "$container_name" >/dev/null 2>&1 || true
   docker volume rm -f "$target_volume" >/dev/null 2>&1 || true
@@ -24,8 +30,9 @@ docker volume create "$target_volume" >/dev/null
 docker run --rm \
   --name "$container_name" \
   --add-host host.docker.internal:host-gateway \
-  --environment DOCKER_HOST=unix:///var/run/docker.sock \
-  --environment TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+  --env DOCKER_HOST=unix:///var/run/docker.sock \
+  --env TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+  --env "JAVA_TOOL_OPTIONS=-Dapi.version=$docker_api_version" \
   --mount "type=bind,source=$repo_root,target=/workspace,readonly" \
   --mount type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock \
   --mount "type=volume,source=$maven_cache_volume,target=/root/.m2" \
