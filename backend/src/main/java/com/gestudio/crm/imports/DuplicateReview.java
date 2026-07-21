@@ -104,6 +104,8 @@ public class DuplicateReview extends BaseEntity {
 
   public enum Status {
     PENDING,
+    DEFERRED,
+    RESOLVED,
     MERGED,
     IGNORED,
     REJECTED

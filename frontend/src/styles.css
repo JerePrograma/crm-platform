@@ -292,6 +292,32 @@ dt {
   flex: 1 1 250px;
 }
 
+.review-actions {
+  display: flex;
+  min-width: 260px;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.review-actions button {
+  padding: 7px 9px;
+}
+
+.source-evidence {
+  display: block;
+  max-width: 340px;
+  max-height: 7rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+td small {
+  display: block;
+  margin-top: 5px;
+  color: #657187;
+}
+
 label {
   display: grid;
   gap: 7px;

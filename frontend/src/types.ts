@@ -170,16 +170,34 @@ export type ImportRow = {
 
 export type DuplicateReview = {
   id: string;
-  importRowId: string;
-  sourceSheet: string;
-  rowNumber: number;
+  version: number;
+  status: "PENDING" | "DEFERRED";
   matchType: string;
   confidence: number;
+  matchReasons: string | null;
   existingProspectId: string | null;
-  status: string;
-  notes: string | null;
+  sourceSheet: string;
+  rowNumber: number;
+  sourceData: string;
+  normalizedEmail: string | null;
+  normalizedPhone: string | null;
+  existingProspect: {
+    id: string;
+    displayName: string;
+    locality: string | null;
+    website: string | null;
+    status: string;
+  } | null;
   createdAt: string;
 };
+
+export type DuplicateResolutionAction =
+  | "MARK_NOT_DUPLICATE"
+  | "LINK_TO_EXISTING"
+  | "MERGE"
+  | "CREATE_SEPARATE"
+  | "REJECT_ROW"
+  | "DEFER";
 
 export type Exclusion = {
   id: string;

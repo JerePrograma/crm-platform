@@ -1,5 +1,6 @@
 import type {
   AuditEvent,
+  DuplicateResolutionAction,
   DuplicateReview,
   Exclusion,
   ImportRow,
@@ -225,7 +226,24 @@ export function getImportRows(jobId: string): Promise<ImportRow[]> {
 }
 
 export function getPendingDuplicateReviews(): Promise<DuplicateReview[]> {
-  return request("/api/v1/imports/prospects/duplicate-reviews/pending");
+  return request("/api/v1/duplicate-reviews");
+}
+
+export function resolveDuplicateReview(
+  reviewId: string,
+  input: {
+    action: DuplicateResolutionAction;
+    survivorProspectId?: string;
+    absorbedProspectId?: string;
+    separateName?: string;
+    comment?: string;
+    idempotencyKey: string;
+  },
+): Promise<void> {
+  return request(`/api/v1/duplicate-reviews/${reviewId}/resolution`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export function listExclusions(): Promise<Page<Exclusion>> {

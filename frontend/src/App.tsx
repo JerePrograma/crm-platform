@@ -28,6 +28,7 @@ import {
   listUsers,
   login,
   logout,
+  resolveDuplicateReview,
   setUserActive,
   transitionProspect,
   updateProspect,
@@ -36,6 +37,7 @@ import type {
   AuditEvent,
   Contact,
   DuplicateReview,
+  DuplicateResolutionAction,
   Exclusion,
   ImportRow,
   ImportSummary,
@@ -106,8 +108,10 @@ export function App() {
         const [prospectPage, exclusionPage, audits, reviews] = await Promise.all([
           listProspects(filter || undefined),
           listExclusions(),
-          listAuditEvents(),
-          getPendingDuplicateReviews(),
+          session?.permissions.includes("AUDIT_READ") ? listAuditEvents() : Promise.resolve([]),
+          session?.permissions.includes("DUPLICATE_RESOLVE")
+            ? getPendingDuplicateReviews()
+            : Promise.resolve([]),
         ]);
         setProspects(prospectPage.content);
         setExclusions(exclusionPage.content);
@@ -119,7 +123,7 @@ export function App() {
         setLoading(false);
       }
     },
-    [statusFilter],
+    [session, statusFilter],
   );
 
   useEffect(() => {
@@ -183,15 +187,19 @@ export function App() {
           <NavButton active={tab === "prospects"} onClick={() => setTab("prospects")}>
             Prospectos
           </NavButton>
-          <NavButton active={tab === "imports"} onClick={() => setTab("imports")}>
-            Importaciones
-          </NavButton>
+          {session.permissions.includes("IMPORT_PREVIEW") && (
+            <NavButton active={tab === "imports"} onClick={() => setTab("imports")}>
+              Importaciones
+            </NavButton>
+          )}
           <NavButton active={tab === "exclusions"} onClick={() => setTab("exclusions")}>
             Exclusiones
           </NavButton>
-          <NavButton active={tab === "audit"} onClick={() => setTab("audit")}>
-            Auditoría
-          </NavButton>
+          {session.permissions.includes("AUDIT_READ") && (
+            <NavButton active={tab === "audit"} onClick={() => setTab("audit")}>
+              Auditoría
+            </NavButton>
+          )}
           {session.permissions.includes("USER_MANAGE") && (
             <NavButton active={tab === "users"} onClick={() => setTab("users")}>
               Usuarios
@@ -250,9 +258,11 @@ export function App() {
                 <Control label="Sesión" value="Cookie HttpOnly + CSRF" />
               </div>
             </Panel>
-            <Panel title="Actividad reciente">
-              <AuditTable events={auditEvents.slice(0, 8)} />
-            </Panel>
+            {session.permissions.includes("AUDIT_READ") && (
+              <Panel title="Actividad reciente">
+                <AuditTable events={auditEvents.slice(0, 8)} />
+              </Panel>
+            )}
           </section>
         )}
 
@@ -341,6 +351,7 @@ export function App() {
         {tab === "exclusions" && (
           <ExclusionsPanel
             exclusions={exclusions}
+            canWrite={session.permissions.includes("PROSPECT_WRITE")}
             onChanged={() => refresh()}
           />
         )}
@@ -614,6 +625,7 @@ function ImportsPanel({
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [busy, setBusy] = useState(false);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function run(execute: boolean) {
@@ -635,6 +647,41 @@ function ImportsPanel({
       setError(message(caught));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function resolve(review: DuplicateReview, action: DuplicateResolutionAction) {
+    let separateName: string | undefined;
+    let absorbedProspectId: string | undefined;
+    if (action === "CREATE_SEPARATE" || action === "MARK_NOT_DUPLICATE") {
+      separateName = window.prompt("Nombre del prospecto independiente:")?.trim();
+      if (!separateName) return;
+    }
+    if (action === "MERGE") {
+      absorbedProspectId = window.prompt("ID del prospecto que será absorbido:")?.trim();
+      if (!absorbedProspectId) return;
+      if (!window.confirm("El merge es transaccional y conservará la trazabilidad. ¿Continuar?")) {
+        return;
+      }
+    }
+    if (action === "REJECT_ROW" && !window.confirm("¿Rechazar esta fila de importación?")) return;
+
+    setResolvingId(review.id);
+    setError(null);
+    try {
+      await resolveDuplicateReview(review.id, {
+        action,
+        survivorProspectId: review.existingProspectId ?? undefined,
+        absorbedProspectId,
+        separateName,
+        comment: `Resolución manual ${action}`,
+        idempotencyKey: `${review.id}:${action}:${crypto.randomUUID()}`,
+      });
+      await onChanged();
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setResolvingId(null);
     }
   }
 
@@ -697,9 +744,10 @@ function ImportsPanel({
               <thead>
                 <tr>
                   <th>Hoja/Fila</th>
-                  <th>Tipo</th>
-                  <th>Confianza</th>
-                  <th>Nota</th>
+                  <th>Registro importado</th>
+                  <th>Coincidencia existente</th>
+                  <th>Señales</th>
+                  <th>Resolución</th>
                 </tr>
               </thead>
               <tbody>
@@ -708,9 +756,48 @@ function ImportsPanel({
                     <td>
                       {review.sourceSheet}/{review.rowNumber}
                     </td>
-                    <td>{review.matchType}</td>
-                    <td>{Math.round(review.confidence * 100)}%</td>
-                    <td>{review.notes ?? "—"}</td>
+                    <td>
+                      <code className="source-evidence">{review.sourceData}</code>
+                      <small>{review.normalizedEmail ?? review.normalizedPhone ?? "Sin canal"}</small>
+                    </td>
+                    <td>
+                      {review.existingProspect ? (
+                        <>
+                          <strong>{review.existingProspect.displayName}</strong>
+                          <small>
+                            {review.existingProspect.locality ?? "Sin localidad"} · {review.existingProspect.status}
+                          </small>
+                        </>
+                      ) : (
+                        "Sin candidato enlazado"
+                      )}
+                    </td>
+                    <td>
+                      <Badge value={review.matchType} />
+                      <small>{Math.round(review.confidence * 100)}% · {review.matchReasons ?? "Sin detalle"}</small>
+                    </td>
+                    <td>
+                      <div className="review-actions">
+                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "LINK_TO_EXISTING")}>
+                          Vincular
+                        </button>
+                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "MARK_NOT_DUPLICATE")}>
+                          No duplicado
+                        </button>
+                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "CREATE_SEPARATE")}>
+                          Crear separado
+                        </button>
+                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "MERGE")}>
+                          Fusionar
+                        </button>
+                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "DEFER")}>
+                          Diferir
+                        </button>
+                        <button className="danger-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "REJECT_ROW")}>
+                          Rechazar
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -724,9 +811,11 @@ function ImportsPanel({
 
 function ExclusionsPanel({
   exclusions,
+  canWrite,
   onChanged,
 }: {
   exclusions: Exclusion[];
+  canWrite: boolean;
   onChanged: () => Promise<void>;
 }) {
   const [channelType, setChannelType] = useState<Exclusion["channelType"]>("EMAIL");
@@ -750,7 +839,7 @@ function ExclusionsPanel({
     <section className="stack">
       <Panel title="Crear exclusión dominante">
         {error && <div className="alert error">{error}</div>}
-        <form className="inline-form" onSubmit={(event) => void submit(event)}>
+      {canWrite && <form className="inline-form" onSubmit={(event) => void submit(event)}>
           <label>
             Canal
             <select
@@ -782,7 +871,7 @@ function ExclusionsPanel({
             </select>
           </label>
           <button className="danger-button">Excluir</button>
-        </form>
+      </form>}
       </Panel>
       <Panel title="Canales excluidos">
         <div className="table-scroll">
