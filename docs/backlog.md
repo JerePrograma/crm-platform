@@ -74,99 +74,78 @@ Rama canónica: `main`.
 - [x] evidencias reales fechadas;
 - [x] datos operativos reales fuera del repositorio.
 
-## SEG-001 — infraestructura y operación finalizadas
+## SEG-001 — infraestructura y automatización finalizadas
 
 - [x] perfiles Compose `app` y `smoke`;
 - [x] imágenes backend/frontend;
 - [x] health checks encadenados;
 - [x] Nginx y proxy;
-- [x] puertos en loopback;
-- [x] tres puertos host configurables;
+- [x] puertos en loopback y configurables;
 - [x] preflight Unix/PowerShell;
 - [x] daemon Docker fail-fast;
-- [x] validación de puertos y URL;
 - [x] configurador conjunto de puertos;
-- [x] wrappers retrocompatibles;
-- [x] smoke host Unix/PowerShell;
-- [x] smoke contenedorizado;
-- [x] validador Docker Windows;
-- [x] transcripts y JSON fuera de Git;
-- [x] Makefile;
-- [x] CI E2E preparado.
-
-## SEG-001 — automatización completa finalizada
-
+- [x] smoke host y contenedorizado;
+- [x] validadores integrales Windows/Unix;
 - [x] backend Maven verify/Testcontainers en Docker;
-- [x] código backend montado en solo lectura;
-- [x] target Maven efímero;
-- [x] caché Maven reutilizable;
 - [x] generación package-lock-only;
 - [x] lifecycle scripts npm deshabilitados;
-- [x] verificación de ausencia de node_modules;
-- [x] propiedad UID/GID del lockfile preservada en Unix;
+- [x] ausencia de node_modules;
+- [x] propiedad UID/GID preservada en Unix;
 - [x] npm ci automático con lockfile;
-- [x] validador integral PowerShell;
-- [x] validador integral Bash;
-- [x] rama main y árbol limpio como precondiciones;
-- [x] SHA-256 del lockfile;
-- [x] repetición smoke después de npm ci;
-- [x] evidencia JSON estructurada;
-- [x] escaneo centralizado de seguridad Unix/PowerShell;
-- [x] checker local `check-powershell-syntax.ps1`;
+- [x] evidencia JSON/transcript fuera de Git;
+- [x] seguridad centralizada;
+- [x] parser local PowerShell;
 - [x] regresión CI contra `$LASTEXITCODE:`;
-- [x] normalización de `mvnw.cmd`;
-- [x] targets `repository-safety`, `backend-verify-container`, `verify-container` y `validate-seg001`;
-- [x] CI con sintaxis POSIX, Bash y PowerShell.
+- [x] checker Windows de enlace de puertos;
+- [x] validador Docker comprueba puertos antes de builds;
+- [x] CI cubre sintaxis, puertos, Make, seguridad, imágenes y smoke.
 
 ## SEG-001 — evidencia ejecutada
 
-### Real
+### Aprobada
 
 - [x] preflight Windows inicial;
 - [x] guardas de envío;
-- [x] descarga de imágenes base;
 - [x] npm install;
-- [x] fallo TypeScript reproducido;
-- [x] correcciones aplicadas;
-- [x] imágenes exportadas desde caché;
-- [x] conflicto 5432 reproducido;
-- [x] checkout actualizado por fast-forward el 2026-07-21;
-- [x] fallo de parser PowerShell reproducido dos veces;
-- [x] alcance del fallo documentado como anterior a Docker.
+- [x] fallo TypeScript reproducido y corregido;
+- [x] parser PowerShell corregido y revalidado;
+- [x] `check-powershell-syntax.ps1`: 10 scripts PASS;
+- [x] preflight container-only endurecido PASS;
+- [x] Compose config PASS;
+- [x] frontend clean build sin caché PASS;
+- [x] TypeScript/Vite production build PASS;
+- [x] frontend image export PASS;
+- [x] backend clean image build sin caché PASS;
+- [x] backend runtime image export PASS;
+- [x] working tree limpio después del fallo;
+- [x] evidencia JSON/transcript generada.
 
-### Estática o funcional aislada
+### Fallos reproducidos y corregidos
 
-- [x] YAML Compose/CI revisado;
-- [x] scripts POSIX y Make revisados en versiones anteriores;
-- [x] configurador Unix preservando secretos ficticios, UTF-8 y guardas;
-- [x] backend verify Unix revisado;
-- [x] lockfile seguro Unix revisado;
-- [x] seguridad del repositorio revisada;
-- [x] read-back remoto de validadores integrales;
-- [x] paridad Windows/Unix documentada;
-- [x] corrección de las tres interpolaciones revisada;
-- [x] checker PowerShell revisado;
-- [x] regresión CI revisada.
+- [x] TypeScript `Credentials | null`;
+- [x] import CSS sin declaración;
+- [x] conflicto puerto 5432;
+- [x] interpolación PowerShell `$LASTEXITCODE:`;
+- [x] mensaje engañoso de `-KeepRunning` sin stack activo;
+- [x] ausencia de comprobación de enlace antes de builds.
 
-### Pendiente de ejecución nueva
+### Bloqueo actual
 
-- [ ] actualizar al commit que contiene las correcciones del parser;
-- [ ] confirmar `mvnw.cmd` limpio después de la renormalización;
-- [ ] ejecutar `scripts/check-powershell-syntax.ps1`;
-- [ ] ejecutar preflight endurecido;
-- [ ] ejecutar funcionalmente uno de los validadores integrales;
-- [ ] ejecutar `bash -n scripts/validate-seg001.sh` mediante CI o checkout;
-- [ ] ejecutar el target Make `validate-seg001` mediante CI o checkout.
+```text
+EXECUTED_FAIL — WINDOWS_HOST_PORT_BIND
+127.0.0.1:55432
+```
+
+El puerto estaba ocupado o reservado. El stack no inició y no se ejecutaron health, migraciones, smoke o suites Maven.
 
 ## SEG-001 — bloqueantes de cierre
 
 - [ ] actualizar checkout local al último `main`;
-- [ ] confirmar árbol rastreado limpio;
-- [ ] confirmar sintaxis PowerShell `PASS`;
-- [ ] confirmar preflight actualizado `PASS`;
-- [ ] ejecutar `scripts/validate-seg001.ps1` o `scripts/validate-seg001.sh`;
-- [ ] confirmar build limpio frontend;
-- [ ] confirmar build limpio backend;
+- [ ] confirmar árbol limpio;
+- [ ] ejecutar parser PowerShell;
+- [ ] inspeccionar listeners/rangos excluidos para `55432`;
+- [ ] comprobar `15432`, `8080` y `5173` con `check-host-ports.ps1`;
+- [ ] ejecutar validador integral con PostgreSQL en `15432`;
 - [ ] confirmar PostgreSQL/backend/frontend healthy;
 - [ ] confirmar Flyway V1–V5;
 - [ ] confirmar Hibernate validate;
@@ -179,7 +158,7 @@ Rama canónica: `main`.
 - [ ] revisar JSON y transcript;
 - [ ] revisar y versionar `frontend/package-lock.json`;
 - [ ] repetir desde árbol limpio con lockfile versionado;
-- [ ] confirmar npm ci desde el inicio;
+- [ ] confirmar npm ci desde el primer build;
 - [ ] confirmar seguridad del repositorio;
 - [ ] observar CI verde o documentar su indisponibilidad;
 - [ ] registrar evidencia final;
