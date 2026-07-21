@@ -83,6 +83,7 @@ Rama canónica: `main`.
 - [x] puertos en loopback;
 - [x] tres puertos host configurables;
 - [x] preflight Unix/PowerShell;
+- [x] daemon Docker fail-fast;
 - [x] validación de puertos y URL;
 - [x] configurador conjunto de puertos;
 - [x] wrappers retrocompatibles;
@@ -100,18 +101,20 @@ Rama canónica: `main`.
 - [x] target Maven efímero;
 - [x] caché Maven reutilizable;
 - [x] generación package-lock-only;
-- [x] lifecycle scripts npm deshabilitados durante lockfile;
+- [x] lifecycle scripts npm deshabilitados;
 - [x] verificación de ausencia de node_modules;
+- [x] propiedad UID/GID del lockfile preservada en Unix;
 - [x] npm ci automático con lockfile;
-- [x] validador integral `validate-seg001.ps1`;
-- [x] rama main y árbol rastreado limpio como precondiciones;
+- [x] validador integral PowerShell;
+- [x] validador integral Bash;
+- [x] rama main y árbol limpio como precondiciones;
 - [x] SHA-256 del lockfile;
 - [x] repetición smoke después de npm ci;
 - [x] evidencia JSON estructurada;
 - [x] escaneo centralizado de seguridad Unix/PowerShell;
 - [x] bloqueo de `.env`, evidencia, datos privados, lote, claves y credenciales;
-- [x] targets `repository-safety`, `backend-verify-container` y `verify-container`;
-- [x] CI con parser de todos los scripts nuevos.
+- [x] targets `repository-safety`, `backend-verify-container`, `verify-container` y `validate-seg001`;
+- [x] CI con sintaxis POSIX, Bash y parser PowerShell.
 
 ## SEG-001 — evidencia ejecutada
 
@@ -128,20 +131,30 @@ Rama canónica: `main`.
 
 ### Estática o funcional aislada
 
-- [x] YAML Compose/CI;
-- [x] shell y Make;
+- [x] YAML Compose/CI revisado;
+- [x] scripts POSIX y Make revisados en versiones anteriores;
 - [x] configurador Unix preservando secretos ficticios, UTF-8 y guardas;
-- [x] sintaxis backend verify Unix;
-- [x] sintaxis lockfile seguro Unix;
+- [x] backend verify Unix revisado;
+- [x] lockfile seguro Unix revisado;
+- [x] seguridad del repositorio revisada;
 - [x] Make backend-verify-container;
 - [x] Make verify-container;
-- [x] read-back remoto de scripts críticos.
+- [x] read-back remoto de validadores integrales;
+- [x] paridad Windows/Unix documentada.
+
+### Pendiente de ejecución nueva
+
+- [ ] `bash -n scripts/validate-seg001.sh` mediante CI o checkout;
+- [ ] `sh -n scripts/generate-frontend-lock.sh` después del hardening UID/GID;
+- [ ] parser PowerShell de la automatización actual;
+- [ ] target Make `validate-seg001` en CI;
+- [ ] ejecución funcional de uno de los validadores integrales.
 
 ## SEG-001 — bloqueantes de cierre
 
 - [ ] actualizar checkout local al último `main`;
-- [ ] restaurar cambio accidental de `mvnw.cmd`;
-- [ ] ejecutar `scripts/validate-seg001.ps1`;
+- [ ] restaurar cambio accidental de `mvnw.cmd` si continúa presente;
+- [ ] ejecutar `scripts/validate-seg001.ps1` o `scripts/validate-seg001.sh`;
 - [ ] confirmar build limpio frontend;
 - [ ] confirmar build limpio backend;
 - [ ] confirmar PostgreSQL/backend/frontend healthy;
