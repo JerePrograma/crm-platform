@@ -1,4 +1,4 @@
-.PHONY: preflight preflight-container postgres-port local-ports repository-safety db-up db-down app-up app-down app-logs backend backend-verify-container frontend frontend-lock verify verify-container smoke smoke-container reset-db
+.PHONY: preflight preflight-container postgres-port local-ports repository-safety db-up db-down app-up app-down app-logs backend backend-verify-container frontend frontend-lock verify verify-container validate-seg001 smoke smoke-container reset-db
 
 preflight:
 	sh scripts/preflight.sh --local
@@ -56,6 +56,9 @@ verify-container: preflight-container backend-verify-container frontend-lock
 	docker compose --progress plain --profile app build --no-cache backend
 	$(MAKE) smoke-container
 	sh scripts/check-repository-safety.sh
+
+validate-seg001:
+	bash scripts/validate-seg001.sh
 
 smoke:
 	sh scripts/smoke-test.sh
