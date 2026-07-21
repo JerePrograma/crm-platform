@@ -4,6 +4,7 @@ import type {
   Campaign,
   CampaignChannel,
   CampaignSimulation,
+  CampaignSequenceStep,
   DuplicateResolutionAction,
   DuplicateReview,
   Exclusion,
@@ -363,6 +364,25 @@ export function simulateCampaign(campaign: Campaign): Promise<CampaignSimulation
     method: "POST",
     headers: { "Idempotency-Key": crypto.randomUUID() },
   });
+}
+
+export function replaceCampaignSequence(campaign: Campaign): Promise<CampaignSequenceStep[]> {
+  return request(`/api/v1/campaigns/${campaign.id}/sequence`, {
+    method: "PUT",
+    body: JSON.stringify({
+      version: campaign.version,
+      steps: [
+        { type: campaign.channel, configuration: {} },
+        { type: "WAIT", configuration: { days: 2 } },
+        { type: "CONDITION", configuration: { condition: "REPLIED", action: "STOP" } },
+        { type: "STOP", configuration: {} },
+      ],
+    }),
+  });
+}
+
+export function getCampaignSequence(id: string): Promise<CampaignSequenceStep[]> {
+  return request(`/api/v1/campaigns/${id}/sequence`);
 }
 
 export function listExclusions(): Promise<Page<Exclusion>> {

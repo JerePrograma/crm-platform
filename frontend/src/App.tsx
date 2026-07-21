@@ -20,6 +20,7 @@ import {
   createUser,
   getImportRows,
   getCampaignAudience,
+  getCampaignSequence,
   getPendingDuplicateReviews,
   getPipelineMetrics,
   getProspect,
@@ -38,6 +39,7 @@ import {
   login,
   logout,
   resolveDuplicateReview,
+  replaceCampaignSequence,
   previewTemplate,
   setUserActive,
   simulateCampaign,
@@ -52,6 +54,7 @@ import type {
   Campaign,
   CampaignChannel,
   CampaignSimulation,
+  CampaignSequenceStep,
   Contact,
   DuplicateReview,
   DuplicateResolutionAction,
@@ -740,6 +743,7 @@ function CampaignsPanel({
   const [audience, setAudience] = useState<AudienceRecipient[]>([]);
   const [preview, setPreview] = useState<RenderedTemplate | null>(null);
   const [simulation, setSimulation] = useState<CampaignSimulation | null>(null);
+  const [sequence, setSequence] = useState<CampaignSequenceStep[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -847,6 +851,14 @@ function CampaignsPanel({
     });
   }
 
+  async function configureSequence(campaign: Campaign) {
+    await run(async () => {
+      setSequence(await replaceCampaignSequence(campaign));
+      setNotice("Secuencia declarativa de contacto, espera y parada configurada.");
+      await onChanged();
+    });
+  }
+
   return (
     <section className="stack">
       <div className="alert safety">
@@ -945,7 +957,11 @@ function CampaignsPanel({
                 {writable && ["DRAFT", "READY_FOR_REVIEW"].includes(campaign.status) && (
                   <button className="secondary-button" type="button" onClick={() => void freeze(campaign)}>Congelar audiencia</button>
                 )}
+                {writable && campaign.status === "DRAFT" && (
+                  <button className="secondary-button" type="button" onClick={() => void configureSequence(campaign)}>Configurar secuencia segura</button>
+                )}
                 <button className="secondary-button" type="button" onClick={() => void run(async () => setAudience(await getCampaignAudience(campaign.id)))}>Ver audiencia</button>
+                <button className="secondary-button" type="button" onClick={() => void run(async () => setSequence(await getCampaignSequence(campaign.id)))}>Ver secuencia</button>
                 {campaign.status === "READY_FOR_REVIEW" && session.permissions.includes("CAMPAIGN_APPROVE") && (
                   <button className="primary-button" type="button" onClick={() => void approve(campaign)}>Aprobar</button>
                 )}
@@ -966,6 +982,15 @@ function CampaignsPanel({
         </Panel>
       )}
       {simulation && <div className="alert success">Run fake {simulation.id}: ningún envío de red; {simulation.includedCount} actividades de borrador.</div>}
+      {sequence.length > 0 && (
+        <Panel title="Secuencia declarativa">
+          <ol className="sequence-list">
+            {sequence.map((step) => (
+              <li key={step.id}><strong>{step.type}</strong><code>{JSON.stringify(step.configuration)}</code></li>
+            ))}
+          </ol>
+        </Panel>
+      )}
     </section>
   );
 }

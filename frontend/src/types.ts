@@ -348,6 +348,13 @@ export type CampaignSimulation = {
   createdAt: string;
 };
 
+export type CampaignSequenceStep = {
+  id: string;
+  order: number;
+  type: "EMAIL" | "WHATSAPP" | "MANUAL_TASK" | "WAIT" | "CONDITION" | "STOP";
+  configuration: Record<string, unknown>;
+};
+
 export type RenderedTemplate = {
   subject: string;
   textBody: string;

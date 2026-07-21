@@ -213,6 +213,21 @@ h2 {
   color: #657187;
 }
 
+.sequence-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.sequence-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border-bottom: 1px solid #e5e9ef;
+}
+
 .alert.safety {
   border-color: #d6b04a;
   background: #fff8df;
