@@ -36,24 +36,24 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | merge transaccional | EXECUTED_PASS | 3/3 Testcontainers: referencias, idempotencia y rollback |
 | oportunidades | EXECUTED_PASS | V9, 3/3 integración, API/UI y Playwright |
 | pipeline/forecast | EXECUTED_PASS | kanban, métricas exactas, aging y cierre WON |
-| campañas | NOT_STARTED | esquema V1 sin casos de uso |
-| audiencias congeladas | NOT_STARTED | — |
-| plantillas versionadas | NOT_STARTED | esquema parcial V1 |
-| renderer seguro | NOT_STARTED | — |
-| secuencias declarativas | NOT_STARTED | — |
-| aprobación/simulación | NOT_STARTED | — |
+| campañas | EXECUTED_PASS | V10, estados, API/UI y Playwright |
+| audiencias congeladas | EXECUTED_PASS | filtros SQL, decisiones persistidas y E2E |
+| plantillas versionadas | EXECUTED_PASS | versión inmutable, API/UI y preview |
+| renderer seguro | EXECUTED_PASS | allow-list, escaping e inyección rechazada |
+| secuencias declarativas | EXECUTED_PASS | tipos/condiciones limitados, API/test y UI |
+| aprobación/simulación | EXECUTED_PASS | RBAC, idempotencia, fake activity y Playwright |
 | email no-op | NOT_STARTED | — |
 | email fake | NOT_STARTED | — |
 | email real adapter | NOT_STARTED | requerirá credenciales para conexión |
 | WhatsApp no-op | NOT_STARTED | — |
 | WhatsApp fake | NOT_STARTED | — |
 | WhatsApp real adapter | NOT_STARTED | requerirá credenciales para conexión |
-| policy/kill switch persistente | IN_PROGRESS | settings V1 existen; no hay punto de salida |
+| policy/kill switch persistente | EXECUTED_PASS | ambiente + DB verificados antes de simular |
 | outbox | NOT_STARTED | — |
 | workers/retry/dead-letter | NOT_STARTED | — |
 | idempotencia asíncrona | NOT_STARTED | — |
 | inbound/webhook fake | NOT_STARTED | — |
-| frontend integral | IN_PROGRESS | prospectos/contactos/tareas/timeline operativos; dominios SEG-005+ pendientes |
+| frontend integral | IN_PROGRESS | CRM, duplicados, pipeline y campañas operativos; SEG-008+ pendientes |
 | frontend E2E | NOT_STARTED | cero tests frontend al inicio |
 | dashboard/reportes | NOT_STARTED | — |
 | búsqueda PostgreSQL | NOT_STARTED | — |

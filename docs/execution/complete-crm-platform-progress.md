@@ -205,3 +205,22 @@ RESIDUAL_RISKS=custom pipelines and cross-currency aggregation intentionally bel
 El recorrido Playwright creó una oportunidad ARS 250.000, verificó forecast
 ponderado, avanzó por etapas permitidas hasta `WON`, comprobó probabilidad
 100 %, cierre de la oportunidad y transición del prospecto a `CUSTOMER`.
+
+## CHECKPOINT_7_CAMPAIGNS_TEMPLATES_SIMULATION
+
+```text
+CHECKPOINT_ID=CHECKPOINT_7
+PHASE=campaigns_audiences_templates_sequences
+START_COMMIT=739c6861775678ca1d65e86c12fb9b92a8d02877
+END_COMMIT=47806257d9836a0753a3b0be617d968ef67a7533
+FILES_CHANGED=campaign module, duplicate propagation, V10, security/integration tests and frontend campaigns
+MIGRATIONS=V10__campaigns_audiences_templates_and_simulation.sql
+TEST_COMMANDS=focused Testcontainers; Maven verify; security focused; npm build; Docker build/up; smoke; repository safety; Playwright; PostgreSQL policy query
+TEST_RESULT=EXECUTED_PASS
+KNOWN_WARNINGS=Mockito dynamic-agent notice and transient Hikari warnings after Testcontainers close
+RESIDUAL_RISKS=real providers intentionally absent until SEG-008; no real network sending exists
+```
+
+Playwright creó una plantilla, verificó preview sintético, congeló dos
+destinatarios, aprobó y simuló. PostgreSQL registró dos actividades
+`EMAIL_DRAFTED`, cero envíos y los cuatro bloqueos activos.

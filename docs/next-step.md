@@ -12,7 +12,8 @@ SEG-003 COMPLETE
 SEG-004 COMPLETE
 SEG-005 COMPLETE
 SEG-006 COMPLETE
-SEG-007 ACTIVE
+SEG-007 COMPLETE
+SEG-008 ACTIVE
 BRANCH feat/complete-crm-platform
 BASELINE 7db7e4c EXECUTED_PASS
 IDENTITY_COMMIT 0546e6e EXECUTED_PASS
@@ -22,9 +23,9 @@ COMUNICACIONES REALES DISABLED_BY_POLICY
 
 ## Siguiente checkpoint canónico
 
-Completar SEG-007: campañas tenant-scoped, audiencias congeladas y reproducibles,
-plantillas versionadas con renderer seguro, secuencias declarativas, aprobación
-por permiso y simulación integral sin comunicaciones reales.
+Completar SEG-008: contratos de mensajería, políticas fail-closed en cada punto de
+salida, providers no-op/fake, borradores manuales, adaptadores Gmail/WhatsApp
+deshabilitados por defecto y contract tests sin llamadas reales.
 
 Contrato y evidencia viva:
 
@@ -36,6 +37,7 @@ docs/validation/SEG-002-identity-rbac-2026-07-21.md
 docs/validation/SEG-003-004-operational-crm-2026-07-21.md
 docs/validation/SEG-005-duplicate-resolution-2026-07-21.md
 docs/validation/SEG-006-opportunities-pipeline-2026-07-21.md
+docs/validation/SEG-007-campaign-simulation-2026-07-21.md
 docs/segments/CRM-completion.md
 ```
 

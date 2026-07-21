@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-21 — SEG-007
+
+- agregó V10 con campañas, audiencia congelada, secuencias y resultados de
+  simulación;
+- implementó plantillas versionadas y renderer de variables allow-listed;
+- incorporó aprobación RBAC, idempotencia y bloqueo persistente/ambiental;
+- conectó UI de preview, audiencia, secuencia y simulación sin botón de envío;
+- validó Flyway V1–V10, Maven 50/50, frontend, Docker, smoke y Playwright.
+
 ## 2026-07-21 — SEG-006
 
 - agregó V9 con oportunidades, historial de etapas y unicidad de oportunidad

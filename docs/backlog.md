@@ -15,8 +15,8 @@ Rama canónica: `main`.
 | SEG-004 | Actividades, tareas y timeline | COMPLETE | SEG-003 | seguimiento comercial trazable |
 | SEG-005 | Resolución de duplicados | COMPLETE | SEG-004 | bandeja y merge transaccional |
 | SEG-006 | Oportunidades y pipeline | COMPLETE | SEG-003 | ciclo de venta y forecast |
-| SEG-007 | Campañas y plantillas | ACTIVE | SEG-003, SEG-006 | audiencia congelada y simulación |
-| SEG-008 | Mensajería segura y adaptadores | PLANNED | SEG-007 | no-op, fake, manual y red deshabilitada |
+| SEG-007 | Campañas y plantillas | COMPLETE | SEG-003, SEG-006 | audiencia congelada y simulación |
+| SEG-008 | Mensajería segura y adaptadores | ACTIVE | SEG-007 | no-op, fake, manual y red deshabilitada |
 | SEG-009 | Outbox, workers e inbound | PLANNED | SEG-008 | async idempotente y respuesta fake |
 | SEG-010 | Reportes, seguridad y producción | PLANNED | SEG-002–009 | operación local endurecida |
 | SEG-011 | Validación integral y cierre | PLANNED | SEG-010 | recorrido reproducible y evidencia |
@@ -159,13 +159,21 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] pipeline, tabla, forecast y aging;
 - [x] API, permisos, auditoría, UI y E2E.
 
-## SEG-007 — Activo
+## SEG-007 — Completo
 
-- [ ] campañas tenant-scoped y estados seguros;
-- [ ] audiencias materializadas y reproducibles;
-- [ ] plantillas versionadas y renderer limitado;
-- [ ] secuencias declarativas;
-- [ ] aprobación y simulación sin envío.
+- [x] campañas tenant-scoped y estados seguros;
+- [x] audiencias materializadas y reproducibles;
+- [x] plantillas versionadas y renderer limitado;
+- [x] secuencias declarativas;
+- [x] aprobación y simulación sin envío.
+
+## SEG-008 — Activo
+
+- [ ] contratos de email, WhatsApp, rendering, policy, dispatch e inbound;
+- [ ] providers no-op y fake;
+- [ ] borradores manuales mailto/deep-link;
+- [ ] adaptadores reales deshabilitados por defecto y contract tests;
+- [ ] prueba de inexistencia de bypass de envío.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 
