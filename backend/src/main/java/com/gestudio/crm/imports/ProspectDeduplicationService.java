@@ -9,6 +9,7 @@ import com.gestudio.crm.institution.Institution;
 import com.gestudio.crm.institution.InstitutionRepository;
 import com.gestudio.crm.prospect.Prospect;
 import com.gestudio.crm.prospect.ProspectRepository;
+import com.gestudio.crm.security.CurrentActor;
 import java.util.Comparator;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -24,18 +25,21 @@ public class ProspectDeduplicationService {
   private final ContactChannelRepository contactChannelRepository;
   private final NormalizationService normalizationService;
   private final NameSimilarityService nameSimilarityService;
+  private final CurrentActor currentActor;
 
   public ProspectDeduplicationService(
       ProspectRepository prospectRepository,
       InstitutionRepository institutionRepository,
       ContactChannelRepository contactChannelRepository,
       NormalizationService normalizationService,
-      NameSimilarityService nameSimilarityService) {
+      NameSimilarityService nameSimilarityService,
+      CurrentActor currentActor) {
     this.prospectRepository = prospectRepository;
     this.institutionRepository = institutionRepository;
     this.contactChannelRepository = contactChannelRepository;
     this.normalizationService = normalizationService;
     this.nameSimilarityService = nameSimilarityService;
+    this.currentActor = currentActor;
   }
 
   @Transactional(readOnly = true)
@@ -45,7 +49,8 @@ public class ProspectDeduplicationService {
     Optional<Prospect> byExternalId =
         normalized.externalId() == null
             ? Optional.empty()
-            : prospectRepository.findByExternalSourceId(normalized.externalId());
+            : prospectRepository.findByOrganizationIdAndExternalSourceId(
+                currentActor.organizationId(), normalized.externalId());
     if (byExternalId.isPresent()) {
       return DeduplicationOutcome.exact(
           MatchType.EXTERNAL_SOURCE_ID, byExternalId.get(), normalized);
@@ -70,11 +75,12 @@ public class ProspectDeduplicationService {
     }
 
     Optional<Institution> exactInstitution =
-        institutionRepository.findByNormalizedNameAndNormalizedLocality(
-            normalized.institutionName(), normalized.locality());
+        institutionRepository.findByOrganizationIdAndNormalizedNameAndNormalizedLocality(
+            currentActor.organizationId(), normalized.institutionName(), normalized.locality());
     if (exactInstitution.isPresent()) {
       Optional<Prospect> exactProspect =
-          prospectRepository.findFirstByInstitutionId(exactInstitution.get().getId());
+          prospectRepository.findFirstByOrganizationIdAndInstitutionId(
+              currentActor.organizationId(), exactInstitution.get().getId());
       if (exactProspect.isPresent()) {
         return DeduplicationOutcome.exact(MatchType.NAME_LOCATION, exactProspect.get(), normalized);
       }
@@ -85,7 +91,10 @@ public class ProspectDeduplicationService {
     }
 
     Optional<SimilarityCandidate> ambiguous =
-        institutionRepository.findAllByNormalizedLocality(normalized.locality()).stream()
+        institutionRepository
+            .findAllByOrganizationIdAndNormalizedLocality(
+                currentActor.organizationId(), normalized.locality())
+            .stream()
             .map(
                 institution ->
                     new SimilarityCandidate(
@@ -98,7 +107,8 @@ public class ProspectDeduplicationService {
 
     if (ambiguous.isPresent()) {
       Optional<Prospect> prospect =
-          prospectRepository.findFirstByInstitutionId(ambiguous.get().institution().getId());
+          prospectRepository.findFirstByOrganizationIdAndInstitutionId(
+              currentActor.organizationId(), ambiguous.get().institution().getId());
       return DeduplicationOutcome.review(
           prospect.orElse(null), ambiguous.get().similarity(), normalized);
     }
@@ -112,11 +122,12 @@ public class ProspectDeduplicationService {
       return Optional.empty();
     }
     return contactChannelRepository
-        .findByTypeAndNormalizedValue(type, normalizedValue)
+        .findByOrganizationIdAndTypeAndNormalizedValue(
+            currentActor.organizationId(), type, normalizedValue)
         .flatMap(
             channel ->
-                prospectRepository.findFirstByInstitutionId(
-                    channel.getContact().getInstitution().getId()));
+                prospectRepository.findFirstByOrganizationIdAndInstitutionId(
+                    currentActor.organizationId(), channel.getContact().getInstitution().getId()));
   }
 
   private Optional<Prospect> existingProspectForDomain(String websiteDomain) {
@@ -124,8 +135,11 @@ public class ProspectDeduplicationService {
       return Optional.empty();
     }
     return institutionRepository
-        .findFirstByWebsiteDomain(websiteDomain)
-        .flatMap(institution -> prospectRepository.findFirstByInstitutionId(institution.getId()));
+        .findFirstByOrganizationIdAndWebsiteDomain(currentActor.organizationId(), websiteDomain)
+        .flatMap(
+            institution ->
+                prospectRepository.findFirstByOrganizationIdAndInstitutionId(
+                    currentActor.organizationId(), institution.getId()));
   }
 
   private NormalizedCandidate normalize(ProspectCandidate candidate) {

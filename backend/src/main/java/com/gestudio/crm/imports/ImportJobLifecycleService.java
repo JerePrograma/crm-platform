@@ -3,6 +3,7 @@ package com.gestudio.crm.imports;
 import com.gestudio.crm.audit.AuditEventWriter;
 import com.gestudio.crm.common.ResourceNotFoundException;
 import com.gestudio.crm.imports.ImportJob.SourceType;
+import com.gestudio.crm.security.CurrentActor;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,11 +15,15 @@ public class ImportJobLifecycleService {
 
   private final ImportJobRepository importJobRepository;
   private final AuditEventWriter auditEventWriter;
+  private final CurrentActor currentActor;
 
   public ImportJobLifecycleService(
-      ImportJobRepository importJobRepository, AuditEventWriter auditEventWriter) {
+      ImportJobRepository importJobRepository,
+      AuditEventWriter auditEventWriter,
+      CurrentActor currentActor) {
     this.importJobRepository = importJobRepository;
     this.auditEventWriter = auditEventWriter;
+    this.currentActor = currentActor;
   }
 
   @Transactional
@@ -28,13 +33,15 @@ public class ImportJobLifecycleService {
       String idempotencyKey,
       SourceType sourceType,
       boolean dryRun) {
-    Optional<ImportJob> existing = importJobRepository.findByIdempotencyKey(idempotencyKey);
+    Optional<ImportJob> existing =
+        importJobRepository.findByOrganizationIdAndIdempotencyKey(
+            currentActor.organizationId(), idempotencyKey);
     if (existing.isPresent()) {
       return new StartResult(existing.get().getId(), true, toSummary(existing.get()));
     }
-    ImportJob job =
-        importJobRepository.save(
-            ImportJob.create(fileName, fileSha256, idempotencyKey, sourceType, dryRun));
+    ImportJob job = ImportJob.create(fileName, fileSha256, idempotencyKey, sourceType, dryRun);
+    job.assignOrganization(currentActor.organizationId());
+    importJobRepository.save(job);
     job.start();
     auditEventWriter.record(
         "IMPORT_STARTED",
@@ -92,7 +99,7 @@ public class ImportJobLifecycleService {
 
   private ImportJob get(UUID jobId) {
     return importJobRepository
-        .findById(jobId)
+        .findByIdAndOrganizationId(jobId, currentActor.organizationId())
         .orElseThrow(() -> new ResourceNotFoundException("Import job not found: " + jobId));
   }
 

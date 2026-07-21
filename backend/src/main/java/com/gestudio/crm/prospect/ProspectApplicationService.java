@@ -13,6 +13,7 @@ import com.gestudio.crm.exclusion.ContactEligibilityService;
 import com.gestudio.crm.exclusion.ContactEligibilityService.ChannelCandidate;
 import com.gestudio.crm.institution.Institution;
 import com.gestudio.crm.institution.InstitutionRepository;
+import com.gestudio.crm.security.CurrentActor;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,6 +37,7 @@ public class ProspectApplicationService {
   private final ContactEligibilityService contactEligibilityService;
   private final NormalizationService normalizationService;
   private final AuditEventWriter auditEventWriter;
+  private final CurrentActor currentActor;
 
   public ProspectApplicationService(
       InstitutionRepository institutionRepository,
@@ -44,7 +46,8 @@ public class ProspectApplicationService {
       ProspectRepository prospectRepository,
       ContactEligibilityService contactEligibilityService,
       NormalizationService normalizationService,
-      AuditEventWriter auditEventWriter) {
+      AuditEventWriter auditEventWriter,
+      CurrentActor currentActor) {
     this.institutionRepository = institutionRepository;
     this.contactRepository = contactRepository;
     this.contactChannelRepository = contactChannelRepository;
@@ -52,6 +55,7 @@ public class ProspectApplicationService {
     this.contactEligibilityService = contactEligibilityService;
     this.normalizationService = normalizationService;
     this.auditEventWriter = auditEventWriter;
+    this.currentActor = currentActor;
   }
 
   @Transactional
@@ -60,7 +64,10 @@ public class ProspectApplicationService {
 
     String externalSourceId = normalizationService.trimToNull(command.externalSourceId());
     if (externalSourceId != null
-        && prospectRepository.findByExternalSourceId(externalSourceId).isPresent()) {
+        && prospectRepository
+            .findByOrganizationIdAndExternalSourceId(
+                currentActor.organizationId(), externalSourceId)
+            .isPresent()) {
       throw new DuplicateResourceException(
           "A prospect already exists for external source id " + externalSourceId);
     }
@@ -86,37 +93,36 @@ public class ProspectApplicationService {
     boolean eligible = contactEligibilityService.evaluate(eligibilityCandidates).eligible();
 
     if (hasContactData(command, preparedChannels)) {
-      Contact contact =
-          contactRepository.save(
-              Contact.create(institution, command.contactName(), command.contactRole()));
+      Contact contact = Contact.create(institution, command.contactName(), command.contactRole());
+      contact.assignOrganization(currentActor.organizationId());
+      contactRepository.save(contact);
       boolean first = true;
       for (PreparedChannel channel : preparedChannels) {
-        contactChannelRepository.save(
+        ContactChannel contactChannel =
             ContactChannel.create(
-                contact,
-                channel.type(),
-                channel.originalValue(),
-                channel.normalizedValue(),
-                first));
+                contact, channel.type(), channel.originalValue(), channel.normalizedValue(), first);
+        contactChannel.assignOrganization(currentActor.organizationId());
+        contactChannelRepository.save(contactChannel);
         first = false;
       }
     }
 
     Prospect prospect =
-        prospectRepository.save(
-            Prospect.create(
-                institution,
-                externalSourceId,
-                command.priority(),
-                command.score(),
-                command.estimatedStudents(),
-                command.currentTools(),
-                command.administrativePain(),
-                command.source(),
-                command.evidence(),
-                command.verifiedAt(),
-                command.owner(),
-                eligible));
+        Prospect.create(
+            institution,
+            externalSourceId,
+            command.priority(),
+            command.score(),
+            command.estimatedStudents(),
+            command.currentTools(),
+            command.administrativePain(),
+            command.source(),
+            command.evidence(),
+            command.verifiedAt(),
+            command.owner(),
+            eligible);
+    prospect.assignOrganization(currentActor.organizationId());
+    prospectRepository.save(prospect);
 
     Map<String, Object> auditPayload = new LinkedHashMap<>();
     auditPayload.put("institutionId", institution.getId());
@@ -136,7 +142,7 @@ public class ProspectApplicationService {
   public ProspectView get(UUID id) {
     Prospect prospect =
         prospectRepository
-            .findById(id)
+            .findByIdAndOrganizationId(id, currentActor.organizationId())
             .orElseThrow(() -> new ResourceNotFoundException("Prospect not found: " + id));
     return toView(prospect);
   }
@@ -145,8 +151,9 @@ public class ProspectApplicationService {
   public Page<ProspectView> list(ProspectStatus status, Pageable pageable) {
     Page<Prospect> prospects =
         status == null
-            ? prospectRepository.findAll(pageable)
-            : prospectRepository.findAllByStatus(status, pageable);
+            ? prospectRepository.findAllByOrganizationId(currentActor.organizationId(), pageable)
+            : prospectRepository.findAllByOrganizationIdAndStatus(
+                currentActor.organizationId(), status, pageable);
     return prospects.map(this::toView);
   }
 
@@ -156,12 +163,13 @@ public class ProspectApplicationService {
       String normalizedLocality,
       String websiteDomain) {
     Optional<Institution> byNameAndLocation =
-        institutionRepository.findByNormalizedNameAndNormalizedLocality(
-            normalizedName, normalizedLocality);
+        institutionRepository.findByOrganizationIdAndNormalizedNameAndNormalizedLocality(
+            currentActor.organizationId(), normalizedName, normalizedLocality);
     Optional<Institution> byDomain =
         websiteDomain == null
             ? Optional.empty()
-            : institutionRepository.findFirstByWebsiteDomain(websiteDomain);
+            : institutionRepository.findFirstByOrganizationIdAndWebsiteDomain(
+                currentActor.organizationId(), websiteDomain);
 
     if (byNameAndLocation.isPresent()
         && byDomain.isPresent()
@@ -173,18 +181,21 @@ public class ProspectApplicationService {
     return byNameAndLocation
         .or(() -> byDomain)
         .orElseGet(
-            () ->
-                institutionRepository.save(
-                    Institution.create(
-                        command.institutionName(),
-                        normalizedName,
-                        normalizationService.trimToNull(command.category()),
-                        normalizationService.trimToNull(command.locality()),
-                        normalizedLocality,
-                        normalizationService.trimToNull(command.province()),
-                        normalizationService.trimToNull(command.country()),
-                        normalizationService.trimToNull(command.website()),
-                        websiteDomain)));
+            () -> {
+              Institution institution =
+                  Institution.create(
+                      command.institutionName(),
+                      normalizedName,
+                      normalizationService.trimToNull(command.category()),
+                      normalizationService.trimToNull(command.locality()),
+                      normalizedLocality,
+                      normalizationService.trimToNull(command.province()),
+                      normalizationService.trimToNull(command.country()),
+                      normalizationService.trimToNull(command.website()),
+                      websiteDomain);
+              institution.assignOrganization(currentActor.organizationId());
+              return institutionRepository.save(institution);
+            });
   }
 
   private List<PreparedChannel> prepareContactChannels(CreateProspectCommand command) {
@@ -205,8 +216,8 @@ public class ProspectApplicationService {
 
   private void rejectExistingChannels(List<PreparedChannel> channels) {
     for (PreparedChannel channel : channels) {
-      if (contactChannelRepository.existsByTypeAndNormalizedValue(
-          channel.type(), channel.normalizedValue())) {
+      if (contactChannelRepository.existsByOrganizationIdAndTypeAndNormalizedValue(
+          currentActor.organizationId(), channel.type(), channel.normalizedValue())) {
         throw new DuplicateResourceException("Contact channel already exists: " + channel.type());
       }
     }

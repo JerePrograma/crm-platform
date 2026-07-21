@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -30,6 +31,12 @@ public class ApiExceptionHandler {
   @ExceptionHandler(IllegalArgumentException.class)
   ProblemDetail handleBadRequest(IllegalArgumentException exception) {
     return problem(HttpStatus.BAD_REQUEST, "Invalid request", exception.getMessage());
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  ProblemDetail handleAuthentication(AuthenticationException exception) {
+    return problem(
+        HttpStatus.UNAUTHORIZED, "Authentication failed", "Invalid username or password");
   }
 
   @ExceptionHandler(MaxUploadSizeExceededException.class)

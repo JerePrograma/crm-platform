@@ -16,6 +16,9 @@ public abstract class BaseEntity {
   @Column(nullable = false, updatable = false)
   protected UUID id;
 
+  @Column(nullable = false, updatable = false)
+  protected UUID organizationId;
+
   @Version protected long version;
 
   @Column(nullable = false, updatable = false)
@@ -29,6 +32,9 @@ public abstract class BaseEntity {
     Instant now = Instant.now();
     if (id == null) {
       id = UUID.randomUUID();
+    }
+    if (organizationId == null) {
+      organizationId = TenantIds.BOOTSTRAP_ORGANIZATION_ID;
     }
     if (createdAt == null) {
       createdAt = now;
@@ -47,6 +53,20 @@ public abstract class BaseEntity {
 
   public long getVersion() {
     return version;
+  }
+
+  public UUID getOrganizationId() {
+    return organizationId;
+  }
+
+  public void assignOrganization(UUID organizationId) {
+    if (organizationId == null) {
+      throw new IllegalArgumentException("Organization is required");
+    }
+    if (this.organizationId != null && !this.organizationId.equals(organizationId)) {
+      throw new IllegalStateException("An entity cannot move between organizations");
+    }
+    this.organizationId = organizationId;
   }
 
   public Instant getCreatedAt() {

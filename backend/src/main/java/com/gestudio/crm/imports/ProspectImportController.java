@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,12 +37,14 @@ public class ProspectImportController {
   }
 
   @PostMapping(path = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasAuthority('IMPORT_PREVIEW')")
   @Operation(summary = "Validate and preview a prospect import without domain writes")
   public ImportSummary preview(@RequestPart("file") MultipartFile file) {
     return prospectImportService.importFile(file.getOriginalFilename(), bytes(file), true);
   }
 
   @PostMapping(path = "/execute", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasAuthority('IMPORT_EXECUTE')")
   @Operation(summary = "Execute a confirmed prospect and exclusion import")
   public ImportSummary execute(
       @RequestPart("file") MultipartFile file,
@@ -54,18 +57,21 @@ public class ProspectImportController {
   }
 
   @GetMapping("/{jobId}")
+  @PreAuthorize("hasAnyAuthority('IMPORT_PREVIEW', 'IMPORT_EXECUTE')")
   @Operation(summary = "Get a persisted prospect import summary")
   public ImportSummary get(@PathVariable UUID jobId) {
     return prospectImportService.getSummary(jobId);
   }
 
   @GetMapping("/{jobId}/rows")
+  @PreAuthorize("hasAnyAuthority('IMPORT_PREVIEW', 'IMPORT_EXECUTE')")
   @Operation(summary = "List persisted row outcomes for an import job")
   public List<ImportRowView> rows(@PathVariable UUID jobId) {
     return operationsQueryService.rows(jobId);
   }
 
   @GetMapping("/duplicate-reviews/pending")
+  @PreAuthorize("hasAuthority('DUPLICATE_RESOLVE')")
   @Operation(summary = "List ambiguous duplicate matches awaiting human review")
   public List<DuplicateReviewView> pendingDuplicateReviews() {
     return operationsQueryService.pendingReviews();

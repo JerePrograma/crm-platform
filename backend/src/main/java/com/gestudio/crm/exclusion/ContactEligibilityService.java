@@ -1,6 +1,7 @@
 package com.gestudio.crm.exclusion;
 
 import com.gestudio.crm.contact.ContactChannelType;
+import com.gestudio.crm.security.CurrentActor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -12,9 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ContactEligibilityService {
 
   private final ExclusionRepository exclusionRepository;
+  private final CurrentActor currentActor;
 
-  public ContactEligibilityService(ExclusionRepository exclusionRepository) {
+  public ContactEligibilityService(
+      ExclusionRepository exclusionRepository, CurrentActor currentActor) {
     this.exclusionRepository = exclusionRepository;
+    this.currentActor = currentActor;
   }
 
   @Transactional(readOnly = true)
@@ -41,18 +45,18 @@ public class ContactEligibilityService {
 
   private Optional<Exclusion> findExclusion(ChannelCandidate candidate) {
     Optional<Exclusion> exact =
-        exclusionRepository.findByChannelTypeAndNormalizedValue(
-            candidate.type(), candidate.normalizedValue());
+        exclusionRepository.findByOrganizationIdAndChannelTypeAndNormalizedValue(
+            currentActor.organizationId(), candidate.type(), candidate.normalizedValue());
     if (exact.isPresent()) {
       return exact;
     }
     if (candidate.type() == ContactChannelType.PHONE) {
-      return exclusionRepository.findByChannelTypeAndNormalizedValue(
-          ContactChannelType.WHATSAPP, candidate.normalizedValue());
+      return exclusionRepository.findByOrganizationIdAndChannelTypeAndNormalizedValue(
+          currentActor.organizationId(), ContactChannelType.WHATSAPP, candidate.normalizedValue());
     }
     if (candidate.type() == ContactChannelType.WHATSAPP) {
-      return exclusionRepository.findByChannelTypeAndNormalizedValue(
-          ContactChannelType.PHONE, candidate.normalizedValue());
+      return exclusionRepository.findByOrganizationIdAndChannelTypeAndNormalizedValue(
+          currentActor.organizationId(), ContactChannelType.PHONE, candidate.normalizedValue());
     }
     return Optional.empty();
   }

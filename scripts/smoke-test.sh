@@ -26,8 +26,20 @@ health_response=$(curl --fail --silent --show-error "$BACKEND_URL/actuator/healt
 printf '%s' "$health_response" | grep -q '"status":"UP"' \
   || fail "Backend health response is not UP: $health_response"
 
-prospects_response=$(curl --fail --silent --show-error \
-  --user "$CRM_BOOTSTRAP_USERNAME:$CRM_BOOTSTRAP_PASSWORD" \
+cookie_jar=${TMPDIR:-/tmp}/gestudio-crm-smoke-cookies-$$
+trap 'rm -f "$cookie_jar"' EXIT HUP INT TERM
+csrf_response=$(curl --fail --silent --show-error --cookie-jar "$cookie_jar" \
+  "$BACKEND_URL/api/v1/auth/csrf")
+csrf_token=$(printf '%s' "$csrf_response" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+csrf_header=$(printf '%s' "$csrf_response" | sed -n 's/.*"headerName":"\([^"]*\)".*/\1/p')
+[ -n "$csrf_token" ] || fail "CSRF endpoint did not return a token"
+[ -n "$csrf_header" ] || fail "CSRF endpoint did not return a header name"
+login_body=$(printf '{"username":"%s","password":"%s"}' \
+  "$CRM_BOOTSTRAP_USERNAME" "$CRM_BOOTSTRAP_PASSWORD")
+curl --fail --silent --show-error --cookie "$cookie_jar" --cookie-jar "$cookie_jar" \
+  --header "$csrf_header: $csrf_token" --header 'Content-Type: application/json' \
+  --data "$login_body" "$BACKEND_URL/api/v1/auth/login" >/dev/null
+prospects_response=$(curl --fail --silent --show-error --cookie "$cookie_jar" \
   "$BACKEND_URL/api/v1/prospects?size=1")
 printf '%s' "$prospects_response" | grep -q '"content"' \
   || fail "Authenticated prospects response does not contain a page"

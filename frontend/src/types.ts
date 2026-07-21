@@ -120,7 +120,21 @@ export type AuditEvent = {
   payload: string;
 };
 
-export type Credentials = {
+export type SessionUser = {
+  userId: string;
+  organizationId: string;
   username: string;
-  password: string;
+  displayName: string;
+  role: "ADMIN" | "MANAGER" | "SALES" | "VIEWER";
+  permissions: string[];
+};
+
+export type User = {
+  id: string;
+  username: string;
+  displayName: string;
+  role: "ADMIN" | "MANAGER" | "SALES" | "VIEWER";
+  active: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
 };

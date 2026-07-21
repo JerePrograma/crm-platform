@@ -9,6 +9,7 @@ import com.gestudio.crm.contact.ContactChannelType;
 import com.gestudio.crm.institution.InstitutionRepository;
 import com.gestudio.crm.prospect.Prospect;
 import com.gestudio.crm.prospect.ProspectRepository;
+import com.gestudio.crm.security.CurrentActor;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -31,6 +32,7 @@ public class ExclusionApplicationService {
   private final ProspectRepository prospectRepository;
   private final NormalizationService normalizationService;
   private final AuditEventWriter auditEventWriter;
+  private final CurrentActor currentActor;
 
   public ExclusionApplicationService(
       ExclusionRepository exclusionRepository,
@@ -38,13 +40,15 @@ public class ExclusionApplicationService {
       InstitutionRepository institutionRepository,
       ProspectRepository prospectRepository,
       NormalizationService normalizationService,
-      AuditEventWriter auditEventWriter) {
+      AuditEventWriter auditEventWriter,
+      CurrentActor currentActor) {
     this.exclusionRepository = exclusionRepository;
     this.contactChannelRepository = contactChannelRepository;
     this.institutionRepository = institutionRepository;
     this.prospectRepository = prospectRepository;
     this.normalizationService = normalizationService;
     this.auditEventWriter = auditEventWriter;
+    this.currentActor = currentActor;
   }
 
   @Transactional
@@ -58,8 +62,9 @@ public class ExclusionApplicationService {
       throw new DuplicateResourceException("The channel is already excluded");
     }
 
-    Exclusion exclusion =
-        exclusionRepository.save(Exclusion.create(channelType, normalizedValue, reason));
+    Exclusion exclusion = Exclusion.create(channelType, normalizedValue, reason);
+    exclusion.assignOrganization(currentActor.organizationId());
+    exclusionRepository.save(exclusion);
     Optional<Prospect> affectedProspect = existingProspect(channelType, normalizedValue);
     affectedProspect.ifPresent(Prospect::markIneligible);
 
@@ -78,27 +83,33 @@ public class ExclusionApplicationService {
   @Transactional(readOnly = true)
   public ExclusionView get(UUID id) {
     return exclusionRepository
-        .findById(id)
+        .findByIdAndOrganizationId(id, currentActor.organizationId())
         .map(this::toView)
         .orElseThrow(() -> new ResourceNotFoundException("Exclusion not found: " + id));
   }
 
   @Transactional(readOnly = true)
   public Page<ExclusionView> list(Pageable pageable) {
-    return exclusionRepository.findAll(pageable).map(this::toView);
+    return exclusionRepository
+        .findAll(
+            (root, query, builder) ->
+                builder.equal(root.get("organizationId"), currentActor.organizationId()),
+            pageable)
+        .map(this::toView);
   }
 
   private boolean isAlreadyExcluded(ContactChannelType channelType, String normalizedValue) {
-    if (exclusionRepository.existsByChannelTypeAndNormalizedValue(channelType, normalizedValue)) {
+    if (exclusionRepository.existsByOrganizationIdAndChannelTypeAndNormalizedValue(
+        currentActor.organizationId(), channelType, normalizedValue)) {
       return true;
     }
     if (channelType == ContactChannelType.PHONE) {
-      return exclusionRepository.existsByChannelTypeAndNormalizedValue(
-          ContactChannelType.WHATSAPP, normalizedValue);
+      return exclusionRepository.existsByOrganizationIdAndChannelTypeAndNormalizedValue(
+          currentActor.organizationId(), ContactChannelType.WHATSAPP, normalizedValue);
     }
     if (channelType == ContactChannelType.WHATSAPP) {
-      return exclusionRepository.existsByChannelTypeAndNormalizedValue(
-          ContactChannelType.PHONE, normalizedValue);
+      return exclusionRepository.existsByOrganizationIdAndChannelTypeAndNormalizedValue(
+          currentActor.organizationId(), ContactChannelType.PHONE, normalizedValue);
     }
     return false;
   }
@@ -107,8 +118,11 @@ public class ExclusionApplicationService {
       ContactChannelType channelType, String normalizedValue) {
     if (channelType == ContactChannelType.WEBSITE) {
       return institutionRepository
-          .findFirstByWebsiteDomain(normalizedValue)
-          .flatMap(institution -> prospectRepository.findFirstByInstitutionId(institution.getId()));
+          .findFirstByOrganizationIdAndWebsiteDomain(currentActor.organizationId(), normalizedValue)
+          .flatMap(
+              institution ->
+                  prospectRepository.findFirstByOrganizationIdAndInstitutionId(
+                      currentActor.organizationId(), institution.getId()));
     }
     Optional<Prospect> exact = existingProspectForChannel(channelType, normalizedValue);
     if (exact.isPresent()) {
@@ -126,11 +140,12 @@ public class ExclusionApplicationService {
   private Optional<Prospect> existingProspectForChannel(
       ContactChannelType channelType, String normalizedValue) {
     return contactChannelRepository
-        .findByTypeAndNormalizedValue(channelType, normalizedValue)
+        .findByOrganizationIdAndTypeAndNormalizedValue(
+            currentActor.organizationId(), channelType, normalizedValue)
         .flatMap(
             channel ->
-                prospectRepository.findFirstByInstitutionId(
-                    channel.getContact().getInstitution().getId()));
+                prospectRepository.findFirstByOrganizationIdAndInstitutionId(
+                    currentActor.organizationId(), channel.getContact().getInstitution().getId()));
   }
 
   private ExclusionView toView(Exclusion exclusion) {

@@ -23,6 +23,9 @@ spring:
           time_zone: UTC
   jackson:
     time-zone: UTC
+  mvc:
+    problemdetails:
+      enabled: true
   servlet:
     multipart:
       max-file-size: 10MB
@@ -31,6 +34,14 @@ spring:
 server:
   port: ${PORT:8080}
   shutdown: graceful
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 8h
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax
 
 management:
   endpoints:
@@ -47,6 +58,7 @@ security:
   bootstrap:
     username: ${CRM_BOOTSTRAP_USERNAME:}
     password: ${CRM_BOOTSTRAP_PASSWORD:}
+    minimum-password-length: ${CRM_MINIMUM_PASSWORD_LENGTH:12}
 
 sending:
   enabled: ${SENDING_ENABLED:false}

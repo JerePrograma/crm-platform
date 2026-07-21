@@ -6,27 +6,42 @@ import {
   type FormEvent,
 } from "react";
 import {
+  changePassword,
   createExclusion,
+  createUser,
   getImportRows,
   getPendingDuplicateReviews,
   getProspect,
+  getSession,
   importProspects,
   listAuditEvents,
   listExclusions,
   listProspects,
+  listUsers,
+  login,
+  logout,
+  setUserActive,
 } from "./api";
 import type {
   AuditEvent,
-  Credentials,
   DuplicateReview,
   Exclusion,
   ImportRow,
   ImportSummary,
   Prospect,
   ProspectStatus,
+  SessionUser,
+  User,
 } from "./types";
 
-type Tab = "dashboard" | "prospects" | "imports" | "exclusions" | "audit";
+type Tab =
+  | "dashboard"
+  | "prospects"
+  | "imports"
+  | "exclusions"
+  | "audit"
+  | "users"
+  | "account";
 
 const prospectStatuses: ProspectStatus[] = [
   "NEW",
@@ -52,7 +67,7 @@ const prospectStatuses: ProspectStatus[] = [
 ];
 
 export function App() {
-  const [credentials, setCredentials] = useState<Credentials | null>(null);
+  const [session, setSession] = useState<SessionUser | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>("dashboard");
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
@@ -64,15 +79,15 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(
-    async (activeCredentials: Credentials, filter: ProspectStatus | "" = statusFilter) => {
+    async (filter: ProspectStatus | "" = statusFilter) => {
       setLoading(true);
       setError(null);
       try {
         const [prospectPage, exclusionPage, audits, reviews] = await Promise.all([
-          listProspects(activeCredentials, filter || undefined),
-          listExclusions(activeCredentials),
-          listAuditEvents(activeCredentials),
-          getPendingDuplicateReviews(activeCredentials),
+          listProspects(filter || undefined),
+          listExclusions(),
+          listAuditEvents(),
+          getPendingDuplicateReviews(),
         ]);
         setProspects(prospectPage.content);
         setExclusions(exclusionPage.content);
@@ -88,10 +103,16 @@ export function App() {
   );
 
   useEffect(() => {
-    if (credentials) {
-      void refresh(credentials);
+    void getSession()
+      .then(setSession)
+      .catch(() => setSession(null));
+  }, []);
+
+  useEffect(() => {
+    if (session) {
+      void refresh();
     }
-  }, [credentials, refresh]);
+  }, [session, refresh]);
 
   const dashboard = useMemo(() => {
     const interested = prospects.filter((prospect) =>
@@ -103,16 +124,18 @@ export function App() {
     return { interested, blocked };
   }, [prospects]);
 
-  if (!credentials) {
-    return <Login onAuthenticated={setCredentials} />;
+  if (session === undefined) {
+    return <main className="login-page" aria-label="Restaurando sesión" />;
   }
 
-  const activeCredentials = credentials;
+  if (!session) {
+    return <Login onAuthenticated={setSession} />;
+  }
 
   async function selectProspect(id: string) {
     setError(null);
     try {
-      setSelectedProspect(await getProspect(activeCredentials, id));
+      setSelectedProspect(await getProspect(id));
     } catch (caught) {
       setError(message(caught));
     }
@@ -120,7 +143,7 @@ export function App() {
 
   async function applyStatusFilter(value: ProspectStatus | "") {
     setStatusFilter(value);
-    await refresh(activeCredentials, value);
+    await refresh(value);
   }
 
   return (
@@ -149,6 +172,14 @@ export function App() {
           <NavButton active={tab === "audit"} onClick={() => setTab("audit")}>
             Auditoría
           </NavButton>
+          {session.permissions.includes("USER_MANAGE") && (
+            <NavButton active={tab === "users"} onClick={() => setTab("users")}>
+              Usuarios
+            </NavButton>
+          )}
+          <NavButton active={tab === "account"} onClick={() => setTab("account")}>
+            Mi cuenta
+          </NavButton>
         </nav>
         <div className="safety-panel">
           <strong>Envíos bloqueados</strong>
@@ -157,7 +188,10 @@ export function App() {
           <span>daily-limit=0</span>
           <span>kill switch activo</span>
         </div>
-        <button className="secondary-button" onClick={() => setCredentials(null)}>
+        <button
+          className="secondary-button"
+          onClick={() => void logout().finally(() => setSession(null))}
+        >
           Cerrar sesión
         </button>
       </aside>
@@ -170,7 +204,7 @@ export function App() {
           </div>
           <button
             className="secondary-button"
-            onClick={() => void refresh(activeCredentials)}
+            onClick={() => void refresh()}
           >
             Actualizar
           </button>
@@ -193,7 +227,7 @@ export function App() {
                 <Control label="Aprobación de campañas" value="Obligatoria" />
                 <Control label="Importación" value="Preview + confirmación" />
                 <Control label="Duplicados ambiguos" value="Revisión humana" />
-                <Control label="Credenciales" value="Solo memoria" />
+                <Control label="Sesión" value="Cookie HttpOnly + CSRF" />
               </div>
             </Panel>
             <Panel title="Actividad reciente">
@@ -264,17 +298,15 @@ export function App() {
 
         {tab === "imports" && (
           <ImportsPanel
-            credentials={activeCredentials}
             duplicateReviews={duplicateReviews}
-            onChanged={() => refresh(activeCredentials)}
+            onChanged={() => refresh()}
           />
         )}
 
         {tab === "exclusions" && (
           <ExclusionsPanel
-            credentials={activeCredentials}
             exclusions={exclusions}
-            onChanged={() => refresh(activeCredentials)}
+            onChanged={() => refresh()}
           />
         )}
 
@@ -283,12 +315,206 @@ export function App() {
             <AuditTable events={auditEvents} />
           </Panel>
         )}
+
+        {tab === "users" && <UsersPanel currentUser={session} />}
+        {tab === "account" && (
+          <AccountPanel session={session} onPasswordChanged={() => setSession(null)} />
+        )}
       </main>
     </div>
   );
 }
 
-function Login({ onAuthenticated }: { onAuthenticated: (credentials: Credentials) => void }) {
+function UsersPanel({ currentUser }: { currentUser: SessionUser }) {
+  const [users, setUsers] = useState<User[]>([]);
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<User["role"]>("SALES");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const refreshUsers = useCallback(async () => {
+    try {
+      setUsers(await listUsers());
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshUsers();
+  }, [refreshUsers]);
+
+  async function submitUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setNotice(null);
+    try {
+      await createUser({ username, displayName, password, role });
+      setUsername("");
+      setDisplayName("");
+      setPassword("");
+      setNotice("Usuario creado.");
+      await refreshUsers();
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  async function toggleUser(user: User) {
+    if (!window.confirm(`${user.active ? "Desactivar" : "Activar"} a ${user.displayName}?`)) {
+      return;
+    }
+    setError(null);
+    try {
+      await setUserActive(user.id, !user.active);
+      await refreshUsers();
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  return (
+    <section className="stack">
+      {error && <div className="alert error">{error}</div>}
+      {notice && <div className="alert success">{notice}</div>}
+      <Panel title="Usuarios de la organización">
+        <form className="inline-form" onSubmit={(event) => void submitUser(event)}>
+          <label>
+            Usuario
+            <input value={username} onChange={(event) => setUsername(event.target.value)} required />
+          </label>
+          <label className="grow">
+            Nombre visible
+            <input
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Contraseña inicial
+            <input
+              type="password"
+              minLength={12}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Rol
+            <select value={role} onChange={(event) => setRole(event.target.value as User["role"])}>
+              <option value="ADMIN">Admin</option>
+              <option value="MANAGER">Manager</option>
+              <option value="SALES">Ventas</option>
+              <option value="VIEWER">Solo lectura</option>
+            </select>
+          </label>
+          <button className="primary-button">Crear usuario</button>
+        </form>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Último acceso</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.displayName}</td>
+                  <td>{user.username}</td>
+                  <td>{user.role}</td>
+                  <td>{user.active ? "Activo" : "Inactivo"}</td>
+                  <td>{user.lastLoginAt ? dateTime(user.lastLoginAt) : "Nunca"}</td>
+                  <td>
+                    <button
+                      className="secondary-button"
+                      disabled={user.id === currentUser.userId}
+                      onClick={() => void toggleUser(user)}
+                    >
+                      {user.active ? "Desactivar" : "Activar"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </section>
+  );
+}
+
+function AccountPanel({
+  session,
+  onPasswordChanged,
+}: {
+  session: SessionUser;
+  onPasswordChanged: () => void;
+}) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  async function submitPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    try {
+      await changePassword(currentPassword, newPassword);
+      onPasswordChanged();
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  return (
+    <section className="stack">
+      <Panel title="Sesión actual">
+        <div className="control-grid">
+          <Control label="Usuario" value={session.username} />
+          <Control label="Nombre" value={session.displayName} />
+          <Control label="Rol" value={session.role} />
+          <Control label="Organización" value={session.organizationId} />
+        </div>
+      </Panel>
+      <Panel title="Cambiar mi contraseña">
+        {error && <div className="alert error">{error}</div>}
+        <form className="inline-form" onSubmit={(event) => void submitPassword(event)}>
+          <label>
+            Contraseña actual
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Nueva contraseña
+            <input
+              type="password"
+              minLength={12}
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              required
+            />
+          </label>
+          <button className="primary-button">Actualizar contraseña</button>
+        </form>
+      </Panel>
+    </section>
+  );
+}
+
+function Login({ onAuthenticated }: { onAuthenticated: (session: SessionUser) => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -296,12 +522,10 @@ function Login({ onAuthenticated }: { onAuthenticated: (credentials: Credentials
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const credentials = { username: username.trim(), password };
     setSubmitting(true);
     setError(null);
     try {
-      await listProspects(credentials);
-      onAuthenticated(credentials);
+      onAuthenticated(await login(username.trim(), password));
     } catch (caught) {
       setError(message(caught));
     } finally {
@@ -316,11 +540,11 @@ function Login({ onAuthenticated }: { onAuthenticated: (credentials: Credentials
           <span className="brand-mark">G</span>
           <div>
             <strong>Gestudio CRM</strong>
-            <small>Acceso bootstrap de desarrollo</small>
+            <small>Sesión segura de la organización</small>
           </div>
         </div>
         <h1>Ingresar</h1>
-        <p>Las credenciales no se guardan en localStorage ni sessionStorage.</p>
+        <p>La contraseña se usa solo para autenticar y no se conserva en el navegador.</p>
         {error && <div className="alert error">{error}</div>}
         <label>
           Usuario
@@ -344,11 +568,9 @@ function Login({ onAuthenticated }: { onAuthenticated: (credentials: Credentials
 }
 
 function ImportsPanel({
-  credentials,
   duplicateReviews,
   onChanged,
 }: {
-  credentials: Credentials;
   duplicateReviews: DuplicateReview[];
   onChanged: () => Promise<void>;
 }) {
@@ -369,9 +591,9 @@ function ImportsPanel({
     setBusy(true);
     setError(null);
     try {
-      const result = await importProspects(credentials, file, execute);
+      const result = await importProspects(file, execute);
       setSummary(result);
-      setRows(await getImportRows(credentials, result.id));
+      setRows(await getImportRows(result.id));
       await onChanged();
     } catch (caught) {
       setError(message(caught));
@@ -465,11 +687,9 @@ function ImportsPanel({
 }
 
 function ExclusionsPanel({
-  credentials,
   exclusions,
   onChanged,
 }: {
-  credentials: Credentials;
   exclusions: Exclusion[];
   onChanged: () => Promise<void>;
 }) {
@@ -482,7 +702,7 @@ function ExclusionsPanel({
     event.preventDefault();
     setError(null);
     try {
-      await createExclusion(credentials, { channelType, value, reason });
+      await createExclusion({ channelType, value, reason });
       setValue("");
       await onChanged();
     } catch (caught) {
@@ -690,6 +910,8 @@ function title(tab: Tab): string {
     imports: "Importaciones",
     exclusions: "Exclusiones",
     audit: "Auditoría",
+    users: "Usuarios",
+    account: "Mi cuenta",
   }[tab];
 }
 

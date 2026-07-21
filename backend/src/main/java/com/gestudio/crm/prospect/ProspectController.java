@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +36,7 @@ public class ProspectController {
   }
 
   @PostMapping
+  @PreAuthorize("hasAuthority('PROSPECT_WRITE')")
   @Operation(summary = "Create a prospect after normalization and exclusion checks")
   public ResponseEntity<ProspectView> create(@Valid @RequestBody CreateProspectRequest request) {
     ProspectView created = prospectApplicationService.create(request.toCommand());
@@ -42,12 +44,14 @@ public class ProspectController {
   }
 
   @GetMapping("/{id}")
+  @PreAuthorize("hasAuthority('PROSPECT_READ')")
   @Operation(summary = "Get the integral prospect summary")
   public ProspectView get(@PathVariable UUID id) {
     return prospectApplicationService.get(id);
   }
 
   @GetMapping
+  @PreAuthorize("hasAuthority('PROSPECT_READ')")
   @Operation(summary = "List prospects with pagination and optional status filtering")
   public Page<ProspectView> list(
       @RequestParam(required = false) ProspectStatus status,

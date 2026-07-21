@@ -7,4 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ImportRowRepository extends JpaRepository<ImportRow, UUID> {
 
   List<ImportRow> findAllByImportJobIdOrderBySourceSheetAscRowNumberAsc(UUID importJobId);
+
+  List<ImportRow> findAllByOrganizationIdAndImportJobIdOrderBySourceSheetAscRowNumberAsc(
+      UUID organizationId, UUID importJobId);
 }

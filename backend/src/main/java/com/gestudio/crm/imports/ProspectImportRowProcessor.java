@@ -17,6 +17,7 @@ import com.gestudio.crm.prospect.ProspectApplicationService;
 import com.gestudio.crm.prospect.ProspectApplicationService.CreateProspectCommand;
 import com.gestudio.crm.prospect.ProspectApplicationService.ProspectView;
 import com.gestudio.crm.prospect.ProspectRepository;
+import com.gestudio.crm.security.CurrentActor;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ public class ProspectImportRowProcessor {
   private final ProspectApplicationService prospectApplicationService;
   private final NormalizationService normalizationService;
   private final ObjectMapper objectMapper;
+  private final CurrentActor currentActor;
 
   public ProspectImportRowProcessor(
       ImportJobRepository importJobRepository,
@@ -54,7 +56,8 @@ public class ProspectImportRowProcessor {
       ProspectDeduplicationService deduplicationService,
       ProspectApplicationService prospectApplicationService,
       NormalizationService normalizationService,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      CurrentActor currentActor) {
     this.importJobRepository = importJobRepository;
     this.importRowRepository = importRowRepository;
     this.duplicateReviewRepository = duplicateReviewRepository;
@@ -66,6 +69,7 @@ public class ProspectImportRowProcessor {
     this.prospectApplicationService = prospectApplicationService;
     this.normalizationService = normalizationService;
     this.objectMapper = objectMapper;
+    this.currentActor = currentActor;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -74,14 +78,15 @@ public class ProspectImportRowProcessor {
     String normalizedEmail = normalizationService.normalizeEmail(candidate.email());
     String normalizedPhone = normalizationService.normalizePhone(candidate.phoneOrWhatsapp());
     ImportRow row =
-        importRowRepository.save(
-            ImportRow.create(
-                job,
-                "Prospectos",
-                candidate.rowNumber(),
-                rawJson(candidate.rawData()),
-                normalizedEmail,
-                normalizedPhone));
+        ImportRow.create(
+            job,
+            "Prospectos",
+            candidate.rowNumber(),
+            rawJson(candidate.rawData()),
+            normalizedEmail,
+            normalizedPhone);
+    row.assignOrganization(currentActor.organizationId());
+    importRowRepository.save(row);
 
     if (normalizationService.trimToNull(candidate.institutionName()) == null) {
       row.reject("Institution name is required");
@@ -95,7 +100,7 @@ public class ProspectImportRowProcessor {
     }
     if (deduplication.kind() == Kind.REVIEW_REQUIRED) {
       row.requireReview();
-      duplicateReviewRepository.save(
+      DuplicateReview review =
           DuplicateReview.create(
               row,
               deduplication.existingProspect(),
@@ -103,7 +108,9 @@ public class ProspectImportRowProcessor {
               BigDecimal.valueOf(deduplication.confidence()).setScale(4, RoundingMode.HALF_UP),
               dryRun
                   ? "Ambiguous nominal match detected during preview; automatic merge is forbidden"
-                  : "Ambiguous nominal match; automatic merge is forbidden"));
+                  : "Ambiguous nominal match; automatic merge is forbidden");
+      review.assignOrganization(currentActor.organizationId());
+      duplicateReviewRepository.save(review);
       return RowOutcome.REVIEW_REQUIRED;
     }
 
@@ -119,7 +126,7 @@ public class ProspectImportRowProcessor {
     ProspectView created = prospectApplicationService.create(toCommand(candidate));
     Prospect prospect =
         prospectRepository
-            .findById(created.id())
+            .findByIdAndOrganizationId(created.id(), currentActor.organizationId())
             .orElseThrow(() -> new IllegalStateException("Created prospect could not be reloaded"));
     if (created.contactEligible()) {
       row.accept(prospect);
@@ -134,20 +141,21 @@ public class ProspectImportRowProcessor {
     ImportJob job = getJob(jobId);
     String normalizedEmail = normalizationService.normalizeEmail(candidate.email());
     ImportRow row =
-        importRowRepository.save(
-            ImportRow.create(
-                job,
-                "Exclusiones",
-                candidate.rowNumber(),
-                rawJson(candidate.rawData()),
-                normalizedEmail,
-                null));
+        ImportRow.create(
+            job,
+            "Exclusiones",
+            candidate.rowNumber(),
+            rawJson(candidate.rawData()),
+            normalizedEmail,
+            null);
+    row.assignOrganization(currentActor.organizationId());
+    importRowRepository.save(row);
     if (normalizedEmail == null) {
       row.reject("Exclusion email is required");
       return RowOutcome.REJECTED;
     }
-    if (exclusionRepository.existsByChannelTypeAndNormalizedValue(
-        ContactChannelType.EMAIL, normalizedEmail)) {
+    if (exclusionRepository.existsByOrganizationIdAndChannelTypeAndNormalizedValue(
+        currentActor.organizationId(), ContactChannelType.EMAIL, normalizedEmail)) {
       row.markDuplicate(null);
       return RowOutcome.DUPLICATE;
     }
@@ -170,6 +178,7 @@ public class ProspectImportRowProcessor {
             rawJson(candidate.rawData()),
             safeNormalizeEmail(candidate.email()),
             safeNormalizePhone(candidate.phoneOrWhatsapp()));
+    row.assignOrganization(currentActor.organizationId());
     row.reject(message);
     importRowRepository.save(row);
   }
@@ -185,6 +194,7 @@ public class ProspectImportRowProcessor {
             rawJson(candidate.rawData()),
             safeNormalizeEmail(candidate.email()),
             null);
+    row.assignOrganization(currentActor.organizationId());
     row.reject(message);
     importRowRepository.save(row);
   }
@@ -207,7 +217,7 @@ public class ProspectImportRowProcessor {
 
   private ImportJob getJob(UUID jobId) {
     return importJobRepository
-        .findById(jobId)
+        .findByIdAndOrganizationId(jobId, currentActor.organizationId())
         .orElseThrow(() -> new IllegalArgumentException("Import job not found: " + jobId));
   }
 

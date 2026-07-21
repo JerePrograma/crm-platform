@@ -32,11 +32,24 @@ if ($health.status -ne 'UP') {
   Fail "Backend health response is not UP: $($health.status)"
 }
 
-$pair = "$($env:CRM_BOOTSTRAP_USERNAME):$($env:CRM_BOOTSTRAP_PASSWORD)"
-$encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pair))
-$prospects = Invoke-RestMethod -Uri "$backendUrl/api/v1/prospects?size=1" -Headers @{
-  Authorization = "Basic $encoded"
-}
+$session = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
+$csrf = Invoke-RestMethod -Uri "$backendUrl/api/v1/auth/csrf" -WebSession $session
+$csrfHeaders = @{}
+$csrfHeaders[$csrf.headerName] = $csrf.token
+$loginBody = @{
+  username = $env:CRM_BOOTSTRAP_USERNAME
+  password = $env:CRM_BOOTSTRAP_PASSWORD
+} | ConvertTo-Json -Compress
+$null = Invoke-RestMethod `
+  -Uri "$backendUrl/api/v1/auth/login" `
+  -Method Post `
+  -WebSession $session `
+  -Headers $csrfHeaders `
+  -ContentType 'application/json' `
+  -Body $loginBody
+$prospects = Invoke-RestMethod `
+  -Uri "$backendUrl/api/v1/prospects?size=1" `
+  -WebSession $session
 if ($null -eq $prospects.content) {
   Fail 'Authenticated prospects response does not contain a page'
 }

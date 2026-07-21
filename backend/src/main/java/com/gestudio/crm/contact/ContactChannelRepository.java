@@ -9,5 +9,11 @@ public interface ContactChannelRepository extends JpaRepository<ContactChannel, 
   Optional<ContactChannel> findByTypeAndNormalizedValue(
       ContactChannelType type, String normalizedValue);
 
+  Optional<ContactChannel> findByOrganizationIdAndTypeAndNormalizedValue(
+      UUID organizationId, ContactChannelType type, String normalizedValue);
+
   boolean existsByTypeAndNormalizedValue(ContactChannelType type, String normalizedValue);
+
+  boolean existsByOrganizationIdAndTypeAndNormalizedValue(
+      UUID organizationId, ContactChannelType type, String normalizedValue);
 }
