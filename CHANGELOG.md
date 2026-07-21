@@ -36,34 +36,43 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - caché Maven local en volumen Docker;
 - target Maven efímero y código montado en solo lectura;
 - generadores Docker de `package-lock.json`;
-- validador integral `scripts/validate-seg001.ps1`;
+- validador integral PowerShell `scripts/validate-seg001.ps1`;
+- validador integral Bash `scripts/validate-seg001.sh`;
 - evidencia integral JSON y transcript;
 - escaneo centralizado del repositorio Windows/Unix;
-- targets Make `repository-safety`, `backend-verify-container` y `verify-container`;
+- targets Make `repository-safety`, `backend-verify-container`, `verify-container` y `validate-seg001`;
 - `validation-output/` ignorado por Git;
 - CI con backend, frontend, scripts y stack E2E;
+- CI con sintaxis POSIX, Bash, parser PowerShell y parseo Make;
 - fixtures, Testcontainers y ArchUnit;
-- documentación técnica, operativa y evidencias fechadas.
+- documentación técnica, operativa y evidencias fechadas;
+- evidencia de paridad `SEG-001-cross-platform-validation-2026-07-20.md`.
 
 ### Changed
 
 - `main` es la única rama canónica;
 - SEG-001 se consolidó por fast-forward sin force;
+- la rama histórica está detrás y no tiene cambios exclusivos;
 - PostgreSQL, backend y frontend publican puertos host configurables;
 - valores predeterminados: 55432, 8080 y 5173;
 - preflight valida tres puertos válidos, distintos y coherentes;
+- preflight exige que el daemon Docker responda;
 - smoke deriva URLs desde `.env`;
 - helpers de PostgreSQL delegan al configurador conjunto;
-- README y quickstart usan el validador integral como ruta principal;
+- README y quickstart usan validadores integrales como ruta principal;
 - Dockerfile frontend usa `npm ci` cuando existe lockfile y `npm install` cuando falta;
 - CI y Makefile aplican la misma selección npm;
 - CI usa puertos alternativos para reducir conflictos;
 - CI parsea todos los scripts PowerShell nuevos;
+- CI ejecuta `bash -n` sobre el validador integral Unix;
+- CI expande targets Make relevantes;
 - CI ejecuta el escaneo centralizado de seguridad;
 - builds de cierre exigen `--no-cache`;
-- el validador integral exige `main` y archivos rastreados limpios;
-- el validador integral permite únicamente el cambio esperado de package-lock;
+- validadores integrales exigen `main` y working tree limpio;
+- validadores integrales permiten únicamente el cambio esperado de package-lock;
 - Maven verify puede ejecutarse sin Java instalado en el host;
+- generador Unix de lockfile conserva UID/GID del usuario;
+- generador Unix usa caché npm temporal dentro del contenedor;
 - contextos Docker excluyen secretos, datos y cachés;
 - puertos publicados solo en loopback;
 - resultados de importación ordenados por hoja/fila;
@@ -95,7 +104,9 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - comandos Compose con `--progress` en posición correcta;
 - splatting de parámetros del validador integral PowerShell;
 - escaneo del lote operativo ampliado a cualquier subdirectorio;
-- generador de lockfile ya no crea node_modules ni ejecuta lifecycle scripts.
+- generadores de lockfile ya no crean node_modules ni ejecutan lifecycle scripts;
+- lockfile Unix ya no debe quedar propiedad de `root`;
+- rutas con espacios conservadas por el escaneo Unix.
 
 ### Validation
 
@@ -111,12 +122,14 @@ Ejecución real acumulada:
 - arranque: `FAIL` por 5432;
 - puertos coordinados: implementados;
 - configurador Unix: `PASS_FUNCTIONAL_ISOLATED` preservando secretos ficticios, UTF-8 y guardas;
-- backend verify Unix: `PASS_SYNTAX`;
-- generador lockfile seguro Unix: `PASS_SYNTAX`;
+- backend verify Unix: revisión/sintaxis previa `PASS`;
+- generador lockfile seguro Unix: revisión/sintaxis previa `PASS`;
 - Make `backend-verify-container`: `PASS_PARSE`;
 - Make `verify-container`: `PASS_PARSE`;
-- CI YAML: `PASS_PARSE`;
-- validador integral Windows: pendiente de ejecución;
+- CI YAML: revisión/parseo previo `PASS`;
+- validador integral PowerShell: pendiente de ejecución;
+- validador integral Bash: implementado, pendiente de `bash -n` por CI/checkout y ejecución funcional;
+- generador Unix con UID/GID: pendiente de sintaxis/ejecución sobre checkout actualizado;
 - Maven/Testcontainers/Flyway/Hibernate/smoke: pendientes;
 - GitHub Actions: sin run visible desde el conector.
 
@@ -128,6 +141,7 @@ docs/validation/SEG-001-container-build-2026-07-20.md
 docs/validation/SEG-001-rerun-2026-07-20.md
 docs/validation/SEG-001-local-orchestration-2026-07-20.md
 docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
+docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 ```
 
 ### Documentation
@@ -135,9 +149,9 @@ docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 - estado, backlog, siguiente paso, segmento y matriz sincronizados;
 - instalación Windows/Linux/macOS/Docker-only;
 - puertos variables y diagnóstico;
-- validador Docker y validador integral;
+- validador Docker y validadores integrales Windows/Unix;
 - Maven/Testcontainers sin Java local;
-- package-lock-only y npm ci;
+- package-lock-only, propiedad Unix y npm ci;
 - formato de evidencia JSON/transcript;
 - escaneo de seguridad;
 - health, Swagger y autenticación;
@@ -168,7 +182,7 @@ docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 ### Known limitations
 
 - frontend/backend clean builds pendientes;
-- scripts PowerShell nuevos pendientes de ejecución real;
+- validadores integrales pendientes de ejecución real;
 - Maven, tests, migraciones y smoke no están verdes;
 - falta `package-lock.json` versionado;
 - npm ci está preparado, pero pendiente de evidencia real;
