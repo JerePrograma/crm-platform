@@ -181,6 +181,7 @@ try {
   $summary.error = $_.Exception.Message
   Write-Host 'Complete SEG-001 validation failed.' -ForegroundColor Red
   Write-Host $_.Exception.Message -ForegroundColor Red
+  & docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Ports}}'
   & docker compose --profile app --profile smoke ps
   & docker compose --profile app --profile smoke logs --no-color
   throw
@@ -188,8 +189,15 @@ try {
   if (-not $KeepRunning) {
     & docker compose --profile app --profile smoke down --remove-orphans
   } else {
-    $summary.stackKeptRunning = $true
-    Write-Host 'Stack left running because -KeepRunning was specified.'
+    $runningContainers = @(& docker compose --profile app --profile smoke ps -q | Where-Object {
+      -not [string]::IsNullOrWhiteSpace($_)
+    })
+    $summary.stackKeptRunning = ($runningContainers.Count -gt 0)
+    if ($summary.stackKeptRunning) {
+      Write-Host 'Stack left running because -KeepRunning was specified.'
+    } else {
+      Write-Host 'No running stack was available to keep after validation.'
+    }
   }
 
   $summary.finishedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
