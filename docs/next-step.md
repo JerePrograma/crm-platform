@@ -9,77 +9,64 @@ SINTAXIS POWERSHELL PASS
 PREFLIGHT PASS
 FRONTEND CLEAN BUILD PASS
 BACKEND CLEAN IMAGE BUILD PASS
-ÚLTIMO INTENTO: FAIL_WINDOWS_HOST_PORT_BIND
+ÚLTIMO INTENTO: FAIL_DOCKER_HOST_PORT_ALREADY_ALLOCATED
 STACK/HEALTH/SMOKE PENDIENTES
 MAVEN_VERIFY/TESTCONTAINERS PENDIENTES
 LOCKFILE/NPM_CI PENDIENTES
+CI_NOT_VISIBLE
 ```
 
 No iniciar SEG-002, campañas, Gmail, Sheets, workers, cloud o producción.
 
 ## Evidencia más reciente
 
-El 2026-07-21 se ejecutó desde Windows sobre:
+La ejecución Windows del 2026-07-21 se realizó sobre:
 
 ```text
-main
-65b64000a7e8f6abd71f2b118cebe904ee61f1d1
+commit ejecutado: f903a9e1278697af53e0bcbee3bd10b16e10b991
+PostgreSQL host port: 15432
+Backend host port: 8080
+Frontend host port: 5173
 ```
 
-Pasaron:
+Aprobó:
 
 ```text
-PowerShell syntax: PASS — 10 scripts
-preflight container-only: PASS
-Compose config: PASS
-frontend clean build: PASS
-backend clean image build: PASS
-working tree final: limpio
+checkout y working tree
+PowerShell syntax, 11 scripts
+preflight container-only
+Docker daemon y Compose config
+guardas de envío
+TcpListener Windows para los tres puertos
+frontend clean build --no-cache
+TypeScript strict
+Vite production build
+backend clean image build --no-cache
+Maven package con tests omitidos
 ```
 
-El primer error real ocurrió al levantar PostgreSQL:
+El primer fallo real fue:
 
 ```text
-127.0.0.1:55432
-bind: An attempt was made to access a socket in a way forbidden by its access permissions
+Bind for 0.0.0.0:15432 failed: port is already allocated
 ```
 
-Clasificación:
+El checker anterior comprobaba Windows, pero no detectaba publicaciones de otros contenedores Docker. Evidencia detallada:
 
 ```text
-EXECUTED_FAIL — WINDOWS_HOST_PORT_BIND
+docs/validation/SEG-001-docker-port-owner-failure-2026-07-21.md
 ```
 
-No se ejecutaron health, Flyway, Hibernate, smoke, Maven verify, Testcontainers, package-lock o npm ci.
+## Correcciones ya publicadas en `main`
 
-Evidencia:
+- `scripts/check-host-ports.ps1` inspecciona `docker ps` y `TcpListener`;
+- informa ID, nombre y puertos del contenedor propietario;
+- `scripts/validate-docker-stack.ps1` inicia y valida PostgreSQL antes de los builds;
+- los builds solo comienzan después de comprobar la publicación Docker real;
+- ambos validadores imprimen publicaciones Docker al fallar;
+- `stackKeptRunning` refleja contenedores realmente activos.
 
-```text
-docs/validation/SEG-001-port-bind-failure-2026-07-21.md
-validation-output/seg001-complete-20260721-102334.log
-validation-output/seg001-complete-20260721-102334.json
-validation-output/seg001-docker-20260721-102335.json
-```
-
-## Corrección publicada
-
-Se añadió:
-
-```text
-scripts/check-host-ports.ps1
-```
-
-El validador Docker ahora:
-
-1. ejecuta cleanup sin borrar volúmenes;
-2. intenta enlazar los tres puertos en `127.0.0.1`;
-3. falla antes de reconstruir imágenes cuando un puerto está ocupado o reservado;
-4. registra `hostPorts=PASS` en la evidencia JSON;
-5. no informa falsamente que dejó un stack activo cuando no hay contenedores ejecutándose.
-
-CI parsea todos los scripts y ejecuta el checker con puertos alternativos.
-
-## 1. Actualizar `main`
+## 1. Actualizar checkout
 
 ```powershell
 Set-Location C:\laburo\crm-platform
@@ -88,95 +75,62 @@ git switch main
 git fetch origin
 git pull --ff-only
 
-git rev-parse HEAD
 git status --short
-```
-
-El árbol debe estar limpio. No fusionar ni copiar nada desde `feat/seg-001-prospect-vertical-slice`.
-
-## 2. Comprobar sintaxis PowerShell
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check-powershell-syntax.ps1
+git rev-parse HEAD
 ```
 
 Esperado:
 
 ```text
-PowerShell syntax validation passed for <N> scripts.
+git status --short: sin salida
 ```
 
-## 3. Diagnosticar el puerto rechazado
+## 2. Identificar el propietario de `15432`
 
 ```powershell
-Get-NetTCPConnection -LocalPort 55432 -ErrorAction SilentlyContinue
-netsh interface ipv4 show excludedportrange protocol=tcp
+docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
+docker ps --filter publish=15432 --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}"
 ```
 
-No modificar los rangos excluidos de Windows. Elegir un puerto alternativo es la solución conservadora.
-
-## 4. Comprobar puertos alternativos
-
-Usar inicialmente:
-
-```text
-PostgreSQL: 15432
-Backend:    8080
-Frontend:   5173
-```
+Cuando aparezca un contenedor ajeno:
 
 ```powershell
+docker stop <NOMBRE_O_ID>
+```
+
+No eliminar su volumen ni usar `docker system prune`.
+
+Retirar también cualquier stack parcial de este repositorio, conservando datos:
+
+```powershell
+docker compose --profile app --profile smoke down --remove-orphans
+```
+
+## 3. Comprobar scripts y puertos
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-powershell-syntax.ps1
+
 powershell -ExecutionPolicy Bypass -File scripts/check-host-ports.ps1 `
   -PostgresPort 15432 `
   -BackendPort 8080 `
   -FrontendPort 5173
 ```
 
-Esperado:
+El checker actualizado debe imprimir controles Windows y Docker para cada puerto.
 
-```text
-PostgreSQL host port available: 127.0.0.1:15432
-Backend host port available: 127.0.0.1:8080
-Frontend host port available: 127.0.0.1:5173
-All requested loopback host ports are available.
-```
-
-Si alguno falla, elegir otro valor y repetir únicamente este checker.
-
-## 5. Confirmar `.env`
-
-Crear únicamente si no existe:
+Si `15432` continúa ocupado o reservado, probar `25432`:
 
 ```powershell
-if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+powershell -ExecutionPolicy Bypass -File scripts/check-host-ports.ps1 `
+  -PostgresPort 25432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173
 ```
 
-Conservar:
+## 4. Ejecutar validación integral
 
-```text
-SENDING_ENABLED=false
-SENDING_DRY_RUN=true
-SENDING_DAILY_LIMIT=0
-SENDING_KILL_SWITCH=true
-```
-
-El validador actualizará puertos y `DATABASE_URL` sin reemplazar contraseñas.
-
-## 6. Ejecutar preflight
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
-```
-
-Esperado:
-
-```text
-Preflight passed.
-Docker daemon: reachable
-Sending controls: enabled=false dry-run=true daily-limit=0 kill-switch=true
-```
-
-## 7. Repetir validación integral
+Con `15432` libre:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
@@ -186,31 +140,41 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -KeepRunning
 ```
 
+O con el puerto alternativo validado:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
+  -PostgresPort 25432 `
+  -BackendPort 8080 `
+  -FrontendPort 5173 `
+  -KeepRunning
+```
+
 No usar `-UseBuildCache` como evidencia de cierre.
 
-## 8. Fases esperadas
+## Orden automático actual
 
 1. rama `main` y árbol limpio;
-2. configuración segura de puertos;
-3. preflight;
+2. puertos y `DATABASE_URL`;
+3. preflight fail-closed;
 4. Compose config;
 5. cleanup sin `-v`;
-6. enlace real de los tres puertos;
-7. frontend build sin caché;
-8. backend build sin caché;
-9. arranque de PostgreSQL, backend y frontend;
-10. health checks;
+6. propiedad Docker y enlace Windows de puertos;
+7. arranque y health de PostgreSQL;
+8. frontend clean build;
+9. backend clean image build;
+10. arranque y health de backend/frontend;
 11. smoke host y contenedor;
 12. Maven verify, Spotless, unit tests, ArchUnit y Testcontainers;
-13. Flyway y Hibernate;
-14. generación de `package-lock.json`;
-15. SHA-256;
-16. rebuild mediante `npm ci`;
-17. health y smoke finales;
-18. seguridad del repositorio;
-19. JSON y transcript.
+13. generación segura de `package-lock.json`;
+14. SHA-256;
+15. frontend rebuild mediante `npm ci`;
+16. health y smoke finales;
+17. seguridad del repositorio;
+18. JSON y transcript;
+19. ningún commit automático.
 
-## 9. Resultado esperado
+## Resultado esperado
 
 ```text
 SEG-001 Docker validation passed.
@@ -220,31 +184,7 @@ Repository safety scan passed.
 Complete SEG-001 validation passed.
 ```
 
-Servicios esperados:
-
-```text
-postgres   healthy   127.0.0.1:15432->5432
-backend    healthy   127.0.0.1:8080->8080
-frontend   healthy   127.0.0.1:5173->8080
-```
-
-## 10. Si falla
-
-Conservar:
-
-- commit exacto;
-- comando ejecutado;
-- primer error real;
-- fase;
-- JSON;
-- transcript;
-- `docker compose ps`;
-- logs del servicio afectado;
-- `git status --short`.
-
-No desactivar tests, TypeScript strict, health checks, Testcontainers, guardas o builds limpios.
-
-## 11. Después del primer PASS
+## Después del primer PASS
 
 ```powershell
 Get-ChildItem validation-output |
@@ -257,7 +197,7 @@ git status --short
 git diff -- frontend\package-lock.json
 ```
 
-Versionar únicamente el lockfile:
+Versionar únicamente el lockfile revisado:
 
 ```powershell
 git add frontend/package-lock.json
@@ -265,40 +205,30 @@ git commit -m "build: lock frontend dependencies"
 git push origin main
 ```
 
-No agregar:
+Después repetir el validador desde árbol limpio para demostrar `npm ci` desde el primer build.
 
-```text
-.env
-validation-output/
-gestudio_lote_100_prospectos.xlsx
-```
+## Criterios de cierre pendientes
 
-## 12. Segunda ejecución
-
-Después de versionar el lockfile, repetir el validador desde un árbol limpio con los mismos puertos. Debe utilizar `npm ci` desde el primer build.
-
-## Criterios de cierre
-
-- [x] sintaxis PowerShell PASS;
-- [x] preflight actualizado PASS;
-- [x] clean build frontend PASS;
-- [x] clean image build backend PASS;
-- [ ] host ports alternativos PASS;
-- [ ] PostgreSQL/backend/frontend healthy;
-- [ ] Flyway PASS;
-- [ ] Hibernate validate PASS;
-- [ ] smoke host PASS;
-- [ ] smoke container PASS;
-- [ ] Maven verify PASS;
-- [ ] Spotless PASS;
-- [ ] unit tests PASS;
-- [ ] ArchUnit PASS;
-- [ ] Testcontainers PASS;
-- [ ] package-lock revisado y versionado;
-- [ ] npm ci PASS con lockfile versionado;
-- [ ] seguridad PASS;
-- [ ] evidencia registrada;
-- [ ] CI visible verde o excepción documentada;
+- [x] PowerShell syntax;
+- [x] preflight actualizado;
+- [x] frontend clean build;
+- [x] backend clean image build;
+- [ ] publicación PostgreSQL Docker;
+- [ ] tres servicios healthy;
+- [ ] Flyway;
+- [ ] Hibernate validate;
+- [ ] smoke host;
+- [ ] smoke contenedor;
+- [ ] Maven verify;
+- [ ] Spotless;
+- [ ] unit tests;
+- [ ] ArchUnit;
+- [ ] Testcontainers;
+- [ ] package-lock versionado;
+- [ ] npm ci con lockfile versionado;
+- [ ] seguridad final;
+- [ ] evidencia final;
+- [ ] CI verde visible o excepción explícita;
 - [ ] SEG-001 COMPLETE;
 - [ ] SEG-002 ACTIVE.
 
@@ -308,7 +238,7 @@ Después de versionar el lockfile, repetir el validador desde un árbol limpio c
 - no habilitar envíos;
 - no incorporar el XLSX real a Git, CI o imágenes;
 - no usar `docker compose down -v` salvo destrucción intencional;
-- no modificar rangos excluidos de Windows para forzar un puerto;
-- no ejecutar Testcontainers contenedorizado sobre código no confiable;
-- no versionar transcripts;
+- no usar `docker system prune` para resolver el conflicto;
+- no ejecutar Testcontainers sobre código no confiable;
+- no versionar `validation-output/`;
 - no comenzar SEG-002 con bloqueantes.
