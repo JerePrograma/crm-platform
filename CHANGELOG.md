@@ -53,6 +53,12 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - `org.flywaydb:flyway-core` directo fue reemplazado por `org.springframework.boot:spring-boot-starter-flyway` para habilitar la auto-configuración de Spring Boot 4;
 - se conserva `org.flywaydb:flyway-database-postgresql`;
 - `spring.flyway.fail-on-missing-locations=true` activa fail-fast cuando faltan recursos de migración.
+- código propio de serialización JSON usa Jackson 3 administrado por Spring Boot
+  4.1; Jackson 2 queda restringido a dependencias transitivas de springdoc;
+- wrappers Maven/Testcontainers detectan la API Docker del daemon y la propagan
+  a docker-java;
+- healthcheck frontend usa loopback IPv4 explícito;
+- `frontend/package-lock.json` está versionado y los builds usan `npm ci`.
 
 ### Fixed
 
@@ -80,6 +86,16 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - detección de puertos publicados por otros contenedores Docker;
 - mensaje engañoso de `-KeepRunning` cuando no existía stack activo;
 - ausencia de auto-configuración Flyway en Spring Boot 4 que dejaba el esquema vacío y provocaba `Schema validation: missing table [contact]`.
+- incompatibilidad entre `com.fasterxml.jackson.databind.ObjectMapper` solicitado
+  por código propio y `tools.jackson.databind.ObjectMapper` registrado por Spring
+  Boot 4;
+- timestamps de auditoría enviados como `Instant` sin tipo SQL inferible por el
+  driver PostgreSQL;
+- flag Docker inválido `--environment` en el verificador backend;
+- API docker-java predeterminada 1.32 rechazada por Docker Engine 29;
+- fixture transaccional de deduplicación incompatible con el límite real
+  `REQUIRES_NEW`;
+- healthcheck Nginx que resolvía `localhost` por IPv6 aunque Nginx escuchaba IPv4.
 
 ### Validation
 
@@ -111,8 +127,24 @@ Ejecución real acumulada:
 - Maven verify, Spotless, unit tests, ArchUnit y Testcontainers: NOT_RUN;
 - package-lock y npm ci: NOT_RUN;
 - working tree posterior: PASS, limpio;
-- corrección `spring-boot-starter-flyway`: IMPLEMENTED_NOT_RUN;
-- GitHub Actions: sin estado visible desde el conector.
+- corrección `spring-boot-starter-flyway`: EXECUTED_PASS;
+- ejecución sobre `a9e2c44`: Flyway V1–V5 e Hibernate PASS; FAIL al crear
+  `AuditEventWriter` por mapper Jackson 2 inexistente;
+- regresión `ExclusionIntegrationTest`: PASS para contexto Spring, mapper Jackson
+  3 y persistencia JSONB con mapa, UUID, fechas, enum y null;
+- primera validación integral completa sobre `951d19b`: PASS;
+- lockfile SHA-256:
+  `1936217c0598825ef43519069a3ba89a974e2b30e3b9f2619d4e62dd10810c98`;
+- segunda validación limpia sobre `d8a5a44`: PASS con `npm ci` desde el primer
+  build;
+- PostgreSQL/backend/frontend: healthy;
+- smoke host/contenedor inicial y final: PASS;
+- Maven verify: PASS, 29/29 tests;
+- Spotless: PASS, 55/55;
+- ArchUnit/Testcontainers: PASS;
+- repository safety: PASS;
+- GitHub Actions run `29848718163`: success en backend, frontend, scripts y
+  compose-images-and-smoke.
 
 Evidencias principales:
 
@@ -127,6 +159,7 @@ docs/validation/SEG-001-powershell-parser-failure-2026-07-21.md
 docs/validation/SEG-001-port-bind-failure-2026-07-21.md
 docs/validation/SEG-001-docker-port-owner-failure-2026-07-21.md
 docs/validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md
+docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 ```
 
 ### Security
@@ -147,13 +180,10 @@ docs/validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md
 
 ### Known limitations
 
-- la corrección Flyway todavía no fue ejecutada localmente;
-- Flyway V1–V5, Hibernate validate y tres servicios healthy aún no están verdes;
-- smoke host/contenedor no está ejecutado después del fix;
-- Maven verify y Testcontainers continúan pendientes;
-- falta `frontend/package-lock.json` versionado;
-- npm ci está preparado, pero pendiente de evidencia real;
-- GitHub Actions no muestra runs visibles desde el conector;
+- recorrido integral funcional Bash/Linux/macOS no ejecutado localmente;
+- advertencias Hikari al cerrar bases Testcontainers efímeras, sin fallos;
+- Mockito todavía se auto-adjunta como agente y requerirá configuración explícita
+  ante futuras restricciones del JDK;
 - HTTP Basic es temporal;
 - revisiones ambiguas no tienen resolución UI;
 - jobs sin retry;

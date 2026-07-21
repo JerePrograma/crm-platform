@@ -8,19 +8,21 @@ Todo el código y la documentación vigentes están consolidados en `main`.
 
 ```text
 SEG-000: COMPLETE
-SEG-001: ACTIVE — implementación completa, validación verde pendiente
+SEG-001: COMPLETE — validación local integral y CI verdes
 SEG-002: PLANNED
 ```
 
 Evidencia real disponible:
 
-- preflight Docker: `PASS`;
-- primer build frontend: `FAIL` con tres errores TypeScript;
-- errores TypeScript: corregidos;
-- imágenes frontend/backend: exportadas desde caché;
-- primer arranque: bloqueado por puerto 5432;
-- tres puertos host configurables: implementados;
-- validación integral Docker/Maven/Testcontainers/npm ci: automatizada en Windows y Unix, pendiente de ejecución funcional.
+- segunda validación Windows limpia sobre `d8a5a449…`: `PASS`;
+- Flyway V1–V5 antes de Hibernate: `PASS`;
+- PostgreSQL/backend/frontend: `healthy`;
+- smoke host y contenedor: `PASS`;
+- Maven verify, 29/29 tests, Spotless, ArchUnit y Testcontainers: `PASS`;
+- `frontend/package-lock.json` versionado y primer build mediante `npm ci`:
+  `PASS`;
+- repository safety: `PASS`;
+- GitHub Actions run `29848718163`: `success`.
 
 Fuentes:
 
@@ -30,6 +32,7 @@ docs/next-step.md
 docs/validation/SEG-001.md
 docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
+docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 ```
 
 ## Alcance
@@ -554,12 +557,10 @@ La segunda operación es destructiva.
 
 ## Limitaciones actuales
 
-- validadores integrales pendientes de ejecución funcional;
-- clean builds pendientes;
-- Maven/Testcontainers/Flyway/Hibernate pendientes;
-- package-lock pendiente de generación y versión;
-- npm ci pendiente de evidencia real;
-- CI no muestra runs visibles;
+- recorrido integral funcional Bash/Linux/macOS no ejecutado localmente; CI sí
+  valida scripts y estructura multiplataforma;
+- advertencias Hikari de contextos Testcontainers ya cerrados, sin fallos;
+- Mockito deberá configurarse como agente antes de una futura restricción de Java;
 - HTTP Basic temporal;
 - sin usuarios persistentes/RBAC;
 - sin resolución UI de DuplicateReview;
@@ -578,3 +579,4 @@ La segunda operación es destructiva.
 - `docs/validation/SEG-001.md` — matriz;
 - `docs/validation/SEG-001-complete-validation-automation-2026-07-20.md` — contrato integral;
 - `docs/validation/SEG-001-cross-platform-validation-2026-07-20.md` — paridad Windows/Unix.
+- `docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md` — causa raíz Jackson y cierre integral.

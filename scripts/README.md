@@ -17,19 +17,29 @@ Ningún script:
 Evidencia real acumulada:
 
 ```text
-PowerShell syntax sobre f903a9e: PASS, 11 scripts
+PowerShell syntax: PASS, 11 scripts
 preflight container-only: PASS
 frontend clean build --no-cache: PASS
 TypeScript strict/Vite: PASS
 backend clean image build --no-cache: PASS
 Maven package con tests omitidos: PASS_PARTIAL
-último fallo: Docker ya tenía asignado el host port 15432
-stack/health/smoke: PENDING
-Maven verify/Testcontainers: PENDING
-package-lock/npm ci: PENDING
+Flyway V1-V5/Hibernate: PASS
+PostgreSQL/backend/frontend: healthy
+smoke host/contenedor: PASS
+Maven verify/Testcontainers: PASS
+tests: PASS, 29/29
+Spotless: PASS, 55/55
+package-lock/npm ci: PASS
+repository safety: PASS
+CI run 29848718163: success
 ```
 
-El checker anterior comprobó que Windows podía enlazar `127.0.0.1:15432`, pero Docker respondió:
+La evidencia final se ejecutó sobre `d8a5a449…` con puertos
+`25432/8080/5173`, lockfile versionado y un primer build frontend mediante
+`npm ci`.
+
+Como antecedente, el checker anterior comprobó que Windows podía enlazar
+`127.0.0.1:15432`, pero Docker respondió:
 
 ```text
 Bind for 0.0.0.0:15432 failed: port is already allocated
@@ -40,7 +50,7 @@ El checker actualizado inspecciona publicaciones Docker y la pila Windows. El va
 Evidencia:
 
 ```text
-docs/validation/SEG-001-docker-port-owner-failure-2026-07-21.md
+docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 ```
 
 ## Sintaxis PowerShell
@@ -340,6 +350,8 @@ Características:
 - caché Maven persistente;
 - socket Docker;
 - `TESTCONTAINERS_HOST_OVERRIDE`;
+- detección de la API del daemon y propagación mediante
+  `JAVA_TOOL_OPTIONS=-Dapi.version=...`;
 - cleanup del contenedor y target.
 
 El socket Docker es una operación privilegiada. Ejecutar solo sobre código propio y revisado.

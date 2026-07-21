@@ -22,6 +22,7 @@
 - `validation/SEG-001-port-bind-failure-2026-07-21.md` — sintaxis/preflight/builds limpios aprobados y bloqueo de `127.0.0.1:55432`;
 - `validation/SEG-001-docker-port-owner-failure-2026-07-21.md` — `15432` publicado por Docker, builds limpios aprobados y hardening de detección/orden de arranque;
 - `validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md` — PostgreSQL healthy, builds limpios y fallo de arranque por ausencia del starter Flyway de Spring Boot 4.
+- `validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md` — Jackson 2/3, regresión JSONB, fallos siguientes, dos validaciones integrales, lockfile y CI verde.
 
 ## Inicio y operación
 
@@ -73,10 +74,10 @@
 
 ## Lectura recomendada
 
-### Reintentar validación integral en Windows
+### Revisar el cierre integral en Windows
 
 1. `next-step.md`;
-2. `validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md`;
+2. `validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md`;
 3. `validation/SEG-001.md`;
 4. `../scripts/check-host-ports.ps1`;
 5. `../scripts/check-powershell-syntax.ps1`;
@@ -108,16 +109,17 @@
 
 1. `validation/SEG-001.md`;
 2. `next-step.md`;
-3. `validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md`;
-4. `validation/SEG-001-docker-port-owner-failure-2026-07-21.md`;
-5. `validation/SEG-001-port-bind-failure-2026-07-21.md`;
-6. `validation/SEG-001-powershell-parser-failure-2026-07-21.md`;
-7. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
-8. `validation/SEG-001-cross-platform-validation-2026-07-20.md`;
-9. `validation/SEG-001-container-build-2026-07-20.md`;
-10. `validation/SEG-001-rerun-2026-07-20.md`;
-11. `validation/SEG-001-local-orchestration-2026-07-20.md`;
-12. `containerized-quickstart.md`.
+3. `validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md`;
+4. `validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md`;
+5. `validation/SEG-001-docker-port-owner-failure-2026-07-21.md`;
+6. `validation/SEG-001-port-bind-failure-2026-07-21.md`;
+7. `validation/SEG-001-powershell-parser-failure-2026-07-21.md`;
+8. `validation/SEG-001-complete-validation-automation-2026-07-20.md`;
+9. `validation/SEG-001-cross-platform-validation-2026-07-20.md`;
+10. `validation/SEG-001-container-build-2026-07-20.md`;
+11. `validation/SEG-001-rerun-2026-07-20.md`;
+12. `validation/SEG-001-local-orchestration-2026-07-20.md`;
+13. `containerized-quickstart.md`.
 
 ### Continuar desarrollo
 

@@ -106,6 +106,7 @@ Características:
 - caché Maven en `crm_maven_cache`;
 - socket Docker para Testcontainers;
 - `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`;
+- API del daemon detectada y propagada como `JAVA_TOOL_OPTIONS=-Dapi.version=...`;
 - cleanup de contenedor y target.
 
 Advertencia: el socket Docker concede privilegios elevados. Ejecutar solo sobre código propio y revisado.
@@ -205,7 +206,10 @@ En Unix:
 - `ExclusionIntegrationTest`
   - exclusión retroactiva;
   - `DO_NOT_CONTACT`;
-  - auditoría sin canal completo.
+  - auditoría sin canal completo;
+  - inyección del mapper Jackson 3 administrado por Spring;
+  - JSONB válido para mapa, UUID, `Instant`, `OffsetDateTime`, enum y null;
+  - escritura y lectura efectiva de `audit_event`.
 - `SecurityAuthorizationIntegrationTest`
   - health público;
   - API anónima rechazada;
@@ -284,7 +288,9 @@ Jobs:
 - scripts POSIX, Bash, PowerShell, Make, seguridad y preflight;
 - imágenes, stack y smoke E2E.
 
-GitHub no muestra runs visibles para los commits consultados. No declarar CI verde hasta observar resultados.
+GitHub Actions run `29848718163` para `d8a5a449…` terminó `success`. Jobs
+`backend`, `frontend`, `scripts` y `compose-images-and-smoke` están visibles y
+verdes.
 
 ## Estado de ejecución actual
 
@@ -292,41 +298,46 @@ GitHub no muestra runs visibles para los commits consultados. No declarar CI ver
 
 ```text
 preflight: PASS
-npm install: PASS
-frontend inicial: FAIL reproducido
-correcciones: aplicadas
-imágenes: PASS_FROM_CACHE
-stack: FAIL por 5432
+PowerShell syntax: PASS, 11 scripts
+clean builds frontend/backend: PASS
+primer build frontend con lockfile: npm ci PASS
+Flyway V1-V5: PASS
+Hibernate validate: PASS
+PostgreSQL/backend/frontend: healthy
+smoke host/contenedor: PASS
+Maven verify: PASS
+tests: PASS, 29/29
+Spotless: PASS, 55/55
+ArchUnit: PASS
+Testcontainers: PASS
+package-lock generation: PASS
+rebuild npm ci: PASS
+repository safety: PASS
+CI: PASS visible
 ```
 
-### Estático o aislado
+### Automatización multiplataforma
 
 ```text
-scripts POSIX anteriores: PASS_SYNTAX
-Make anterior: PASS_PARSE
-CI YAML anterior: PASS_PARSE
-configurador Unix: PASS_FUNCTIONAL_ISOLATED
-backend verify Unix: PASS_CODE_REVIEW/PASS_SYNTAX previo
-lockfile seguro Unix: PASS_CODE_REVIEW/PASS_SYNTAX previo
-validadores integrales: PASS_CODE_REVIEW
+scripts POSIX/Bash: PASS en CI
+PowerShell parser: PASS local y CI
+Make: PASS en CI
+preflight fail-closed: PASS local y CI
+backend verify Windows: PASS funcional
+generador de lockfile Windows: PASS funcional
+validadores integrales: PASS funcional Windows
 ```
 
-El validador Bash y el generador Unix con preservación UID/GID quedaron incorporados después de los controles locales anteriores. CI quedó preparado para ejecutar su sintaxis.
+La implementación Unix preserva UID/GID y su sintaxis/estructura está cubierta
+por CI. La validación integral funcional de cierre se ejecutó en Windows.
 
-### Pendiente
+### Pendiente no bloqueante
 
-- `bash -n scripts/validate-seg001.sh` mediante CI o checkout;
-- parser PowerShell actual;
-- validador integral PowerShell o Bash;
-- Maven verify real;
-- Testcontainers real;
-- Flyway/Hibernate real;
-- clean builds;
-- stack healthy;
-- smoke real;
-- package-lock;
-- npm ci real;
-- CI visible.
+- recorrido integral funcional Bash/Linux/macOS en un host Unix;
+- reducir advertencias Hikari de contextos Testcontainers ya cerrados;
+- eliminar uso de API deprecada reportado por compilación donde corresponda;
+- configurar Mockito como agente antes de que una futura versión de Java prohíba
+  la carga dinámica.
 
 ## Pruebas pendientes de SEG-001 no bloqueantes
 

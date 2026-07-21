@@ -13,15 +13,17 @@ comunicaciones: DESHABILITADAS
 lote real: FUERA DE GIT/CI/IMÁGENES
 ```
 
-`main` continúa siendo la única fuente de verdad. La ejecución real más reciente se realizó sobre `39f5f9e635722a9a37e0c3abdb3ca452e8cd8bc5`; las correcciones posteriores ya están publicadas en `main` y requieren reejecución local.
+`main` continúa siendo la única fuente de verdad. La segunda validación integral
+limpia de SEG-001 se ejecutó sobre
+`d8a5a449a72c660e2655f4be7144360cd1e719a4` con el lockfile versionado.
 
 ## Segmentos
 
 | ID | Estado | Resumen |
 |---|---|---|
 | SEG-000 | COMPLETE | repositorio, continuidad y documentación canónica |
-| SEG-001 | ACTIVE | implementación y hardening completos; validación integral pendiente |
-| SEG-002 | PLANNED | bloqueado hasta SEG-001 verde |
+| SEG-001 | COMPLETE | vertical slice, seguridad, validación local integral y CI verdes |
+| SEG-002 | PLANNED | siguiente segmento; todavía no implementado ni activado |
 
 ## Estados operativos
 
@@ -37,137 +39,83 @@ POSTGRES_PUBLICATION_PASS
 POSTGRES_HEALTH_PASS
 FRONTEND_CLEAN_BUILD_PASS
 BACKEND_CLEAN_IMAGE_BUILD_PASS
-LATEST_REAL_RUN=FAIL_FLYWAY_AUTOCONFIGURATION_MISSING
-FLYWAY_STARTER_FIX_IMPLEMENTED_NOT_RUN
-FUNCTIONAL_VALIDATION_PENDING
-LOCKFILE_PENDING
-CI_NOT_VISIBLE
+FLYWAY_V1_V5_PASS
+HIBERNATE_VALIDATE_PASS
+BACKEND_HEALTH_PASS
+FRONTEND_HEALTH_PASS
+SMOKE_HOST_PASS
+SMOKE_CONTAINER_PASS
+MAVEN_VERIFY_PASS
+TESTS_29_OF_29_PASS
+SPOTLESS_55_OF_55_PASS
+ARCHUNIT_PASS
+TESTCONTAINERS_PASS
+LOCKFILE_VERSIONED
+NPM_CI_CLEAN_RUN_PASS
+REPOSITORY_SAFETY_PASS
+CI_VISIBLE_GREEN
+SEG_001_COMPLETE
 ```
 
-## Sexta ejecución real — Windows
+## Fallo Jackson corregido
 
-Fecha: 2026-07-21.
+La ejecución sobre `a9e2c44de5d4d9181ef304976597d9d8b1a30014` demostró
+Flyway V1–V5 y Hibernate, pero falló al crear `AuditEventWriter`: el código propio
+pedía `com.fasterxml.jackson.databind.ObjectMapper` mientras Spring Boot 4.1
+administraba `tools.jackson.databind.ObjectMapper` de Jackson 3.1.4.
 
-Configuración:
+La corrección migró auditoría/importación a Jackson 3, mantuvo un único mapper
+administrado por Spring y agregó una regresión de contexto real y persistencia
+JSONB para mapa, UUID, fechas, enum, null y JSON válido. Jackson 2 permanece solo
+como dependencia transitiva de springdoc/Swagger.
+
+Evidencia completa:
 
 ```text
-commit ejecutado: 39f5f9e635722a9a37e0c3abdb3ca452e8cd8bc5
+docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
+```
+
+## Validación integral final — Windows
+
+```text
+commit ejecutado: d8a5a449a72c660e2655f4be7144360cd1e719a4
+plataforma: Windows 11 + Docker Desktop 29.3.1
 PostgreSQL host port: 25432
 Backend host port: 8080
 Frontend host port: 5173
-Docker: 29.3.1
+inicio UTC: 2026-07-21T16:30:02Z
+fin UTC: 2026-07-21T16:39:56Z
+resultado: PASS
 ```
 
-### Aprobado
+El primer build frontend usó `npm ci`, ambos builds fueron `--no-cache`, Flyway
+validó/aplicó V1–V5 antes de Hibernate, los tres servicios quedaron `healthy`,
+ambos smoke pasaron, Maven verificó 29 tests, Spotless dejó 55/55 archivos
+limpios, ArchUnit y Testcontainers pasaron y el escaneo del repositorio pasó.
+
+Evidencia local, deliberadamente fuera de Git:
 
 ```text
-checkout main y working tree limpio
-PowerShell syntax — 11 scripts
-preflight container-only
-Docker daemon y Compose config
-guardas fail-closed
-publicaciones Docker libres
-bind exclusivo Windows
-PostgreSQL publication
-PostgreSQL health
-frontend clean build --no-cache
-TypeScript strict
-Vite production build
-frontend image export
-backend clean build --no-cache
-Maven package -DskipTests
-backend image export
+validation-output/seg001-complete-20260721-133002.log
+validation-output/seg001-complete-20260721-133002.json
+validation-output/seg001-docker-20260721-133003.json
 ```
 
-El conflicto anterior de puertos quedó cerrado: PostgreSQL se publicó en `127.0.0.1:25432` y alcanzó `healthy` antes de los builds.
-
-### Primer fallo real
-
-El arranque de backend/frontend terminó con:
+Lockfile:
 
 ```text
-Schema validation: missing table [contact]
+ruta: frontend/package-lock.json
+commit: d8a5a449a72c660e2655f4be7144360cd1e719a4
+SHA-256: 1936217c0598825ef43519069a3ba89a974e2b30e3b9f2619d4e62dd10810c98
+node_modules host: AUSENTE
+lifecycle scripts durante generación: NO EJECUTADOS
 ```
 
-El backend resolvió PostgreSQL, abrió HikariCP y detectó PostgreSQL 17.10. No apareció ningún log de Flyway, creación de `flyway_schema_history` o aplicación de migraciones antes de `ddl-auto=validate`.
+## CI
 
-Diagnóstico:
-
-```text
-Flyway libraries present
-Spring Boot 4 Flyway auto-configuration starter absent
-migrations NOT_RUN
-Hibernate validation FAIL because schema remained empty
-```
-
-Evidencia:
-
-```text
-docs/validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md
-```
-
-## Correcciones publicadas después de la ejecución
-
-```text
-50a6b1b7c6eedd45da9a8af1462b76e00ff64427
-fix: enable Flyway auto-configuration on Spring Boot 4
-
-a3782c42fdf6c84e83ad8adcebd8770d41438098
-fix: fail fast when Flyway migrations are unavailable
-```
-
-Cambios:
-
-- `org.flywaydb:flyway-core` directo fue reemplazado por `org.springframework.boot:spring-boot-starter-flyway`;
-- se conserva `org.flywaydb:flyway-database-postgresql`;
-- `spring.flyway.fail-on-missing-locations=true` evita fallos indirectos de Hibernate cuando no existen recursos de migración.
-
-Estado de esas correcciones:
-
-```text
-IMPLEMENTED
-VERSIONED_IN_MAIN
-STATICALLY_REVIEWED
-FUNCTIONALLY_NOT_RUN
-```
-
-## Fases pendientes
-
-```text
-Flyway auto-configuration real
-creación de flyway_schema_history
-aplicación V1–V5
-Hibernate validate PASS
-backend health
-frontend start/health
-smoke host
-smoke container
-Maven verify
-Spotless
-unit tests
-ArchUnit
-Testcontainers
-package-lock generation
-SHA-256 del lockfile
-frontend rebuild mediante npm ci
-smoke final
-repository safety final
-segunda ejecución desde árbol limpio con lockfile versionado
-CI verde visible o excepción documentada
-```
-
-## Lockfile
-
-La sexta ejecución falló antes de la fase de generación. Por lo tanto:
-
-```text
-frontend/package-lock.json: NO GENERADO
-hash: NO DISPONIBLE
-git add/commit posterior: SIN CAMBIOS
-working tree: LIMPIO
-```
-
-No crear ni versionar manualmente el lockfile antes de que el validador llegue a esa fase.
+GitHub Actions run `29848718163` para `d8a5a449…` está visible y terminó
+`success`. Jobs `backend`, `frontend`, `scripts` y `compose-images-and-smoke`
+terminaron verdes.
 
 ## Seguridad vigente
 
@@ -190,12 +138,8 @@ También permanece prohibido:
 
 ## Próxima acción canónica
 
-1. actualizar el checkout a `main`;
-2. detener el stack parcial sin borrar volúmenes;
-3. reejecutar `scripts/validate-seg001.ps1` con PostgreSQL host `25432` y sin caché;
-4. confirmar logs Flyway antes de Hibernate;
-5. continuar hasta el primer PASS integral;
-6. revisar y versionar únicamente `frontend/package-lock.json`;
-7. repetir desde árbol limpio para demostrar `npm ci` desde el primer build.
+SEG-001 está cerrado. No modificarlo salvo una regresión demostrada. SEG-002
+permanece `PLANNED`: revisar su alcance y solicitar autorización explícita antes
+de activarlo o implementar campañas, integraciones o envíos.
 
-Comandos exactos: `docs/next-step.md`.
+Comandos de continuidad: `docs/next-step.md`.

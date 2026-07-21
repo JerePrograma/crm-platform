@@ -1,28 +1,39 @@
-# SEG-001 — Próxima acción canónica
+# Continuidad después de SEG-001
 
 ## Estado
 
 ```text
-IMPLEMENTACIÓN COMPLETA
-HARDENING COMPLETO
-SINTAXIS POWERSHELL PASS
-PREFLIGHT PASS
-PUERTOS WINDOWS/DOCKER PASS
-POSTGRES PUBLICATION PASS
-POSTGRES HEALTH PASS
-FRONTEND CLEAN BUILD PASS
-BACKEND CLEAN IMAGE BUILD PASS
-ÚLTIMO INTENTO: FAIL_FLYWAY_AUTOCONFIGURATION_MISSING
-FIX FLYWAY: IMPLEMENTED_NOT_RUN
-STACK/HEALTH/SMOKE PENDIENTES
-MAVEN_VERIFY/TESTCONTAINERS PENDIENTES
-LOCKFILE/NPM_CI PENDIENTES
-CI_NOT_VISIBLE
+SEG-000 COMPLETE
+SEG-001 COMPLETE
+SEG-002 PLANNED
+VALIDACIÓN LOCAL INTEGRAL PASS
+LOCKFILE VERSIONADO
+SEGUNDA CORRIDA LIMPIA NPM_CI PASS
+CI_VISIBLE_GREEN
+PRODUCCIÓN NO DESPLEGADA
+COMUNICACIONES DESHABILITADAS
 ```
 
-No iniciar SEG-002, campañas, Gmail, Sheets, workers, cloud o producción.
+SEG-001 quedó cerrado sobre `d8a5a449a72c660e2655f4be7144360cd1e719a4`.
+SEG-002 no está implementado ni activado. No iniciar campañas, Gmail, Sheets,
+workers, cloud o producción sin una instrucción explícita posterior.
 
-## Evidencia más reciente
+## Evidencia de cierre
+
+```text
+validation-output/seg001-complete-20260721-133002.log
+validation-output/seg001-complete-20260721-133002.json
+validation-output/seg001-docker-20260721-133003.json
+docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
+GitHub Actions run 29848718163: success
+```
+
+Matriz cerrada: Flyway V1–V5, Hibernate, tres servicios healthy, ambos smoke,
+Maven verify, 29/29 tests, Spotless 55/55, ArchUnit, Testcontainers, lockfile,
+dos builds mediante `npm ci`, seguridad del repositorio y CI visible están en
+`PASS`.
+
+## Evidencia histórica anterior al cierre
 
 La sexta ejecución integral Windows del 2026-07-21 se realizó sobre:
 
@@ -65,7 +76,7 @@ Evidencia detallada:
 docs/validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md
 ```
 
-## Correcciones ya publicadas en `main`
+## Correcciones históricas ya publicadas en `main`
 
 ```text
 50a6b1b7c6eedd45da9a8af1462b76e00ff64427
@@ -81,7 +92,12 @@ Cambios:
 - `flyway-database-postgresql` permanece como módulo de base específico;
 - `spring.flyway.fail-on-missing-locations=true` falla explícitamente si los SQL no están empaquetados.
 
-## 1. Actualizar checkout
+## Procedimiento histórico ejecutado
+
+Los pasos siguientes se conservan como trazabilidad del recorrido que cerró
+SEG-001; no son una tarea pendiente.
+
+### 1. Actualizar checkout
 
 ```powershell
 Set-Location C:\laburo\crm-platform
@@ -101,7 +117,7 @@ git status --short: sin salida
 HEAD: commit posterior a a3782c42
 ```
 
-## 2. Detener el stack parcial sin borrar datos
+### 2. Detener el stack parcial sin borrar datos
 
 La ejecución anterior usó `-KeepRunning`. Retirar contenedores del proyecto conservando el volumen PostgreSQL:
 
@@ -115,7 +131,7 @@ docker compose `
 
 No usar `-v`.
 
-## 3. Confirmar scripts y puerto
+### 3. Confirmar scripts y puerto
 
 ```powershell
 powershell `
@@ -132,7 +148,7 @@ powershell `
 
 El checker debe confirmar publicaciones Docker y enlace Windows disponibles.
 
-## 4. Reejecutar validación integral
+### 4. Reejecutar validación integral
 
 ```powershell
 powershell `
@@ -146,7 +162,7 @@ powershell `
 
 No usar `-UseBuildCache` como evidencia de cierre.
 
-## Señal esperada del fix Flyway
+## Señal Flyway confirmada
 
 Antes de los logs de Hibernate deben aparecer eventos equivalentes a:
 
@@ -163,7 +179,7 @@ Luego Hibernate debe completar `ddl-auto=validate` sin `missing table`.
 
 Los textos exactos pueden variar por versión; el criterio es que exista una instancia Flyway, se aplique el historial y las migraciones precedan a JPA.
 
-## Orden automático esperado
+## Orden automático confirmado
 
 1. rama `main` y árbol limpio;
 2. puertos y `DATABASE_URL`;
@@ -187,7 +203,7 @@ Los textos exactos pueden variar por versión; el criterio es que exista una ins
 20. JSON y transcript;
 21. ningún commit automático.
 
-## Resultado integral esperado
+## Resultado integral observado
 
 ```text
 postgres health: healthy
@@ -200,11 +216,13 @@ Repository safety scan passed.
 Complete SEG-001 validation passed.
 ```
 
-## No ejecutar todavía los comandos del lockfile
+## Lockfile cerrado
 
-La ejecución anterior falló antes de esa fase. Por eso `frontend/package-lock.json` no existía y `git add` no tenía nada que agregar.
+La ejecución integral alcanzó la fase segura, generó el archivo sin lifecycle
+scripts ni `node_modules` y permitió revisar y versionar exclusivamente
+`frontend/package-lock.json`.
 
-Solo después de ver `Complete SEG-001 validation passed.` ejecutar:
+Después de ver `Complete SEG-001 validation passed.` se ejecutó:
 
 ```powershell
 Test-Path frontend\package-lock.json
@@ -213,7 +231,7 @@ git status --short
 git diff -- frontend\package-lock.json
 ```
 
-Versionar únicamente el lockfile revisado:
+Se versionó únicamente el lockfile revisado:
 
 ```powershell
 git add frontend/package-lock.json
@@ -221,9 +239,10 @@ git commit -m "build: lock frontend dependencies"
 git push origin main
 ```
 
-Después repetir el validador desde árbol limpio para demostrar `npm ci` desde el primer build.
+Después se repitió el validador desde árbol limpio y se demostró `npm ci` desde
+el primer build.
 
-## Criterios de cierre pendientes
+## Criterios de cierre
 
 - [x] PowerShell syntax;
 - [x] preflight;
@@ -231,24 +250,45 @@ Después repetir el validador desde árbol limpio para demostrar `npm ci` desde 
 - [x] publicación y health PostgreSQL;
 - [x] frontend clean build;
 - [x] backend clean image build;
-- [ ] Flyway auto-configuración corregida ejecutada;
-- [ ] migraciones V1–V5 aplicadas;
-- [ ] Hibernate validate;
-- [ ] backend/frontend healthy;
-- [ ] smoke host;
-- [ ] smoke contenedor;
-- [ ] Maven verify;
-- [ ] Spotless;
-- [ ] unit tests;
-- [ ] ArchUnit;
-- [ ] Testcontainers;
-- [ ] package-lock versionado;
-- [ ] npm ci con lockfile versionado;
-- [ ] seguridad final;
-- [ ] evidencia final;
-- [ ] CI verde visible o excepción explícita;
-- [ ] SEG-001 COMPLETE;
+- [x] Flyway auto-configuración corregida ejecutada;
+- [x] migraciones V1–V5 aplicadas;
+- [x] Hibernate validate;
+- [x] backend/frontend healthy;
+- [x] smoke host;
+- [x] smoke contenedor;
+- [x] Maven verify;
+- [x] Spotless;
+- [x] unit tests;
+- [x] ArchUnit;
+- [x] Testcontainers;
+- [x] package-lock versionado;
+- [x] npm ci con lockfile versionado;
+- [x] seguridad final;
+- [x] evidencia final;
+- [x] CI verde visible;
+- [x] SEG-001 COMPLETE;
 - [ ] SEG-002 ACTIVE.
+
+## Próxima decisión
+
+SEG-002 permanece `PLANNED`. Antes de activarlo, actualizar `main`, leer su
+alcance y solicitar autorización explícita. Comandos de continuidad:
+
+```powershell
+Set-Location C:\laburo\crm-platform
+
+git switch main
+git fetch origin
+git pull --ff-only
+
+git status --short
+git rev-parse HEAD
+
+Get-Content AGENTS.md
+Get-Content docs\status.md
+Get-Content docs\next-step.md
+Get-Content docs\backlog.md
+```
 
 ## Restricciones
 

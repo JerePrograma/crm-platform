@@ -9,7 +9,7 @@ Rama canónica: `main`.
 | ID | Segmento | Estado | Dependencia | Resultado verificable |
 |---|---|---|---|---|
 | SEG-000 | Repositorio y continuidad | COMPLETE | — | fuente canónica, reglas y documentación |
-| SEG-001 | Vertical slice persistente de prospectos | ACTIVE | SEG-000 | importación, exclusiones, UI y stack con matriz verde |
+| SEG-001 | Vertical slice persistente de prospectos | COMPLETE | SEG-000 | importación, exclusiones, UI y stack con matriz verde |
 | SEG-002 | Prospección operativa segura | PLANNED | SEG-001 COMPLETE | flujo comercial sin envío automático |
 
 ## SEG-001 — Completado
@@ -43,51 +43,66 @@ Rama canónica: `main`.
 - [x] diagnóstico de auto-configuración Flyway;
 - [x] `spring-boot-starter-flyway` versionado;
 - [x] fail-fast por ubicación de migraciones versionado.
+- [x] Flyway V1–V5 ejecutado antes de Hibernate;
+- [x] Jackson propio alineado con el mapper administrado por Spring Boot 4;
+- [x] regresión de contexto y persistencia JSONB de auditoría;
+- [x] PostgreSQL/backend/frontend healthy;
+- [x] smoke host y contenedor;
+- [x] Maven verify, 29/29 tests, Spotless, ArchUnit y Testcontainers;
+- [x] lockfile generado, revisado y versionado;
+- [x] segunda ejecución limpia mediante `npm ci`;
+- [x] repository safety;
+- [x] GitHub Actions visible y verde;
+- [x] documentación y evidencia final sincronizadas.
 
-## SEG-001 — Próxima tarea obligatoria
+## SEG-001 — Cierre ejecutado
 
-- [ ] actualizar checkout al último `main`;
-- [ ] retirar stack parcial sin `-v`;
-- [ ] reejecutar validador completo con PostgreSQL host `25432`;
-- [ ] confirmar que Flyway crea/valida `flyway_schema_history`;
-- [ ] confirmar aplicación de migraciones V1–V5;
-- [ ] confirmar Hibernate validate PASS;
-- [ ] confirmar backend/frontend healthy;
-- [ ] ejecutar smoke host y contenedor;
-- [ ] ejecutar Maven verify;
-- [ ] ejecutar Spotless;
-- [ ] ejecutar unit tests;
-- [ ] ejecutar ArchUnit;
-- [ ] ejecutar Testcontainers;
-- [ ] generar `frontend/package-lock.json` mediante el validador;
-- [ ] revisar SHA-256 y diff;
-- [ ] versionar únicamente el lockfile;
-- [ ] repetir desde árbol limpio para demostrar `npm ci`;
-- [ ] ejecutar seguridad final;
-- [ ] conservar JSON/transcript local fuera de Git;
-- [ ] observar CI verde o documentar explícitamente su ausencia;
-- [ ] sincronizar estado final;
-- [ ] marcar SEG-001 COMPLETE;
+- [x] actualizar checkout al último `main`;
+- [x] retirar stack parcial sin `-v`;
+- [x] reejecutar validador completo con PostgreSQL host `25432`;
+- [x] confirmar que Flyway crea/valida `flyway_schema_history`;
+- [x] confirmar aplicación de migraciones V1–V5;
+- [x] confirmar Hibernate validate PASS;
+- [x] confirmar backend/frontend healthy;
+- [x] ejecutar smoke host y contenedor;
+- [x] ejecutar Maven verify;
+- [x] ejecutar Spotless;
+- [x] ejecutar unit tests;
+- [x] ejecutar ArchUnit;
+- [x] ejecutar Testcontainers;
+- [x] generar `frontend/package-lock.json` mediante el validador;
+- [x] revisar SHA-256 y diff;
+- [x] versionar únicamente el lockfile;
+- [x] repetir desde árbol limpio para demostrar `npm ci`;
+- [x] ejecutar seguridad final;
+- [x] conservar JSON/transcript local fuera de Git;
+- [x] observar CI verde;
+- [x] sincronizar estado final;
+- [x] marcar SEG-001 COMPLETE;
 - [ ] activar SEG-002.
 
-## Bloqueo actual
+## Evidencia de cierre
 
 ```text
-LATEST_REAL_RUN=FAIL_FLYWAY_AUTOCONFIGURATION_MISSING
-FIX_IMPLEMENTED_NOT_RUN
+LOCAL_COMPLETE_VALIDATION=PASS
+LOCKFILE_VERSIONED
+SECOND_CLEAN_NPM_CI_RUN=PASS
+CI_VISIBLE_GREEN
+SEG_001_COMPLETE
 ```
 
-La ejecución sobre `39f5f9e` aprobó puertos, PostgreSQL y builds limpios. El backend conectó a PostgreSQL, pero Hibernate validó un esquema vacío porque Flyway no había sido auto-configurado.
+La segunda ejecución limpia sobre `d8a5a449…` cerró toda la matriz. GitHub
+Actions run `29848718163` terminó `success`.
 
 Evidencia:
 
 ```text
-docs/validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md
+docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 ```
 
-## SEG-002 — Bloqueado
+## SEG-002 — Planificado
 
-No implementar todavía:
+No implementar sin activación y autorización explícitas:
 
 - campañas;
 - Gmail/SMTP;
