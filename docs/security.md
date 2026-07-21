@@ -97,6 +97,8 @@ Bloquea archivos rastreados como:
 
 También ejecuta `git diff --check`.
 
+El script Unix conserva correctamente rutas con espacios mediante lectura línea por línea.
+
 Limitación: es un control por ruta/extensión, no un escáner de secretos por contenido. Debe complementarse con escaneo dedicado antes de producción.
 
 ## Datos personales
@@ -142,7 +144,7 @@ Generación:
 npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 ```
 
-Garantías del script:
+Garantías comunes:
 
 - lifecycle scripts deshabilitados;
 - `node_modules` no debe crearse;
@@ -150,10 +152,18 @@ Garantías del script:
 - no se realiza commit automático;
 - Dockerfile/CI usan npm ci cuando el lockfile existe.
 
+Garantías Unix:
+
+- contenedor ejecutado con UID/GID del usuario;
+- caché npm temporal dentro del contenedor;
+- lockfile no debe quedar propiedad de `root`;
+- el script comprueba que el archivo quede editable.
+
 Pendiente:
 
 - generar y revisar lockfile real;
 - versionarlo;
+- repetir validación desde árbol limpio;
 - auditoría de dependencias;
 - escaneo SCA continuo.
 
@@ -185,6 +195,37 @@ Reglas:
 - no montar secretos adicionales;
 - eliminar contenedor y volumen target al finalizar;
 - conservar solamente la caché Maven esperada.
+
+## Validadores integrales
+
+Windows:
+
+```text
+scripts/validate-seg001.ps1
+```
+
+Linux/macOS:
+
+```text
+scripts/validate-seg001.sh
+```
+
+Controles de seguridad:
+
+- rama `main` obligatoria;
+- working tree sin cambios inesperados;
+- daemon Docker accesible;
+- guardas `SENDING_*` obligatorias;
+- puertos solo en loopback;
+- cleanup sin `-v`;
+- código backend de solo lectura;
+- lockfile sin scripts lifecycle;
+- único cambio permitido: `frontend/package-lock.json`;
+- escaneo final del repositorio;
+- sin commits automáticos;
+- evidencia local ignorada por Git.
+
+No ejecutar con código no confiable porque la fase Testcontainers monta el socket Docker.
 
 ## Evidencia local
 
@@ -234,6 +275,9 @@ Además, no existe código Gmail ni SMTP. Cambiar variables no puede enviar nada
 
 CI ejecuta:
 
+- sintaxis POSIX y Bash;
+- parser PowerShell;
+- parseo Make;
 - seguridad del repositorio;
 - preflight fail-closed;
 - Maven verify;
