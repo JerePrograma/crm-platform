@@ -38,15 +38,18 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - generadores Docker de `package-lock.json`;
 - validador integral PowerShell `scripts/validate-seg001.ps1`;
 - validador integral Bash `scripts/validate-seg001.sh`;
+- checker local `scripts/check-powershell-syntax.ps1`;
 - evidencia integral JSON y transcript;
 - escaneo centralizado del repositorio Windows/Unix;
 - targets Make `repository-safety`, `backend-verify-container`, `verify-container` y `validate-seg001`;
 - `validation-output/` ignorado por Git;
 - CI con backend, frontend, scripts y stack E2E;
 - CI con sintaxis POSIX, Bash, parser PowerShell y parseo Make;
+- regresión CI que rechaza `$LASTEXITCODE:` en scripts PowerShell;
 - fixtures, Testcontainers y ArchUnit;
 - documentación técnica, operativa y evidencias fechadas;
-- evidencia de paridad `SEG-001-cross-platform-validation-2026-07-20.md`.
+- evidencia de paridad `SEG-001-cross-platform-validation-2026-07-20.md`;
+- evidencia real `SEG-001-powershell-parser-failure-2026-07-21.md`.
 
 ### Changed
 
@@ -63,7 +66,7 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - Dockerfile frontend usa `npm ci` cuando existe lockfile y `npm install` cuando falta;
 - CI y Makefile aplican la misma selección npm;
 - CI usa puertos alternativos para reducir conflictos;
-- CI parsea todos los scripts PowerShell nuevos;
+- CI ejecuta el checker PowerShell compartido;
 - CI ejecuta `bash -n` sobre el validador integral Unix;
 - CI expande targets Make relevantes;
 - CI ejecuta el escaneo centralizado de seguridad;
@@ -73,6 +76,7 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - Maven verify puede ejecutarse sin Java instalado en el host;
 - generador Unix de lockfile conserva UID/GID del usuario;
 - generador Unix usa caché npm temporal dentro del contenedor;
+- `mvnw.cmd` fue renormalizado para aplicar de forma consistente `*.cmd text eol=crlf`;
 - contextos Docker excluyen secretos, datos y cachés;
 - puertos publicados solo en loopback;
 - resultados de importación ordenados por hoja/fila;
@@ -106,7 +110,10 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - escaneo del lote operativo ampliado a cualquier subdirectorio;
 - generadores de lockfile ya no crean node_modules ni ejecutan lifecycle scripts;
 - lockfile Unix ya no debe quedar propiedad de `root`;
-- rutas con espacios conservadas por el escaneo Unix.
+- rutas con espacios conservadas por el escaneo Unix;
+- interpolación inválida `$LASTEXITCODE:` en `validate-seg001.ps1`;
+- mismo patrón inválido en `validate-docker-stack.ps1`;
+- mismo patrón inválido en `verify-backend-container.ps1`.
 
 ### Validation
 
@@ -127,9 +134,12 @@ Ejecución real acumulada:
 - Make `backend-verify-container`: `PASS_PARSE`;
 - Make `verify-container`: `PASS_PARSE`;
 - CI YAML: revisión/parseo previo `PASS`;
-- validador integral PowerShell: pendiente de ejecución;
-- validador integral Bash: implementado, pendiente de `bash -n` por CI/checkout y ejecución funcional;
-- generador Unix con UID/GID: pendiente de sintaxis/ejecución sobre checkout actualizado;
+- checkout Windows actualizado por fast-forward el 2026-07-21: `PASS`;
+- validador integral PowerShell: `EXECUTED_FAIL — POWERSHELL_PARSE_ERROR`;
+- fallo reproducido dos veces antes de preflight/Docker;
+- corrección del parser: `PASS_CODE_REVIEW`, reejecución pendiente;
+- checker PowerShell local: implementado, ejecución pendiente;
+- validador integral Bash: implementado, ejecución pendiente;
 - Maven/Testcontainers/Flyway/Hibernate/smoke: pendientes;
 - GitHub Actions: sin run visible desde el conector.
 
@@ -142,6 +152,7 @@ docs/validation/SEG-001-rerun-2026-07-20.md
 docs/validation/SEG-001-local-orchestration-2026-07-20.md
 docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
 docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
+docs/validation/SEG-001-powershell-parser-failure-2026-07-21.md
 ```
 
 ### Documentation
@@ -150,6 +161,7 @@ docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 - instalación Windows/Linux/macOS/Docker-only;
 - puertos variables y diagnóstico;
 - validador Docker y validadores integrales Windows/Unix;
+- checker de sintaxis PowerShell antes de Docker;
 - Maven/Testcontainers sin Java local;
 - package-lock-only, propiedad Unix y npm ci;
 - formato de evidencia JSON/transcript;
@@ -177,12 +189,13 @@ docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 - scripts de seguridad bloquean `.env`, evidencia, datos privados, lote, claves y credenciales rastreados;
 - transcripts locales fuera de Git;
 - CI usa credenciales ficticias y elimina su volumen;
-- verificación backend con socket Docker documentada como operación privilegiada sobre código confiable.
+- verificación backend con socket Docker documentada como operación privilegiada sobre código confiable;
+- el fallo de parser ocurrió antes de Docker y no modificó datos.
 
 ### Known limitations
 
 - frontend/backend clean builds pendientes;
-- validadores integrales pendientes de ejecución real;
+- corrección PowerShell pendiente de reejecución real;
 - Maven, tests, migraciones y smoke no están verdes;
 - falta `package-lock.json` versionado;
 - npm ci está preparado, pero pendiente de evidencia real;
