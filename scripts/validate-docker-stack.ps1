@@ -73,6 +73,7 @@ $summary = [ordered]@{
     backend = $BackendPort
     frontend = $FrontendPort
   }
+  hostPorts = 'NOT_RUN'
   cleanBuilds = (-not $UseBuildCache)
   services = [ordered]@{
     postgres = 'NOT_RUN'
@@ -112,6 +113,12 @@ try {
   Invoke-Checked 'docker' @('compose', '--profile', 'app', '--profile', 'smoke', 'config', '--quiet')
   Invoke-Checked 'docker' @('compose', '--profile', 'app', '--profile', 'smoke', 'down', '--remove-orphans')
 
+  & (Join-Path $PSScriptRoot 'check-host-ports.ps1') `
+    -PostgresPort $PostgresPort `
+    -BackendPort $BackendPort `
+    -FrontendPort $FrontendPort
+  $summary.hostPorts = 'PASS'
+
   $buildArguments = @('compose', '--progress', 'plain', '--profile', 'app', 'build')
   if (-not $UseBuildCache) {
     $buildArguments += '--no-cache'
@@ -135,7 +142,7 @@ try {
   $summary.status = 'PASS'
 
   Write-Host 'SEG-001 Docker validation passed.'
-  Write-Host 'Covered: image builds, Compose config, stack health and smoke tests.'
+  Write-Host 'Covered: host port binding, image builds, Compose config, stack health and smoke tests.'
   Write-Host 'Backend Maven verify/Testcontainers and package-lock validation remain separate controls.'
 } catch {
   $summary.status = 'FAIL'
@@ -149,8 +156,15 @@ try {
   if (-not $KeepRunning) {
     & docker compose --profile app --profile smoke down --remove-orphans
   } else {
-    $summary.stackKeptRunning = $true
-    Write-Host 'Stack left running because -KeepRunning was specified.'
+    $runningContainers = @(& docker compose --profile app --profile smoke ps -q | Where-Object {
+      -not [string]::IsNullOrWhiteSpace($_)
+    })
+    $summary.stackKeptRunning = ($runningContainers.Count -gt 0)
+    if ($summary.stackKeptRunning) {
+      Write-Host 'Stack left running because -KeepRunning was specified.'
+    } else {
+      Write-Host 'No running stack was available to keep after the failed validation.'
+    }
   }
 
   $summary.finishedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
