@@ -88,6 +88,30 @@ jobs:
           -PostgresPort 25432
           -BackendPort 28080
           -FrontendPort 25173
+      - name: Publish a Docker-owned probe port
+        run: >-
+          docker run --detach --rm
+          --name crm-port-owner-probe
+          --publish 127.0.0.1:25432:1
+          alpine:3.21 sleep 60
+      - name: Reject a Docker-owned host port
+        shell: pwsh
+        run: |
+          try {
+            ./scripts/check-host-ports.ps1 `
+              -PostgresPort 25432 `
+              -BackendPort 28080 `
+              -FrontendPort 25173
+            throw 'Expected check-host-ports.ps1 to reject a Docker-owned port.'
+          } catch {
+            if ($_.Exception.Message -notmatch 'already published by another Docker container') {
+              throw
+            }
+            Write-Host 'Docker-owned host port was rejected as expected.'
+          }
+      - name: Remove Docker port ownership probe
+        if: always()
+        run: docker rm --force crm-port-owner-probe || true
       - name: Parse Make targets
         run: make -n repository-safety backend-verify-container validate-seg001
       - name: Check repository safety invariants
