@@ -12,7 +12,9 @@ Ningún script:
 - realiza commits;
 - elimina el volumen PostgreSQL salvo los comandos destructivos explícitos.
 
-## Validación integral recomendada — Windows
+## Validación integral recomendada
+
+### Windows PowerShell
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
@@ -22,17 +24,37 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -KeepRunning
 ```
 
+### Linux/macOS Bash
+
+```bash
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 8080 \
+  --frontend-port 5173 \
+  --keep-running
+```
+
+### Make
+
+```bash
+make validate-seg001
+```
+
+El target Make ejecuta el validador Bash con cleanup final predeterminado.
+
 Requisitos:
 
 - rama `main`;
-- archivos rastreados limpios;
+- working tree sin cambios inesperados;
 - `.env` existente;
 - Git;
-- Docker Desktop y Compose v2.
+- Docker con daemon accesible;
+- Docker Compose v2;
+- PowerShell o Bash según la plataforma.
 
 No requiere Java, Maven, Node o npm instalados en el host.
 
-El script ejecuta:
+Los validadores ejecutan:
 
 1. validación de rama y working tree;
 2. configuración segura de puertos;
@@ -50,7 +72,7 @@ El script ejecuta:
 14. JSON y transcript;
 15. cleanup opcional.
 
-No usar `-UseBuildCache` como evidencia de cierre.
+No usar `-UseBuildCache` ni `--use-build-cache` como evidencia de cierre.
 
 Evidencia:
 
@@ -122,7 +144,9 @@ powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
 
 Valida:
 
-- Git, Docker y Compose;
+- Git;
+- Docker instalado y daemon accesible;
+- Docker Compose v2;
 - Java/Node/npm en modo local;
 - `.env`;
 - tres puertos válidos y distintos;
@@ -134,6 +158,8 @@ Valida:
 No imprime contraseñas ni inicia servicios.
 
 ## Validación Docker del stack
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
@@ -246,13 +272,20 @@ Comando npm:
 npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 ```
 
-Garantías:
+Garantías comunes:
 
 - solo genera o actualiza package-lock;
 - no ejecuta lifecycle scripts;
 - no debe crear node_modules;
 - falla si node_modules aparece;
 - no realiza commit.
+
+Garantías adicionales Unix:
+
+- ejecuta el contenedor con `id -u:id -g`;
+- usa caché npm temporal dentro del contenedor;
+- evita lockfiles propiedad de `root`;
+- comprueba que el lockfile quede editable por el usuario actual.
 
 Revisar:
 
@@ -381,6 +414,7 @@ frontend
 frontend-lock
 verify
 verify-container
+validate-seg001
 smoke
 smoke-container
 reset-db
@@ -403,12 +437,11 @@ reset-db
 | `frontend` | npm ci/install y Vite |
 | `frontend-lock` | genera package-lock-only |
 | `verify` | validación con herramientas locales |
-| `verify-container` | validación Unix Docker-only integral |
+| `verify-container` | secuencia Docker-only Unix sin evidencia integral |
+| `validate-seg001` | validador integral Bash con JSON/transcript |
 | `smoke` | prueba stack activo |
 | `smoke-container` | stack efímero y smoke |
 | `reset-db` | elimina stack y volumen |
-
-`verify-container` ejecuta preflight, backend verify contenedorizado, lockfile, builds limpios, smoke y seguridad.
 
 ## Evidencia versionada
 
@@ -417,6 +450,7 @@ docs/validation/SEG-001-container-build-2026-07-20.md
 docs/validation/SEG-001-rerun-2026-07-20.md
 docs/validation/SEG-001-local-orchestration-2026-07-20.md
 docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
+docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 docs/validation/SEG-001-static-automation-2026-07-20.md
 ```
 
@@ -457,8 +491,10 @@ El preflight falla si alguno cambia.
 
 CI valida:
 
-- shell;
+- scripts POSIX;
+- sintaxis Bash del validador integral;
 - parser PowerShell;
+- targets Make principales;
 - puertos;
 - seguridad del repositorio;
 - preflight fail-closed;
