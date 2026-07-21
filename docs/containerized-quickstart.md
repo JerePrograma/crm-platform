@@ -45,22 +45,27 @@ git pull --ff-only
 Checkout existente:
 
 ```bash
-git status
-git diff --ignore-space-at-eol -- mvnw.cmd
+git switch main
+git fetch origin
 git pull --ff-only
+git status
+git rev-parse HEAD
 ```
 
 Restaurar `mvnw.cmd` solo cuando su modificación no haya sido intencional:
 
-```bash
+```powershell
+git diff --ignore-space-at-eol -- mvnw.cmd
 git restore -- mvnw.cmd
 ```
 
-El validador integral exige archivos rastreados limpios.
+El validador integral exige un working tree sin cambios inesperados.
+
+La rama histórica está detrás y no contiene trabajo exclusivo.
 
 ## 2. Crear `.env`
 
-Unix:
+Linux/macOS:
 
 ```bash
 [ -f .env ] || cp .env.example .env
@@ -74,7 +79,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 Configurar credenciales bootstrap locales.
 
-Puertos predeterminados:
+Valores recomendados:
 
 ```dotenv
 POSTGRES_HOST_PORT=55432
@@ -82,6 +87,14 @@ BACKEND_HOST_PORT=8080
 FRONTEND_HOST_PORT=5173
 POSTGRES_DB=gestudio_crm
 DATABASE_URL=jdbc:postgresql://localhost:55432/gestudio_crm
+DATABASE_USER=gestudio
+DATABASE_PASSWORD=gestudio_local_only
+CRM_BOOTSTRAP_USERNAME=gestudio-admin
+CRM_BOOTSTRAP_PASSWORD=una-clave-local-segura
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
 ```
 
 Mapeos:
@@ -104,30 +117,51 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -KeepRunning
 ```
 
-Fases:
+## 4. Validación integral Linux/macOS
 
-1. confirma `main` y árbol rastreado limpio;
+```bash
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 8080 \
+  --frontend-port 5173 \
+  --keep-running
+```
+
+Con Make y cleanup final:
+
+```bash
+make validate-seg001
+```
+
+No usar `-UseBuildCache` ni `--use-build-cache` como evidencia de cierre.
+
+## 5. Fases del recorrido integral
+
+1. confirma `main` y working tree limpio;
 2. coordina puertos y `DATABASE_URL`;
-3. ejecuta preflight;
-4. valida Compose;
-5. limpia contenedores sin borrar volumen;
-6. construye frontend/backend sin caché;
-7. levanta el perfil `app`;
-8. espera health de los tres servicios;
-9. ejecuta smoke PowerShell;
-10. ejecuta smoke contenedorizado;
-11. ejecuta Maven verify/Testcontainers dentro de Docker;
-12. genera package-lock-only sin scripts npm;
-13. reconstruye frontend mediante npm ci;
-14. recrea frontend y espera health;
-15. repite smoke;
-16. ejecuta seguridad del repositorio;
-17. genera JSON y transcript;
-18. deja package-lock sin commit para revisión.
+3. comprueba el daemon Docker;
+4. ejecuta preflight;
+5. valida Compose;
+6. limpia contenedores sin borrar volumen;
+7. construye frontend/backend sin caché;
+8. levanta el perfil `app`;
+9. espera health de PostgreSQL, backend y frontend;
+10. ejecuta smoke host;
+11. ejecuta smoke contenedorizado;
+12. ejecuta Maven verify/Testcontainers dentro de Docker;
+13. genera package-lock-only sin scripts npm;
+14. preserva UID/GID del lockfile en Unix;
+15. calcula SHA-256;
+16. reconstruye frontend mediante npm ci;
+17. recrea frontend y espera health;
+18. repite smoke;
+19. ejecuta seguridad del repositorio;
+20. genera JSON y transcript;
+21. deja package-lock sin commit para revisión.
 
-No usar `-UseBuildCache` como evidencia de cierre.
+## 6. Puertos alternativos
 
-Puertos alternativos:
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
@@ -137,9 +171,24 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -KeepRunning
 ```
 
-## 4. Resultado esperado
+Linux/macOS:
+
+```bash
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 18080 \
+  --frontend-port 15173 \
+  --keep-running
+```
+
+Los smoke tests derivan las URLs desde `.env`.
+
+## 7. Resultado esperado
 
 ```text
+postgres health: healthy
+backend health: healthy
+frontend health: healthy
 SEG-001 Docker validation passed.
 Containerized backend verification passed.
 Frontend lockfile generated.
@@ -147,15 +196,7 @@ Repository safety scan passed.
 Complete SEG-001 validation passed.
 ```
 
-Servicios:
-
-```text
-postgres   healthy
-backend    healthy
-frontend   healthy
-```
-
-## 5. Evidencia
+## 8. Evidencia
 
 ```text
 validation-output/seg001-docker-*.json
@@ -168,7 +209,7 @@ frontend/package-lock.json
 
 Revisar transcripts antes de compartirlos. Los scripts no imprimen contraseñas, pero los logs de la aplicación podrían contener contexto operativo.
 
-## 6. Abrir el sistema
+## 9. Abrir el sistema
 
 Puertos predeterminados:
 
@@ -185,7 +226,9 @@ CRM_BOOTSTRAP_USERNAME
 CRM_BOOTSTRAP_PASSWORD
 ```
 
-## 7. Revisar package-lock
+## 10. Revisar package-lock
+
+Windows:
 
 ```powershell
 Test-Path frontend\package-lock.json
@@ -194,17 +237,28 @@ git status --short
 git diff -- frontend\package-lock.json
 ```
 
+Linux/macOS:
+
+```bash
+test -f frontend/package-lock.json
+sha256sum frontend/package-lock.json 2>/dev/null || shasum -a 256 frontend/package-lock.json
+git status --short
+git diff -- frontend/package-lock.json
+```
+
 Después de revisar:
 
-```powershell
+```bash
 git add frontend/package-lock.json
 git commit -m "build: lock frontend dependencies"
 git push origin main
 ```
 
-No agregar `.env` ni `validation-output/`.
+No agregar `.env`, `validation-output/` ni el XLSX operativo.
 
-## 8. Repetición sobre lockfile versionado
+## 11. Repetir sobre lockfile versionado
+
+Windows:
 
 ```powershell
 git pull --ff-only
@@ -214,37 +268,21 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
   -FrontendPort 5173
 ```
 
+Linux/macOS:
+
+```bash
+git pull --ff-only
+bash scripts/validate-seg001.sh \
+  --postgres-port 55432 \
+  --backend-port 8080 \
+  --frontend-port 5173
+```
+
 La segunda ejecución debe utilizar npm ci desde el primer build.
 
-## 9. Ruta Unix Docker-only
+## 12. Validar solamente el stack Docker
 
-```bash
-git switch main
-git pull --ff-only
-sh scripts/set-local-host-ports.sh 55432 8080 5173
-make verify-container
-```
-
-`make verify-container` ejecuta:
-
-- preflight container-only;
-- backend Maven verify/Testcontainers en Docker;
-- package-lock-only;
-- Compose config;
-- builds limpios;
-- smoke contenedorizado;
-- seguridad del repositorio.
-
-Targets individuales:
-
-```bash
-make repository-safety
-make backend-verify-container
-make frontend-lock
-make smoke-container
-```
-
-## 10. Validar solamente el stack Docker
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
@@ -256,7 +294,7 @@ powershell -ExecutionPolicy Bypass -File scripts/validate-docker-stack.ps1 `
 
 Este script valida imágenes, Compose, health y smoke, pero no Maven verify ni package-lock.
 
-## 11. Backend verify separado
+## 13. Backend verify separado
 
 Windows:
 
@@ -274,7 +312,7 @@ Ejecuta Maven verify dentro de Docker con el repositorio en solo lectura y Testc
 
 Advertencia: el socket Docker concede privilegios elevados. Ejecutar únicamente sobre código propio y revisado.
 
-## 12. Lockfile separado
+## 14. Lockfile separado
 
 Windows:
 
@@ -288,15 +326,15 @@ Unix:
 sh scripts/generate-frontend-lock.sh
 ```
 
-Comando npm utilizado:
+Comando npm:
 
 ```text
 npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 ```
 
-No crea node_modules ni ejecuta lifecycle scripts.
+No crea node_modules ni ejecuta lifecycle scripts. En Unix preserva UID/GID y comprueba que el archivo quede editable.
 
-## 13. Seguridad del repositorio
+## 15. Seguridad del repositorio
 
 Windows:
 
@@ -312,9 +350,11 @@ sh scripts/check-repository-safety.sh
 
 Bloquea `.env`, evidencia, datos privados, lote operativo, claves, certificados y JSON de credenciales rastreados.
 
-## 14. Ruta manual
+## 16. Ruta manual
 
 ### Configurar puertos
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
@@ -323,15 +363,29 @@ powershell -ExecutionPolicy Bypass -File scripts/set-local-host-ports.ps1 `
   -FrontendPort 5173
 ```
 
+Unix:
+
+```bash
+sh scripts/set-local-host-ports.sh 55432 8080 5173
+```
+
 ### Preflight
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/preflight.ps1 -ContainerOnly
 ```
 
+Unix:
+
+```bash
+sh scripts/preflight.sh --container-only
+```
+
 ### Builds limpios
 
-```powershell
+```bash
 docker compose --profile app --profile smoke down --remove-orphans
 docker compose --progress plain --profile app build --no-cache frontend
 docker compose --progress plain --profile app build --no-cache backend
@@ -339,19 +393,28 @@ docker compose --progress plain --profile app build --no-cache backend
 
 ### Levantar
 
-```powershell
+```bash
 docker compose --profile app up -d
 docker compose --profile app ps
 ```
 
 ### Smoke
 
+Windows:
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1
 docker compose --profile app --profile smoke run --rm smoke
 ```
 
-## 15. Flujo funcional
+Unix:
+
+```bash
+sh scripts/smoke-test.sh
+docker compose --profile app --profile smoke run --rm smoke
+```
+
+## 17. Flujo funcional
 
 1. ingresar al Dashboard;
 2. comprobar envíos bloqueados;
@@ -366,7 +429,7 @@ docker compose --profile app --profile smoke run --rm smoke
 
 Guía completa: `docs/local-development-and-usage.md`.
 
-## 16. Detener
+## 18. Detener
 
 Conservar datos:
 
@@ -382,19 +445,13 @@ docker compose --profile app --profile smoke down -v --remove-orphans
 
 La segunda operación es destructiva.
 
-## 17. Diagnóstico
+## 19. Diagnóstico
 
 ### Puerto ocupado
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
-  -PostgresPort 55433 `
-  -BackendPort 18080 `
-  -FrontendPort 15173 `
-  -KeepRunning
-```
+Utilizar puertos alternativos en el validador integral.
 
-Identificar proceso:
+Windows, identificar proceso:
 
 ```powershell
 Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
@@ -426,11 +483,15 @@ docker compose logs frontend
 
 Revisar:
 
-- Docker Desktop activo;
+- Docker activo;
 - contenedores Linux;
 - socket `/var/run/docker.sock`;
 - `host.docker.internal`;
 - permisos del daemon.
+
+### Lockfile propiedad de root
+
+Actualizar `main` y volver a ejecutar `scripts/generate-frontend-lock.sh`. La versión actual utiliza UID/GID del host.
 
 ### Contraseña PostgreSQL cambiada
 
@@ -443,7 +504,7 @@ docker compose --profile app up -d --build
 
 ## Limitaciones actuales
 
-- validador integral pendiente de ejecución real;
+- validadores integrales pendientes de ejecución real;
 - clean builds pendientes;
 - Maven/Testcontainers/Flyway/Hibernate pendientes;
 - package-lock pendiente;
