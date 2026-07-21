@@ -1,28 +1,30 @@
 # Estado actual
 
-Actualizado: 2026-07-20
+Actualizado: 2026-07-21
 
 ## Repositorio y consolidación
 
-- repositorio: `JerePrograma/crm-platform`;
-- rama predeterminada y canónica: `main`;
-- todo el trabajo vigente está en `main`;
-- la consolidación original fue fast-forward, sin force push;
-- las correcciones posteriores se realizaron directamente en `main` por autorización expresa;
-- `feat/seg-001-prospect-vertical-slice` está detrás de `main` y no contiene cambios exclusivos;
-- no existe pull request pendiente para esta consolidación;
+```text
+repositorio: JerePrograma/crm-platform
+rama predeterminada: main
+rama canónica: main
+```
+
+- todo el trabajo vigente está consolidado en `main`;
+- la consolidación original fue fast-forward y sin force push;
+- las correcciones posteriores se realizan directamente en `main` por autorización expresa;
+- `feat/seg-001-prospect-vertical-slice` está detrás y no contiene cambios exclusivos;
+- no existe PR pendiente para esta consolidación;
 - no se desplegó ningún ambiente;
 - no se habilitó ningún envío.
 
-Toda sesión debe comenzar con:
+Toda sesión comienza con:
 
 ```bash
 git switch main
 git fetch origin
 git pull --ff-only
 ```
-
-No es necesario fusionar ni copiar contenido desde la rama histórica.
 
 ## Segmentos
 
@@ -39,26 +41,26 @@ IMPLEMENTATION_COMPLETE
 HARDENING_COMPLETE
 MAIN_CONSOLIDATED
 CROSS_PLATFORM_VALIDATION_IMPLEMENTED
+LATEST_REAL_RUN=FAIL_POWERSHELL_PARSE
+PARSER_FIX_COMMITTED
 FUNCTIONAL_VALIDATION_PENDING
 LOCKFILE_PENDING
 CI_NOT_VISIBLE
 ```
 
-SEG-001 no puede marcarse `COMPLETE` solo porque exista código de validación. Requiere evidencia ejecutada.
+SEG-001 no se marca `COMPLETE` por la existencia de automatización. Requiere evidencia ejecutada verde.
 
 ## Alcance funcional implementado
 
-### Backend
+### Backend y plataforma
 
 - Java 21;
-- Spring Boot 4.1;
-- Maven 3.9.16;
-- Maven Wrapper con validación SHA-512;
+- Spring Boot;
+- Maven 3.9.16 y Wrapper con SHA-512;
 - PostgreSQL 17;
 - Flyway V1–V5;
 - Hibernate `validate`;
-- Actuator;
-- Prometheus;
+- Actuator y Prometheus;
 - logging estructurado;
 - OpenAPI;
 - RFC 7807;
@@ -72,60 +74,53 @@ SEG-001 no puede marcarse `COMPLETE` solo porque exista código de validación. 
 - canales de contacto;
 - prospectos;
 - estados comerciales;
-- exclusiones dominantes;
+- exclusiones dominantes y retroactivas;
 - equivalencia teléfono/WhatsApp;
 - normalización central;
 - elegibilidad;
-- aplicación retroactiva de exclusiones;
 - auditoría JSONB.
 
 ### Importaciones
 
 - CSV UTF-8 con coma o punto y coma;
 - comillas, delimitadores y saltos internos;
-- rechazo de comillas sin cerrar;
-- rechazo de encabezados duplicados después de normalización;
+- rechazo de estructura inválida;
 - XLSX con hojas `Prospectos` y `Exclusiones`;
-- fechas Excel convertidas a UTC;
+- fechas Excel en UTC;
 - basename saneado;
-- máximo 10 MB;
-- HTTP 413 por exceso;
+- máximo 10 MB y HTTP 413;
 - SHA-256;
-- idempotencia por archivo y modo;
-- `ImportJob`;
-- `ImportRow`;
-- `DuplicateReview`;
+- idempotencia;
+- `ImportJob`, `ImportRow` y `DuplicateReview`;
 - preview persistente;
 - ejecución confirmada;
-- cabecera HTTP explícita para ejecutar;
-- procesamiento y recuperación por fila;
-- orden determinístico por hoja/fila;
+- recuperación por fila;
+- orden hoja/fila;
 - métricas accepted/excluded/rejected/duplicate/review;
 - duplicados exactos enlazados;
-- coincidencias ambiguas persistidas también en preview;
-- preview con exclusiones sin escritura de dominio;
-- exclusiones importadas mediante el caso de uso manual, retroactivas y auditadas;
-- fixture ficticia de 100 prospectos y 16 exclusiones.
+- coincidencias ambiguas persistidas;
+- exclusiones importadas retroactivas y auditadas;
+- fixture ficticia 100/16.
 
 ### Frontend
 
 - React 19;
 - TypeScript estricto;
 - Vite;
-- credenciales solo en memoria;
 - Basic Auth UTF-8;
+- credenciales solo en memoria;
 - dashboard;
 - prospectos paginados y ficha;
 - importaciones y detalle por fila;
-- cola de revisión ambigua;
+- cola de revisión;
 - exclusiones;
 - auditoría;
 - diseño responsive;
 - `excludedRows` visible como `Bloqueadas`;
 - tipos Vite/CSS;
-- credenciales no anulables después del guard de autenticación.
+- credenciales no anulables después del guard.
 
-## Infraestructura local
+## Infraestructura local implementada
 
 ### Docker Compose
 
@@ -136,7 +131,7 @@ app   -> postgres, backend, frontend
 smoke -> comprobación E2E efímera
 ```
 
-Puertos host configurables:
+Puertos host:
 
 ```text
 POSTGRES_HOST_PORT=55432
@@ -152,7 +147,7 @@ Mapeos:
 127.0.0.1:${FRONTEND_HOST_PORT}:8080
 ```
 
-Red interna estable:
+Red interna:
 
 ```text
 backend -> postgres:5432
@@ -160,40 +155,27 @@ frontend -> backend:8080
 smoke -> backend:8080 y frontend:8080
 ```
 
-### Imágenes
+### Imágenes y health
 
 - backend multi-stage Maven/JRE;
 - frontend multi-stage Node/Nginx;
-- Nginx sirve la SPA;
-- Nginx actúa como proxy de `/api` y `/actuator`;
-- contextos Docker excluyen `.env`, datos, claves, logs y cachés;
-- servicios publicados solamente en loopback.
+- proxy `/api` y `/actuator`;
+- contextos sin secretos o datos reales;
+- servicios publicados solo en loopback;
+- health checks encadenados.
 
 ## Automatización implementada
 
 ### Preflight
-
-Archivos:
 
 ```text
 scripts/preflight.ps1
 scripts/preflight.sh
 ```
 
-Validan:
+Validan Git, Docker, daemon, Compose, `.env`, puertos, URL DB, credenciales y guardas.
 
-- Git;
-- Docker instalado y daemon accesible;
-- Docker Compose v2;
-- Java/Node/npm en modo local;
-- `.env`;
-- tres puertos válidos y distintos;
-- coherencia de `DATABASE_URL`;
-- credenciales DB y bootstrap;
-- cuatro guardas de envío;
-- perfiles Compose `app` y `smoke`.
-
-### Configuración segura de puertos
+### Puertos
 
 ```text
 scripts/set-local-host-ports.ps1
@@ -202,7 +184,7 @@ scripts/set-postgres-host-port.ps1
 scripts/set-postgres-host-port.sh
 ```
 
-Coordinan puertos y `DATABASE_URL` sin reemplazar contraseñas ni guardas.
+Preservan contraseñas y `SENDING_*`.
 
 ### Smoke
 
@@ -212,21 +194,37 @@ scripts/smoke-test.sh
 servicio Compose smoke
 ```
 
-Comprueban:
+Comprueban health, API autenticada y frontend sin crear datos.
 
-- backend health;
-- API autenticada de prospectos;
-- documento raíz frontend;
-- sin creación de datos;
-- sin comunicaciones.
+### Validación integral
 
-### Validación Docker Windows
+Windows:
 
 ```text
-scripts/validate-docker-stack.ps1
+scripts/validate-seg001.ps1
 ```
 
-Ejecuta configuración, preflight, Compose config, cleanup no destructivo, builds, arranque, health, smoke y evidencia JSON/transcript.
+Linux/macOS:
+
+```text
+scripts/validate-seg001.sh
+```
+
+Ambos recorren builds limpios, stack, health, smoke, Maven verify, Testcontainers, lockfile, npm ci, seguridad y evidencia.
+
+### Sintaxis PowerShell
+
+```text
+scripts/check-powershell-syntax.ps1
+```
+
+Parsea todos los scripts `.ps1` y reporta archivo, línea, columna y mensaje.
+
+CI además rechaza expresamente:
+
+```text
+$LASTEXITCODE:
+```
 
 ### Backend verify sin Java local
 
@@ -235,15 +233,7 @@ scripts/verify-backend-container.ps1
 scripts/verify-backend-container.sh
 ```
 
-Características:
-
-- Maven 3.9.16 y Java 21 dentro de Docker;
-- repositorio montado en solo lectura;
-- `target` en volumen efímero;
-- caché Maven persistente;
-- socket Docker para Testcontainers;
-- `TESTCONTAINERS_HOST_OVERRIDE`;
-- cleanup del contenedor y volumen temporal.
+Usan Maven/Java 21 en Docker, código read-only, target efímero, caché Maven y socket Docker para Testcontainers.
 
 ### Lockfile seguro
 
@@ -258,41 +248,7 @@ Ejecutan:
 npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 ```
 
-No deben crear `node_modules` ni ejecutar lifecycle scripts.
-
-En Unix, el contenedor utiliza el UID/GID del usuario para evitar que el lockfile quede propiedad de `root`.
-
-### Validación integral Windows
-
-```text
-scripts/validate-seg001.ps1
-```
-
-### Validación integral Linux/macOS
-
-```text
-scripts/validate-seg001.sh
-```
-
-Ambos recorridos:
-
-1. exigen rama `main`;
-2. exigen árbol limpio, salvo lockfile no rastreado de una ejecución anterior;
-3. configuran puertos;
-4. ejecutan preflight;
-5. construyen frontend/backend sin caché por defecto;
-6. levantan el stack;
-7. esperan health;
-8. ejecutan smoke host y contenedor;
-9. ejecutan Maven verify/Testcontainers en Docker;
-10. generan `package-lock.json`;
-11. calculan SHA-256;
-12. reconstruyen frontend mediante `npm ci`;
-13. repiten health y smoke;
-14. ejecutan seguridad del repositorio;
-15. permiten únicamente el cambio esperado del lockfile;
-16. producen transcript y JSON;
-17. no realizan commits.
+No deben crear `node_modules`. Unix preserva UID/GID.
 
 ### Seguridad del repositorio
 
@@ -301,104 +257,18 @@ scripts/check-repository-safety.ps1
 scripts/check-repository-safety.sh
 ```
 
-Bloquean:
-
-- `.env` rastreado;
-- `validation-output/` rastreado;
-- datos privados de importación/exportación;
-- lote `gestudio_lote_*_prospectos.xlsx` en cualquier subdirectorio;
-- claves y certificados;
-- JSON de credenciales o service accounts;
-- errores de `git diff --check`.
-
-### Makefile
-
-Targets:
-
-```text
-preflight
-preflight-container
-postgres-port
-local-ports
-repository-safety
-db-up
-db-down
-app-up
-app-down
-app-logs
-backend
-backend-verify-container
-frontend
-frontend-lock
-verify
-verify-container
-validate-seg001
-smoke
-smoke-container
-reset-db
-```
-
-### npm ci
-
-Dockerfile frontend, CI y Makefile seleccionan automáticamente:
-
-```text
-package-lock presente -> npm ci
-package-lock ausente  -> npm install
-```
-
-La caché npm de CI sigue deshabilitada hasta versionar el lockfile.
-
-## Evidencia local
-
-Directorio ignorado:
-
-```text
-validation-output/
-```
-
-Formatos:
-
-```text
-seg001-docker-*.log
-seg001-docker-*.json
-seg001-complete-*.log
-seg001-complete-*.json
-```
-
-Los transcripts deben revisarse antes de compartirse. La evidencia canónica es el resumen versionado en `docs/validation/`.
+Bloquean `.env`, evidencia local, datos privados, lote operativo, claves, certificados, JSON de credenciales y errores de whitespace rastreados.
 
 ## CI implementado
 
 Jobs:
 
-1. backend:
-   - Maven verify;
-   - Spotless;
-   - unit tests;
-   - ArchUnit;
-   - Testcontainers.
-2. frontend:
-   - npm ci o npm install;
-   - typecheck;
-   - build.
-3. scripts:
-   - sintaxis POSIX;
-   - sintaxis Bash del validador integral;
-   - parser PowerShell;
-   - parseo de targets Make;
-   - seguridad del repositorio;
-   - preflight fail-closed.
-4. compose-images-and-smoke:
-   - entorno ficticio seguro;
-   - Compose config;
-   - imágenes;
-   - stack;
-   - smoke;
-   - logs en fallo;
-   - cleanup del volumen efímero de CI.
+1. backend Maven verify, Spotless, unit tests, ArchUnit y Testcontainers;
+2. frontend npm install/ci, typecheck y build;
+3. scripts POSIX, Bash, PowerShell, Make, seguridad y preflight;
+4. Compose, imágenes, stack y smoke.
 
-GitHub continúa sin mostrar estados o workflow runs visibles mediante el conector utilizado.
+GitHub todavía no muestra estados o workflow runs visibles mediante el conector utilizado.
 
 ## Ejecución real acumulada
 
@@ -431,44 +301,71 @@ servicios: NOT_STARTED
 Flyway/Hibernate/smoke: NOT_RUN
 ```
 
-El puerto PostgreSQL y posteriormente los tres puertos quedaron configurables.
+Los tres puertos quedaron configurables.
 
-### Validación estática o funcional aislada
+### Tercer intento — 2026-07-21
+
+El checkout se actualizó correctamente por fast-forward hasta el `main` disponible en ese momento.
+
+El validador integral se ejecutó dos veces y falló durante el parseo:
+
+```text
+InvalidVariableReferenceWithDrive
+scripts/validate-seg001.ps1:21
+$LASTEXITCODE:
+```
+
+Estado:
+
+```text
+EXECUTED_FAIL — POWERSHELL_PARSE_ERROR
+```
+
+El fallo ocurrió antes de `Start-Transcript`, preflight y Docker.
+
+Por lo tanto:
+
+```text
+preflight: NOT_RUN
+Compose: NOT_RUN
+builds: NOT_RUN
+stack: NOT_RUN
+health: NOT_RUN
+smoke: NOT_RUN
+Maven/Testcontainers: NOT_RUN
+lockfile/npm ci: NOT_RUN
+```
+
+Correcciones:
+
+- formato explícito en `validate-seg001.ps1`;
+- mismo arreglo en `validate-docker-stack.ps1`;
+- mismo arreglo en `verify-backend-container.ps1`;
+- checker local de sintaxis PowerShell;
+- regresión CI específica;
+- renormalización de `mvnw.cmd`.
+
+Evidencia:
+
+```text
+docs/validation/SEG-001-powershell-parser-failure-2026-07-21.md
+```
+
+## Validación estática o aislada acumulada
 
 - estructura Compose;
 - estructura CI;
-- sintaxis de scripts POSIX disponibles;
+- sintaxis POSIX disponible;
 - parseo Makefile;
 - configurador Unix de tres puertos;
-- preservación de contraseñas ficticias;
-- preservación de UTF-8;
-- preservación de guardas;
-- backend verify Unix revisado;
-- generador de lockfile seguro revisado;
-- seguridad del repositorio revisada;
-- validadores integrales revisados por código;
-- paridad Windows/Unix documentada.
+- preservación de secretos ficticios, UTF-8 y guardas;
+- revisión de backend verify;
+- revisión de generador de lockfile;
+- revisión de seguridad;
+- revisión de validadores Windows/Unix;
+- comparación de ramas.
 
-### Pendiente de ejecución
-
-- parser real de todos los scripts PowerShell nuevos;
-- `bash -n scripts/validate-seg001.sh` mediante checkout o CI;
-- validador integral Windows;
-- validador integral Unix;
-- builds frontend/backend sin caché;
-- Maven verify;
-- Spotless;
-- unit tests;
-- ArchUnit;
-- Testcontainers;
-- Flyway;
-- Hibernate validate;
-- tres servicios healthy;
-- smoke host;
-- smoke contenedorizado;
-- package-lock real;
-- npm ci real;
-- CI visible verde.
+La corrección PowerShell nueva todavía debe ejecutarse en el checkout Windows.
 
 ## Trabajo finalizado
 
@@ -478,40 +375,40 @@ El puerto PostgreSQL y posteriormente los tres puertos quedaron configurables.
 - [x] exclusiones dominantes;
 - [x] auditoría;
 - [x] seguridad fail-closed;
-- [x] hardening del parser/importación;
+- [x] hardening de importación;
 - [x] correcciones TypeScript;
 - [x] stack Compose;
 - [x] puertos configurables;
 - [x] imágenes y health checks;
-- [x] smoke host y contenedor;
+- [x] smoke host/contenedor;
 - [x] preflight multiplataforma;
-- [x] validador Docker Windows;
 - [x] backend verify contenedorizado;
-- [x] generación segura de lockfile;
-- [x] preservación de propiedad del lockfile en Unix;
+- [x] lockfile seguro;
 - [x] transición automática a npm ci;
-- [x] validador integral Windows;
-- [x] validador integral Unix;
-- [x] evidencia JSON y transcript;
+- [x] validadores integrales Windows/Unix;
+- [x] evidencia JSON/transcript;
 - [x] seguridad centralizada;
-- [x] CI implementado;
-- [x] Makefile actualizado;
-- [x] documentación operativa y evidencias.
+- [x] checker PowerShell local;
+- [x] regresión del parser en CI;
+- [x] normalización de `mvnw.cmd`;
+- [x] documentación operativa.
 
 ## Tareas pendientes bloqueantes
 
-- [ ] actualizar checkout local al último `main`;
-- [ ] restaurar la modificación accidental de `mvnw.cmd` si continúa presente;
-- [ ] ejecutar uno de los validadores integrales;
-- [ ] revisar JSON y transcript;
-- [ ] corregir cualquier fallo real;
-- [ ] repetir hasta `PASS`;
-- [ ] revisar `frontend/package-lock.json`;
-- [ ] versionar el lockfile;
-- [ ] repetir validación desde árbol limpio con lockfile rastreado;
-- [ ] demostrar `npm ci` desde el primer build;
-- [ ] observar CI verde o registrar evidencia local equivalente;
-- [ ] actualizar la matriz con salidas reales;
+- [ ] actualizar checkout al último `main`;
+- [ ] confirmar `mvnw.cmd` limpio;
+- [ ] ejecutar checker PowerShell;
+- [ ] ejecutar preflight actualizado;
+- [ ] ejecutar validador integral;
+- [ ] corregir el siguiente fallo real, si existe;
+- [ ] obtener builds limpios;
+- [ ] obtener stack healthy;
+- [ ] obtener Maven/tests/Testcontainers verdes;
+- [ ] generar y revisar `package-lock.json`;
+- [ ] versionar lockfile;
+- [ ] repetir desde árbol limpio con npm ci desde el inicio;
+- [ ] obtener CI visible verde o excepción documentada;
+- [ ] actualizar matriz con evidencia;
 - [ ] marcar SEG-001 `COMPLETE`;
 - [ ] activar SEG-002.
 
@@ -522,20 +419,20 @@ El puerto PostgreSQL y posteriormente los tres puertos quedaron configurables.
 - filtros y exportación;
 - accesibilidad;
 - actor y retención de auditoría;
-- evolución de la relación institución–prospecto uno a uno.
+- evolución de institución–prospecto.
 
 ## Riesgos
 
-1. pueden aparecer errores nuevos en builds limpios;
-2. Testcontainers dentro de un contenedor depende del socket Docker y `host.docker.internal`;
-3. montar el socket Docker concede privilegios elevados al contenedor Maven;
+1. pueden aparecer nuevos errores en builds limpios;
+2. Testcontainers depende del socket Docker y `host.docker.internal`;
+3. el socket Docker concede privilegios elevados;
 4. la caché Maven persiste localmente;
-5. transcripts pueden contener logs técnicos y deben revisarse antes de compartir;
+5. transcripts deben revisarse antes de compartir;
 6. package-lock aún no fue generado;
 7. CI no presenta runs visibles;
 8. HTTP Basic es temporal;
 9. Compose es solo local;
-10. SEG-002 no debe comenzar con bloqueantes abiertos.
+10. SEG-002 no debe comenzar con bloqueantes.
 
 ## Seguridad vigente
 
@@ -552,29 +449,4 @@ Además:
 - sin Gmail, SMTP o adaptador de envío;
 - sin datos reales en Git, CI o imágenes;
 - servicios solo en loopback;
-- smoke de solo lectura;
-- validadores sin commits automáticos.
-
-## Próxima acción canónica
-
-Leer `docs/next-step.md` y ejecutar:
-
-Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-seg001.ps1 `
-  -PostgresPort 55432 `
-  -BackendPort 8080 `
-  -FrontendPort 5173 `
-  -KeepRunning
-```
-
-Linux/macOS:
-
-```bash
-bash scripts/validate-seg001.sh \
-  --postgres-port 55432 \
-  --backend-port 8080 \
-  --frontend-port 5173 \
-  --keep-running
-```
+- el tercer intento no llegó a ejecutar Docker ni modificar datos.
