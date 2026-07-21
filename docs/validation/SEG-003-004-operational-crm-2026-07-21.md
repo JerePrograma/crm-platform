@@ -1,8 +1,12 @@
 # Validación SEG-003 y SEG-004 — CRM operativo
 
-Fecha: 2026-07-21  
-Rama: `feat/complete-crm-platform`  
+Fecha: 2026-07-21
+
+Rama: `feat/complete-crm-platform`
+
 Commit de inicio: `bf64bb0`
+
+Commit de implementación: `58c303d`
 
 ## Resultado
 
