@@ -378,3 +378,16 @@ Evidencia focalizada:
 - imagen backend UID 65532, healthcheck Java y Grype sin hallazgos;
 - XLSX real ausente: `BLOCKED_EXTERNAL_FILE`, sin abrir/copiar/importar;
 - producción, push, PR y comunicaciones reales permanecen no autorizados.
+
+## SEG011_VALIDATION_ATTEMPT_1_SCRIPT_SYNTAX
+
+```text
+COMMIT=1f9c3d8636a08253c6ee23180193737bb32ba625
+COMMAND=powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1 -PostgresPort 25432 -BackendPort 8080 -FrontendPort 5173
+RESULT=EXECUTED_FAIL
+FIRST_FAILURE=scriptSyntax: WSL bash could not resolve C:\laburo\... absolute paths
+ROOT_CAUSE=PowerShell loop passed FileInfo.FullName to bash; the already-passing relative syntax check did not exercise that path form
+FIX=pass repository-relative scripts/<name> paths for every Bash syntax check
+FUNCTIONAL_PHASES_NOT_RUN=backend, frontend, images, migrations, E2E, scans, backup/restore, production profile
+DATA_IMPACT=none; failure occurred before stack creation
+```

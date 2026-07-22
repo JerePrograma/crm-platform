@@ -79,7 +79,11 @@ try {
   Run-Phase 'repositorySafety' { & (Join-Path $PSScriptRoot 'check-repository-safety.ps1') }
   Run-Phase 'scriptSyntax' {
     & (Join-Path $PSScriptRoot 'check-powershell-syntax.ps1')
-    if (Get-Command bash -ErrorAction SilentlyContinue) { Invoke-Checked 'bash' @('-n','scripts/validate-complete-crm.sh'); Get-ChildItem scripts -Filter '*.sh' | ForEach-Object { Invoke-Checked 'bash' @('-n', $_.FullName) } }
+    if (Get-Command bash -ErrorAction SilentlyContinue) {
+      Get-ChildItem scripts -Filter '*.sh' | ForEach-Object {
+        Invoke-Checked 'bash' @('-n', ("scripts/{0}" -f $_.Name))
+      }
+    }
     else { Write-Host 'Bash functional/syntax validation: BLOCKED_PLATFORM' }
   }
   Run-Phase 'secretScan' {
