@@ -410,3 +410,21 @@ FOCUSED_REGRESSION_RESULT=EXECUTED_PASS; host/container smoke PASS; Playwright 2
 NOT_RUN_AFTER_FAILURE=effective sending blockade; zero SENT query; backup/restore; production profile; final tree safety
 DATA_IMPACT=none; the isolated Compose project and its volume were removed by the validator finally block
 ```
+
+## SEG011_VALIDATION_ATTEMPT_3_E2E_SESSION_TRANSITION
+
+```text
+COMMIT=dbf56555810a37cb16189f8967b69a6e08c07af3
+COMMAND=powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1 -PostgresPort 25432 -BackendPort 8080 -FrontendPort 5173
+RESULT=EXECUTED_FAIL
+DURATION=863.999s
+PASSED_PHASES=repository/tooling/syntax/secret checks; backend 79/79 and Spotless 159/159; frontend unit/typecheck/build; Docker no-cache health and host/container smoke; npm audit; Grype no vulnerabilities; empty-to-V13 and V11-to-V13 plus Hibernate; outbox/worker/inbound suite
+FIRST_FAILURE=frontendE2E: main scenario timed out at the second login after completing the ADMIN business journey; responsive scenario passed
+EVIDENCE=Playwright failure snapshot still showed the authenticated ADMIN Dashboard while the test searched for the login username field
+ROOT_CAUSE=the test clicked asynchronous logout and immediately navigated for VIEWER login without waiting for the observable unauthenticated state
+FIX=wait for the Ingresar heading after logout before initiating the VIEWER login; no sleep or timeout increase
+FOCUSED_REGRESSION_COMMAND=npm run typecheck; isolated cached stack and authenticated smokes; npm run test:e2e; PostgreSQL forbidden-state query
+FOCUSED_REGRESSION_RESULT=EXECUTED_PASS; typecheck PASS; Playwright 2/2 in 11.3s including ADMIN-to-VIEWER transition; SENT|DELIVERED|READ=0; isolated volume removed
+NOT_RUN_AFTER_FAILURE=effective sending blockade; zero SENT query; backup/restore; production profile; final tree safety
+DATA_IMPACT=none; isolated Compose project and volume removed by validator cleanup
+```

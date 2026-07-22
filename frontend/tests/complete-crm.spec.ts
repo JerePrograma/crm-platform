@@ -224,6 +224,7 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
   await expect(page.getByRole("heading", { name: "Eventos recientes" })).toBeVisible();
 
   await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page.getByRole("heading", { name: "Ingresar" })).toBeVisible();
   await login(page, viewerUser, viewerPassword);
   await page.getByRole("button", { name: "Prospectos" }).click();
   await expect(page.getByLabel("Nueva institución")).toHaveCount(0);
