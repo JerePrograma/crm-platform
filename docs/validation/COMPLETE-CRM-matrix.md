@@ -9,7 +9,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 |---|---|---|
 | baseline SEG-001 Windows | EXECUTED_PASS | validador 2026-07-21, commit `7db7e4c`, 29/29 |
 | inventario/gap analysis | EXECUTED_PASS | plan integral y análisis de código completo |
-| documentación viva | IN_PROGRESS | SEG-010/011, producción, runbooks y evidencia focal actualizados; cierre final pendiente |
+| documentación viva | EXECUTED_PASS | fuentes canónicas reconciliadas con dos corridas y frontera externa |
 | organización/tenant | EXECUTED_PASS | V6 desde vacío y V1-V5; FK/índices/backfill |
 | usuarios persistentes | EXECUTED_PASS | hash, alta, activación y cambio de contraseña |
 | roles y permisos | EXECUTED_PASS | ADMIN/MANAGER/SALES/VIEWER y 18 permisos |
@@ -57,7 +57,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | idempotencia asíncrona | EXECUTED_PASS | scope tenant, request hash, repetición y colisión 409 |
 | inbound/webhook fake | EXECUTED_PASS | HMAC/replay/quarantine/asociación/dominio y E2E |
 | frontend integral | EXECUTED_PASS | navegación completa, permisos, desktop/mobile y 2/2 Playwright |
-| frontend E2E | EXECUTED_PASS | suite versionada 2/2 sobre stack real, 13.3 s |
+| frontend E2E | EXECUTED_PASS | suite 2/2 en ambas corridas integrales, 18,213 s y 37,590 s de fase |
 | dashboard/reportes | EXECUTED_PASS | agregaciones PostgreSQL tenant/fecha/timezone y monedas separadas |
 | búsqueda PostgreSQL | EXECUTED_PASS | institución/contacto/canal/localidad/website/notas/tags, allow-list y tenant test |
 | configuración/etiquetas | EXECUTED_PASS | settings hard-blocked, tags CRUD/bulk/audit/tenant |
@@ -71,8 +71,8 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | perfil producción local | EXECUTED_PASS | non-root/read-only/private network/health, sending bloqueado |
 | dependency scan | EXECUTED_PASS | npm audit High y Grype High/Critical; imagen final sin hallazgos |
 | CI integral | IMPLEMENTED_NOT_RUN | workflow parseado localmente; ejecución remota requiere push |
-| validador completo Windows | NOT_STARTED | script funcional listo; requiere checkpoint limpio |
-| validador completo Unix | IMPLEMENTED_NOT_RUN | sintaxis Bash PASS; funcional no ejecutado en Windows |
-| repetición limpia | NOT_STARTED | depende de primer validador completo |
+| validador completo Windows | EXECUTED_PASS | `986523a`, 21 fases verdes, 713,870 s |
+| validador completo Unix | IMPLEMENTED_NOT_RUN | sintaxis y preflight WSL PASS; recorrido integral no ejecutado |
+| repetición limpia | EXECUTED_PASS | mismo commit, 21 fases verdes, 734,162 s, sin flakiness |
 | despliegue producción | NOT_APPLICABLE | no autorizado |
 | envío real | NOT_APPLICABLE | deshabilitado por política |

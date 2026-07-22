@@ -32,8 +32,8 @@ limpia de SEG-001 se ejecutó sobre
 | SEG-007 | COMPLETE | campañas, audiencias, plantillas y simulación |
 | SEG-008 | COMPLETE | mensajería segura y adaptadores deshabilitados |
 | SEG-009 | COMPLETE | outbox PostgreSQL, workers e inbound fake durable |
-| SEG-010 | IMPLEMENTED_NOT_RUN | focales verdes; cierre sujeto al validador integral |
-| SEG-011 | ACTIVE | validación integral limpia, repetición y cierre |
+| SEG-010 | COMPLETE | reportes, búsqueda, seguridad, observabilidad y producción local |
+| SEG-011 | COMPLETE | validación integral Windows limpia y reproducible |
 
 ## Estados operativos
 
@@ -139,8 +139,10 @@ GRYPE_HIGH_CRITICAL_PASS
 NPM_AUDIT_HIGH_PASS
 REAL_XLSX_PREVIEW_BLOCKED_EXTERNAL_FILE
 PRODUCTION_DEPLOYMENT_NOT_AUTHORIZED
-SEG_010_IMPLEMENTED_NOT_RUN_INTEGRAL
-SEG_011_ACTIVE
+COMPLETE_CRM_WINDOWS_RUN_1_PASS
+COMPLETE_CRM_WINDOWS_RUN_2_PASS
+SEG_010_COMPLETE
+SEG_011_COMPLETE
 ```
 
 ## Fallo Jackson corregido
@@ -231,16 +233,23 @@ en `docs/execution/` y `docs/validation/COMPLETE-CRM-matrix.md`.
 
 Las comunicaciones reales y producción continúan fuera de autorización.
 
-## Candidato SEG-010
+## Cierre SEG-010 y SEG-011
 
-El código y las pruebas focalizadas de SEG-010 están implementados. Flyway
-V1–V13, 79/79 backend, Spotless 159/159, ArchUnit, frontend unit/build/E2E,
-backup/restore, production profile local y el escaneo de imagen pasaron. SEG-010
-permanece `IMPLEMENTED_NOT_RUN` hasta que el validador integral se ejecute dos
-veces desde el commit limpio candidato.
+Flyway V1–V13, 79/79 backend, Spotless 159/159, ArchUnit, frontend
+unit/build/E2E, backup/restore, production profile local y el escaneo de imagen
+pasaron dentro del validador integral dos veces sobre `986523a`. Las corridas
+`complete-crm-20260722-173731.json` y
+`complete-crm-20260722-174938.json` finalizaron `FUNCTIONAL_PASS` en 713,870 s
+y 734,162 s. Ambas comenzaron y terminaron con árbol limpio y retiraron solo su
+proyecto Compose y volumen sintético.
 
 La imagen backend usa JRE mínima no-root fijada por digest y healthcheck Java.
 Grype inicialmente detectó vulnerabilidades High/Critical en el runtime Alpine;
 se corrigió la causa sin exclusiones y el nuevo scan devolvió cero hallazgos.
 Dependency-Check quedó `BLOCKED_EXTERNAL_NVD_RATE_LIMIT` y no se cuenta como
 PASS.
+
+El validador Unix integral y el workflow remoto permanecen `IMPLEMENTED_NOT_RUN`;
+la sintaxis Bash y el preflight container-only sí se ejecutaron localmente desde
+WSL. Gmail/WhatsApp continúan `IMPLEMENTED_NOT_CONNECTED`, el XLSX real
+`BLOCKED_EXTERNAL_FILE` y producción `NOT_AUTHORIZED`/`NOT_DEPLOYED`.

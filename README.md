@@ -14,8 +14,8 @@ SEG-002: COMPLETE — identidad, usuarios, sesión, RBAC y tenant
 SEG-003–SEG-007: COMPLETE — CRM operativo, pipeline y campañas simuladas
 SEG-008: COMPLETE — mensajería no-op/fake/manual y adapters desconectados
 SEG-009: COMPLETE — outbox, workers e inbound fake durable
-SEG-010: IMPLEMENTED_NOT_RUN — focales verdes; validador integral pendiente
-SEG-011: IN_PROGRESS — validación integral repetida y cierre
+SEG-010: COMPLETE — reportes, seguridad, observabilidad y producción local
+SEG-011: COMPLETE — dos validaciones integrales limpias reproducibles
 ```
 
 Evidencia real disponible:
@@ -46,6 +46,11 @@ Evidencia real disponible:
 - backup/restore sintético y production profile local: `PASS`;
 - imagen backend no-root/read-only compatible, Grype High/Critical y npm audit:
   `PASS`;
+- validador completo Windows sobre `986523a`: `FUNCTIONAL_PASS` dos veces,
+  713,870 s y 734,162 s, con 21 fases verdes por corrida;
+- ambas corridas: E2E 2/2, migraciones vacío/V11→V13, cuatro bloqueos
+  efectivos, cero `SENT|DELIVERED|READ`, restore y perfil productivo local:
+  `PASS`;
 - XLSX real: `BLOCKED_EXTERNAL_FILE`; producción/push/PR: `NOT_AUTHORIZED`.
 
 Fuentes:
@@ -62,6 +67,7 @@ docs/validation/SEG-008-safe-messaging-2026-07-21.md
 docs/validation/SEG-009-transactional-outbox-inbound-2026-07-22.md
 docs/validation/SEG-010-operations-production-2026-07-22.md
 docs/validation/SEG-010-performance-accessibility-2026-07-22.md
+docs/validation/SEG-011-complete-crm-closure-2026-07-22.md
 docs/execution/complete-crm-platform-plan.md
 docs/execution/complete-crm-platform-progress.md
 docs/validation/COMPLETE-CRM-matrix.md
@@ -616,10 +622,8 @@ La segunda operación es destructiva.
 
 ## Limitaciones actuales
 
-- validador integral Windows y su repetición todavía deben ejecutarse sobre el
-  commit limpio de SEG-010;
-- recorrido funcional Bash/Linux/macOS no ejecutado localmente; sintaxis Bash y
-  estructura CI sí fueron validadas;
+- recorrido integral Bash/Linux/macOS no ejecutado localmente; sintaxis Bash y
+  preflight container-only sí fueron ejecutados desde WSL;
 - advertencias Hikari de contextos Testcontainers ya cerrados, sin fallos;
 - Mockito deberá configurarse como agente antes de una futura restricción de Java;
 - Gmail y WhatsApp reales están implementados pero no conectados;
@@ -641,4 +645,6 @@ La segunda operación es destructiva.
 - `docs/validation/SEG-001-cross-platform-validation-2026-07-20.md` — paridad Windows/Unix.
 - `docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md` — causa raíz Jackson y cierre integral.
 - `docs/segments/SEG-010.md` y `docs/segments/SEG-011.md` — cierre operativo e integral.
+- `docs/validation/SEG-011-complete-crm-closure-2026-07-22.md` — dos corridas
+  Windows reproducibles y frontera externa final.
 - `docs/production/` y `docs/runbooks/` — perfil y procedimientos operativos.

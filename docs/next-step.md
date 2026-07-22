@@ -15,8 +15,8 @@ SEG-006 COMPLETE
 SEG-007 COMPLETE
 SEG-008 COMPLETE
 SEG-009 COMPLETE
-SEG-010 IMPLEMENTED_NOT_RUN
-SEG-011 ACTIVE
+SEG-010 COMPLETE
+SEG-011 COMPLETE
 BRANCH feat/complete-crm-platform
 BASELINE 7db7e4c EXECUTED_PASS
 IDENTITY_COMMIT 0546e6e EXECUTED_PASS
@@ -24,12 +24,13 @@ PRODUCCIÓN NOT_DEPLOYED
 COMUNICACIONES REALES DISABLED_BY_POLICY
 ```
 
-## Siguiente checkpoint canónico
+## Próximo paso externo
 
-Cerrar SEG-011: consolidar el checkpoint local de SEG-010, verificar árbol
-limpio, ejecutar `scripts/validate-complete-crm.ps1` sobre puertos
-25432/8080/5173, retirar solo recursos sintéticos, repetir el mismo validador y
-publicar evidencia sanitizada. No habilitar comunicaciones ni desplegar.
+No queda un segmento funcional activo. Revisar diffs y evidencia sanitizada;
+si se autoriza, ejecutar el validador integral Unix en otra plataforma y el
+workflow remoto mediante push/PR. Conectar credenciales, probar comunicaciones
+reales o desplegar requiere una autorización futura explícita y una revisión de
+seguridad separada.
 
 Contrato y evidencia viva:
 
@@ -46,11 +47,12 @@ docs/validation/SEG-008-safe-messaging-2026-07-21.md
 docs/validation/SEG-009-transactional-outbox-inbound-2026-07-22.md
 docs/validation/SEG-010-operations-production-2026-07-22.md
 docs/validation/SEG-010-performance-accessibility-2026-07-22.md
+docs/validation/SEG-011-complete-crm-closure-2026-07-22.md
 docs/segments/SEG-011.md
 docs/segments/CRM-completion.md
 ```
 
-## Comandos de continuidad
+## Comandos de revisión
 
 ```powershell
 Set-Location C:\laburo\crm-platform

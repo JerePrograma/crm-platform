@@ -18,8 +18,8 @@ Rama canónica: `main`.
 | SEG-007 | Campañas y plantillas | COMPLETE | SEG-003, SEG-006 | audiencia congelada y simulación |
 | SEG-008 | Mensajería segura y adaptadores | COMPLETE | SEG-007 | no-op, fake, manual y red deshabilitada |
 | SEG-009 | Outbox, workers e inbound | COMPLETE | SEG-008 | async idempotente y respuesta fake |
-| SEG-010 | Reportes, seguridad y producción | IMPLEMENTED_NOT_RUN | SEG-002–009 | focales verdes; integral pendiente |
-| SEG-011 | Validación integral y cierre | ACTIVE | SEG-010 | recorrido reproducible y evidencia |
+| SEG-010 | Reportes, seguridad y producción | COMPLETE | SEG-002–009 | focales y validador integral repetido |
+| SEG-011 | Validación integral y cierre | COMPLETE | SEG-010 | dos recorridos reproducibles y evidencia |
 
 ## SEG-001 — Completado
 
@@ -185,7 +185,7 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] API/UI operativa y E2E sobre stack real;
 - [x] Flyway V1–V12, Hibernate, 69/69, ArchUnit, frontend y Docker smoke.
 
-## SEG-010 — Implementado, pendiente de validador integral
+## SEG-010 — Completo
 
 - [x] inventario UI y navegación protegida;
 - [x] dashboard/reporting tenant-scoped y monedas separadas;
@@ -200,15 +200,15 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] perfil productivo local endurecido;
 - [x] CI y validadores Windows/Unix;
 - [x] backend 79/79, frontend Vitest/Playwright y scans focales;
-- [ ] dos ejecuciones limpias del validador integral (SEG-011).
+- [x] dos ejecuciones limpias del validador integral (SEG-011).
 
-## SEG-011 — Activo
+## SEG-011 — Completo
 
-- [ ] checkpoint SEG-010 versionado y árbol limpio;
-- [ ] primera validación completa Windows;
-- [ ] segunda validación limpia reproducible;
-- [ ] evidencia sanitizada y matriz final;
-- [ ] commit documental final.
+- [x] checkpoint SEG-010 versionado y árbol limpio;
+- [x] primera validación completa Windows, 713,870 s;
+- [x] segunda validación limpia reproducible, 734,162 s;
+- [x] evidencia sanitizada y matriz final;
+- [x] documentación final preparada para commit local.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 

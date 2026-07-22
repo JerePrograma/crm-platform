@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-07-22 — SEG-011 complete CRM closure
+
+- cierra SEG-010 y SEG-011 después de dos ejecuciones limpias consecutivas del
+  validador integral sobre `986523a`;
+- valida dos veces 79/79 backend, Spotless 159/159, ArchUnit, Vitest 2/2,
+  Playwright 2/2, imágenes sin caché, npm audit, Grype, migraciones
+  vacío/V11→V13, backup/restore y perfil productivo local;
+- confirma en ambas corridas los cuatro bloqueos efectivos, providers reales no
+  conectados y cero `SENT|DELIVERED|READ`;
+- corrige la precedencia entorno/`.env` de preflight/smoke y elimina una carrera
+  ADMIN→VIEWER esperando el estado observable de logout, sin sleeps;
+- mantiene Unix integral y CI remoto sin ejecutar, XLSX real bloqueado por
+  archivo externo, producción/push/PR no autorizados y comunicaciones reales
+  deshabilitadas.
+
 ## 2026-07-22 — SEG-010 operations candidate
 
 - agrega V13 con configuración, etiquetas e índices de búsqueda/reporting;
