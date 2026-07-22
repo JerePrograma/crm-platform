@@ -132,15 +132,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build --pull -t crm-platform-backend:ci .
-      - run: bash scripts/verify-migrations.sh "$(docker compose images -q backend)"
+      - run: bash scripts/verify-migrations.sh crm-platform-backend:ci
 
   migration-from-v11:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose --profile app build backend
-      - run: bash scripts/verify-migrations.sh "$(docker compose images -q backend)"
+      - run: docker build --pull -t crm-platform-backend:ci .
+      - run: bash scripts/verify-migrations.sh crm-platform-backend:ci
 
   compose-smoke:
     runs-on: ubuntu-latest
@@ -220,7 +220,7 @@ jobs:
         with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci --no-fund && npm audit --audit-level=high
         working-directory: frontend
-      - run: docker compose --profile app build backend
+      - run: docker build --pull -t crm-platform-backend:ci .
       - name: Scan backend runtime for high or critical vulnerabilities
         run: |
           docker run --rm \
