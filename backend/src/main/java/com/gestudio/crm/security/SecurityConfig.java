@@ -55,7 +55,11 @@ public class SecurityConfig {
     CookieCsrfTokenRepository csrf = CookieCsrfTokenRepository.withHttpOnlyFalse();
     csrf.setCookiePath("/");
 
-    return http.csrf(configuration -> configuration.csrfTokenRepository(csrf))
+    return http.csrf(
+            configuration ->
+                configuration
+                    .csrfTokenRepository(csrf)
+                    .ignoringRequestMatchers("/api/v1/webhooks/fake-inbound"))
         .sessionManagement(
             session ->
                 session
@@ -69,6 +73,8 @@ public class SecurityConfig {
                     .requestMatchers("/actuator/health", "/actuator/health/**")
                     .permitAll()
                     .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login")
+                    .permitAll()
+                    .requestMatchers("/api/v1/webhooks/fake-inbound")
                     .permitAll()
                     .requestMatchers("/api/**", "/swagger-ui/**", "/v3/api-docs/**")
                     .authenticated()

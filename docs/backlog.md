@@ -17,8 +17,8 @@ Rama canónica: `main`.
 | SEG-006 | Oportunidades y pipeline | COMPLETE | SEG-003 | ciclo de venta y forecast |
 | SEG-007 | Campañas y plantillas | COMPLETE | SEG-003, SEG-006 | audiencia congelada y simulación |
 | SEG-008 | Mensajería segura y adaptadores | COMPLETE | SEG-007 | no-op, fake, manual y red deshabilitada |
-| SEG-009 | Outbox, workers e inbound | ACTIVE | SEG-008 | async idempotente y respuesta fake |
-| SEG-010 | Reportes, seguridad y producción | PLANNED | SEG-002–009 | operación local endurecida |
+| SEG-009 | Outbox, workers e inbound | COMPLETE | SEG-008 | async idempotente y respuesta fake |
+| SEG-010 | Reportes, seguridad y producción | ACTIVE | SEG-002–009 | operación local endurecida |
 | SEG-011 | Validación integral y cierre | PLANNED | SEG-010 | recorrido reproducible y evidencia |
 
 ## SEG-001 — Completado
@@ -175,13 +175,15 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] adaptadores reales deshabilitados por defecto y contract tests;
 - [x] prueba de inexistencia de bypass de envío.
 
-## SEG-009 — Activo
+## SEG-009 — Completo
 
-- [ ] transactional outbox tenant-scoped;
-- [ ] worker con lock/lease/retry/dead-letter;
-- [ ] idempotencia asíncrona y requeue autorizada;
-- [ ] webhook fake con firma, replay protection y quarantine;
-- [ ] actividad inbound, transición, parada de secuencia y tarea.
+- [x] transactional outbox tenant-scoped;
+- [x] worker con lock/lease/retry/dead-letter;
+- [x] idempotencia asíncrona y requeue autorizada;
+- [x] webhook fake con firma, replay protection y quarantine;
+- [x] actividad inbound, transición, parada de secuencia y tarea;
+- [x] API/UI operativa y E2E sobre stack real;
+- [x] Flyway V1–V12, Hibernate, 69/69, ArchUnit, frontend y Docker smoke.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 

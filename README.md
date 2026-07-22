@@ -13,8 +13,9 @@ SEG-001: COMPLETE — validación local integral y CI verdes
 SEG-002: COMPLETE — identidad, usuarios, sesión, RBAC y tenant
 SEG-003–SEG-007: COMPLETE — CRM operativo, pipeline y campañas simuladas
 SEG-008: COMPLETE — mensajería no-op/fake/manual y adapters desconectados
-SEG-009: ACTIVE — outbox, workers e inbound
-SEG-010–SEG-011: PLANNED — hardening y cierre integral
+SEG-009: COMPLETE — outbox, workers e inbound fake durable
+SEG-010: ACTIVE — reporting, seguridad, operación y producción local
+SEG-011: PLANNED — validación integral repetida y cierre
 ```
 
 Evidencia real disponible:
@@ -35,6 +36,10 @@ Evidencia real disponible:
 - Flyway V1–V11, mensajería safe-by-default y contract tests loopback: `PASS`;
 - Docker V10→V11, health completo y simulación visual fake: `PASS`;
 - Gmail/WhatsApp reales: `IMPLEMENTED_NOT_CONNECTED`.
+- Flyway V1–V12, Hibernate validate, outbox/worker/inbound: `PASS`;
+- Maven verify SEG-009, 69/69, Spotless 148/148 y ArchUnit: `PASS`;
+- E2E fake inbound HMAC/replay/quarantine/REPLIED y cero estados prohibidos:
+  `PASS`.
 
 Fuentes:
 
@@ -47,6 +52,7 @@ docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
 docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 docs/validation/SEG-002-identity-rbac-2026-07-21.md
 docs/validation/SEG-008-safe-messaging-2026-07-21.md
+docs/validation/SEG-009-transactional-outbox-inbound-2026-07-22.md
 docs/execution/complete-crm-platform-plan.md
 docs/execution/complete-crm-platform-progress.md
 docs/validation/COMPLETE-CRM-matrix.md
@@ -55,7 +61,7 @@ docs/validation/COMPLETE-CRM-matrix.md
 ## Alcance
 
 - Java 21 y Spring Boot;
-- PostgreSQL 17, Flyway V1–V11 y Hibernate validate;
+- PostgreSQL 17, Flyway V1–V12 y Hibernate validate;
 - organizaciones, usuarios persistentes, roles y permisos;
 - sesión cookie HttpOnly same-origin, CSRF, bloqueo e invalidación;
 - tenant isolation y auditoría de identidad;
@@ -67,6 +73,8 @@ docs/validation/COMPLETE-CRM-matrix.md
 - campañas, audiencias congeladas, plantillas y secuencias limitadas;
 - borradores, simulaciones fake y enlaces manuales;
 - adapters Gmail/WhatsApp aislados y desconectados;
+- outbox PostgreSQL, workers con lease/retry/dead-letter e idempotencia;
+- inbound fake firmado, replay protection, quarantine, asociación y timeline;
 - preview, ejecución confirmada y evidencia por fila;
 - auditoría JSONB;
 - API REST, OpenAPI y RFC 7807;

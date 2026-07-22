@@ -393,3 +393,92 @@ export type ManualMessageLink = {
   url: string;
   sendingBlockReason: string;
 };
+
+export type OutboxStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "SUCCEEDED"
+  | "RETRY"
+  | "DEAD"
+  | "CANCELLED"
+  | "BLOCKED";
+
+export type OutboxEvent = {
+  id: string;
+  eventType: string;
+  eventVersion: number;
+  aggregateType: string;
+  aggregateId: string;
+  payload: string;
+  status: OutboxStatus;
+  attemptCount: number;
+  maxAttempts: number;
+  nextAttemptAt: string;
+  lockedAt: string | null;
+  lockExpiresAt: string | null;
+  lockedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  processedAt: string | null;
+  lastErrorCode: string | null;
+  lastErrorSummary: string | null;
+  resultSummary: string | null;
+  idempotencyKey: string;
+  correlationId: string;
+};
+
+export type OutboxMetric = {
+  status: OutboxStatus;
+  count: number;
+  oldestCreatedAt: string | null;
+};
+
+export type WorkerState = {
+  worker: {
+    workerId: string;
+    schedulerEnabled: boolean;
+    acceptingWork: boolean;
+    running: boolean;
+    batchSize: number;
+  };
+  tenantPaused: boolean;
+};
+
+export type WorkerRun = {
+  workerId: string;
+  recovered: number;
+  claimed: number;
+  completed: number;
+  executed: boolean;
+};
+
+export type InboundMessage = {
+  id: string;
+  provider: "FAKE_INBOUND";
+  externalEventId: string;
+  externalMessageId: string | null;
+  externalThreadId: string | null;
+  channel: CampaignChannel;
+  senderMasked: string;
+  recipientMasked: string | null;
+  receivedAt: string;
+  payloadHash: string;
+  status: "PENDING" | "PROCESSING" | "PROCESSED" | "QUARANTINED" | "DISCARDED" | "FAILED";
+  associationStatus: "PENDING" | "ASSOCIATED" | "AMBIGUOUS" | "NOT_FOUND" | "DISCARDED";
+  prospectId: string | null;
+  contactId: string | null;
+  activityId: string | null;
+  quarantineReason: string | null;
+  requeueCount: number;
+  correlationId: string;
+  createdAt: string;
+  processedAt: string | null;
+  discardedAt: string | null;
+};
+
+export type WebhookHealth = {
+  provider: "FAKE_INBOUND";
+  enabled: boolean;
+  configured: boolean;
+  maxPayloadBytes: number;
+};

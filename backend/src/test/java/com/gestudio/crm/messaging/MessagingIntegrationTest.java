@@ -7,6 +7,7 @@ import com.gestudio.crm.common.OptimisticConflictException;
 import com.gestudio.crm.identity.CrmPrincipal;
 import com.gestudio.crm.identity.IdentityService;
 import com.gestudio.crm.messaging.MessageDispatcher.CreateMessageCommand;
+import com.gestudio.crm.outbox.OutboxWorkerService;
 import com.gestudio.crm.prospect.ProspectApplicationService;
 import com.gestudio.crm.prospect.ProspectApplicationService.CreateProspectCommand;
 import java.time.Instant;
@@ -47,6 +48,7 @@ class MessagingIntegrationTest {
   @Autowired private ProspectApplicationService prospectApplicationService;
   @Autowired private MessageDispatcherService dispatcher;
   @Autowired private JdbcTemplate jdbcTemplate;
+  @Autowired private OutboxWorkerService outboxWorkerService;
 
   private CrmPrincipal principal;
 
@@ -150,6 +152,53 @@ class MessagingIntegrationTest {
     assertThat(safety.selectedEmailProvider()).isEqualTo("NOOP");
     assertThat(safety.selectedWhatsAppProvider()).isEqualTo("NOOP");
     assertThat(safety.sendEndpointAvailable()).isFalse();
+  }
+
+  @Test
+  void rejectsIdempotencyCollisionAndRechecksExclusionAfterEnqueue() {
+    TestContact fixture = contact("policy-recheck");
+    String key = "policy-recheck-" + UUID.randomUUID();
+    CreateMessageCommand original = command(fixture, "Original", "Original body", key);
+    var message = dispatcher.simulate(original);
+
+    assertThatThrownBy(() -> dispatcher.simulate(command(fixture, "Changed", "Changed body", key)))
+        .isInstanceOf(OptimisticConflictException.class)
+        .hasMessageContaining("different message request");
+
+    String normalized =
+        jdbcTemplate.queryForObject(
+            "SELECT normalized_value FROM contact_channel WHERE id = ?",
+            String.class,
+            fixture.channelId());
+    jdbcTemplate.update(
+        """
+        INSERT INTO exclusion (
+          id, version, organization_id, channel_type, normalized_value, reason,
+          created_at, updated_at
+        ) VALUES (?, 0, ?, 'EMAIL', ?, 'MANUAL', now(), now())
+        """,
+        UUID.randomUUID(),
+        principal.organizationId(),
+        normalized);
+
+    outboxWorkerService.runOnce();
+
+    assertThat(
+            jdbcTemplate.queryForMap(
+                """
+                SELECT status, last_error_code FROM outbox_event
+                WHERE organization_id = ? AND aggregate_type = 'MESSAGE' AND aggregate_id = ?
+                """,
+                principal.organizationId(),
+                message.id()))
+        .containsEntry("status", "BLOCKED")
+        .containsEntry("last_error_code", "BLOCKED_BY_EXCLUSION");
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM message_record WHERE organization_id = ? AND status = 'SENT'",
+                Integer.class,
+                principal.organizationId()))
+        .isZero();
   }
 
   private TestContact contact(String prefix) {

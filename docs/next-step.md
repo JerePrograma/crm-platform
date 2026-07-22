@@ -1,6 +1,6 @@
 # Continuidad de la ejecución integral
 
-Actualizado: 2026-07-21
+Actualizado: 2026-07-22
 
 ## Estado
 
@@ -14,7 +14,8 @@ SEG-005 COMPLETE
 SEG-006 COMPLETE
 SEG-007 COMPLETE
 SEG-008 COMPLETE
-SEG-009 ACTIVE
+SEG-009 COMPLETE
+SEG-010 ACTIVE
 BRANCH feat/complete-crm-platform
 BASELINE 7db7e4c EXECUTED_PASS
 IDENTITY_COMMIT 0546e6e EXECUTED_PASS
@@ -24,9 +25,10 @@ COMUNICACIONES REALES DISABLED_BY_POLICY
 
 ## Siguiente checkpoint canónico
 
-Completar SEG-009: transactional outbox, worker PostgreSQL con leases,
-reintentos/dead-letter e idempotencia; recepción inbound por webhook fake con
-firma/replay protection, quarantine, actividad, transición y tarea.
+Completar SEG-010: inventario funcional, reporting/búsqueda/configuración/tags,
+seguridad y observabilidad, preview externo con frontera sanitizada,
+performance/accesibilidad, backup/restore, perfil productivo local, CI y
+validadores canónicos sin habilitar comunicaciones ni desplegar.
 
 Contrato y evidencia viva:
 
@@ -40,6 +42,7 @@ docs/validation/SEG-005-duplicate-resolution-2026-07-21.md
 docs/validation/SEG-006-opportunities-pipeline-2026-07-21.md
 docs/validation/SEG-007-campaign-simulation-2026-07-21.md
 docs/validation/SEG-008-safe-messaging-2026-07-21.md
+docs/validation/SEG-009-transactional-outbox-inbound-2026-07-22.md
 docs/segments/CRM-completion.md
 ```
 

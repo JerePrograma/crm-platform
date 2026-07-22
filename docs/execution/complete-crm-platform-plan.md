@@ -1,6 +1,6 @@
 # Plan integral de ejecución del CRM
 
-Actualizado: 2026-07-21
+Actualizado: 2026-07-22
 
 ## Alcance
 
@@ -18,7 +18,7 @@ CI, documentación y validación reproducible.
 - monolito modular Spring Boot 4.1 sobre Java 21;
 - PostgreSQL 17, Flyway V1-V5 y Hibernate `validate`;
 - módulos `prospect`, `institution`, `contact`, `exclusion`, `imports`, `audit`, `security`,
-  `settings` y `common`;
+  `settings`, `common`, `outbox` e `inbound`;
 - frontend React 19, TypeScript strict y Vite;
 - Docker Compose local, Maven/Testcontainers, smoke y validadores Windows/Unix;
 - importación CSV/XLSX idempotente, exclusión dominante y revisión ambigua persistente;
@@ -77,7 +77,10 @@ puertos internos y deshabilitados por configuración.
 8. SEG-008: policy de mensajería, no-op/fake/manual y adaptadores reales no conectados;
 9. SEG-009: outbox, workers e inbound sintético;
 10. SEG-010: frontend, reportes, configuración, seguridad, observabilidad y producción local;
-11. SEG-011: CI, backup/restore, validación integral repetible y cierre documental.
+11. SEG-011: validación integral repetible y cierre documental.
+
+SEG-009 quedó ejecutado el 2026-07-22 con V12, 69/69 pruebas backend y E2E
+outbox/inbound. SEG-010 es el único segmento activo.
 
 Cada checkpoint exige prueba focalizada, compilación, Flyway/Hibernate, diff y escaneo de
 seguridad. Un estado escrito pero no ejecutado queda `IMPLEMENTED_NOT_RUN`.

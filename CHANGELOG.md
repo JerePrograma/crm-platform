@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-22 — SEG-009 outbox e inbound durable
+
+- agrega V12 con outbox PostgreSQL, leases, retry/dead-letter, idempotencia e inbound;
+- agrega worker transaccional, administración, métricas y UI operativa;
+- agrega webhook fake HMAC/replay, quarantine, asociación y efectos de dominio;
+- mantiene cuatro bloqueos de envío, providers reales no conectados y cero estados prohibidos;
+- valida 69/69 backend, TypeScript/Vite, Docker V11→V12 y E2E real con datos sintéticos.
+
 ## 2026-07-21 — SEG-008
 
 - agregó V11 con conexiones externas, mensajes e intentos tenant-scoped;

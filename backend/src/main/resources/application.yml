@@ -83,6 +83,24 @@ messaging:
     access-token: ${WHATSAPP_ACCESS_TOKEN:}
     max-text-length: ${WHATSAPP_MAX_TEXT_LENGTH:4096}
 
+crm:
+  outbox:
+    enabled: ${OUTBOX_WORKER_ENABLED:false}
+    batch-size: ${OUTBOX_WORKER_BATCH_SIZE:20}
+    poll-delay: ${OUTBOX_WORKER_POLL_DELAY:5s}
+    initial-delay: ${OUTBOX_WORKER_INITIAL_DELAY:5s}
+    lease: ${OUTBOX_WORKER_LEASE:2m}
+    base-backoff: ${OUTBOX_WORKER_BASE_BACKOFF:5s}
+    max-backoff: ${OUTBOX_WORKER_MAX_BACKOFF:15m}
+    default-max-attempts: ${OUTBOX_WORKER_MAX_ATTEMPTS:5}
+    max-payload-bytes: ${OUTBOX_MAX_PAYLOAD_BYTES:65536}
+  inbound:
+    enabled: ${FAKE_INBOUND_ENABLED:false}
+    fake-webhook-secret: ${FAKE_INBOUND_WEBHOOK_SECRET:}
+    signature-window: ${FAKE_INBOUND_SIGNATURE_WINDOW:5m}
+    max-payload-bytes: ${FAKE_INBOUND_MAX_PAYLOAD_BYTES:32768}
+    requests-per-minute: ${FAKE_INBOUND_REQUESTS_PER_MINUTE:60}
+
 logging:
   structured:
     format:

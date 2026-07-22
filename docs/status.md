@@ -1,6 +1,6 @@
 # Estado actual
 
-Actualizado: 2026-07-21
+Actualizado: 2026-07-22
 
 ## Repositorio y consolidación
 
@@ -31,8 +31,8 @@ limpia de SEG-001 se ejecutó sobre
 | SEG-006 | COMPLETE | oportunidades y pipeline |
 | SEG-007 | COMPLETE | campañas, audiencias, plantillas y simulación |
 | SEG-008 | COMPLETE | mensajería segura y adaptadores deshabilitados |
-| SEG-009 | ACTIVE | outbox, workers e inbound |
-| SEG-010 | PLANNED | reportes, seguridad, observabilidad y producción local |
+| SEG-009 | COMPLETE | outbox PostgreSQL, workers e inbound fake durable |
+| SEG-010 | ACTIVE | reportes, seguridad, observabilidad y producción local |
 | SEG-011 | PLANNED | validación integral y cierre |
 
 ## Estados operativos
@@ -113,6 +113,18 @@ REAL_PROVIDER_INITIALIZATION_FAIL_CLOSED_PASS
 MESSAGE_SEND_ENDPOINT_ABSENT_PASS
 PLAYWRIGHT_FAKE_MESSAGE_SIMULATION_PASS
 SEG_008_COMPLETE
+FLYWAY_V1_V12_PASS
+TRANSACTIONAL_OUTBOX_PASS
+SKIP_LOCKED_LEASE_RECOVERY_PASS
+RETRY_DEAD_LETTER_REQUEUE_PASS
+TENANT_IDEMPOTENCY_PASS
+FAKE_INBOUND_HMAC_REPLAY_PASS
+QUARANTINE_MANUAL_ASSOCIATION_PASS
+INBOUND_ACTIVITY_TASK_TIMELINE_PASS
+MAVEN_VERIFY_TESTS_69_OF_69_PASS
+PLAYWRIGHT_OUTBOX_INBOUND_PASS
+FORBIDDEN_MESSAGE_STATES_ZERO
+SEG_009_COMPLETE
 ```
 
 ## Fallo Jackson corregido

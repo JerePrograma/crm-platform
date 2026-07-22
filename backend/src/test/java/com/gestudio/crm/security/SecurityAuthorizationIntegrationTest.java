@@ -146,6 +146,8 @@ class SecurityAuthorizationIntegrationTest {
     mockMvc.perform(get("/api/v1/templates").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/campaigns").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/messages/safety").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/outbox").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/inbound").session(session)).andExpect(status().isOk());
     mockMvc
         .perform(
             post("/api/v1/prospects")
@@ -153,6 +155,9 @@ class SecurityAuthorizationIntegrationTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"institutionName\":\"Viewer cannot create\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(post("/api/v1/outbox/worker/run-once").session(session).with(csrf()))
         .andExpect(status().isForbidden());
     mockMvc
         .perform(
@@ -202,6 +207,25 @@ class SecurityAuthorizationIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
         .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void fakeWebhookIsPublicAndCsrfExemptButStrictlyTypedAndDisabledByDefault() throws Exception {
+    mockMvc.perform(get("/api/v1/webhooks/fake-inbound")).andExpect(status().isMethodNotAllowed());
+    mockMvc
+        .perform(
+            post("/api/v1/webhooks/fake-inbound").contentType(MediaType.TEXT_PLAIN).content("{}"))
+        .andExpect(status().isUnsupportedMediaType());
+    mockMvc
+        .perform(
+            post("/api/v1/webhooks/fake-inbound")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Organization-Id", TenantIds.BOOTSTRAP_ORGANIZATION_ID)
+                .header("X-Fake-Timestamp", 1)
+                .header("X-Fake-Nonce", "disabled")
+                .header("X-Fake-Signature", "00")
+                .content("{}"))
+        .andExpect(status().isServiceUnavailable());
   }
 
   @Test

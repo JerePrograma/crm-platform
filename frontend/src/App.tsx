@@ -9,6 +9,7 @@ import {
   approveCampaign,
   changePassword,
   changeTaskStatus,
+  createActivity,
   createContact,
   createCampaign,
   createExclusion,
@@ -30,6 +31,7 @@ import {
   getTimeline,
   getSession,
   importProspects,
+  isConflict,
   listAuditEvents,
   listCampaigns,
   listExclusions,
@@ -51,6 +53,20 @@ import {
   transitionOpportunity,
   freezeCampaignAudience,
   updateProspect,
+  associateInbound,
+  cancelOutboxEvent,
+  discardInbound,
+  getInbound,
+  getOutboxEvent,
+  getOutboxMetrics,
+  getWebhookHealth,
+  getWorkerState,
+  listInbound,
+  listOutbox,
+  requeueOutboxEvent,
+  retryInboundAssociation,
+  runOutboxWorker,
+  setOutboxWorkerPaused,
 } from "./api";
 import type {
   AuditEvent,
@@ -79,6 +95,12 @@ import type {
   Task,
   TimelineItem,
   User,
+  InboundMessage,
+  OutboxEvent,
+  OutboxMetric,
+  OutboxStatus,
+  WebhookHealth,
+  WorkerState,
 } from "./types";
 
 type Tab =
@@ -87,6 +109,8 @@ type Tab =
   | "pipeline"
   | "campaigns"
   | "messages"
+  | "outbox"
+  | "inbound"
   | "imports"
   | "exclusions"
   | "audit"
@@ -243,6 +267,13 @@ export function App() {
     await refresh(value);
   }
 
+  async function refreshView() {
+    await refresh();
+    if (selectedProspect) {
+      setSelectedProspect(await getProspect(selectedProspect.id));
+    }
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -266,6 +297,16 @@ export function App() {
           {session.permissions.includes("CAMPAIGN_READ") && (
             <NavButton active={tab === "campaigns"} onClick={() => setTab("campaigns")}>
               Campañas
+            </NavButton>
+          )}
+          {session.permissions.includes("REPORT_READ") && (
+            <NavButton active={tab === "outbox"} onClick={() => setTab("outbox")}>
+              Outbox y workers
+            </NavButton>
+          )}
+          {session.permissions.includes("REPORT_READ") && (
+            <NavButton active={tab === "inbound"} onClick={() => setTab("inbound")}>
+              Inbound y quarantine
             </NavButton>
           )}
           {session.permissions.includes("CAMPAIGN_READ") && (
@@ -318,7 +359,7 @@ export function App() {
           </div>
           <button
             className="secondary-button"
-            onClick={() => void refresh()}
+            onClick={() => void refreshView()}
           >
             Actualizar
           </button>
@@ -460,6 +501,12 @@ export function App() {
           <MessagesPanel prospects={prospects} session={session} />
         )}
 
+        {tab === "outbox" && <OutboxPanel session={session} />}
+
+        {tab === "inbound" && (
+          <InboundPanel session={session} prospects={prospects} />
+        )}
+
         {tab === "imports" && (
           <ImportsPanel
             duplicateReviews={duplicateReviews}
@@ -487,6 +534,348 @@ export function App() {
         )}
       </main>
     </div>
+  );
+}
+
+function OutboxPanel({ session }: { session: SessionUser }) {
+  const [events, setEvents] = useState<OutboxEvent[]>([]);
+  const [metrics, setMetrics] = useState<OutboxMetric[]>([]);
+  const [worker, setWorker] = useState<WorkerState | null>(null);
+  const [selected, setSelected] = useState<OutboxEvent | null>(null);
+  const [status, setStatus] = useState<OutboxStatus | "">("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const canOperate = session.permissions.includes("SETTINGS_MANAGE");
+
+  const refreshOutbox = useCallback(async (filter: OutboxStatus | "" = status) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [page, counts, state] = await Promise.all([
+        listOutbox(filter || undefined),
+        getOutboxMetrics(),
+        getWorkerState(),
+      ]);
+      setEvents(page.content);
+      setMetrics(counts);
+      setWorker(state);
+      if (selected) {
+        setSelected(await getOutboxEvent(selected.id));
+      }
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setLoading(false);
+    }
+  }, [selected, status]);
+
+  useEffect(() => {
+    void refreshOutbox();
+  }, []);
+
+  async function operation(action: () => Promise<unknown>, success: string) {
+    setError(null);
+    setNotice(null);
+    try {
+      await action();
+      setNotice(success);
+      await refreshOutbox();
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  return (
+    <section className="stack">
+      <div className="alert safety">
+        Los workers reevalúan los kill switches al procesar. No existe una acción para forzar
+        providers reales ni transformar un evento en SENT.
+      </div>
+      {error && <div className="alert error">{error}</div>}
+      {notice && <div className="alert success">{notice}</div>}
+      {loading && <div className="loading-bar" aria-label="Cargando outbox" />}
+      <div className="metric-grid">
+        {metrics.map((metric) => (
+          <Metric key={metric.status} label={metric.status} value={metric.count} />
+        ))}
+        {metrics.length === 0 && <Metric label="Eventos" value={0} />}
+      </div>
+      <Panel title="Estado del worker">
+        {worker ? (
+          <div className="control-grid">
+            <Control label="Scheduler" value={worker.worker.schedulerEnabled ? "Habilitado" : "Manual"} />
+            <Control label="Tenant" value={worker.tenantPaused ? "Pausado" : "Activo"} />
+            <Control label="Procesando" value={worker.worker.running ? "Sí" : "No"} />
+            <Control label="Batch" value={String(worker.worker.batchSize)} />
+          </div>
+        ) : (
+          <EmptyState text="No se pudo cargar la salud del worker." />
+        )}
+        {canOperate && worker && (
+          <div className="button-row">
+            <button
+              className="primary-button"
+              onClick={() => void operation(async () => {
+                const result = await runOutboxWorker();
+                setNotice(`Worker: ${result.claimed} reclamados, ${result.completed} completados.`);
+              }, "Ejecución manual finalizada.")}
+            >
+              Ejecutar una vez
+            </button>
+            <button
+              className="secondary-button"
+              onClick={() => void operation(
+                () => setOutboxWorkerPaused(!worker.tenantPaused),
+                worker.tenantPaused ? "Worker reanudado." : "Worker pausado.",
+              )}
+            >
+              {worker.tenantPaused ? "Reanudar" : "Pausar"}
+            </button>
+          </div>
+        )}
+      </Panel>
+      <section className="two-column equal">
+        <Panel title="Eventos">
+          <div className="toolbar">
+            <label>
+              Estado
+              <select
+                value={status}
+                onChange={(event) => {
+                  const next = event.target.value as OutboxStatus | "";
+                  setStatus(next);
+                  void refreshOutbox(next);
+                }}
+              >
+                <option value="">Todos</option>
+                {["PENDING", "PROCESSING", "SUCCEEDED", "RETRY", "DEAD", "CANCELLED", "BLOCKED"].map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
+              </select>
+            </label>
+            <button className="secondary-button" onClick={() => void refreshOutbox()}>
+              Reintentar carga
+            </button>
+          </div>
+          {events.length === 0 && !loading ? (
+            <EmptyState text="No hay eventos para este filtro." />
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead><tr><th>Evento</th><th>Estado</th><th>Intentos</th><th>Creado</th></tr></thead>
+                <tbody>
+                  {events.map((event) => (
+                    <tr
+                      key={event.id}
+                      tabIndex={0}
+                      onClick={() => setSelected(event)}
+                      onKeyDown={(keyEvent) => {
+                        if (keyEvent.key === "Enter" || keyEvent.key === " ") {
+                          keyEvent.preventDefault();
+                          setSelected(event);
+                        }
+                      }}
+                      className={selected?.id === event.id ? "selected" : undefined}
+                    >
+                      <td>{event.eventType}</td>
+                      <td><Badge value={event.status} /></td>
+                      <td>{event.attemptCount}/{event.maxAttempts}</td>
+                      <td>{dateTime(event.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+        <Panel title="Detalle sanitizado">
+          {selected ? (
+            <div className="stack compact">
+              <dl className="detail-grid">
+                <Detail label="ID" value={selected.id} />
+                <Detail label="Correlation ID" value={selected.correlationId} />
+                <Detail label="Aggregate" value={`${selected.aggregateType} / ${selected.aggregateId}`} />
+                <Detail label="Resultado" value={selected.resultSummary ?? selected.lastErrorCode} />
+                <Detail label="Error" value={selected.lastErrorSummary} />
+                <Detail label="Procesado" value={selected.processedAt ? dateTime(selected.processedAt) : null} />
+              </dl>
+              <pre className="preview-box" aria-label="Payload sanitizado">{selected.payload}</pre>
+              {canOperate && (
+                <div className="button-row">
+                  {selected.status === "DEAD" && (
+                    <button className="primary-button" onClick={() => {
+                      if (window.confirm("¿Reencolar este evento DEAD sin modificar su payload?")) {
+                        void operation(() => requeueOutboxEvent(selected.id), "Evento reencolado.");
+                      }
+                    }}>Reencolar</button>
+                  )}
+                  {["PENDING", "RETRY"].includes(selected.status) && (
+                    <button className="secondary-button" onClick={() => {
+                      if (window.confirm("¿Cancelar este evento pendiente?")) {
+                        void operation(() => cancelOutboxEvent(selected.id), "Evento cancelado.");
+                      }
+                    }}>Cancelar</button>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <EmptyState text="Seleccioná un evento." />
+          )}
+        </Panel>
+      </section>
+    </section>
+  );
+}
+
+function InboundPanel({ session, prospects }: { session: SessionUser; prospects: Prospect[] }) {
+  const [items, setItems] = useState<InboundMessage[]>([]);
+  const [selected, setSelected] = useState<InboundMessage | null>(null);
+  const [health, setHealth] = useState<WebhookHealth | null>(null);
+  const [prospectId, setProspectId] = useState("");
+  const [discardReason, setDiscardReason] = useState("No asociable tras revisión manual");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const canOperate = session.permissions.includes("SETTINGS_MANAGE");
+
+  const refreshInbound = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [page, webhook] = await Promise.all([listInbound(), getWebhookHealth()]);
+      setItems(page.content);
+      setHealth(webhook);
+      if (selected) {
+        setSelected(await getInbound(selected.id));
+      }
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setLoading(false);
+    }
+  }, [selected]);
+
+  useEffect(() => {
+    void refreshInbound();
+  }, []);
+
+  async function operation(action: () => Promise<unknown>, success: string) {
+    setError(null);
+    setNotice(null);
+    try {
+      await action();
+      setNotice(success);
+      await refreshInbound();
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  return (
+    <section className="stack">
+      {error && <div className="alert error">{error}</div>}
+      {notice && <div className="alert success">{notice}</div>}
+      {loading && <div className="loading-bar" aria-label="Cargando inbound" />}
+      <Panel title="Webhook fake">
+        <div className="control-grid">
+          <Control label="Provider" value={health?.provider ?? "FAKE_INBOUND"} />
+          <Control label="Endpoint" value={health?.enabled ? "Habilitado" : "Deshabilitado"} />
+          <Control label="Secreto" value={health?.configured ? "Configurado por entorno" : "No configurado"} />
+          <Control label="Límite" value={health ? `${health.maxPayloadBytes} bytes` : "—"} />
+          <Control label="Respuesta automática" value="Deshabilitada" />
+        </div>
+      </Panel>
+      <section className="two-column equal">
+        <Panel title="Inbound y quarantine">
+          <div className="toolbar">
+            <button className="secondary-button" onClick={() => void refreshInbound()}>
+              Reintentar carga
+            </button>
+          </div>
+          {items.length === 0 && !loading ? (
+            <EmptyState text="No hay mensajes inbound." />
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead><tr><th>Canal</th><th>Remitente</th><th>Estado</th><th>Recibido</th></tr></thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr
+                      key={item.id}
+                      tabIndex={0}
+                      onClick={() => setSelected(item)}
+                      onKeyDown={(keyEvent) => {
+                        if (keyEvent.key === "Enter" || keyEvent.key === " ") {
+                          keyEvent.preventDefault();
+                          setSelected(item);
+                        }
+                      }}
+                      className={selected?.id === item.id ? "selected" : undefined}
+                    >
+                      <td>{item.channel}</td>
+                      <td>{item.senderMasked}</td>
+                      <td><Badge value={item.status} /></td>
+                      <td>{dateTime(item.receivedAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+        <Panel title="Evidencia y asociación">
+          {selected ? (
+            <div className="stack compact">
+              <dl className="detail-grid">
+                <Detail label="Receipt" value={selected.id} />
+                <Detail label="Correlation ID" value={selected.correlationId} />
+                <Detail label="Asociación" value={selected.associationStatus} />
+                <Detail label="Prospecto" value={selected.prospectId} />
+                <Detail label="Motivo quarantine" value={selected.quarantineReason} />
+                <Detail label="Hash payload" value={selected.payloadHash} />
+              </dl>
+              {canOperate && selected.status === "QUARANTINED" && (
+                <div className="form-grid">
+                  <label className="full-width">
+                    Prospecto sintético o verificado
+                    <select value={prospectId} onChange={(event) => setProspectId(event.target.value)}>
+                      <option value="">Seleccionar…</option>
+                      {prospects.map((prospect) => <option key={prospect.id} value={prospect.id}>{prospect.displayName}</option>)}
+                    </select>
+                  </label>
+                  <button
+                    className="primary-button"
+                    disabled={!prospectId}
+                    onClick={() => void operation(() => associateInbound(selected.id, prospectId), "Asociación encolada para procesamiento.")}
+                  >Asociar</button>
+                  <button
+                    className="secondary-button"
+                    onClick={() => void operation(() => retryInboundAssociation(selected.id), "Reintento de asociación encolado.")}
+                  >Reintentar asociación</button>
+                  <label className="full-width">
+                    Motivo de descarte
+                    <input value={discardReason} maxLength={500} onChange={(event) => setDiscardReason(event.target.value)} />
+                  </label>
+                  <button
+                    className="secondary-button full-width"
+                    disabled={!discardReason.trim()}
+                    onClick={() => {
+                      if (window.confirm("¿Descartar lógicamente este receipt? La evidencia se conserva.")) {
+                        void operation(() => discardInbound(selected.id, discardReason), "Receipt descartado lógicamente.");
+                      }
+                    }}
+                  >Descartar con motivo</button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <EmptyState text="Seleccioná un receipt para ver metadata sanitizada." />
+          )}
+        </Panel>
+      </section>
+    </section>
   );
 }
 
@@ -1746,6 +2135,10 @@ function ProspectDetail({
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
+  const [activityType, setActivityType] = useState<
+    "EMAIL_SENT_MANUALLY" | "WHATSAPP_SENT_MANUALLY" | "PHONE_CALL" | "MEETING" | "DEMO"
+  >("PHONE_CALL");
+  const [activitySummary, setActivitySummary] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDueAt, setTaskDueAt] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -1784,6 +2177,10 @@ function ProspectDetail({
       await loadRelated();
     } catch (caught) {
       setError(message(caught));
+      if (isConflict(caught)) {
+        await onChanged();
+        await loadRelated();
+      }
     }
   }
 
@@ -1925,6 +2322,38 @@ function ProspectDetail({
 
       <section className="subsection">
         <h3>Timeline</h3>
+        {canWriteActivity && (
+          <form className="inline-form compact-form" onSubmit={(event) => {
+            event.preventDefault();
+            void run(
+              () => createActivity(prospect.id, { type: activityType, summary: activitySummary }),
+              "Actividad registrada.",
+            ).then(() => setActivitySummary(""));
+          }}>
+            <label>
+              Tipo de actividad
+              <select
+                value={activityType}
+                onChange={(event) => setActivityType(event.target.value as typeof activityType)}
+              >
+                <option value="PHONE_CALL">Llamada</option>
+                <option value="MEETING">Reunión</option>
+                <option value="DEMO">Demo</option>
+                <option value="EMAIL_SENT_MANUALLY">Email enviado manualmente</option>
+                <option value="WHATSAPP_SENT_MANUALLY">WhatsApp enviado manualmente</option>
+              </select>
+            </label>
+            <label className="grow">
+              Resumen de actividad
+              <input
+                value={activitySummary}
+                onChange={(event) => setActivitySummary(event.target.value)}
+                required
+              />
+            </label>
+            <button className="secondary-button">Registrar actividad</button>
+          </form>
+        )}
         {canWriteActivity && (
           <form className="inline-form compact-form" onSubmit={(event) => {
             event.preventDefault();
@@ -2079,6 +2508,8 @@ function title(tab: Tab): string {
     pipeline: "Pipeline",
     campaigns: "Campañas y plantillas",
     messages: "Mensajes e integraciones",
+    outbox: "Outbox y workers",
+    inbound: "Inbound y quarantine",
     imports: "Importaciones",
     exclusions: "Exclusiones",
     audit: "Auditoría",

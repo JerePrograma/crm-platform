@@ -27,6 +27,7 @@
 
 # Local validation transcripts and generated evidence
 /validation-output/
+/.playwright-cli/
 
 # Runtime and uploads
 backend/uploads/

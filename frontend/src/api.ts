@@ -26,9 +26,30 @@ import type {
   ManualMessageLink,
   MessageRecord,
   MessagingSafety,
+  OutboxEvent,
+  OutboxMetric,
+  OutboxStatus,
+  WorkerRun,
+  WorkerState,
+  InboundMessage,
+  WebhookHealth,
 } from "./types";
 
 type Csrf = { token: string; headerName: string };
+
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export function isConflict(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 409;
+}
 
 let csrfRequest: Promise<Csrf> | null = null;
 
@@ -60,9 +81,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const contentType = response.headers.get("content-type") ?? "";
     if (contentType.includes("application/problem+json")) {
       const problem = (await response.json()) as { title?: string; detail?: string };
-      throw new Error(problem.detail ?? problem.title ?? `HTTP ${response.status}`);
+      throw new ApiError(
+        response.status,
+        problem.detail ?? problem.title ?? `HTTP ${response.status}`,
+      );
     }
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    throw new ApiError(response.status, `HTTP ${response.status}: ${response.statusText}`);
   }
   if (
     response.status === 204 ||
@@ -188,6 +212,32 @@ export function createNote(prospectId: string, body: string): Promise<void> {
   return request(`/api/v1/prospects/${prospectId}/notes`, {
     method: "POST",
     body: JSON.stringify({ body }),
+  });
+}
+
+export function createActivity(
+  prospectId: string,
+  input: {
+    type: "EMAIL_SENT_MANUALLY" | "WHATSAPP_SENT_MANUALLY" | "PHONE_CALL" | "MEETING" | "DEMO";
+    summary: string;
+  },
+): Promise<void> {
+  return request(`/api/v1/prospects/${prospectId}/activities`, {
+    method: "POST",
+    body: JSON.stringify({
+      ...input,
+      occurredAt: new Date().toISOString(),
+      channel: input.type.startsWith("EMAIL")
+        ? "EMAIL"
+        : input.type.startsWith("WHATSAPP")
+          ? "WHATSAPP"
+          : input.type,
+      direction: "OUTBOUND",
+      outcome: "RECORDED_MANUALLY",
+      detail: "Actividad registrada manualmente por el operador",
+      externalReference: null,
+      metadata: {},
+    }),
   });
 }
 
@@ -440,5 +490,79 @@ export function createManualMessageLink(input: MessageInput): Promise<ManualMess
   return request("/api/v1/messages/manual-link", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export function listOutbox(status?: OutboxStatus): Promise<Page<OutboxEvent>> {
+  const parameters = new URLSearchParams({ size: "100", sort: "createdAt,desc" });
+  if (status) {
+    parameters.set("status", status);
+  }
+  return request(`/api/v1/outbox?${parameters.toString()}`);
+}
+
+export function getOutboxEvent(id: string): Promise<OutboxEvent> {
+  return request(`/api/v1/outbox/${id}`);
+}
+
+export function getOutboxMetrics(): Promise<OutboxMetric[]> {
+  return request("/api/v1/outbox/metrics");
+}
+
+export function getWorkerState(): Promise<WorkerState> {
+  return request("/api/v1/outbox/worker/health");
+}
+
+export function runOutboxWorker(): Promise<WorkerRun> {
+  return request("/api/v1/outbox/worker/run-once", { method: "POST" });
+}
+
+export function setOutboxWorkerPaused(paused: boolean): Promise<WorkerState> {
+  return request(`/api/v1/outbox/worker/${paused ? "pause" : "resume"}`, { method: "POST" });
+}
+
+export function requeueOutboxEvent(id: string): Promise<OutboxEvent> {
+  return request(`/api/v1/outbox/${id}/requeue`, { method: "POST" });
+}
+
+export function cancelOutboxEvent(id: string): Promise<OutboxEvent> {
+  return request(`/api/v1/outbox/${id}/cancel`, { method: "POST" });
+}
+
+export function listInbound(status?: InboundMessage["status"]): Promise<Page<InboundMessage>> {
+  const parameters = new URLSearchParams({ size: "100" });
+  if (status) {
+    parameters.set("status", status);
+  }
+  return request(`/api/v1/inbound?${parameters.toString()}`);
+}
+
+export function getInbound(id: string): Promise<InboundMessage> {
+  return request(`/api/v1/inbound/${id}`);
+}
+
+export function getWebhookHealth(): Promise<WebhookHealth> {
+  return request("/api/v1/inbound/webhook/health");
+}
+
+export function associateInbound(
+  id: string,
+  prospectId: string,
+  contactId?: string,
+): Promise<InboundMessage> {
+  return request(`/api/v1/inbound/${id}/associate`, {
+    method: "POST",
+    body: JSON.stringify({ prospectId, contactId: contactId || null }),
+  });
+}
+
+export function retryInboundAssociation(id: string): Promise<InboundMessage> {
+  return request(`/api/v1/inbound/${id}/retry-association`, { method: "POST" });
+}
+
+export function discardInbound(id: string, reason: string): Promise<InboundMessage> {
+  return request(`/api/v1/inbound/${id}/discard`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
   });
 }

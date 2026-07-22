@@ -2,7 +2,7 @@ package com.gestudio.crm.audit;
 
 import com.gestudio.crm.security.CurrentActor;
 import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,12 +24,17 @@ public class AuditEventWriter {
   private final JdbcTemplate jdbcTemplate;
   private final ObjectMapper objectMapper;
   private final CurrentActor currentActor;
+  private final Clock clock;
 
   public AuditEventWriter(
-      JdbcTemplate jdbcTemplate, ObjectMapper objectMapper, CurrentActor currentActor) {
+      JdbcTemplate jdbcTemplate,
+      ObjectMapper objectMapper,
+      CurrentActor currentActor,
+      Clock clock) {
     this.jdbcTemplate = jdbcTemplate;
     this.objectMapper = objectMapper;
     this.currentActor = currentActor;
+    this.clock = clock;
   }
 
   public UUID record(String action, String entityType, UUID entityId, Map<String, ?> payload) {
@@ -58,7 +63,7 @@ public class AuditEventWriter {
       throw new IllegalArgumentException("Audit organization is required");
     }
     UUID auditId = UUID.randomUUID();
-    Timestamp now = Timestamp.from(Instant.now());
+    Timestamp now = Timestamp.from(clock.instant());
     jdbcTemplate.update(
         INSERT_SQL,
         auditId,

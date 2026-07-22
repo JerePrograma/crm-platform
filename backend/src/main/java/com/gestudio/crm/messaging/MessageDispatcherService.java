@@ -1,9 +1,12 @@
 package com.gestudio.crm.messaging;
 
 import com.gestudio.crm.audit.AuditEventWriter;
+import com.gestudio.crm.common.CorrelationIds;
 import com.gestudio.crm.common.OptimisticConflictException;
 import com.gestudio.crm.common.ResourceNotFoundException;
 import com.gestudio.crm.messaging.MessagePolicy.PolicyDecision;
+import com.gestudio.crm.outbox.OutboxPublisher;
+import com.gestudio.crm.outbox.OutboxPublisher.PublishCommand;
 import com.gestudio.crm.security.CurrentActor;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +30,7 @@ public class MessageDispatcherService implements MessageDispatcher {
   private final EmailProvider emailProvider;
   private final WhatsAppProvider whatsAppProvider;
   private final MessagingProperties properties;
+  private final OutboxPublisher outboxPublisher;
 
   public MessageDispatcherService(
       JdbcTemplate jdbcTemplate,
@@ -36,7 +40,8 @@ public class MessageDispatcherService implements MessageDispatcher {
       MessageRenderer messageRenderer,
       EmailProvider emailProvider,
       WhatsAppProvider whatsAppProvider,
-      MessagingProperties properties) {
+      MessagingProperties properties,
+      OutboxPublisher outboxPublisher) {
     this.jdbcTemplate = jdbcTemplate;
     this.currentActor = currentActor;
     this.auditEventWriter = auditEventWriter;
@@ -45,16 +50,18 @@ public class MessageDispatcherService implements MessageDispatcher {
     this.emailProvider = emailProvider;
     this.whatsAppProvider = whatsAppProvider;
     this.properties = properties;
+    this.outboxPublisher = outboxPublisher;
   }
 
   @Override
   @Transactional
   public MessageView createDraft(CreateMessageCommand command) {
-    MessageView existing = existing(command.idempotencyKey());
+    String requestHash = requestHash(command);
+    MessageView existing = existing(command.idempotencyKey(), requestHash);
     if (existing != null) {
       return existing;
     }
-    Prepared prepared = prepare(command);
+    Prepared prepared = prepare(command, requestHash);
     ProviderResult provider =
         "EMAIL".equals(prepared.channel())
             ? emailProvider.createDraft(prepared.outbound())
@@ -72,17 +79,19 @@ public class MessageDispatcherService implements MessageDispatcher {
         provider.externalMessageId(),
         null);
     audit(message, "MESSAGE_DRAFT_CREATED");
+    publishResult(message, command.prospectId());
     return message;
   }
 
   @Override
   @Transactional
   public MessageView simulate(CreateMessageCommand command) {
-    MessageView existing = existing(command.idempotencyKey());
+    String requestHash = requestHash(command);
+    MessageView existing = existing(command.idempotencyKey(), requestHash);
     if (existing != null) {
       return existing;
     }
-    Prepared prepared = prepare(command);
+    Prepared prepared = prepare(command, requestHash);
     ProviderResult provider =
         "EMAIL".equals(prepared.channel())
             ? new FakeEmailProvider().createDraft(prepared.outbound())
@@ -97,13 +106,14 @@ public class MessageDispatcherService implements MessageDispatcher {
         null);
     recordActivity(message, command.prospectId(), command.contactId());
     audit(message, "MESSAGE_SIMULATED");
+    publishResult(message, command.prospectId());
     return message;
   }
 
   @Override
   @Transactional(readOnly = true)
   public ManualLink manualLink(CreateMessageCommand command) {
-    Prepared prepared = prepare(command);
+    Prepared prepared = prepare(command, requestHash(command));
     String encodedBody = URLEncoder.encode(prepared.outbound().textBody(), StandardCharsets.UTF_8);
     String url;
     if ("EMAIL".equals(prepared.channel())) {
@@ -134,7 +144,7 @@ public class MessageDispatcherService implements MessageDispatcher {
         false);
   }
 
-  private Prepared prepare(CreateMessageCommand command) {
+  private Prepared prepare(CreateMessageCommand command, String requestHash) {
     String idempotencyKey = required(command.idempotencyKey(), "Idempotency key");
     String channel = required(command.channel(), "Channel").toUpperCase(java.util.Locale.ROOT);
     if (!Set.of("EMAIL", "WHATSAPP").contains(channel)) {
@@ -164,7 +174,8 @@ public class MessageDispatcherService implements MessageDispatcher {
             rendered.textBody(),
             rendered.htmlBody(),
             idempotencyKey);
-    return new Prepared(messageId, command, channel, policy, outbound, policy.contactChannelId());
+    return new Prepared(
+        messageId, command, channel, policy, outbound, policy.contactChannelId(), requestHash);
   }
 
   private MessageView persist(Prepared prepared, String status, ProviderResult provider) {
@@ -174,8 +185,8 @@ public class MessageDispatcherService implements MessageDispatcher {
           id, version, organization_id, prospect_id, contact_id, contact_channel_id,
           created_by, channel, direction, status, sending_block_reason, subject,
           body_text, body_html, provider, external_message_id, external_thread_id,
-          idempotency_key, created_at, updated_at
-        ) VALUES (?, 0, ?, ?, ?, ?, ?, ?, 'OUTBOUND', ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
+          idempotency_key, request_hash, created_at, updated_at
+        ) VALUES (?, 0, ?, ?, ?, ?, ?, ?, 'OUTBOUND', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now())
         """,
         prepared.messageId(),
         currentActor.organizationId(),
@@ -192,7 +203,8 @@ public class MessageDispatcherService implements MessageDispatcher {
         provider.provider(),
         provider.externalMessageId(),
         provider.externalThreadId(),
-        prepared.outbound().idempotencyKey());
+        prepared.outbound().idempotencyKey(),
+        prepared.requestHash());
     return get(prepared.messageId());
   }
 
@@ -257,19 +269,64 @@ public class MessageDispatcherService implements MessageDispatcher {
             message.sendingBlockReason()));
   }
 
-  private MessageView existing(String key) {
+  private MessageView existing(String key, String requestHash) {
     if (key == null || key.isBlank()) {
       return null;
     }
-    return jdbcTemplate
-        .query(
-            select() + " WHERE organization_id = ? AND idempotency_key = ?",
-            this::view,
+    ExistingMessage existing =
+        jdbcTemplate
+            .query(
+                select() + " WHERE organization_id = ? AND idempotency_key = ?",
+                (rs, rowNum) -> new ExistingMessage(view(rs, rowNum), rs.getString("request_hash")),
+                currentActor.organizationId(),
+                key.trim())
+            .stream()
+            .findFirst()
+            .orElse(null);
+    if (existing == null) {
+      return null;
+    }
+    if (existing.requestHash() != null && !existing.requestHash().equals(requestHash)) {
+      throw new OptimisticConflictException(
+          "Idempotency key was already used with a different message request");
+    }
+    return existing.message();
+  }
+
+  private String requestHash(CreateMessageCommand command) {
+    if (command == null) {
+      throw new IllegalArgumentException("Message request is required");
+    }
+    return OutboxPublisher.sha256(
+        String.valueOf(command.prospectId())
+            + "\n"
+            + command.contactId()
+            + "\n"
+            + String.valueOf(command.channel()).toUpperCase(java.util.Locale.ROOT)
+            + "\n"
+            + String.valueOf(command.subject())
+            + "\n"
+            + String.valueOf(command.textBody())
+            + "\n"
+            + String.valueOf(command.htmlBody()));
+  }
+
+  private void publishResult(MessageView message, UUID prospectId) {
+    outboxPublisher.publish(
+        new PublishCommand(
             currentActor.organizationId(),
-            key.trim())
-        .stream()
-        .findFirst()
-        .orElse(null);
+            "MESSAGE_RESULT_CREATED_V1",
+            1,
+            "MESSAGE",
+            message.id(),
+            Map.of(
+                "messageId", message.id().toString(),
+                "prospectId", prospectId.toString(),
+                "status", message.status()),
+            "message-result:" + message.id(),
+            CorrelationIds.currentOrCreate(),
+            currentActor.userIdOrNull(),
+            3));
   }
 
   private MessageView get(UUID id) {
@@ -287,7 +344,7 @@ public class MessageDispatcherService implements MessageDispatcher {
   private String select() {
     return """
         SELECT id, channel, status, sending_block_reason, provider,
-          external_message_id, external_thread_id FROM message_record
+          external_message_id, external_thread_id, request_hash FROM message_record
         """;
   }
 
@@ -319,7 +376,10 @@ public class MessageDispatcherService implements MessageDispatcher {
       String channel,
       PolicyDecision policy,
       OutboundMessage outbound,
-      UUID channelId) {}
+      UUID channelId,
+      String requestHash) {}
+
+  private record ExistingMessage(MessageView message, String requestHash) {}
 
   public record SafetyView(
       String emailMode,

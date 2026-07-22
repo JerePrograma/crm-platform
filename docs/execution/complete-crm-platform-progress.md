@@ -1,6 +1,53 @@
 # Progreso de ejecución integral del CRM
 
-Actualizado: 2026-07-21
+Actualizado: 2026-07-22
+
+## Reanudación 2026-07-22
+
+```text
+RESUME_TIMESTAMP=2026-07-22T09:50:08.6378184-03:00
+RESUME_BRANCH=feat/complete-crm-platform
+RESUME_HEAD=1a6a98bc5bd2f9cf97a7c2978cd633ba77f74cb3
+LAST_KNOWN_GOOD_COMMIT_PRESENT=true (HEAD exacto y ancestor-check-exit=0)
+WORKTREE_STATE=CLEAN
+UNCOMMITTED_FILES=none
+LOCAL_COMMITS_AFTER_1A6A98B=none
+REMOTE_DIVERGENCE=origin/main...HEAD: 0 behind, 13 ahead; origin/main...main: 0/0 after git fetch origin
+SENSITIVE_FILE_CHECK=PASS; no tracked validation-output, .playwright-cli, XLSX, .env, logs or tsbuildinfo
+RESUME_DECISION=continue from the exact validated SEG-008 checkpoint; no partial SEG-009 work exists
+```
+
+La inspección de configuraciones peligrosas encontró solamente el endpoint del
+adaptador Gmail deliberadamente no conectado, la regresión que exige `404` para
+`/api/v1/messages/send` y referencias documentales. No encontró una ruta pública
+de envío ni valores permisivos versionados.
+
+## RESUME_BASELINE_VALIDATION
+
+```text
+RESUME_BASELINE_COMMIT=1a6a98bc5bd2f9cf97a7c2978cd633ba77f74cb3
+RESUME_BASELINE_COMMANDS=scripts/verify-backend-container.ps1; npm ci; npm run typecheck; npm run build; scripts/check-powershell-syntax.ps1; scripts/check-repository-safety.ps1; bash -n on 8 tracked scripts; scripts/validate-docker-stack.ps1 -PostgresPort 25432 -BackendPort 8080 -FrontendPort 5173 -KeepRunning; authenticated send-path and PostgreSQL guards
+RESUME_BASELINE_TEST_COUNT=57/57 backend; frontend had no versioned automated test suite at resume
+RESUME_BASELINE_RESULT=EXECUTED_PASS
+RESUME_BASELINE_FAILURES=none
+RESUME_BASELINE_ROOT_CAUSE=not applicable
+RESUME_BASELINE_FIXES=none
+```
+
+Evidencia ejecutada desde el checkpoint sin cambios:
+
+- backend Java 21 contenedorizado recompiló 100 fuentes, aplicó Flyway V1–V11
+  desde vacío, validó Hibernate, ejecutó 57/57 pruebas, ArchUnit y Spotless
+  119/119 en 03:09 min;
+- frontend Node 22 ejecutó `npm ci`, TypeScript estricto y Vite build (17
+  módulos, 686 ms);
+- stack Docker sin caché quedó healthy en PostgreSQL `25432`, backend `8080`
+  y frontend `5173`; smoke autenticado host/contenedor PASS en 07:07 min;
+- repository safety, sintaxis de 11 scripts PowerShell y 8 scripts Bash: PASS;
+- ambiente y PostgreSQL conservaron los cuatro bloqueos, providers `NOOP` /
+  `DEEPLINK_ONLY`, red real deshabilitada, endpoint público de envío `404` y
+  conteo PostgreSQL de mensajes `SENT=0`;
+- evidencia local ignorada: `validation-output/seg001-docker-20260722-094016.*`.
 
 ## BASELINE_VALIDATION
 
@@ -262,3 +309,38 @@ Evidencia ejecutada:
 - Playwright fake simulation con `BLOCKED_BY_KILL_SWITCH`: PASS;
 - configuración ambiente/DB bloqueada y filas `SENT`: cero;
 - repository safety y `git diff --check`: PASS.
+
+## CHECKPOINT_9_OUTBOX_WORKERS_INBOUND
+
+```text
+CHECKPOINT_ID=CHECKPOINT_9
+PHASE=transactional_outbox_workers_idempotency_inbound
+START_COMMIT=1a6a98bc5bd2f9cf97a7c2978cd633ba77f74cb3
+END_COMMIT=PENDING_STABLE_LOCAL_COMMIT
+WORKTREE_BEFORE=CLEAN
+WORKTREE_AFTER=STABLE_PENDING_LOCAL_COMMIT
+FILES_CHANGED=V12, outbox/inbound/common backend modules, messaging/campaign integration, security, frontend operations, tests, ADR and canonical docs
+MIGRATIONS=V12__transactional_outbox_and_durable_inbound.sql
+TEST_COMMANDS=verify-backend-container.ps1; npm run typecheck; npm run build; validate-docker-stack.ps1 --no-cache; authenticated Playwright; signed webhook HTTP cases; PostgreSQL evidence; repository safety
+TEST_COUNT=69/69 backend; 6/6 OutboxInboundIntegrationTest within full suite
+TEST_RESULT=EXECUTED_PASS
+DURATION=backend 02:28; Docker no-cache approximately 13:50; frontend build 270 ms
+FAILURES=local Windows Ryuk callback blocked before tests; stale prospect 409; manual association SQL type inference
+ROOT_CAUSES=named-pipe callback topology; selected DTO not refreshed after background mutation; untyped nullable PostgreSQL placeholder
+FIXES=canonical container validator; typed ApiError plus refresh; static SQL branches plus PostgreSQL regression
+KNOWN_WARNINGS=Mockito self-attach, Spring Data PageImpl warning, expected anonymous auth 401 console events
+RESIDUAL_RISKS=real inbound/providers remain not connected; scheduler disabled in local evidence; production not deployed
+```
+
+Evidencia ejecutada:
+
+- Flyway V1–V12 desde vacío y upgrade V11→V12, Hibernate validate: PASS;
+- backend Java 21: 69/69, Spotless 148/148 y ArchUnit PASS;
+- frontend TypeScript strict y Vite: PASS;
+- Docker no-cache y tres servicios healthy en 25432/8080/5173: PASS;
+- Playwright: campaña bloqueada, outbox, worker, webhook HMAC/replay,
+  quarantine/asociación manual, actividad, tarea, timeline y `REPLIED`: PASS;
+- firma/timestamp/media type/payload limit: 401/401/415/413 esperados;
+- PostgreSQL: `SENT|DELIVERED|READ=0`, outbox `BLOCKED=1/SUCCEEDED=4`;
+- endpoint `/api/v1/messages/send=404`, providers reales no inicializados;
+- secreto fake solo en entorno de prueba y endpoint nuevamente deshabilitado.

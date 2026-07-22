@@ -1,6 +1,6 @@
 # Matriz de validación integral del CRM
 
-Actualizado: 2026-07-21
+Actualizado: 2026-07-22
 
 Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUTED_PASS`,
 `EXECUTED_FAIL`, `BLOCKED_EXTERNAL`, `NOT_APPLICABLE`.
@@ -52,11 +52,11 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | message policy tenant/exclusión | EXECUTED_PASS | PostgreSQL, consentimiento y bloqueo antes de persistir cuerpo |
 | inexistencia de endpoint send | EXECUTED_PASS | MockMvc administrador autenticado obtiene 404 |
 | policy/kill switch persistente | EXECUTED_PASS | ambiente + DB verificados antes de simular |
-| outbox | NOT_STARTED | — |
-| workers/retry/dead-letter | NOT_STARTED | — |
-| idempotencia asíncrona | NOT_STARTED | — |
-| inbound/webhook fake | NOT_STARTED | — |
-| frontend integral | IN_PROGRESS | CRM, duplicados, pipeline y campañas operativos; SEG-008+ pendientes |
+| outbox | EXECUTED_PASS | V12, publicación transaccional, UI/API y PostgreSQL real |
+| workers/retry/dead-letter | EXECUTED_PASS | SKIP LOCKED, lease, retry/dead/requeue y doble worker |
+| idempotencia asíncrona | EXECUTED_PASS | scope tenant, request hash, repetición y colisión 409 |
+| inbound/webhook fake | EXECUTED_PASS | HMAC/replay/quarantine/asociación/dominio y E2E |
+| frontend integral | IN_PROGRESS | operación SEG-002–009 navegable; cierre funcional SEG-010 activo |
 | frontend E2E | NOT_STARTED | cero tests frontend al inicio |
 | dashboard/reportes | NOT_STARTED | — |
 | búsqueda PostgreSQL | NOT_STARTED | — |

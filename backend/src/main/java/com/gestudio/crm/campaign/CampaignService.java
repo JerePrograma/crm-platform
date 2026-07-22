@@ -2,9 +2,12 @@ package com.gestudio.crm.campaign;
 
 import com.gestudio.crm.audit.AuditEventWriter;
 import com.gestudio.crm.campaign.SafeTemplateRenderer.RenderedTemplate;
+import com.gestudio.crm.common.CorrelationIds;
 import com.gestudio.crm.common.OptimisticConflictException;
 import com.gestudio.crm.common.ResourceNotFoundException;
 import com.gestudio.crm.common.UnprocessableEntityException;
+import com.gestudio.crm.outbox.OutboxPublisher;
+import com.gestudio.crm.outbox.OutboxPublisher.PublishCommand;
 import com.gestudio.crm.security.CurrentActor;
 import com.gestudio.crm.settings.SendingProperties;
 import java.nio.charset.StandardCharsets;
@@ -38,6 +41,7 @@ public class CampaignService {
   private final SafeTemplateRenderer renderer;
   private final SendingProperties sendingProperties;
   private final ObjectMapper objectMapper;
+  private final OutboxPublisher outboxPublisher;
 
   public CampaignService(
       JdbcTemplate jdbcTemplate,
@@ -45,13 +49,15 @@ public class CampaignService {
       AuditEventWriter auditEventWriter,
       SafeTemplateRenderer renderer,
       SendingProperties sendingProperties,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      OutboxPublisher outboxPublisher) {
     this.jdbcTemplate = jdbcTemplate;
     this.currentActor = currentActor;
     this.auditEventWriter = auditEventWriter;
     this.renderer = renderer;
     this.sendingProperties = sendingProperties;
     this.objectMapper = objectMapper;
+    this.outboxPublisher = outboxPublisher;
   }
 
   @Transactional(readOnly = true)
@@ -336,6 +342,26 @@ public class CampaignService {
         "CAMPAIGN",
         campaignId,
         Map.of("included", included, "excluded", excluded, "provider", "FAKE"));
+    outboxPublisher.publish(
+        new PublishCommand(
+            currentActor.organizationId(),
+            "CAMPAIGN_SIMULATED_V1",
+            1,
+            "CAMPAIGN",
+            campaignId,
+            Map.of(
+                "campaignId",
+                campaignId.toString(),
+                "simulationRunId",
+                runId.toString(),
+                "included",
+                included,
+                "excluded",
+                excluded),
+            "campaign-simulation-result:" + runId,
+            CorrelationIds.currentOrCreate(),
+            currentActor.userIdOrNull(),
+            3));
     return simulation(runId);
   }
 
