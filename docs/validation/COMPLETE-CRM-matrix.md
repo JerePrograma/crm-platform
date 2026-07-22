@@ -70,7 +70,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | backup/restore | EXECUTED_PASS | pg_dump/checksum/metadata y restore drill aislado sintético |
 | perfil productivo validado localmente | EXECUTED_PASS | non-root/read-only/private network/health, sending bloqueado |
 | dependency scan | EXECUTED_PASS | npm audit High y Grype High/Critical; imagen final sin hallazgos |
-| CI integral | EXECUTED_PASS | run 29951586239, commit 904ff3, push a main, 22/22 jobs success |
+| CI integral | EXECUTED_PASS | run `29951586239`, commit `b904ff3`, push a `main`, 22/22 jobs success |
 | validador completo Windows | EXECUTED_PASS | `986523a`, 21 fases verdes, 713,870 s |
 | validador completo Unix | IMPLEMENTED_NOT_RUN | sintaxis y preflight WSL PASS; recorrido integral no ejecutado |
 | repetición limpia | EXECUTED_PASS | mismo commit, 21 fases verdes, 734,162 s, sin flakiness |

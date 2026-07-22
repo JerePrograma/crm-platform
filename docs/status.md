@@ -9,7 +9,8 @@ repositorio: JerePrograma/crm-platform
 rama predeterminada: main
 rama canónica: main
 rama local actual: main
-origin/main: b904ff37e506f058dab351c2b941e13ee4ed9981
+origin/main: SINCRONIZADO_CON_MAIN_LOCAL
+commit de código validado por CI: b904ff37e506f058dab351c2b941e13ee4ed9981
 producción: NO DESPLEGADA
 comunicaciones: DESHABILITADAS
 lote real: FUERA DE GIT/CI/IMÁGENES
