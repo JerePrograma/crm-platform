@@ -15,7 +15,8 @@ SEG-006 COMPLETE
 SEG-007 COMPLETE
 SEG-008 COMPLETE
 SEG-009 COMPLETE
-SEG-010 ACTIVE
+SEG-010 IMPLEMENTED_NOT_RUN
+SEG-011 ACTIVE
 BRANCH feat/complete-crm-platform
 BASELINE 7db7e4c EXECUTED_PASS
 IDENTITY_COMMIT 0546e6e EXECUTED_PASS
@@ -25,10 +26,10 @@ COMUNICACIONES REALES DISABLED_BY_POLICY
 
 ## Siguiente checkpoint canónico
 
-Completar SEG-010: inventario funcional, reporting/búsqueda/configuración/tags,
-seguridad y observabilidad, preview externo con frontera sanitizada,
-performance/accesibilidad, backup/restore, perfil productivo local, CI y
-validadores canónicos sin habilitar comunicaciones ni desplegar.
+Cerrar SEG-011: consolidar el checkpoint local de SEG-010, verificar árbol
+limpio, ejecutar `scripts/validate-complete-crm.ps1` sobre puertos
+25432/8080/5173, retirar solo recursos sintéticos, repetir el mismo validador y
+publicar evidencia sanitizada. No habilitar comunicaciones ni desplegar.
 
 Contrato y evidencia viva:
 
@@ -43,6 +44,9 @@ docs/validation/SEG-006-opportunities-pipeline-2026-07-21.md
 docs/validation/SEG-007-campaign-simulation-2026-07-21.md
 docs/validation/SEG-008-safe-messaging-2026-07-21.md
 docs/validation/SEG-009-transactional-outbox-inbound-2026-07-22.md
+docs/validation/SEG-010-operations-production-2026-07-22.md
+docs/validation/SEG-010-performance-accessibility-2026-07-22.md
+docs/segments/SEG-011.md
 docs/segments/CRM-completion.md
 ```
 

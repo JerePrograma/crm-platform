@@ -9,7 +9,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 |---|---|---|
 | baseline SEG-001 Windows | EXECUTED_PASS | validador 2026-07-21, commit `7db7e4c`, 29/29 |
 | inventario/gap analysis | EXECUTED_PASS | plan integral y análisis de código completo |
-| documentación viva | IN_PROGRESS | plan, progreso y esta matriz creados |
+| documentación viva | IN_PROGRESS | SEG-010/011, producción, runbooks y evidencia focal actualizados; cierre final pendiente |
 | organización/tenant | EXECUTED_PASS | V6 desde vacío y V1-V5; FK/índices/backfill |
 | usuarios persistentes | EXECUTED_PASS | hash, alta, activación y cambio de contraseña |
 | roles y permisos | EXECUTED_PASS | ADMIN/MANAGER/SALES/VIEWER y 18 permisos |
@@ -56,20 +56,23 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | workers/retry/dead-letter | EXECUTED_PASS | SKIP LOCKED, lease, retry/dead/requeue y doble worker |
 | idempotencia asíncrona | EXECUTED_PASS | scope tenant, request hash, repetición y colisión 409 |
 | inbound/webhook fake | EXECUTED_PASS | HMAC/replay/quarantine/asociación/dominio y E2E |
-| frontend integral | IN_PROGRESS | operación SEG-002–009 navegable; cierre funcional SEG-010 activo |
-| frontend E2E | NOT_STARTED | cero tests frontend al inicio |
-| dashboard/reportes | NOT_STARTED | — |
-| búsqueda PostgreSQL | NOT_STARTED | — |
-| configuración/etiquetas | NOT_STARTED | — |
-| threat model | NOT_STARTED | — |
-| controles de seguridad | NOT_STARTED | — |
-| observabilidad integral | NOT_STARTED | health/logs base solamente |
-| preview XLSX real | NOT_STARTED | archivo externo no inspeccionado todavía |
-| backup/restore | NOT_STARTED | — |
-| perfil producción local | NOT_STARTED | — |
-| CI integral | NOT_STARTED | cuatro jobs SEG-001 |
-| validador completo Windows | NOT_STARTED | — |
-| validador completo Unix | NOT_STARTED | — |
-| repetición limpia | NOT_STARTED | — |
+| frontend integral | EXECUTED_PASS | navegación completa, permisos, desktop/mobile y 2/2 Playwright |
+| frontend E2E | EXECUTED_PASS | suite versionada 2/2 sobre stack real, 13.3 s |
+| dashboard/reportes | EXECUTED_PASS | agregaciones PostgreSQL tenant/fecha/timezone y monedas separadas |
+| búsqueda PostgreSQL | EXECUTED_PASS | institución/contacto/canal/localidad/website/notas/tags, allow-list y tenant test |
+| configuración/etiquetas | EXECUTED_PASS | settings hard-blocked, tags CRUD/bulk/audit/tenant |
+| threat model | EXECUTED_PASS | `docs/security.md`, fronteras/amenazas/mitigaciones/riesgos |
+| controles de seguridad | EXECUTED_PASS | security focal 12/12, CSRF/headers/RBAC/tenant/webhook/send absent |
+| observabilidad integral | EXECUTED_PASS | correlation/request ID, actor/tenant MDC, Micrometer/probes protegidos |
+| preview XLSX real | BLOCKED_EXTERNAL | ubicaciones conocidas ausentes; archivo no abierto ni copiado |
+| performance sintética | EXECUTED_PASS | parser 100/1k/10k y evidencia operativa/query plan acotada |
+| accesibilidad responsive | EXECUTED_PASS | teclado/mobile E2E y corrección sidebar; no certificación WCAG |
+| backup/restore | EXECUTED_PASS | pg_dump/checksum/metadata y restore drill aislado sintético |
+| perfil producción local | EXECUTED_PASS | non-root/read-only/private network/health, sending bloqueado |
+| dependency scan | EXECUTED_PASS | npm audit High y Grype High/Critical; imagen final sin hallazgos |
+| CI integral | IMPLEMENTED_NOT_RUN | workflow parseado localmente; ejecución remota requiere push |
+| validador completo Windows | NOT_STARTED | script funcional listo; requiere checkpoint limpio |
+| validador completo Unix | IMPLEMENTED_NOT_RUN | sintaxis Bash PASS; funcional no ejecutado en Windows |
+| repetición limpia | NOT_STARTED | depende de primer validador completo |
 | despliegue producción | NOT_APPLICABLE | no autorizado |
 | envío real | NOT_APPLICABLE | deshabilitado por política |

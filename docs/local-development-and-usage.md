@@ -317,7 +317,8 @@ El preview persiste evidencia, pero no crea instituciones, contactos, prospectos
 
 ### 5. Revisiones ambiguas
 
-No existe fusión automática ni resolución UI. Corregir el archivo antes de ejecutar.
+La bandeja permite comparar, vincular, conservar, fusionar, separar, diferir o
+descartar según permisos. El merge es transaccional, auditado e idempotente.
 
 ### 6. Ejecución
 
@@ -383,10 +384,24 @@ Frontend:
 cd frontend
 if [ -f package-lock.json ]; then npm ci; else npm install; fi
 npm run typecheck
+npm run test:unit
 npm run build
 ```
 
 Testcontainers requiere Docker.
+
+Validador CRM completo Windows (exige rama de integración y árbol limpio):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1 `
+  -PostgresPort 25432 -BackendPort 8080 -FrontendPort 5173
+```
+
+Unix:
+
+```bash
+make validate-complete-crm
+```
 
 ## Detener
 
@@ -462,12 +477,13 @@ El archivo supera 10 MB. Dividir el lote.
 
 ## Seguridad y límites
 
-- no existe envío de correo;
-- no existen Gmail, SMTP, Cloud Tasks ni campañas;
+- no existe una ruta de envío real;
+- campañas, NOOP/FAKE, outbox e inbound fake están operativos;
+- Gmail y WhatsApp reales están implementados pero no conectados;
 - sesión cookie/CSRF y RBAC persistente están activos;
 - no usar datos reales en pruebas o CI;
 - no exponer servicios fuera de localhost;
-- no desplegar sin cerrar `docs/validation/SEG-001.md`.
+- no desplegar sin autorización y revisión de `docs/production/`.
 
 ## Documentación relacionada
 
@@ -479,4 +495,5 @@ El archivo supera 10 MB. Dividir el lote.
 - `docs/import-hardening.md`;
 - `docs/testing.md`;
 - `docs/security.md`;
-- `docs/validation/SEG-001.md`.
+- `docs/validation/COMPLETE-CRM-matrix.md`;
+- `docs/production/` y `docs/runbooks/`.

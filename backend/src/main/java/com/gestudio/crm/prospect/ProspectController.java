@@ -71,7 +71,7 @@ public class ProspectController {
       @RequestParam(defaultValue = "false") boolean archived,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "50") int size,
-      @RequestParam(defaultValue = "createdAt,desc") String sort) {
+      @RequestParam(defaultValue = "relevance,desc") String sort) {
     String[] sorting = sort.split(",", 2);
     return prospectOperationsService.search(
         new SearchFilter(

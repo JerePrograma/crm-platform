@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-07-22 — SEG-010 operations candidate
+
+- agrega V13 con configuración, etiquetas e índices de búsqueda/reporting;
+- incorpora reporting tenant-scoped, monedas separadas, búsqueda PostgreSQL y
+  exportación formula-safe;
+- completa UI operativa, Vitest y Playwright integral para CRM/outbox/inbound;
+- agrega correlation ID, Micrometer/probes, límites de importación y threat
+  model/PII;
+- agrega backup/restore probado, perfil productivo local, runbooks, CI y
+  validadores CRM Windows/Unix;
+- endurece backend con JRE mínima no-root fijada, healthcheck Java, JDBC/Jackson
+  parchados y Grype sin High/Critical;
+- mantiene Gmail/WhatsApp no conectados, XLSX real bloqueado externamente,
+  envío real deshabilitado y producción no desplegada;
+- valida focalmente 79/79 backend, Spotless 159/159, ArchUnit, Vitest 2/2,
+  Playwright 2/2, backup/restore y production profile; el cierre integral
+  repetido pertenece a SEG-011.
+
 ## 2026-07-22 — SEG-009 outbox e inbound durable
 
 - agrega V12 con outbox PostgreSQL, leases, retry/dead-letter, idempotencia e inbound;

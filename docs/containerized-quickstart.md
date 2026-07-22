@@ -352,6 +352,23 @@ Bloquea `.env`, evidencia, datos privados, lote operativo, claves, certificados 
 
 ## 16. Ruta manual
 
+El cierre integral canónico es:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1 `
+  -PostgresPort 25432 -BackendPort 8080 -FrontendPort 5173
+```
+
+```bash
+make validate-complete-crm
+```
+
+Exige `feat/complete-crm-platform`, árbol limpio y puertos libres. Construye sin
+caché, ejecuta backend/frontend/E2E, migraciones, dependency scan,
+backup/restore, perfil productivo local, bloqueos y cero estados enviados. Sus
+recursos usan un nombre Compose aislado y su cleanup elimina únicamente esos
+volúmenes sintéticos.
+
 ### Configurar puertos
 
 Windows:
@@ -504,11 +521,9 @@ docker compose --profile app up -d --build
 
 ## Limitaciones actuales
 
-- validadores integrales pendientes de ejecución real;
-- clean builds pendientes;
-- Maven/Testcontainers/Flyway/Hibernate pendientes;
-- package-lock pendiente;
-- npm ci pendiente de evidencia real;
-- CI no muestra runs visibles;
-- sesión cookie/CSRF y usuarios/RBAC persistentes implementados en SEG-002;
-- stack local, no productivo.
+- la ejecución funcional Unix no fue realizada en este host Windows;
+- el workflow CI integral está parseado pero no ejecutado remotamente hasta un
+  push autorizado;
+- Gmail/WhatsApp reales no están conectados y los envíos permanecen bloqueados;
+- XLSX real no disponible para preview;
+- el perfil productivo es local; no existe despliegue autorizado.

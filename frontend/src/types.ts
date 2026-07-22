@@ -39,6 +39,70 @@ export type Page<T> = {
   last: boolean;
 };
 
+export type CurrencyTotal = {
+  currency: string;
+  opportunityCount: number;
+  totalValue: number;
+  weightedValue: number;
+};
+
+export type DashboardReport = {
+  from: string;
+  to: string;
+  timezone: string;
+  prospectsByStatus: Record<string, number>;
+  prospectsBySource: Record<string, number>;
+  prospectsByOwner: Record<string, number>;
+  prospectSummary: Record<string, number>;
+  tasks: Record<string, number>;
+  activitiesByChannel: Record<string, number>;
+  activityOutcomes: Record<string, number>;
+  opportunitiesByStage: Record<string, number>;
+  opportunityValues: CurrencyTotal[];
+  opportunitySummary: Record<string, number>;
+  lossReasons: Record<string, number>;
+  campaigns: Record<string, number>;
+  outbox: Record<string, number>;
+  inbound: Record<string, number>;
+  operations: Record<string, number>;
+};
+
+export type OrganizationSettings = {
+  version: number;
+  name: string;
+  timezone: string;
+  currency: string;
+  locale: string;
+  brandingPrimaryColor: string;
+  followUpDays: number;
+  operatingWindowStart: string;
+  operatingWindowEnd: string;
+  businessDays: number[];
+  campaignDailyLimit: number;
+  sendingOverrideRejected: boolean;
+  sending: {
+    environmentEnabled: boolean;
+    environmentDryRun: boolean;
+    environmentDailyLimit: number;
+    environmentKillSwitch: boolean;
+    databaseEnabled: string;
+    databaseDryRun: string;
+    databaseDailyLimit: number;
+    databaseKillSwitch: string;
+  };
+};
+
+export type CrmTag = {
+  id: string;
+  version: number;
+  name: string;
+  color: string;
+  active: boolean;
+  usageCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Prospect = {
   id: string;
   version: number;

@@ -344,3 +344,37 @@ Evidencia ejecutada:
 - PostgreSQL: `SENT|DELIVERED|READ=0`, outbox `BLOCKED=1/SUCCEEDED=4`;
 - endpoint `/api/v1/messages/send=404`, providers reales no inicializados;
 - secreto fake solo en entorno de prueba y endpoint nuevamente deshabilitado.
+
+## CHECKPOINT_10_OPERATIONS_PRODUCTION_CANDIDATE
+
+```text
+CHECKPOINT_ID=CHECKPOINT_10
+PHASE=reporting_search_settings_tags_security_observability_production
+START_COMMIT=645fa6c0a4594b23b7ab90ff62225208df243c73
+END_COMMIT=pending_local_checkpoint_commit
+WORKTREE_BEFORE=CLEAN
+WORKTREE_AFTER=MODIFIED_PENDING_STABLE_COMMIT
+FILES_CHANGED=V13, reporting/settings/tags/search/import/common/security backend, frontend, tests, backup/restore, production profile, CI, validators and docs
+MIGRATIONS=V13__reporting_search_settings_and_tags.sql
+TEST_COMMANDS=verify-backend-container.ps1; npm ci/typecheck/test:unit/build; npm test:e2e; verify-migrations.ps1; verify-backup-restore.ps1; verify-production-profile.ps1; Grype; npm audit; repository safety; script syntax
+TEST_COUNT=79/79 backend; 2/2 Vitest; 2/2 Playwright
+TEST_RESULT=EXECUTED_PASS_FOCUSED; INTEGRAL_VALIDATOR_NOT_RUN
+DURATION=backend 02:27; Playwright 13.3s; parser 100/1k/10k 29/168/1571ms
+FAILURES=metrics denied to authenticated admin; desktop logout outside viewport; Alpine runtime and JDBC High CVEs; stale compose image ID; Dependency-Check NVD rate limit
+ROOT_CAUSES=actuator matcher too restrictive; sidebar without scroll; package-heavy JRE plus outdated patch versions; compose image query referred to replaced ID; NVD update lacks API key
+FIXES=authenticated metrics rule/test; scrollable sidebar/mobile override; pinned minimal non-root JRE plus Java probe and JDBC/Jackson patches; derive image tag from live container; canonical npm audit plus pinned Grype
+KNOWN_WARNINGS=Mockito self-attach and PageImpl serialization; Dependency-Check BLOCKED_EXTERNAL_NVD_RATE_LIMIT
+RESIDUAL_RISKS=integral validator and clean repeat pending; Unix functional/remote CI not run; real providers/XLSX/deployment external
+```
+
+Evidencia focalizada:
+
+- backend Java 21/PostgreSQL 17: 79/79, Spotless 159/159, ArchUnit, V1–V13 y
+  Hibernate validate PASS;
+- frontend: npm ci, strict typecheck, Vitest 2/2, Vite y Playwright integral 2/2
+  PASS;
+- reporting/search/settings/tags, CSV, permisos y tenant isolation integrados;
+- backup/restore aislado y perfil productivo local endurecido PASS;
+- imagen backend UID 65532, healthcheck Java y Grype sin hallazgos;
+- XLSX real ausente: `BLOCKED_EXTERNAL_FILE`, sin abrir/copiar/importar;
+- producción, push, PR y comunicaciones reales permanecen no autorizados.

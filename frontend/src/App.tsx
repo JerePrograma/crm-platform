@@ -67,6 +67,16 @@ import {
   retryInboundAssociation,
   runOutboxWorker,
   setOutboxWorkerPaused,
+  assignTag,
+  createTag,
+  dashboardCsvUrl,
+  deactivateTag,
+  getDashboardReport,
+  getOrganizationSettings,
+  listProspectTags,
+  listTags,
+  unassignTag,
+  updateOrganizationSettings,
 } from "./api";
 import type {
   AuditEvent,
@@ -101,6 +111,9 @@ import type {
   OutboxStatus,
   WebhookHealth,
   WorkerState,
+  CrmTag,
+  DashboardReport,
+  OrganizationSettings,
 } from "./types";
 
 type Tab =
@@ -114,6 +127,8 @@ type Tab =
   | "imports"
   | "exclusions"
   | "audit"
+  | "reports"
+  | "settings"
   | "users"
   | "account";
 
@@ -170,11 +185,14 @@ export function App() {
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const [statusFilter, setStatusFilter] = useState<ProspectStatus | "">("");
+  const initialQuery = new URLSearchParams(window.location.search).get("q") ?? "";
+  const [searchInput, setSearchInput] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(
-    async (filter: ProspectStatus | "" = statusFilter) => {
+    async (filter: ProspectStatus | "" = statusFilter, query = searchQuery) => {
       setLoading(true);
       setError(null);
       try {
@@ -189,7 +207,7 @@ export function App() {
           templateList,
         ] =
           await Promise.all([
-          listProspects(filter || undefined),
+          listProspects(filter || undefined, query || undefined),
           listExclusions(),
           session?.permissions.includes("AUDIT_READ") ? listAuditEvents() : Promise.resolve([]),
           session?.permissions.includes("DUPLICATE_RESOLVE")
@@ -220,7 +238,7 @@ export function App() {
         setLoading(false);
       }
     },
-    [session, statusFilter],
+    [session, statusFilter, searchQuery],
   );
 
   useEffect(() => {
@@ -264,7 +282,16 @@ export function App() {
 
   async function applyStatusFilter(value: ProspectStatus | "") {
     setStatusFilter(value);
-    await refresh(value);
+    updateProspectUrl(searchQuery, value);
+    await refresh(value, searchQuery);
+  }
+
+  async function applySearch(event: FormEvent) {
+    event.preventDefault();
+    const query = searchInput.trim();
+    setSearchQuery(query);
+    updateProspectUrl(query, statusFilter);
+    await refresh(statusFilter, query);
   }
 
   async function refreshView() {
@@ -300,6 +327,11 @@ export function App() {
             </NavButton>
           )}
           {session.permissions.includes("REPORT_READ") && (
+            <NavButton active={tab === "reports"} onClick={() => setTab("reports")}>
+              Reportes
+            </NavButton>
+          )}
+          {session.permissions.includes("REPORT_READ") && (
             <NavButton active={tab === "outbox"} onClick={() => setTab("outbox")}>
               Outbox y workers
             </NavButton>
@@ -330,6 +362,11 @@ export function App() {
           {session.permissions.includes("USER_MANAGE") && (
             <NavButton active={tab === "users"} onClick={() => setTab("users")}>
               Usuarios
+            </NavButton>
+          )}
+          {session.permissions.includes("REPORT_READ") && (
+            <NavButton active={tab === "settings"} onClick={() => setTab("settings")}>
+              Configuración
             </NavButton>
           )}
           <NavButton active={tab === "account"} onClick={() => setTab("account")}>
@@ -415,6 +452,18 @@ export function App() {
                 />
               )}
               <div className="toolbar">
+                <form onSubmit={(event) => void applySearch(event)} className="inline-form">
+                  <label>
+                    Buscar
+                    <input
+                      aria-label="Buscar prospectos"
+                      value={searchInput}
+                      onChange={(event) => setSearchInput(event.target.value)}
+                      placeholder="Institución, contacto, localidad o etiqueta"
+                    />
+                  </label>
+                  <button className="secondary-button" type="submit">Buscar</button>
+                </form>
                 <label>
                   Estado
                   <select
@@ -528,12 +577,186 @@ export function App() {
           </Panel>
         )}
 
+        {tab === "reports" && <ReportsPanel />}
+
+        {tab === "settings" && (
+          <SettingsPanel session={session} selectedProspect={selectedProspect} />
+        )}
+
         {tab === "users" && <UsersPanel currentUser={session} />}
         {tab === "account" && (
           <AccountPanel session={session} onPasswordChanged={() => setSession(null)} />
         )}
       </main>
     </div>
+  );
+}
+
+function ReportsPanel() {
+  const [report, setReport] = useState<DashboardReport | null>(null);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refreshReport = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setReport(await getDashboardReport(from || undefined, to || undefined));
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setLoading(false);
+    }
+  }, [from, to]);
+
+  useEffect(() => {
+    void refreshReport();
+  }, []);
+
+  return (
+    <section className="stack">
+      {error && <div className="alert error">{error}</div>}
+      {loading && <div className="loading-bar" aria-label="Cargando reportes" />}
+      <Panel title="Período y exportación">
+        <form
+          className="toolbar"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void refreshReport();
+          }}
+        >
+          <label>Desde<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
+          <label>Hasta<input type="date" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+          <button className="primary-button" type="submit">Aplicar</button>
+          <a className="secondary-button link-button" href={dashboardCsvUrl(from || undefined, to || undefined)}>
+            Exportar CSV seguro
+          </a>
+        </form>
+        {report && <p className="muted">{report.from} a {report.to} · {report.timezone}</p>}
+      </Panel>
+      {report ? (
+        <>
+          <div className="metric-grid">
+            <Metric label="Contactables" value={report.prospectSummary.contactable ?? 0} />
+            <Metric label="Excluidos" value={report.prospectSummary.excluded ?? 0} />
+            <Metric label="Sin propietario" value={report.prospectSummary.unowned ?? 0} />
+            <Metric label="Tareas abiertas" value={report.tasks.open ?? 0} />
+            <Metric label="Tareas vencidas" value={report.tasks.overdue ?? 0} />
+            <Metric label="Respuestas" value={report.prospectSummary.replied ?? 0} />
+            <Metric label="Dead-letter" value={report.operations.deadLetter ?? 0} />
+            <Metric label="Quarantine" value={report.operations.quarantine ?? 0} />
+          </div>
+          <section className="two-column equal">
+            <ReportMap title="Prospectos por estado" values={report.prospectsByStatus} />
+            <ReportMap title="Prospectos por fuente" values={report.prospectsBySource} />
+            <ReportMap title="Oportunidades por etapa" values={report.opportunitiesByStage} />
+            <ReportMap title="Outbox por estado" values={report.outbox} />
+          </section>
+          <Panel title="Valor por moneda">
+            {report.opportunityValues.length ? (
+              <div className="table-scroll"><table><thead><tr><th>Moneda</th><th>Oportunidades</th><th>Total</th><th>Ponderado</th></tr></thead><tbody>
+                {report.opportunityValues.map((value) => <tr key={value.currency}><td>{value.currency}</td><td>{value.opportunityCount}</td><td>{value.totalValue}</td><td>{value.weightedValue}</td></tr>)}
+              </tbody></table></div>
+            ) : <EmptyState text="No hay oportunidades activas en el período." />}
+          </Panel>
+        </>
+      ) : !loading && <EmptyState text="No se pudieron cargar los reportes." />}
+    </section>
+  );
+}
+
+function ReportMap({ title: heading, values }: { title: string; values: Record<string, number> }) {
+  return (
+    <Panel title={heading}>
+      {Object.keys(values).length ? <dl className="detail-grid">{Object.entries(values).map(([key, value]) => <Detail key={key} label={key} value={String(value)} />)}</dl> : <EmptyState text="Sin datos." />}
+    </Panel>
+  );
+}
+
+function SettingsPanel({ session, selectedProspect }: { session: SessionUser; selectedProspect: Prospect | null }) {
+  const [settings, setSettings] = useState<OrganizationSettings | null>(null);
+  const [tags, setTags] = useState<CrmTag[]>([]);
+  const [prospectTags, setProspectTags] = useState<CrmTag[]>([]);
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState("#2563EB");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const canManage = session.permissions.includes("SETTINGS_MANAGE");
+  const canWriteProspects = session.permissions.includes("PROSPECT_WRITE");
+
+  const refreshSettings = useCallback(async () => {
+    setError(null);
+    try {
+      const [organization, tagList, assigned] = await Promise.all([
+        getOrganizationSettings(),
+        listTags(canManage),
+        selectedProspect ? listProspectTags(selectedProspect.id) : Promise.resolve([]),
+      ]);
+      setSettings(organization);
+      setTags(tagList);
+      setProspectTags(assigned);
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }, [canManage, selectedProspect?.id]);
+
+  useEffect(() => { void refreshSettings(); }, [refreshSettings]);
+
+  async function run(action: () => Promise<unknown>, success: string) {
+    setError(null); setNotice(null);
+    try { await action(); setNotice(success); await refreshSettings(); }
+    catch (caught) { setError(message(caught)); }
+  }
+
+  return (
+    <section className="stack">
+      <div className="alert safety">Los bloqueos de entorno dominan esta pantalla. Ningún usuario puede habilitar envíos reales desde la API o la UI.</div>
+      {error && <div className="alert error">{error}</div>}
+      {notice && <div className="alert success">{notice}</div>}
+      {settings ? <>
+        <div className="metric-grid">
+          <Metric label="Sending enabled" value={settings.sending.environmentEnabled ? "true" : "false"} />
+          <Metric label="Dry-run" value={settings.sending.environmentDryRun ? "true" : "false"} />
+          <Metric label="Límite diario" value={settings.sending.environmentDailyLimit} />
+          <Metric label="Kill switch" value={settings.sending.environmentKillSwitch ? "activo" : "inactivo"} />
+        </div>
+        <Panel title="Organización">
+          <form className="form-grid" onSubmit={(event) => { event.preventDefault(); if (settings) void run(() => updateOrganizationSettings(settings), "Configuración actualizada; bloqueos de envío preservados."); }}>
+            <label>Nombre<input disabled={!canManage} value={settings.name} onChange={(event) => setSettings({ ...settings, name: event.target.value })} /></label>
+            <label>Timezone<input disabled={!canManage} value={settings.timezone} onChange={(event) => setSettings({ ...settings, timezone: event.target.value })} /></label>
+            <label>Moneda<input disabled={!canManage} maxLength={3} value={settings.currency} onChange={(event) => setSettings({ ...settings, currency: event.target.value.toUpperCase() })} /></label>
+            <label>Idioma<select disabled={!canManage} value={settings.locale} onChange={(event) => setSettings({ ...settings, locale: event.target.value })}><option value="es-AR">Español Argentina</option><option value="es">Español</option><option value="en-US">English US</option><option value="en">English</option></select></label>
+            <label>Color principal<input disabled={!canManage} type="color" value={settings.brandingPrimaryColor} onChange={(event) => setSettings({ ...settings, brandingPrimaryColor: event.target.value })} /></label>
+            <label>Seguimiento (días)<input disabled={!canManage} type="number" min="1" max="365" value={settings.followUpDays} onChange={(event) => setSettings({ ...settings, followUpDays: Number(event.target.value) })} /></label>
+            <label>Inicio operativo<input disabled={!canManage} type="time" value={settings.operatingWindowStart} onChange={(event) => setSettings({ ...settings, operatingWindowStart: event.target.value })} /></label>
+            <label>Fin operativo<input disabled={!canManage} type="time" value={settings.operatingWindowEnd} onChange={(event) => setSettings({ ...settings, operatingWindowEnd: event.target.value })} /></label>
+            {canManage && <button className="primary-button" type="submit">Guardar configuración</button>}
+          </form>
+        </Panel>
+      </> : <EmptyState text="Cargando configuración." />}
+      <section className="two-column equal">
+        <Panel title="Etiquetas">
+          {canManage && <form className="inline-form" onSubmit={(event) => { event.preventDefault(); void run(() => createTag(newTagName, newTagColor), "Etiqueta creada.").then(() => setNewTagName("")); }}>
+            <label>Nombre<input required maxLength={80} value={newTagName} onChange={(event) => setNewTagName(event.target.value)} /></label>
+            <label>Color<input type="color" value={newTagColor} onChange={(event) => setNewTagColor(event.target.value)} /></label>
+            <button className="secondary-button" type="submit">Crear</button>
+          </form>}
+          {tags.length ? <ul className="plain-list">{tags.map((tag) => <li key={tag.id}><span className="tag-swatch" style={{ background: tag.color }} aria-hidden="true" /><strong>{tag.name}</strong> · {tag.usageCount} usos {!tag.active && "· inactiva"}{canManage && tag.active && <button className="link-button" onClick={() => window.confirm(`Desactivar ${tag.name}?`) && void run(() => deactivateTag(tag), "Etiqueta desactivada sin borrar historial.")}>Desactivar</button>}</li>)}</ul> : <EmptyState text="No hay etiquetas." />}
+        </Panel>
+        <Panel title="Asignación al prospecto seleccionado">
+          {selectedProspect ? <>
+            <p><strong>{selectedProspect.displayName}</strong></p>
+            <div className="button-row">{tags.filter((tag) => tag.active).map((tag) => {
+              const assigned = prospectTags.some((item) => item.id === tag.id);
+              return <button key={tag.id} disabled={!canWriteProspects} className={assigned ? "secondary-button" : "link-button"} onClick={() => void run(() => assigned ? unassignTag(tag.id, selectedProspect.id) : assignTag(tag.id, selectedProspect.id), assigned ? "Etiqueta removida." : "Etiqueta asignada.")}>{assigned ? `Quitar ${tag.name}` : `Asignar ${tag.name}`}</button>;
+            })}</div>
+          </> : <EmptyState text="Seleccioná un prospecto en la ficha y volvé a Configuración para asignar etiquetas." />}
+        </Panel>
+      </section>
+      <Panel title="Integraciones"><div className="control-grid"><Control label="Gmail" value="Adaptador implementado, no conectado" /><Control label="WhatsApp Cloud" value="Adaptador implementado, no conectado" /><Control label="Webhook fake" value="Solo entorno sintético firmado" /></div></Panel>
+    </section>
   );
 }
 
@@ -2450,7 +2673,7 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <article className="metric-card">
       <span>{label}</span>
@@ -2513,9 +2736,21 @@ function title(tab: Tab): string {
     imports: "Importaciones",
     exclusions: "Exclusiones",
     audit: "Auditoría",
+    reports: "Dashboard y reportes",
+    settings: "Configuración, etiquetas e integraciones",
     users: "Usuarios",
     account: "Mi cuenta",
   }[tab];
+}
+
+function updateProspectUrl(query: string, status: ProspectStatus | "") {
+  const parameters = new URLSearchParams(window.location.search);
+  if (query) parameters.set("q", query);
+  else parameters.delete("q");
+  if (status) parameters.set("status", status);
+  else parameters.delete("status");
+  const suffix = parameters.toString();
+  window.history.replaceState(null, "", `${window.location.pathname}${suffix ? `?${suffix}` : ""}`);
 }
 
 function money(value: number): string {

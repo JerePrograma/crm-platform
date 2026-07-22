@@ -18,8 +18,8 @@ Rama canónica: `main`.
 | SEG-007 | Campañas y plantillas | COMPLETE | SEG-003, SEG-006 | audiencia congelada y simulación |
 | SEG-008 | Mensajería segura y adaptadores | COMPLETE | SEG-007 | no-op, fake, manual y red deshabilitada |
 | SEG-009 | Outbox, workers e inbound | COMPLETE | SEG-008 | async idempotente y respuesta fake |
-| SEG-010 | Reportes, seguridad y producción | ACTIVE | SEG-002–009 | operación local endurecida |
-| SEG-011 | Validación integral y cierre | PLANNED | SEG-010 | recorrido reproducible y evidencia |
+| SEG-010 | Reportes, seguridad y producción | IMPLEMENTED_NOT_RUN | SEG-002–009 | focales verdes; integral pendiente |
+| SEG-011 | Validación integral y cierre | ACTIVE | SEG-010 | recorrido reproducible y evidencia |
 
 ## SEG-001 — Completado
 
@@ -184,6 +184,31 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] actividad inbound, transición, parada de secuencia y tarea;
 - [x] API/UI operativa y E2E sobre stack real;
 - [x] Flyway V1–V12, Hibernate, 69/69, ArchUnit, frontend y Docker smoke.
+
+## SEG-010 — Implementado, pendiente de validador integral
+
+- [x] inventario UI y navegación protegida;
+- [x] dashboard/reporting tenant-scoped y monedas separadas;
+- [x] búsqueda PostgreSQL paginada e indexada;
+- [x] CSV formula-safe;
+- [x] settings invariantes y tags auditados;
+- [x] threat model, PII/retención y controles automatizados;
+- [x] correlation ID, logs, Micrometer y probes;
+- [x] límites de importación y performance sintética documentada;
+- [x] accesibilidad responsive automatizada básica;
+- [x] backup/restore sintético;
+- [x] perfil productivo local endurecido;
+- [x] CI y validadores Windows/Unix;
+- [x] backend 79/79, frontend Vitest/Playwright y scans focales;
+- [ ] dos ejecuciones limpias del validador integral (SEG-011).
+
+## SEG-011 — Activo
+
+- [ ] checkpoint SEG-010 versionado y árbol limpio;
+- [ ] primera validación completa Windows;
+- [ ] segunda validación limpia reproducible;
+- [ ] evidencia sanitizada y matriz final;
+- [ ] commit documental final.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 

@@ -18,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class CorrelationIdFilter extends OncePerRequestFilter {
 
   public static final String HEADER = "X-Correlation-ID";
+  public static final String REQUEST_HEADER = "X-Request-ID";
   private static final Pattern SAFE = Pattern.compile("[A-Za-z0-9._-]{1,128}");
 
   @Override
@@ -31,11 +32,14 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
             : UUID.randomUUID().toString();
     CorrelationIds.set(correlationId);
     MDC.put("correlationId", correlationId);
+    MDC.put("requestId", correlationId);
     response.setHeader(HEADER, correlationId);
+    response.setHeader(REQUEST_HEADER, correlationId);
     try {
       filterChain.doFilter(request, response);
     } finally {
       MDC.remove("correlationId");
+      MDC.remove("requestId");
       CorrelationIds.clear();
     }
   }

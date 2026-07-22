@@ -46,6 +46,8 @@ button:disabled {
   flex-direction: column;
   gap: 24px;
   height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 24px 18px;
   color: #f8fafc;
   background: #101827;
@@ -664,6 +666,7 @@ dd {
   .sidebar {
     position: static;
     height: auto;
+    overflow-y: visible;
   }
 
   .sidebar nav {

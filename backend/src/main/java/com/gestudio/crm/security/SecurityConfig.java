@@ -72,6 +72,8 @@ public class SecurityConfig {
                 authorization
                     .requestMatchers("/actuator/health", "/actuator/health/**")
                     .permitAll()
+                    .requestMatchers("/actuator/metrics", "/actuator/metrics/**")
+                    .authenticated()
                     .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login")
                     .permitAll()
                     .requestMatchers("/api/v1/webhooks/fake-inbound")

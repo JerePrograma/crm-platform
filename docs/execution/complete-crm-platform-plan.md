@@ -4,9 +4,10 @@ Actualizado: 2026-07-22
 
 ## Alcance
 
-Esta ejecución activa SEG-002 y organiza el resto del CRM en segmentos verificables hasta
-SEG-011. El objetivo es convertir el vertical slice de importación en una operación comercial
-completa sin desplegar producción ni habilitar comunicaciones reales.
+Esta ejecución completó SEG-002–SEG-009, implementó el candidato SEG-010 y
+activó SEG-011 para su validación limpia repetida. El objetivo sigue siendo una
+operación comercial completa sin desplegar producción ni habilitar
+comunicaciones reales.
 
 Incluye identidad persistente, aislamiento por organización, prospectos y contactos operativos,
 timeline, tareas, duplicados, oportunidades, campañas simuladas, mensajería fail-closed, outbox,
@@ -16,13 +17,16 @@ CI, documentación y validación reproducible.
 ## Arquitectura actual
 
 - monolito modular Spring Boot 4.1 sobre Java 21;
-- PostgreSQL 17, Flyway V1-V5 y Hibernate `validate`;
-- módulos `prospect`, `institution`, `contact`, `exclusion`, `imports`, `audit`, `security`,
-  `settings`, `common`, `outbox` e `inbound`;
+- PostgreSQL 17, Flyway V1–V13 y Hibernate `validate`;
+- módulos `prospect`, `institution`, `contact`, `exclusion`, `imports`,
+  `deduplication`, `activity`, `sales`, `campaign`, `messaging`, `outbox`,
+  `inbound`, `reporting`, `audit`, `security`, `settings` y `common`;
 - frontend React 19, TypeScript strict y Vite;
 - Docker Compose local, Maven/Testcontainers, smoke y validadores Windows/Unix;
-- importación CSV/XLSX idempotente, exclusión dominante y revisión ambigua persistente;
-- HTTP Basic temporal, usuario en memoria y ausencia de RBAC/tenant.
+- importación CSV/XLSX idempotente, exclusión dominante y revisión/merge
+  persistente;
+- sesión cookie/CSRF, usuarios persistentes, RBAC y tenant isolation;
+- outbox/inbound fake, reporting/search/settings/tags y perfil productivo local.
 
 ## Brechas encontradas
 
@@ -80,7 +84,9 @@ puertos internos y deshabilitados por configuración.
 11. SEG-011: validación integral repetible y cierre documental.
 
 SEG-009 quedó ejecutado el 2026-07-22 con V12, 69/69 pruebas backend y E2E
-outbox/inbound. SEG-010 es el único segmento activo.
+outbox/inbound. SEG-010 tiene V13, 79/79 y focales operativos verdes, pero se
+mantiene `IMPLEMENTED_NOT_RUN` hasta el validador integral. SEG-011 es el único
+segmento activo.
 
 Cada checkpoint exige prueba focalizada, compilación, Flyway/Hibernate, diff y escaneo de
 seguridad. Un estado escrito pero no ejecutado queda `IMPLEMENTED_NOT_RUN`.

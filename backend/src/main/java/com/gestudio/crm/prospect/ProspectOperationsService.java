@@ -1,6 +1,7 @@
 package com.gestudio.crm.prospect;
 
 import com.gestudio.crm.audit.AuditEventWriter;
+import com.gestudio.crm.common.CsvSafety;
 import com.gestudio.crm.common.NormalizationService;
 import com.gestudio.crm.common.OptimisticConflictException;
 import com.gestudio.crm.common.ResourceNotFoundException;
@@ -85,19 +86,25 @@ public class ProspectOperationsService {
     String sortColumn = SORT_COLUMNS.getOrDefault(filter.sort(), "p.created_at");
     String direction = "asc".equalsIgnoreCase(filter.direction()) ? "ASC" : "DESC";
     List<Object> pageParameters = new ArrayList<>(parameters);
+    String ordering;
+    if (filter.query() != null
+        && !filter.query().isBlank()
+        && "relevance".equalsIgnoreCase(filter.sort())) {
+      String normalized = filter.query().trim().toLowerCase(Locale.ROOT);
+      ordering =
+          "CASE WHEN lower(i.name) = ? THEN 0 WHEN lower(i.name) LIKE ? ESCAPE '\\' THEN 1 ELSE 2 END ASC, "
+              + "similarity(lower(i.name), ?) DESC, p.updated_at DESC, p.id ASC";
+      pageParameters.add(normalized);
+      pageParameters.add(escapedLike(normalized) + "%");
+      pageParameters.add(normalized);
+    } else {
+      ordering = sortColumn + " " + direction + " NULLS LAST, p.id " + direction;
+    }
     pageParameters.add(size);
     pageParameters.add(page * size);
     List<OperationalProspectView> content =
         jdbcTemplate.query(
-            baseSelect()
-                + where
-                + " ORDER BY "
-                + sortColumn
-                + " "
-                + direction
-                + " NULLS LAST, p.id "
-                + direction
-                + " LIMIT ? OFFSET ?",
+            baseSelect() + where + " ORDER BY " + ordering + " LIMIT ? OFFSET ?",
             this::prospect,
             pageParameters.toArray());
     Long total =
@@ -340,21 +347,36 @@ public class ProspectOperationsService {
     if (filter.query() != null && !filter.query().isBlank()) {
       where.append(
           """
-           AND (lower(i.name) LIKE ? OR lower(coalesce(i.locality, '')) LIKE ?
+           AND (lower(i.name) LIKE ? ESCAPE '\\'
+             OR lower(coalesce(i.legal_name, '')) LIKE ? ESCAPE '\\'
+             OR lower(coalesce(i.locality, '')) LIKE ? ESCAPE '\\'
+             OR lower(coalesce(i.province, '')) LIKE ? ESCAPE '\\'
+             OR lower(coalesce(i.website, '')) LIKE ? ESCAPE '\\'
+             OR lower(coalesce(p.notes_summary, '')) LIKE ? ESCAPE '\\'
              OR EXISTS (
                SELECT 1 FROM contact c LEFT JOIN contact_channel cc ON cc.contact_id = c.id
                WHERE c.institution_id = i.id AND c.organization_id = p.organization_id
                  AND c.deleted_at IS NULL
-                 AND (lower(coalesce(c.name, '')) LIKE ? OR lower(coalesce(cc.normalized_value, '')) LIKE ?)
+                 AND (lower(coalesce(c.name, '')) LIKE ? ESCAPE '\\'
+                   OR lower(coalesce(cc.normalized_value, '')) LIKE ? ESCAPE '\\')
+             )
+             OR EXISTS (
+               SELECT 1 FROM prospect_tag pt JOIN crm_tag t
+                 ON t.id = pt.tag_id AND t.organization_id = pt.organization_id
+               WHERE pt.organization_id = p.organization_id AND pt.prospect_id = p.id
+                 AND t.active = TRUE AND lower(t.name) LIKE ? ESCAPE '\\'
              ))
           """);
-      String query = "%" + filter.query().trim().toLowerCase(Locale.ROOT) + "%";
-      parameters.add(query);
-      parameters.add(query);
-      parameters.add(query);
-      parameters.add(query);
+      String query = "%" + escapedLike(filter.query().trim().toLowerCase(Locale.ROOT)) + "%";
+      for (int index = 0; index < 9; index++) {
+        parameters.add(query);
+      }
     }
     return where.toString();
+  }
+
+  private String escapedLike(String value) {
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
   }
 
   private OperationalProspectView prospect(ResultSet resultSet, int rowNumber) throws SQLException {
@@ -585,11 +607,7 @@ public class ProspectOperationsService {
   }
 
   private String csv(String value) {
-    String safe = value == null ? "" : value;
-    if (!safe.isEmpty() && "=+-@".indexOf(safe.charAt(0)) >= 0) {
-      safe = "'" + safe;
-    }
-    return '"' + safe.replace("\"", "\"\"") + '"';
+    return CsvSafety.cell(value);
   }
 
   public record SearchFilter(

@@ -4,6 +4,8 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,12 +55,24 @@ class SecurityAuthorizationIntegrationTest {
 
   @Test
   void healthAndCsrfBootstrapArePublicButBusinessApiRejectsAnonymousRequests() throws Exception {
-    mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
+    mockMvc
+        .perform(get("/actuator/health").header("X-Correlation-ID", "synthetic-correlation-123"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-Correlation-ID", "synthetic-correlation-123"))
+        .andExpect(header().string("X-Request-ID", "synthetic-correlation-123"))
+        .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+        .andExpect(
+            header()
+                .string(
+                    "Content-Security-Policy",
+                    "default-src 'self'; frame-ancestors 'none'; object-src 'none'"))
+        .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     mockMvc
         .perform(get("/api/v1/auth/csrf"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.token").isNotEmpty());
     mockMvc.perform(get("/api/v1/prospects")).andExpect(status().isUnauthorized());
+    mockMvc.perform(get("/actuator/metrics")).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -77,6 +91,7 @@ class SecurityAuthorizationIntegrationTest {
         .isEqualTo(8 * 60 * 60);
 
     mockMvc.perform(get("/api/v1/prospects").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/actuator/metrics").session(session)).andExpect(status().isOk());
     mockMvc
         .perform(post("/api/v1/auth/logout").session(session).with(csrf()))
         .andExpect(status().isOk());
@@ -148,6 +163,8 @@ class SecurityAuthorizationIntegrationTest {
     mockMvc.perform(get("/api/v1/messages/safety").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/outbox").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/inbound").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/reports/dashboard").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/settings").session(session)).andExpect(status().isOk());
     mockMvc
         .perform(
             post("/api/v1/prospects")
@@ -155,6 +172,28 @@ class SecurityAuthorizationIntegrationTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"institutionName\":\"Viewer cannot create\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            put("/api/v1/settings")
+                .session(session)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "version":0,
+                      "name":"Gestudio Local",
+                      "timezone":"America/Argentina/Buenos_Aires",
+                      "currency":"ARS",
+                      "locale":"es-AR",
+                      "brandingPrimaryColor":"#0f766e",
+                      "followUpDays":3,
+                      "operatingWindowStart":"09:00",
+                      "operatingWindowEnd":"18:00",
+                      "businessDays":[1,2,3,4,5]
+                    }
+                    """))
         .andExpect(status().isForbidden());
     mockMvc
         .perform(post("/api/v1/outbox/worker/run-once").session(session).with(csrf()))

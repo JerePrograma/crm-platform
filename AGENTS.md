@@ -3,7 +3,11 @@
 ## Rama canónica
 
 - `main` es la única fuente de verdad del repositorio.
-- Antes de trabajar, ejecutar `git switch main`, `git fetch origin` y `git pull --ff-only` cuando exista checkout local.
+- Antes de iniciar trabajo nuevo, ejecutar `git switch main`, `git fetch origin`
+  y `git pull --ff-only` cuando exista checkout local. Una misión de continuidad
+  explícita sobre una rama con commits locales no enviados debe reconciliar y
+  preservar ese estado antes de cambiar de rama; no debe volver a `main`
+  automáticamente.
 - Las ramas temáticas son transitorias y no deben contradecir la documentación canónica.
 - `feat/seg-001-prospect-vertical-slice` está detrás de `main` y no contiene cambios exclusivos; no copiar ni fusionar contenido desde ella.
 
@@ -19,6 +23,13 @@ Antes de modificar el repositorio, leer en este orden:
 6. `docs/validation/SEG-001-cross-platform-validation-2026-07-20.md` para paridad Windows/Unix;
 7. ADR y documentación del módulo afectado;
 8. `docs/containerized-quickstart.md` o `docs/local-development-and-usage.md` para arranque y operación.
+
+Para la continuidad integral SEG-009–SEG-011, leer además:
+
+1. `docs/execution/complete-crm-platform-plan.md`;
+2. `docs/execution/complete-crm-platform-progress.md`;
+3. `docs/validation/COMPLETE-CRM-matrix.md`;
+4. el último documento en `docs/segments/` y `docs/validation/`.
 
 Cuando el usuario indique `continuar`, ejecutar el segmento descrito en `docs/next-step.md` y actualizar todas las fuentes canónicas al finalizar.
 
@@ -38,6 +49,19 @@ Cuando el usuario indique `continuar`, ejecutar el segmento descrito en `docs/ne
 - Los transcripts deben revisarse antes de compartirse.
 - Maven/Testcontainers contenedorizado monta el socket Docker; ejecutarlo únicamente sobre código propio y revisado.
 - No marcar SEG-001 `COMPLETE` sin actualizar la matriz con evidencia ejecutada.
+
+## Validación CRM integral
+
+- Windows: `scripts/validate-complete-crm.ps1`.
+- Unix: `scripts/validate-complete-crm.sh` o `make validate-complete-crm`.
+- El cierre exige dos corridas limpias consecutivas sobre el mismo commit.
+- El validador usa un proyecto Compose sintético aislado; `down -v` solo se
+  permite para esos recursos creados por la propia corrida.
+- Grype y npm audit son gates funcionales. Un scanner bloqueado por red/rate
+  limit debe registrarse como `BLOCKED_EXTERNAL`, nunca PASS.
+- `PRODUCTION_PROFILE=EXECUTED_PASS_LOCALLY` no equivale a despliegue.
+- Gmail/WhatsApp reales permanecen `IMPLEMENTED_NOT_CONNECTED`; el XLSX real no
+  entra al repositorio ni a fixtures.
 
 ## Invariantes
 

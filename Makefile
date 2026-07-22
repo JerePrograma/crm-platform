@@ -1,4 +1,4 @@
-.PHONY: preflight preflight-container postgres-port local-ports repository-safety db-up db-down app-up app-down app-logs backend backend-verify-container frontend frontend-lock verify verify-container validate-seg001 smoke smoke-container reset-db
+.PHONY: preflight preflight-container postgres-port local-ports repository-safety db-up db-down app-up app-down app-logs backend backend-verify-container frontend frontend-lock verify verify-container validate-seg001 validate-complete-crm smoke smoke-container reset-db
 
 preflight:
 	sh scripts/preflight.sh --local
@@ -59,6 +59,9 @@ verify-container: preflight-container backend-verify-container frontend-lock
 
 validate-seg001:
 	bash scripts/validate-seg001.sh
+
+validate-complete-crm:
+	bash scripts/validate-complete-crm.sh
 
 smoke:
 	sh scripts/smoke-test.sh

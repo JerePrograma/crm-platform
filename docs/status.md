@@ -32,8 +32,8 @@ limpia de SEG-001 se ejecutó sobre
 | SEG-007 | COMPLETE | campañas, audiencias, plantillas y simulación |
 | SEG-008 | COMPLETE | mensajería segura y adaptadores deshabilitados |
 | SEG-009 | COMPLETE | outbox PostgreSQL, workers e inbound fake durable |
-| SEG-010 | ACTIVE | reportes, seguridad, observabilidad y producción local |
-| SEG-011 | PLANNED | validación integral y cierre |
+| SEG-010 | IMPLEMENTED_NOT_RUN | focales verdes; cierre sujeto al validador integral |
+| SEG-011 | ACTIVE | validación integral limpia, repetición y cierre |
 
 ## Estados operativos
 
@@ -125,6 +125,22 @@ MAVEN_VERIFY_TESTS_69_OF_69_PASS
 PLAYWRIGHT_OUTBOX_INBOUND_PASS
 FORBIDDEN_MESSAGE_STATES_ZERO
 SEG_009_COMPLETE
+FLYWAY_V1_V13_PASS
+REPORTING_SEARCH_SETTINGS_TAGS_PASS
+CSV_FORMULA_SAFETY_PASS
+CORRELATION_ID_AND_METRICS_PASS
+MAVEN_VERIFY_TESTS_79_OF_79_PASS
+SPOTLESS_159_OF_159_PASS
+VITEST_2_OF_2_PASS
+PLAYWRIGHT_COMPLETE_FLOW_2_OF_2_PASS
+BACKUP_RESTORE_SYNTHETIC_PASS
+PRODUCTION_PROFILE_EXECUTED_PASS_LOCALLY
+GRYPE_HIGH_CRITICAL_PASS
+NPM_AUDIT_HIGH_PASS
+REAL_XLSX_PREVIEW_BLOCKED_EXTERNAL_FILE
+PRODUCTION_DEPLOYMENT_NOT_AUTHORIZED
+SEG_010_IMPLEMENTED_NOT_RUN_INTEGRAL
+SEG_011_ACTIVE
 ```
 
 ## Fallo Jackson corregido
@@ -214,3 +230,17 @@ pasó integralmente antes de cambios. El plan, progreso y matriz vigentes están
 en `docs/execution/` y `docs/validation/COMPLETE-CRM-matrix.md`.
 
 Las comunicaciones reales y producción continúan fuera de autorización.
+
+## Candidato SEG-010
+
+El código y las pruebas focalizadas de SEG-010 están implementados. Flyway
+V1–V13, 79/79 backend, Spotless 159/159, ArchUnit, frontend unit/build/E2E,
+backup/restore, production profile local y el escaneo de imagen pasaron. SEG-010
+permanece `IMPLEMENTED_NOT_RUN` hasta que el validador integral se ejecute dos
+veces desde el commit limpio candidato.
+
+La imagen backend usa JRE mínima no-root fijada por digest y healthcheck Java.
+Grype inicialmente detectó vulnerabilidades High/Critical en el runtime Alpine;
+se corrigió la causa sin exclusiones y el nuevo scan devolvió cero hallazgos.
+Dependency-Check quedó `BLOCKED_EXTERNAL_NVD_RATE_LIMIT` y no se cuenta como
+PASS.

@@ -29,6 +29,10 @@ import org.springframework.stereotype.Component;
 public class ProspectImportFileParser {
 
   private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+  private static final int MAX_FILE_BYTES = 10 * 1024 * 1024;
+  private static final int MAX_DATA_ROWS = 10_000;
+  private static final int MAX_COLUMNS = 100;
+  private static final int MAX_CELL_CHARACTERS = 10_000;
 
   private final NormalizationService normalizationService;
   private final DataFormatter dataFormatter = new DataFormatter(Locale.ROOT);
@@ -41,11 +45,22 @@ public class ProspectImportFileParser {
     if (fileName == null || fileName.isBlank() || bytes == null || bytes.length == 0) {
       throw new IllegalArgumentException("A non-empty import file is required");
     }
+    if (bytes.length > MAX_FILE_BYTES) {
+      throw new IllegalArgumentException("Import file exceeds the 10 MiB application limit");
+    }
     String lowerCase = fileName.toLowerCase(Locale.ROOT);
     if (lowerCase.endsWith(".xlsx")) {
+      if (bytes.length < 4 || bytes[0] != 'P' || bytes[1] != 'K') {
+        throw new IllegalArgumentException("The XLSX content does not match its file extension");
+      }
       return parseWorkbook(bytes);
     }
     if (lowerCase.endsWith(".csv")) {
+      for (byte value : bytes) {
+        if (value == 0) {
+          throw new IllegalArgumentException("CSV imports must be UTF-8 text without binary data");
+        }
+      }
       return parseCsv(bytes);
     }
     throw new IllegalArgumentException("Only .xlsx and .csv prospect imports are supported");
@@ -76,6 +91,9 @@ public class ProspectImportFileParser {
     requireHeader(headers, "institucion");
 
     List<ProspectCandidate> candidates = new ArrayList<>();
+    if (sheet.getLastRowNum() - headerRow.getRowNum() > MAX_DATA_ROWS) {
+      throw new IllegalArgumentException("Import contains more than 10000 prospect rows");
+    }
     for (int index = headerRow.getRowNum() + 1; index <= sheet.getLastRowNum(); index++) {
       Row row = sheet.getRow(index);
       if (row == null) {
@@ -124,6 +142,9 @@ public class ProspectImportFileParser {
     requireHeader(headers, "correo");
 
     List<ExclusionCandidate> candidates = new ArrayList<>();
+    if (sheet.getLastRowNum() - headerRow.getRowNum() > MAX_DATA_ROWS) {
+      throw new IllegalArgumentException("Import contains more than 10000 exclusion rows");
+    }
     for (int index = headerRow.getRowNum() + 1; index <= sheet.getLastRowNum(); index++) {
       Row row = sheet.getRow(index);
       if (row == null) {
@@ -150,6 +171,9 @@ public class ProspectImportFileParser {
     List<List<String>> rows = parseCsvRows(content, detectDelimiter(content));
     if (rows.isEmpty()) {
       throw new IllegalArgumentException("The CSV file is empty");
+    }
+    if (rows.size() - 1 > MAX_DATA_ROWS) {
+      throw new IllegalArgumentException("Import contains more than 10000 prospect rows");
     }
     Map<String, Integer> headers = headers(rows.getFirst());
     requireHeader(headers, "institucion");
@@ -197,6 +221,9 @@ public class ProspectImportFileParser {
       throw new IllegalArgumentException("The import header row is missing");
     }
     Map<String, Integer> headers = new LinkedHashMap<>();
+    if (row.getLastCellNum() > MAX_COLUMNS) {
+      throw new IllegalArgumentException("Import contains more than 100 columns");
+    }
     for (Cell cell : row) {
       String key = normalizationService.normalizeText(dataFormatter.formatCellValue(cell));
       putHeader(headers, key, cell.getColumnIndex());
@@ -205,6 +232,9 @@ public class ProspectImportFileParser {
   }
 
   private Map<String, Integer> headers(List<String> row) {
+    if (row.size() > MAX_COLUMNS) {
+      throw new IllegalArgumentException("Import contains more than 100 columns");
+    }
     Map<String, Integer> headers = new LinkedHashMap<>();
     for (int index = 0; index < row.size(); index++) {
       String key = normalizationService.normalizeText(row.get(index));
@@ -232,7 +262,7 @@ public class ProspectImportFileParser {
     for (String alias : aliases) {
       Integer index = headers.get(alias);
       if (index != null) {
-        return normalizationService.trimToNull(dataFormatter.formatCellValue(row.getCell(index)));
+        return checked(dataFormatter.formatCellValue(row.getCell(index)));
       }
     }
     return null;
@@ -242,7 +272,7 @@ public class ProspectImportFileParser {
     for (String alias : aliases) {
       Integer index = headers.get(alias);
       if (index != null && index < row.size()) {
-        return normalizationService.trimToNull(row.get(index));
+        return checked(row.get(index));
       }
     }
     return null;
@@ -286,14 +316,16 @@ public class ProspectImportFileParser {
   private Map<String, String> rawData(Map<String, Integer> headers, Row row) {
     Map<String, String> values = new LinkedHashMap<>();
     headers.forEach(
-        (header, index) -> values.put(header, dataFormatter.formatCellValue(row.getCell(index))));
+        (header, index) ->
+            values.put(header, checkedRaw(dataFormatter.formatCellValue(row.getCell(index)))));
     return Map.copyOf(values);
   }
 
   private Map<String, String> rawData(Map<String, Integer> headers, List<String> row) {
     Map<String, String> values = new LinkedHashMap<>();
     headers.forEach(
-        (header, index) -> values.put(header, index < row.size() ? row.get(index) : ""));
+        (header, index) ->
+            values.put(header, index < row.size() ? checkedRaw(row.get(index)) : ""));
     return Map.copyOf(values);
   }
 
@@ -388,6 +420,9 @@ public class ProspectImportFileParser {
         row.clear();
       } else {
         field.append(character);
+        if (field.length() > MAX_CELL_CHARACTERS) {
+          throw new IllegalArgumentException("Import cell exceeds 10000 characters");
+        }
       }
     }
     if (quoted) {
@@ -398,6 +433,20 @@ public class ProspectImportFileParser {
       rows.add(List.copyOf(row));
     }
     return List.copyOf(rows);
+  }
+
+  private String checked(String value) {
+    if (value != null && value.length() > MAX_CELL_CHARACTERS) {
+      throw new IllegalArgumentException("Import cell exceeds 10000 characters");
+    }
+    return normalizationService.trimToNull(value);
+  }
+
+  private String checkedRaw(String value) {
+    if (value != null && value.length() > MAX_CELL_CHARACTERS) {
+      throw new IllegalArgumentException("Import cell exceeds 10000 characters");
+    }
+    return value == null ? "" : value;
   }
 
   public record ParsedImport(

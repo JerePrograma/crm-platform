@@ -14,8 +14,8 @@ SEG-002: COMPLETE — identidad, usuarios, sesión, RBAC y tenant
 SEG-003–SEG-007: COMPLETE — CRM operativo, pipeline y campañas simuladas
 SEG-008: COMPLETE — mensajería no-op/fake/manual y adapters desconectados
 SEG-009: COMPLETE — outbox, workers e inbound fake durable
-SEG-010: ACTIVE — reporting, seguridad, operación y producción local
-SEG-011: PLANNED — validación integral repetida y cierre
+SEG-010: IMPLEMENTED_NOT_RUN — focales verdes; validador integral pendiente
+SEG-011: IN_PROGRESS — validación integral repetida y cierre
 ```
 
 Evidencia real disponible:
@@ -40,6 +40,13 @@ Evidencia real disponible:
 - Maven verify SEG-009, 69/69, Spotless 148/148 y ArchUnit: `PASS`;
 - E2E fake inbound HMAC/replay/quarantine/REPLIED y cero estados prohibidos:
   `PASS`.
+- Flyway V1–V13, reporting/search/settings/tags y tenant isolation: `PASS`;
+- Maven verify SEG-010, 79/79, Spotless 159/159 y ArchUnit: `PASS`;
+- Vitest 2/2, Playwright integral 2/2, TypeScript/Vite: `PASS`;
+- backup/restore sintético y production profile local: `PASS`;
+- imagen backend no-root/read-only compatible, Grype High/Critical y npm audit:
+  `PASS`;
+- XLSX real: `BLOCKED_EXTERNAL_FILE`; producción/push/PR: `NOT_AUTHORIZED`.
 
 Fuentes:
 
@@ -53,6 +60,8 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 docs/validation/SEG-002-identity-rbac-2026-07-21.md
 docs/validation/SEG-008-safe-messaging-2026-07-21.md
 docs/validation/SEG-009-transactional-outbox-inbound-2026-07-22.md
+docs/validation/SEG-010-operations-production-2026-07-22.md
+docs/validation/SEG-010-performance-accessibility-2026-07-22.md
 docs/execution/complete-crm-platform-plan.md
 docs/execution/complete-crm-platform-progress.md
 docs/validation/COMPLETE-CRM-matrix.md
@@ -61,7 +70,7 @@ docs/validation/COMPLETE-CRM-matrix.md
 ## Alcance
 
 - Java 21 y Spring Boot;
-- PostgreSQL 17, Flyway V1–V12 y Hibernate validate;
+- PostgreSQL 17, Flyway V1–V13 y Hibernate validate;
 - organizaciones, usuarios persistentes, roles y permisos;
 - sesión cookie HttpOnly same-origin, CSRF, bloqueo e invalidación;
 - tenant isolation y auditoría de identidad;
@@ -75,6 +84,10 @@ docs/validation/COMPLETE-CRM-matrix.md
 - adapters Gmail/WhatsApp aislados y desconectados;
 - outbox PostgreSQL, workers con lease/retry/dead-letter e idempotencia;
 - inbound fake firmado, replay protection, quarantine, asociación y timeline;
+- reporting agregado, búsqueda PostgreSQL, settings y etiquetas tenant-scoped;
+- correlation ID, métricas, health/readiness/liveness y logs sanitizados;
+- backup/restore verificado y perfil productivo local no-root/read-only;
+- Vitest, Playwright y validadores CRM Windows/Unix;
 - preview, ejecución confirmada y evidencia por fila;
 - auditoría JSONB;
 - API REST, OpenAPI y RFC 7807;
@@ -112,7 +125,9 @@ Para levantar y validar todo en contenedores:
 - Docker Compose v2;
 - PowerShell en Windows o Bash en Linux/macOS.
 
-No se requiere Java, Maven, Node o npm instalados en el host para el recorrido integral.
+El validador integral canónico verifica Git, Docker, Maven, Java 21, Node y npm
+en el host. Las verificaciones backend también pueden ejecutarse completamente
+en contenedor con `scripts/verify-backend-container.*`.
 
 Docker Desktop debe utilizar contenedores Linux.
 
@@ -577,6 +592,7 @@ frontend-lock
 verify
 verify-container
 validate-seg001
+validate-complete-crm
 smoke
 smoke-container
 reset-db
@@ -600,15 +616,17 @@ La segunda operación es destructiva.
 
 ## Limitaciones actuales
 
-- recorrido integral funcional Bash/Linux/macOS no ejecutado localmente; CI sí
-  valida scripts y estructura multiplataforma;
+- validador integral Windows y su repetición todavía deben ejecutarse sobre el
+  commit limpio de SEG-010;
+- recorrido funcional Bash/Linux/macOS no ejecutado localmente; sintaxis Bash y
+  estructura CI sí fueron validadas;
 - advertencias Hikari de contextos Testcontainers ya cerrados, sin fallos;
 - Mockito deberá configurarse como agente antes de una futura restricción de Java;
-- sesión cookie/CSRF y usuarios/RBAC persistentes implementados en SEG-002;
-- sin resolución UI de DuplicateReview;
-- sin retry de trabajos fallidos;
-- sin campañas, Gmail, Sheets, workers o cloud;
-- Compose es local, no producción.
+- Gmail y WhatsApp reales están implementados pero no conectados;
+- XLSX real no disponible: preview bloqueado externamente;
+- perfil productivo ejecutable solo localmente; despliegue no autorizado;
+- CI ampliado está versionado/parseado localmente pero no ejecutado remotamente
+  hasta un futuro push autorizado.
 
 ## Documentación
 
@@ -622,3 +640,5 @@ La segunda operación es destructiva.
 - `docs/validation/SEG-001-complete-validation-automation-2026-07-20.md` — contrato integral;
 - `docs/validation/SEG-001-cross-platform-validation-2026-07-20.md` — paridad Windows/Unix.
 - `docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md` — causa raíz Jackson y cierre integral.
+- `docs/segments/SEG-010.md` y `docs/segments/SEG-011.md` — cierre operativo e integral.
+- `docs/production/` y `docs/runbooks/` — perfil y procedimientos operativos.

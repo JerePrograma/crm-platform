@@ -1,118 +1,110 @@
 # Arquitectura
 
-## Objetivo
+Actualizado: 2026-07-22
 
-Construir un CRM comercial mantenible, seguro y extensible sin introducir microservicios prematuros. La unidad inicial de despliegue es un monolito modular; los límites internos deben permitir separar workers o integraciones cuando exista una razón operativa medible.
+## Unidad de despliegue
 
-## Vista de contenedores
+Gestudio CRM es un monolito modular Java 21/Spring Boot 4.1 con un frontend
+React/TypeScript y PostgreSQL 17 como única fuente de verdad. No usa Kafka,
+Redis, Elasticsearch, Kubernetes ni microservicios. El perfil local y el perfil
+productivo local construyen las mismas aplicaciones; el segundo endurece redes,
+usuarios, filesystem, límites y configuración, pero no constituye un despliegue.
 
 ```text
-Navegador
-  |
-  | HTTPS / JSON / multipart
-  v
-React + TypeScript + Vite
-  |
-  | /api/v1
-  v
-Spring Boot modular monolith
-  |-- prospect / institution / contact
-  |-- exclusion / eligibility
-  |-- imports / duplicate review
-  |-- audit / security / settings
-  |-- future campaign / mail / google adapters
-  |
-  +--> PostgreSQL (fuente de verdad)
-  +--> future Google APIs
-  +--> future Cloud Tasks / Pub/Sub
+Browser
+  -> frontend nginx no-root
+  -> /api/v1
+  -> Spring Boot modular monolith no-root
+       identity/security/settings
+       prospect/contact/exclusion/import/deduplication
+       activity/sales/campaign/messaging
+       outbox/inbound/reporting/audit
+  -> PostgreSQL 17
 ```
 
-## Reglas de dependencia
+Gmail y WhatsApp están detrás de puertos internos. Sus adaptadores existen y
+tienen contract tests locales, pero no se conectan ni se inicializan en los
+perfiles ejecutables de esta misión. `NOOP`, `FAKE` y `FAKE_INBOUND` son las
+únicas fronteras ejecutadas.
 
-1. El dominio no depende de controladores ni proveedores externos.
-2. Los controladores dependen de casos de uso, no de repositorios directamente.
-3. La normalización es central y determinística.
-4. Las exclusiones se consultan antes de declarar elegible un canal.
-5. Las importaciones procesan cada fila en una transacción independiente.
-6. Las coincidencias ambiguas generan revisión; nunca una fusión automática.
-7. Los eventos de auditoría no almacenan contraseñas, tokens ni valores completos de canales en sus payloads.
-8. PostgreSQL domina estados, idempotencia, reservas futuras, auditoría y resultados de integración.
+## Persistencia y migraciones
 
-## Módulos implementados
+- Flyway V1–V13 es forward-only; V1–V11 permanecen inmutables.
+- V12 agrega outbox e inbound durable; V13 agrega configuración operativa,
+  etiquetas e índices de reporting/búsqueda.
+- Hibernate usa `ddl-auto=validate`.
+- UUID, `organization_id`, optimistic version y timestamps UTC forman parte del
+  contrato persistente.
+- Un rollback productivo usa imagen compatible o forward-fix; un restore se
+  realiza solo desde backup verificado y sobre una base aislada antes de decidir
+  una recuperación destructiva.
 
-### `common`
+## Límites modulares
 
-- entidad base UUID/version/timestamps;
-- normalización;
-- excepciones de dominio;
-- respuestas RFC 7807.
+- `identity` y `security`: sesión, roles, permisos, actor y tenant.
+- `prospect`, `contact`, `exclusion`, `imports`, `deduplication`: captación,
+  elegibilidad, datos operativos e importación segura.
+- `activity`: notas, actividades, tareas y timeline.
+- `sales`: oportunidades, pipeline, aging y cierres.
+- `campaign` y `messaging`: audiencia congelada, plantillas, simulación y policy
+  fail-closed.
+- `outbox`: publicación transaccional, claim, lease, retry, dead-letter y
+  administración.
+- `inbound`: HMAC, replay, normalización, asociación, quarantine y efectos de
+  dominio sin respuesta automática.
+- `reporting`: lecturas agregadas tenant-scoped, CSV y métricas operativas.
+- `settings` y `prospect` tags: configuración y datos maestros acotados.
+- `audit` y `common`: auditoría, correlation ID, errores y utilidades sin
+  secretos.
 
-### `institution`
+ArchUnit valida que controllers no accedan repositorios directamente y que los
+límites de infraestructura no inviertan las dependencias. Los controllers usan
+DTOs explícitos y los errores HTTP usan Problem Details.
 
-- identidad institucional;
-- nombre y localidad normalizados;
-- dominio web normalizado;
-- consultas de deduplicación.
+## Outbox e inbound
 
-### `contact`
+La garantía del outbox es at-least-once, no exactly-once. El publisher escribe
+en la misma transacción de dominio. Un claim corto usa PostgreSQL
+`FOR UPDATE SKIP LOCKED`, asigna un lease y confirma antes del procesamiento. La
+finalización usa compare-and-set; los locks vencidos se recuperan. Idempotencia
+tenant-scoped evita efectos duplicados.
 
-- persona o buzón funcional;
-- canales separados y normalizados;
-- unicidad por tipo y valor normalizado.
+Los workers reevaluan kill switches, configuración, campaña, exclusiones,
+consentimiento, contacto, elegibilidad, permisos y provider. Nunca mantienen
+una transacción abierta durante una futura llamada de red. El webhook fake
+persiste un receipt idempotente y publica el inbound antes de responder; el
+worker asocia, crea actividad/tarea/timeline y detiene secuencia cuando aplica.
 
-### `prospect`
+Decisión completa: `docs/adr/0010-postgresql-outbox-and-durable-inbound.md`.
 
-- estado comercial;
-- elegibilidad de contacto;
-- metadatos de fuente, prioridad, puntuación y tamaño estimado;
-- API paginada y ficha.
+## Búsqueda, reporting y operación
 
-### `exclusion`
+La búsqueda usa PostgreSQL, parámetros enlazados, allow-lists de orden/filtros,
+paginación y GIN trigram para institución, contacto, canal, ubicación, website y
+notas. Las etiquetas son tenant-scoped. Reporting agrega en SQL y agrupa valores
+por moneda; nunca suma monedas diferentes.
 
-- supresión dominante;
-- equivalencia teléfono/WhatsApp;
-- aplicación retroactiva a prospectos existentes;
-- auditoría con huella SHA-256 del canal.
+Micrometer expone health/liveness/readiness y métricas Prometheus. Health es
+público; `/actuator/metrics` y demás endpoints operativos requieren sesión. El
+filtro de correlation/request ID propaga contexto a logs, auditoría y outbox sin
+registrar cuerpos, tokens o contactos completos.
 
-### `imports`
+## Runtime y perfil productivo
 
-- parser CSV/XLSX por encabezados;
-- trabajo y filas persistentes;
-- SHA-256 e idempotencia;
-- preview y ejecución confirmada;
-- deduplicación exacta y revisión ambigua;
-- consultas operativas de filas y revisiones.
+El backend runtime usa una JRE Chainguard fijada por digest, usuario `65532` y
+una sonda Java sin shell. El frontend usa nginx no-root. El perfil productivo
+local usa filesystems read-only, `tmpfs`, red privada para PostgreSQL/backend,
+healthchecks, resource limits y shutdown ordenado. TLS termina en un reverse
+proxy provider-neutral no incluido.
 
-### `audit`
+Documentación operativa: `docs/production/` y `docs/runbooks/`.
 
-- escritura JSONB dentro de la transacción de negocio;
-- consulta limitada de actividad reciente.
+## Decisiones externas pendientes
 
-### `security`
+- proveedor/entorno de despliegue y dominio TLS;
+- secretos y base productiva;
+- OAuth Gmail y cuenta verificada de WhatsApp Cloud;
+- política legal de retención por jurisdicción.
 
-- organización bootstrap y usuarios/roles/permisos persistentes;
-- sesión same-origin mediante cookie HttpOnly y CSRF;
-- rotación, expiración, invalidación y bloqueo de intentos;
-- salud pública, API autenticada y resto denegado por defecto;
-- tenant y permiso resueltos siempre en backend.
-
-## Separación futura
-
-Los primeros candidatos para procesos separados son:
-
-1. despachador de comunicaciones;
-2. consumidor de Gmail/Pub/Sub;
-3. sincronización de Google Sheets;
-4. generación de reportes pesados;
-5. clasificación asistida por IA.
-
-La separación solo debe ocurrir cuando concurrencia, aislamiento, escalado o permisos distintos lo justifiquen.
-
-## Decisiones no tomadas todavía
-
-- proveedor de identidad externo opcional;
-- estrategia exacta de Cloud Tasks local;
-- motor de búsqueda avanzada;
-- almacenamiento productivo de adjuntos;
-- estrategia de lectura analítica;
-- clasificación IA y proveedor.
+Ninguna de esas decisiones es necesaria para ejecutar localmente el CRM con
+datos sintéticos y comunicaciones bloqueadas.

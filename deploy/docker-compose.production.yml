@@ -1,0 +1,94 @@
+name: gestudio-crm-production-local
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: gestudio_crm
+      POSTGRES_USER: gestudio
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set a synthetic local drill password}
+    volumes:
+      - production_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gestudio -d gestudio_crm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [private]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/gestudio_crm
+      DATABASE_USER: gestudio
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set a synthetic local drill password}
+      CRM_BOOTSTRAP_USERNAME: ${CRM_BOOTSTRAP_USERNAME:?Set a synthetic local drill username}
+      CRM_BOOTSTRAP_PASSWORD: ${CRM_BOOTSTRAP_PASSWORD:?Set a synthetic local drill password}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      SENDING_ENABLED: "false"
+      SENDING_DRY_RUN: "true"
+      SENDING_DAILY_LIMIT: "0"
+      SENDING_KILL_SWITCH: "true"
+      EMAIL_PROVIDER_MODE: NOOP
+      WHATSAPP_PROVIDER_MODE: DEEPLINK_ONLY
+      MESSAGING_REAL_NETWORK_ALLOWED: "false"
+      OUTBOX_WORKER_ENABLED: "false"
+      FAKE_INBOUND_ENABLED: "false"
+      SPRINGDOC_API_DOCS_ENABLED: "false"
+      SPRINGDOC_SWAGGER_UI_ENABLED: "false"
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75 -Djava.io.tmpdir=/tmp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "java", "-cp", "/app/healthcheck", "RuntimeHealthCheck", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    networks: [private]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 768m
+    cpus: 1.0
+    stop_grace_period: 30s
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${PRODUCTION_FRONTEND_PORT:-18080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health/liveness"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    networks: [edge, private]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    cpus: 0.5
+    stop_grace_period: 15s
+
+networks:
+  edge:
+  private:
+    internal: true
+
+volumes:
+  production_postgres:

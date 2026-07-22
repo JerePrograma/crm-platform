@@ -2,9 +2,7 @@ name: ci
 
 on:
   push:
-    branches:
-      - main
-      - feat/**
+    branches: [main, "feat/**"]
   pull_request:
   workflow_dispatch:
 
@@ -12,147 +10,220 @@ permissions:
   contents: read
 
 jobs:
-  backend:
+  repository-safety:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-repository-safety.sh
+
+  backend-format:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-          cache: maven
-      - name: Verify backend
-        run: sh ./mvnw -B -f backend/pom.xml verify
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: ./mvnw -B -f backend/pom.xml -DskipTests spotless:check
 
-  frontend:
+  backend-unit:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
-      - name: Typecheck frontend
-        working-directory: frontend
-        run: npm run typecheck
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-  scripts:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Validate POSIX shell script syntax
-        run: >-
-          sh -n
-          scripts/preflight.sh
-          scripts/smoke-test.sh
-          scripts/generate-frontend-lock.sh
-          scripts/set-postgres-host-port.sh
-          scripts/set-local-host-ports.sh
-          scripts/verify-backend-container.sh
-          scripts/check-repository-safety.sh
-      - name: Validate Bash orchestrator syntax
-        run: bash -n scripts/validate-seg001.sh
-      - name: Reject ambiguous PowerShell exit-code interpolation
-        run: |
-          if grep -RInF '$LASTEXITCODE:' scripts --include='*.ps1'; then
-            echo 'Use a format expression or ${LASTEXITCODE} before a colon.' >&2
-            exit 1
-          fi
-      - name: Validate PowerShell script syntax
-        shell: pwsh
-        run: ./scripts/check-powershell-syntax.ps1
-      - name: Exercise PowerShell host port checker
-        shell: pwsh
-        run: >-
-          ./scripts/check-host-ports.ps1
-          -PostgresPort 25432
-          -BackendPort 28080
-          -FrontendPort 25173
-      - name: Publish a Docker-owned probe port
-        run: >-
-          docker run --detach --rm
-          --name crm-port-owner-probe
-          --publish 127.0.0.1:25432:1
-          alpine:3.21 sleep 60
-      - name: Reject a Docker-owned host port
-        shell: pwsh
-        run: |
-          try {
-            ./scripts/check-host-ports.ps1 `
-              -PostgresPort 25432 `
-              -BackendPort 28080 `
-              -FrontendPort 25173
-            throw 'Expected check-host-ports.ps1 to reject a Docker-owned port.'
-          } catch {
-            if ($_.Exception.Message -notmatch 'already published by another Docker container') {
-              throw
-            }
-            Write-Host 'Docker-owned host port was rejected as expected.'
-          }
-      - name: Remove Docker port ownership probe
-        if: always()
-        run: docker rm --force crm-port-owner-probe || true
-      - name: Parse Make targets
-        run: make -n repository-safety backend-verify-container validate-seg001
-      - name: Check repository safety invariants
-        run: sh scripts/check-repository-safety.sh
-      - name: Run fail-closed preflight
-        run: |
-          cp .env.example .env
-          sed -i 's/^CRM_BOOTSTRAP_USERNAME=.*/CRM_BOOTSTRAP_USERNAME=ci-user/' .env
-          sed -i 's/^CRM_BOOTSTRAP_PASSWORD=.*/CRM_BOOTSTRAP_PASSWORD=ci-local-only/' .env
-          sh scripts/set-local-host-ports.sh 55432 18080 15173
-          sh scripts/preflight.sh --local
-          rm .env
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: ./mvnw -B -f backend/pom.xml "-Dtest=**/*Test,!**/*IntegrationTest,!ArchitectureTest" test
 
-  compose-images-and-smoke:
+  backend-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: ./mvnw -B -f backend/pom.xml verify
+
+  backend-architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: ./mvnw -B -f backend/pom.xml -Dtest=ArchitectureTest test
+
+  backend-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: ./mvnw -B -f backend/pom.xml -Dtest=SecurityAuthorizationIntegrationTest test
+
+  frontend-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund
+        working-directory: frontend
+
+  frontend-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund && npm run typecheck
+        working-directory: frontend
+
+  frontend-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund && npm run test:unit
+        working-directory: frontend
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund && npm run build
+        working-directory: frontend
+
+  frontend-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare fail-closed CI environment
-        run: |
-          cp .env.example .env
-          sed -i 's/^CRM_BOOTSTRAP_USERNAME=.*/CRM_BOOTSTRAP_USERNAME=ci-user/' .env
-          sed -i 's/^CRM_BOOTSTRAP_PASSWORD=.*/CRM_BOOTSTRAP_PASSWORD=ci-local-only/' .env
-          sh scripts/set-local-host-ports.sh 55432 18080 15173
-          sh scripts/preflight.sh --container-only
-      - name: Validate Docker Compose profiles
-        run: docker compose --profile app --profile smoke config
-      - name: Build backend image
-        run: docker build -t gestudio-crm:${{ github.sha }} .
-      - name: Build frontend image
-        run: docker build -f frontend/Dockerfile -t gestudio-crm-frontend:${{ github.sha }} frontend
-      - name: Run containerized smoke test
-        run: >-
-          docker compose --profile app --profile smoke up
-          --build
-          --abort-on-container-exit
-          --exit-code-from smoke
-          smoke
-      - name: Print stack logs on failure
-        if: failure()
-        run: docker compose --profile app --profile smoke logs --no-color
-      - name: Remove CI stack
-        if: always()
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Start fail-closed stack
+        env: &synthetic-env
+          CRM_BOOTSTRAP_USERNAME: complete-admin
+          CRM_BOOTSTRAP_PASSWORD: complete-admin-password
+          SENDING_ENABLED: "false"
+          SENDING_DRY_RUN: "true"
+          SENDING_DAILY_LIMIT: "0"
+          SENDING_KILL_SWITCH: "true"
+          MESSAGING_REAL_NETWORK_ALLOWED: "false"
+          FAKE_INBOUND_ENABLED: "true"
+          FAKE_INBOUND_WEBHOOK_SECRET: synthetic-complete-crm-inbound-secret
+        run: docker compose --profile app up -d --build --wait
+      - run: npm run test:e2e
+        working-directory: frontend
+        env:
+          CRM_E2E_BASE_URL: http://127.0.0.1:5173
+          CRM_E2E_USERNAME: complete-admin
+          CRM_E2E_PASSWORD: complete-admin-password
+          CRM_E2E_BROWSER_CHANNEL: bundled
+          CRM_E2E_INBOUND_SECRET: synthetic-complete-crm-inbound-secret
+      - if: always()
+        run: docker compose --profile app down -v --remove-orphans
+
+  migration-from-empty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --pull -t crm-platform-backend:ci .
+      - run: bash scripts/verify-migrations.sh "$(docker compose images -q backend)"
+
+  migration-from-v11:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --profile app build backend
+      - run: bash scripts/verify-migrations.sh "$(docker compose images -q backend)"
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env: *synthetic-env
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --profile app --profile smoke up --build --abort-on-container-exit --exit-code-from smoke smoke
+      - if: always()
         run: docker compose --profile app --profile smoke down -v --remove-orphans
+
+  production-profile-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/verify-production-profile.sh 18080
+
+  fake-messaging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: ./mvnw -B -f backend/pom.xml -Dtest=MessagingIntegrationTest,ProviderContractTest test
+
+  outbox-workers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: ./mvnw -B -f backend/pom.xml -Dtest=OutboxWorkerServiceTest,OutboxInboundIntegrationTest test
+
+  inbound-webhook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: ./mvnw -B -f backend/pom.xml -Dtest=HmacWebhookSignatureVerifierTest,InboundMessageNormalizerTest,OutboxInboundIntegrationTest test
+
+  backup-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env: *synthetic-env
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --profile app up -d --build --wait
+      - run: bash scripts/verify-backup-restore.sh
+      - if: always()
+        run: docker compose --profile app down -v --remove-orphans
+
+  scripts-windows-syntax:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: powershell
+        run: ./scripts/check-powershell-syntax.ps1
+
+  scripts-unix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: for script in scripts/*.sh; do bash -n "$script"; done
+      - run: make -n repository-safety backend-verify-container validate-seg001 validate-complete-crm
+
+  dependency-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-fund && npm audit --audit-level=high
+        working-directory: frontend
+      - run: docker compose --profile app build backend
+      - name: Scan backend runtime for high or critical vulnerabilities
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            anchore/grype@sha256:fd4ab4d1042b522c896e73bdf09ab8bf384fa417df99d6dd0d6e1008c7e7c821 \
+            crm-platform-backend:ci --fail-on high

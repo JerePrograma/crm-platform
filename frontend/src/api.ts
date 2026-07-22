@@ -33,6 +33,9 @@ import type {
   WorkerState,
   InboundMessage,
   WebhookHealth,
+  DashboardReport,
+  OrganizationSettings,
+  CrmTag,
 } from "./types";
 
 type Csrf = { token: string; headerName: string };
@@ -142,7 +145,10 @@ export function setUserActive(id: string, active: boolean): Promise<void> {
 }
 
 export function listProspects(status?: ProspectStatus, query?: string): Promise<Page<Prospect>> {
-  const params = new URLSearchParams({ size: "100", sort: "createdAt,desc" });
+  const params = new URLSearchParams({
+    size: "100",
+    sort: query?.trim() ? "relevance,desc" : "createdAt,desc",
+  });
   if (status) {
     params.set("status", status);
   }
@@ -565,4 +571,78 @@ export function discardInbound(id: string, reason: string): Promise<InboundMessa
     method: "POST",
     body: JSON.stringify({ reason }),
   });
+}
+
+export function getDashboardReport(from?: string, to?: string): Promise<DashboardReport> {
+  const parameters = new URLSearchParams();
+  if (from) parameters.set("from", from);
+  if (to) parameters.set("to", to);
+  const query = parameters.toString();
+  return request(`/api/v1/reports/dashboard${query ? `?${query}` : ""}`);
+}
+
+export function dashboardCsvUrl(from?: string, to?: string): string {
+  const parameters = new URLSearchParams();
+  if (from) parameters.set("from", from);
+  if (to) parameters.set("to", to);
+  const query = parameters.toString();
+  return `/api/v1/reports/dashboard.csv${query ? `?${query}` : ""}`;
+}
+
+export function getOrganizationSettings(): Promise<OrganizationSettings> {
+  return request("/api/v1/settings");
+}
+
+export function updateOrganizationSettings(
+  settings: OrganizationSettings,
+): Promise<OrganizationSettings> {
+  return request("/api/v1/settings", {
+    method: "PUT",
+    body: JSON.stringify({
+      version: settings.version,
+      name: settings.name,
+      timezone: settings.timezone,
+      currency: settings.currency,
+      locale: settings.locale,
+      brandingPrimaryColor: settings.brandingPrimaryColor,
+      followUpDays: settings.followUpDays,
+      operatingWindowStart: settings.operatingWindowStart,
+      operatingWindowEnd: settings.operatingWindowEnd,
+      businessDays: settings.businessDays,
+      sendingEnabled: false,
+      sendingDryRun: true,
+      sendingDailyLimit: 0,
+      sendingKillSwitch: true,
+    }),
+  });
+}
+
+export function listTags(includeInactive = false): Promise<CrmTag[]> {
+  return request(`/api/v1/tags?includeInactive=${includeInactive}`);
+}
+
+export function createTag(name: string, color: string): Promise<CrmTag> {
+  return request("/api/v1/tags", {
+    method: "POST",
+    body: JSON.stringify({ name, color }),
+  });
+}
+
+export function deactivateTag(tag: CrmTag): Promise<CrmTag> {
+  return request(`/api/v1/tags/${tag.id}?version=${tag.version}`, { method: "DELETE" });
+}
+
+export function listProspectTags(prospectId: string): Promise<CrmTag[]> {
+  return request(`/api/v1/tags/prospects/${prospectId}`);
+}
+
+export function assignTag(tagId: string, prospectId: string): Promise<void> {
+  return request(`/api/v1/tags/${tagId}/assign`, {
+    method: "POST",
+    body: JSON.stringify({ prospectIds: [prospectId] }),
+  });
+}
+
+export function unassignTag(tagId: string, prospectId: string): Promise<void> {
+  return request(`/api/v1/tags/${tagId}/prospects/${prospectId}`, { method: "DELETE" });
 }

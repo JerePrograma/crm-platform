@@ -1,315 +1,128 @@
 # Seguridad
 
-## Postura actual
+Actualizado: 2026-07-22
 
-La plataforma opera con política fail-closed:
+## Modelo de amenazas
 
-- sin credenciales bootstrap explícitas no existe usuario válido;
-- health es público;
-- API y OpenAPI requieren autenticación;
-- cualquier otra ruta se deniega;
-- sesiones de servidor con cookie HttpOnly, CSRF y rotación;
-- contraseñas frontend no persistidas;
-- usuarios, roles, permisos y membresías persistentes;
-- tenant isolation en backend;
-- sesiones invalidadas por logout, cambio de contraseña o desactivación;
-- envíos inexistentes y bloqueados;
-- secretos y datos operativos excluidos de Git;
-- puertos locales publicados solo en loopback.
+Activos: credenciales, sesiones, PII de contactos, exclusiones/no-contacto,
+historial comercial, auditoría, mensajes, backups y configuración de envío.
+Actores: usuario anónimo, usuario autenticado, usuario de otro tenant, operador,
+administrador, proveedor externo y atacante que controla una carga o webhook.
+Fronteras: navegador/frontend, HTTP backend, sesión/CSRF, PostgreSQL, importación
+CSV/XLSX, webhook fake, runtime Docker y futuros providers.
 
-## Autenticación y bootstrap
+| Amenaza | Mitigación ejecutable |
+|---|---|
+| acceso anónimo o escalada | deny-by-default, sesión rotada, RBAC backend, 401/403 probados |
+| fuga cross-tenant | `organization_id` derivado del principal en cada consulta/mutación y pruebas PostgreSQL |
+| CSRF/session fixation | token CSRF, cookie HttpOnly/SameSite, rotación al login, invalidación al logout/cambio |
+| XSS/inyección | React escaping, sin HTML arbitrario, SQL parametrizado, JSON/DTO estricto |
+| CSV formula injection | neutralización de `= + - @ tab CR` y tests |
+| archivos hostiles | 10 MiB, 10.000 filas, 100 columnas, 10.000 chars/celda, magic XLSX, NUL/JSON/MIME estricto |
+| webhook forjado/replay | HMAC constant-time, timestamp, ventana, event ID, tamaño/content-type y receipt único |
+| envío real accidental | cuatro guardas de entorno, kill switch DB, provider/red desconectados y endpoint send ausente |
+| payload/secret leakage | payloads minimizados, hashes, MDC sanitizado, sin bodies/tokens/cookies en INFO |
+| supply chain/runtime | lockfiles, npm audit, imagen runtime mínima fijada y Grype High/Critical |
+| pérdida de datos | backups externos con checksum y restore drill aislado |
 
-SEG-002 eliminó HTTP Basic. El primer administrador se crea únicamente cuando
-la base todavía no contiene administradores y existen ambas variables:
+Riesgos residuales: el socket Docker usado por Testcontainers/Grype tiene control
+elevado sobre el daemon y solo se usa con código propio revisado; TLS, WAF,
+secret manager, rotación externa y controles de infraestructura dependen del
+entorno de despliegue todavía no autorizado.
 
-```text
-CRM_BOOTSTRAP_USERNAME
-CRM_BOOTSTRAP_PASSWORD
-```
+## Autenticación y autorización
 
-No tienen valores productivos por defecto. La contraseña se codifica con el
-encoder delegado de Spring Security y no se registra. La política mínima es
-configurable mediante `CRM_MINIMUM_PASSWORD_LENGTH`.
+El bootstrap crea el primer administrador solo si no existe otro y se proveen
+`CRM_BOOTSTRAP_USERNAME` y `CRM_BOOTSTRAP_PASSWORD`. Las contraseñas se hashean
+con el encoder delegado. La sesión es server-side, expira, rota y se invalida al
+logout, cambio de contraseña o desactivación. En producción TLS se exige
+`SESSION_COOKIE_SECURE=true`.
 
-La sesión expira tras ocho horas de inactividad, rota al autenticar y usa cookie
-`Secure` cuando `SESSION_COOKIE_SECURE=true` (obligatorio en producción TLS).
+Roles base: `ADMIN`, `MANAGER`, `SALES`, `VIEWER`; la autoridad final siempre es
+el backend. `REPORT_READ`, `SETTINGS_MANAGE` y permisos operativos protegen
+reportes, configuración, outbox y quarantine. Ocultar un control en React no
+otorga autorización.
 
-## Autorización
+Rutas:
 
-Estado actual:
-
-- `/actuator/health/**`: público;
-- `/api/**`: autenticado;
-- `/swagger-ui/**`: autenticado;
-- `/v3/api-docs/**`: autenticado;
+- `/actuator/health/**`: pública para probes mínimos;
+- `/actuator/metrics` y otros endpoints operativos: autenticados;
+- `/api/**`, OpenAPI y Swagger: autenticados, además de permisos de método;
 - resto: denegado.
 
-Roles: `ADMIN`, `MANAGER`, `SALES`, `VIEWER`. La autorización se aplica por
-permisos persistentes en métodos backend. `MESSAGE_SEND` existe en el catálogo
-pero no habilita ningún envío.
-
-## CSRF y CORS
-
-Toda mutación autenticada exige CSRF. El frontend obtiene token y nombre de
-header desde `/api/v1/auth/csrf`; no debe fijar el nombre del header.
-
-No existe CORS global. Desarrollo utiliza proxy Vite/Nginx. Cualquier apertura futura debe definir orígenes exactos; nunca `*` con credenciales.
-
-## Secretos prohibidos
-
-No versionar:
-
-- `.env`;
-- contraseñas;
-- tokens OAuth;
-- refresh tokens;
-- cookies;
-- claves privadas;
-- certificados privados;
-- JSON de cuentas de servicio;
-- client secrets;
-- credenciales de base productiva;
-- API keys;
-- secretos Terraform;
-- transcripts sin revisar.
-
-Desarrollo utiliza `.env` ignorado. Producción futura utilizará Secret Manager.
-
-## Escaneo centralizado del repositorio
-
-Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check-repository-safety.ps1
-```
-
-Unix:
-
-```bash
-sh scripts/check-repository-safety.sh
-```
-
-Con Make:
-
-```bash
-make repository-safety
-```
-
-Bloquea archivos rastreados como:
-
-- `.env` en cualquier subdirectorio;
-- `validation-output/`;
-- datos privados de importación salvo README;
-- datos privados de exportación;
-- `gestudio_lote_*_prospectos.xlsx`;
-- `.pem`, `.key`, `.p12`, `.pfx`, `.jks`;
-- JSON con nombres de credenciales, service account o client secret.
-
-También ejecuta `git diff --check`.
-
-El script Unix conserva correctamente rutas con espacios mediante lectura línea por línea.
-
-Limitación: es un control por ruta/extensión, no un escáner de secretos por contenido. Debe complementarse con escaneo dedicado antes de producción.
-
-## Datos personales
-
-El repositorio público no contiene el lote real. Las fixtures utilizan dominios `.test` y nombres ficticios.
-
-La auditoría:
-
-- no registra contraseñas ni tokens;
-- no registra canales completos en payloads de exclusión;
-- usa SHA-256 cuando necesita correlación;
-- puede conservar IDs lógicos y datos comerciales no sensibles.
-
-La API de exclusiones devuelve valores normalizados a usuarios autenticados porque la operación lo requiere. SEG-002 deberá restringir por rol.
-
-## Archivos de importación
-
-Controles:
-
-- extensiones CSV/XLSX;
-- máximo 10 MB;
-- procesamiento en memoria;
-- parser por encabezados;
-- SHA-256;
-- confirmación adicional;
-- basename saneado;
-- sin rutas arbitrarias;
-- lote real fuera de Git/CI/imágenes.
-
-Pendiente:
-
-- MIME por contenido;
-- antivirus si se aceptan adjuntos externos;
-- límites por usuario/IP;
-- almacenamiento aislado;
-- retención.
-
-## Lockfile frontend
-
-Generación:
-
-```text
-npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-```
-
-Garantías comunes:
-
-- lifecycle scripts deshabilitados;
-- `node_modules` no debe crearse;
-- lockfile queda para revisión manual;
-- no se realiza commit automático;
-- Dockerfile/CI usan npm ci cuando el lockfile existe.
-
-Garantías Unix:
-
-- contenedor ejecutado con UID/GID del usuario;
-- caché npm temporal dentro del contenedor;
-- lockfile no debe quedar propiedad de `root`;
-- el script comprueba que el archivo quede editable.
-
-Pendiente:
-
-- generar y revisar lockfile real;
-- versionarlo;
-- repetir validación desde árbol limpio;
-- auditoría de dependencias;
-- escaneo SCA continuo.
-
-## Validación backend contenedorizada
-
-Scripts:
-
-```text
-scripts/verify-backend-container.ps1
-scripts/verify-backend-container.sh
-```
-
-El repositorio se monta en solo lectura y `backend/target` usa un volumen efímero.
-
-Para Testcontainers se monta:
-
-```text
-/var/run/docker.sock
-```
-
-Riesgo: el socket Docker concede al contenedor capacidad equivalente a control elevado sobre el daemon y potencialmente el host.
-
-Reglas:
-
-- ejecutar únicamente desde `main`;
-- exigir código propio y revisado;
-- no usar imágenes Maven no fijadas o no confiables;
-- no ejecutar sobre PRs externos sin aislamiento;
-- no montar secretos adicionales;
-- eliminar contenedor y volumen target al finalizar;
-- conservar solamente la caché Maven esperada.
-
-## Validadores integrales
-
-Windows:
-
-```text
-scripts/validate-seg001.ps1
-```
-
-Linux/macOS:
-
-```text
-scripts/validate-seg001.sh
-```
-
-Controles de seguridad:
-
-- rama `main` obligatoria;
-- working tree sin cambios inesperados;
-- daemon Docker accesible;
-- guardas `SENDING_*` obligatorias;
-- puertos solo en loopback;
-- cleanup sin `-v`;
-- código backend de solo lectura;
-- lockfile sin scripts lifecycle;
-- único cambio permitido: `frontend/package-lock.json`;
-- escaneo final del repositorio;
-- sin commits automáticos;
-- evidencia local ignorada por Git.
-
-No ejecutar con código no confiable porque la fase Testcontainers monta el socket Docker.
-
-## Evidencia local
-
-```text
-validation-output/
-```
-
-Está ignorado por Git.
-
-Los scripts no imprimen contraseñas, pero transcripts y logs pueden contener contexto técnico u operativo. Revisar antes de compartir.
-
-La evidencia canónica debe resumirse en `docs/validation/`, no versionarse automáticamente.
-
-## Inyección y salida
-
-- JPA/JdbcTemplate usan parámetros enlazados;
-- no se concatenan valores de usuario en SQL;
-- React escapa contenido por defecto;
-- no se usa `dangerouslySetInnerHTML`;
-- futuros previews HTML deben sanitizarse.
-
-## SSRF
-
-No existe descarga de URLs externas. Cuando se implemente enriquecimiento o Drive:
-
-- allowlists de hosts/protocolos;
-- bloqueo de redes privadas y metadata;
-- DNS seguro;
-- límites de redirección, tamaño y tiempo;
-- sin URLs arbitrarias en workers privilegiados.
-
-## Seguridad de envío
-
-Guardas:
+No existe CORS global permisivo; el frontend usa reverse proxy same-origin. Las
+mutaciones exigen CSRF. Nginx agrega CSP, HSTS bajo TLS, frame denial,
+`nosniff`, referrer policy y permissions policy.
+
+## Bloqueo de comunicaciones
 
 ```text
 SENDING_ENABLED=false
 SENDING_DRY_RUN=true
 SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
 system_setting sending.kill-switch=true
 ```
 
-Además, no existe código Gmail ni SMTP. Cambiar variables no puede enviar nada mientras no exista adaptador.
+El entorno domina cualquier preferencia de organización. La API de settings
+rechaza y audita intentos permisivos. Cada worker reevalúa configuración,
+campaña, exclusiones, consentimiento, elegibilidad, cliente/no-contacto,
+aprobación, provider e idempotencia. Los estados producidos son draft,
+simulated, blocked, cancelled o noop; una regresión SQL exige cero
+`SENT|DELIVERED|READ`. `/api/v1/messages/send` no existe.
 
-## CI
+Gmail y WhatsApp tienen adaptadores y contracts, pero están
+`IMPLEMENTED_NOT_CONNECTED`; no se cargaron credenciales ni se probó red real.
 
-CI ejecuta:
+## Webhook e inbound
 
-- sintaxis POSIX y Bash;
-- parser PowerShell;
-- parseo Make;
-- seguridad del repositorio;
-- preflight fail-closed;
-- Maven verify;
-- frontend typecheck/build;
-- Compose/images/smoke;
-- cleanup de volumen efímero.
+`FAKE_INBOUND` es el único provider inbound ejecutable. El secreto viene del
+entorno de prueba y no se versiona. El endpoint exige POST, JSON, límite de
+tamaño, HMAC, timestamp y external event ID. La comparación es constant-time,
+el replay es idempotente y una asociación ambigua queda en quarantine. No se
+confirma PII en la respuesta y no se envía contestación automática.
 
-Las credenciales CI son ficticias.
+## Datos, PII y retención
 
-GitHub no expone actualmente runs visibles mediante el conector; no declarar CI verde sin evidencia.
+La descripción técnica está en `docs/privacy-and-retention.md`. Los datos reales
+no ingresan en Git, CI, imágenes, fixtures ni evidencia. El XLSX real solo puede
+usarse para preview agregado fuera del repositorio. Auditoría, exclusiones y
+evidencia de no-contacto no se borran silenciosamente. Las retenciones y
+solicitudes de supresión requieren revisión legal local; esta documentación no
+es asesoramiento legal.
 
-## Pendientes prioritarios
+## Dependencias, imágenes y evidencia
 
-1. usuarios persistentes y RBAC;
-2. hashing y rotación bootstrap;
-3. rate limiting;
-4. correlation ID y redacción central de logs;
-5. escaneo de secretos por contenido;
-6. OWASP/SpotBugs;
-7. escaneo de contenedores;
-8. SCA frontend con lockfile;
-9. IAM y Secret Manager;
-10. cabeceras frontend productivas;
-11. autorización por rol;
-12. política de transcripts y retención de evidencia.
+- Maven/Java y npm usan versiones/lockfiles controlados.
+- PostgreSQL JDBC está en `42.7.12`; Jackson 3/2 en `3.1.5`/`2.21.5`.
+- Backend runtime: JRE mínima no-root fijada por digest; healthcheck Java sin
+  shell ni `curl`.
+- Grype está fijado por digest y falla en High/Critical; npm audit falla en High.
+- OWASP Dependency-Check no se usa como evidencia local porque la descarga NVD
+  sin API key quedó `BLOCKED_EXTERNAL_NVD_RATE_LIMIT`, no PASS.
+- `validation-output/`, `.env`, browser artifacts, logs y XLSX están ignorados y
+  prohibidos como archivos versionados por repository safety.
+
+Los transcripts deben revisarse antes de compartir. Nunca deben contener
+contraseñas, tokens, cookies, filas reales, cuerpos completos o secretos webhook.
+
+## Validación canónica
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1 `
+  -PostgresPort 25432 -BackendPort 8080 -FrontendPort 5173
+```
+
+Unix:
+
+```bash
+make validate-complete-crm
+```
+
+El validador exige rama/árbol limpio, pruebas backend/frontend, migraciones,
+smoke/E2E, bloqueos, cero SENT, Grype/npm audit, backup/restore, perfil
+productivo local y repository safety final. El socket Docker solo debe montarse
+sobre código confiable.
