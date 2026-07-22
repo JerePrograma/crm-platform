@@ -316,9 +316,9 @@ Evidencia ejecutada:
 CHECKPOINT_ID=CHECKPOINT_9
 PHASE=transactional_outbox_workers_idempotency_inbound
 START_COMMIT=1a6a98bc5bd2f9cf97a7c2978cd633ba77f74cb3
-END_COMMIT=PENDING_STABLE_LOCAL_COMMIT
+END_COMMIT=fe29f66f556019980dc414132968cfb22ad3c44c
 WORKTREE_BEFORE=CLEAN
-WORKTREE_AFTER=STABLE_PENDING_LOCAL_COMMIT
+WORKTREE_AFTER=CLEAN_AFTER_FE29F66
 FILES_CHANGED=V12, outbox/inbound/common backend modules, messaging/campaign integration, security, frontend operations, tests, ADR and canonical docs
 MIGRATIONS=V12__transactional_outbox_and_durable_inbound.sql
 TEST_COMMANDS=verify-backend-container.ps1; npm run typecheck; npm run build; validate-docker-stack.ps1 --no-cache; authenticated Playwright; signed webhook HTTP cases; PostgreSQL evidence; repository safety
