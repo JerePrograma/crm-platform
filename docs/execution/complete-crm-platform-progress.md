@@ -391,3 +391,22 @@ FIX=pass repository-relative scripts/<name> paths for every Bash syntax check
 FUNCTIONAL_PHASES_NOT_RUN=backend, frontend, images, migrations, E2E, scans, backup/restore, production profile
 DATA_IMPACT=none; failure occurred before stack creation
 ```
+
+## SEG011_VALIDATION_ATTEMPT_2_E2E_BOOTSTRAP
+
+```text
+COMMIT=4c212a7bc011b10312eb1060298405e2d49cef2f
+COMMAND=powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1 -PostgresPort 25432 -BackendPort 8080 -FrontendPort 5173
+RESULT=EXECUTED_FAIL
+DURATION=692.018s
+PASSED_PHASES=repository safety; PowerShell/Bash syntax; secret scan; backend 79/79; Spotless 159/159; ArchUnit; frontend install/typecheck/unit/build; Docker no-cache health/smoke; npm audit; Grype no vulnerabilities; empty-to-V13 and V11-to-V13 migrations with Hibernate validate; outbox/worker/inbound PostgreSQL suite
+FIRST_FAILURE=frontendE2E: both scenarios remained on the login screen
+ROOT_CAUSE=preflight.ps1 loaded every .env value into the process and overwrote the validator's explicit deterministic bootstrap credentials and fake-inbound configuration before Docker Compose created the isolated stack
+FIX=preserve explicit non-empty process environment values while using .env only as fallback; assert the effective bootstrap/fake-inbound/worker environment immediately after stack creation
+FOCUSED_RETRY_FAILURE=the first isolated retry then failed in smoke-test.ps1 with HTTP 401 because that host smoke independently reloaded .env with overwrite semantics
+FOCUSED_RETRY_FIX=apply the same explicit-environment precedence to Windows and Unix smoke/preflight loaders before repeating the isolated stack
+FOCUSED_REGRESSION_COMMAND=isolated cached Docker stack on 25432/8080/5173; host/container smoke; npm run test:e2e; PostgreSQL forbidden-state query
+FOCUSED_REGRESSION_RESULT=EXECUTED_PASS; host/container smoke PASS; Playwright 2/2 in 9.9s; SENT|DELIVERED|READ=0; isolated volume removed
+NOT_RUN_AFTER_FAILURE=effective sending blockade; zero SENT query; backup/restore; production profile; final tree safety
+DATA_IMPACT=none; the isolated Compose project and its volume were removed by the validator finally block
+```

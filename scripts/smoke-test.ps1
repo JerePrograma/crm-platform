@@ -11,7 +11,11 @@ if (-not (Test-Path '.env')) {
 Get-Content .env | ForEach-Object {
   $line = $_.TrimStart([char]0xFEFF)
   if ($line -match '^(?<name>[^#][^=]*)=(?<value>.*)$') {
-    [Environment]::SetEnvironmentVariable($matches.name.Trim(), $matches.value, 'Process')
+    $name = $matches.name.Trim()
+    $existingValue = [Environment]::GetEnvironmentVariable($name, 'Process')
+    if ([string]::IsNullOrWhiteSpace($existingValue)) {
+      [Environment]::SetEnvironmentVariable($name, $matches.value, 'Process')
+    }
   }
 }
 

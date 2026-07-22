@@ -120,6 +120,11 @@ try {
 
   Run-Phase 'composeNoCacheHealthSmoke' {
     & (Join-Path $PSScriptRoot 'validate-docker-stack.ps1') -PostgresPort $PostgresPort -BackendPort $BackendPort -FrontendPort $FrontendPort -KeepRunning -NoTranscript
+    $backendContainerForEnvironmentCheck = (& docker compose --profile app ps -q backend).Trim()
+    $backendEnvironment = & docker inspect $backendContainerForEnvironmentCheck --format '{{json .Config.Env}}'
+    foreach ($required in @('CRM_BOOTSTRAP_USERNAME=complete-admin','FAKE_INBOUND_ENABLED=true','OUTBOX_WORKER_ENABLED=false')) {
+      if ($backendEnvironment -notmatch [regex]::Escape($required)) { throw "Validation environment was overridden: $required" }
+    }
   }
   $backendContainer = (& docker compose --profile app ps -q backend).Trim()
   $backendImage = (& docker inspect $backendContainer --format '{{.Config.Image}}').Trim()

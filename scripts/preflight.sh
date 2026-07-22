@@ -48,10 +48,18 @@ fi
 
 [ -f .env ] || fail ".env is missing. Copy .env.example to .env and edit it first"
 
-set -a
-# shellcheck disable=SC1091
-. ./.env
-set +a
+while IFS='=' read -r name value || [ -n "$name$value" ]; do
+  name=$(printf '%s' "$name" | tr -d '\r')
+  value=$(printf '%s' "$value" | tr -d '\r')
+  case "$name" in
+    ''|'#'*) continue ;;
+    *[!A-Za-z0-9_]*) fail "Invalid environment name in .env: $name" ;;
+  esac
+  existing_value=$(printenv "$name" 2>/dev/null || true)
+  if [ -z "$existing_value" ]; then
+    export "$name=$value"
+  fi
+done < .env
 
 [ -n "${POSTGRES_DB:-}" ] || fail "POSTGRES_DB is required"
 [ -n "${POSTGRES_HOST_PORT:-}" ] || fail "POSTGRES_HOST_PORT is required"
