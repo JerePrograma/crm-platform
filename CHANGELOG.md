@@ -4,8 +4,10 @@
 
 - cierra SEG-010 y SEG-011 después de dos ejecuciones limpias consecutivas del
   validador integral sobre `986523a`;
-- integra la historia completa mediante fast-forward en `main` local y agrega la
-  evidencia sanitizada final de SEG-011;
+- integra la historia completa mediante fast-forward en `main`, agrega la
+  evidencia sanitizada final de SEG-011 y publica en `origin/main`;
+- corrige el modo ejecutable Unix de `mvnw` y alinea las tags Docker aisladas
+  por job; GitHub Actions run `29951586239` termina `success` con 22/22 jobs;
 - valida dos veces 79/79 backend, Spotless 159/159, ArchUnit, Vitest 2/2,
   Playwright 2/2, imágenes sin caché, npm audit, Grype, migraciones
   vacío/V11→V13, backup/restore y perfil productivo local;

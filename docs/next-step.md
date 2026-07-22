@@ -19,7 +19,10 @@ SEG-010 COMPLETE
 SEG-011 COMPLETE
 BRANCH main
 LOCAL_INTEGRATION FAST_FORWARD_COMPLETE
-REMOTE_PUBLICATION PENDING_DIRECT_PUSH
+REMOTE_PUBLICATION EXECUTED_PASS
+REMOTE_MAIN b904ff37e506f058dab351c2b941e13ee4ed9981
+REMOTE_CI_RUN 29951586239
+REMOTE_CI EXECUTED_PASS_22_OF_22
 BASELINE 7db7e4c EXECUTED_PASS
 IDENTITY_COMMIT 0546e6e EXECUTED_PASS
 PRODUCCIÓN NOT_DEPLOYED
@@ -28,16 +31,14 @@ COMUNICACIONES REALES DISABLED_BY_POLICY
 
 ## Próximo paso externo
 
-No queda un segmento funcional activo. La implementación completa ya está
-integrada mediante fast-forward en la rama local `main`.
+No queda un segmento funcional activo. La implementación completa está
+integrada en `main`, publicada en `origin/main` y validada remotamente por
+GitHub Actions run `29951586239`, con 22/22 jobs exitosos.
 
-El cierre actual exige publicar directamente `main` en `origin/main` mediante
-push normal y observar GitHub Actions para el commit publicado. No se debe crear
-un pull request. La validación integral Unix queda como actividad externa
-posterior.
-
-Conectar credenciales, probar comunicaciones reales o desplegar requiere una
-autorización futura explícita y una revisión de seguridad separada.
+Las acciones pendientes son externas al cierre: ejecutar el validador integral
+en un host Unix real, disponer del XLSX autorizado o iniciar una revisión
+separada para proveedores y despliegue. Conectar credenciales, probar
+comunicaciones reales o desplegar requiere autorización futura explícita.
 
 Contrato y evidencia viva:
 
@@ -77,5 +78,5 @@ Get-Content docs\validation\COMPLETE-CRM-matrix.md
 - no incorporar datos reales a Git, CI, imágenes o evidencia;
 - no versionar `.env` ni `validation-output/`;
 - no borrar el volumen PostgreSQL salvo prueba destructiva aislada y explícita;
-- no abrir PR ni crear merges; la misión actual autoriza únicamente un push
-  normal de `main` a `origin/main` después de las validaciones documentales.
+- no abrir PR, crear merges ni realizar nuevos pushes sin un cambio posterior
+  revisado, validado y autorizado.

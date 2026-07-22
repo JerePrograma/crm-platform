@@ -9,16 +9,15 @@ repositorio: JerePrograma/crm-platform
 rama predeterminada: main
 rama canónica: main
 rama local actual: main
-origin/main: PENDIENTE_DE_PUBLICACION
+origin/main: b904ff37e506f058dab351c2b941e13ee4ed9981
 producción: NO DESPLEGADA
 comunicaciones: DESHABILITADAS
 lote real: FUERA DE GIT/CI/IMÁGENES
 ```
 
-`main` es la única fuente de verdad. La historia completa fue integrada
-localmente mediante fast-forward desde `feat/complete-crm-platform`;
-`origin/main` aún no fue actualizado en este checkpoint documental. La segunda validación integral
-limpia de SEG-001 se ejecutó sobre
+`main` es la única fuente de verdad. La historia completa fue integrada mediante
+fast-forward desde `feat/complete-crm-platform` y publicada en `origin/main`.
+La segunda validación integral limpia de SEG-001 se ejecutó sobre
 `d8a5a449a72c660e2655f4be7144360cd1e719a4` con el lockfile versionado.
 
 ## Segmentos
@@ -146,6 +145,9 @@ COMPLETE_CRM_WINDOWS_RUN_1_PASS
 COMPLETE_CRM_WINDOWS_RUN_2_PASS
 SEG_010_COMPLETE
 SEG_011_COMPLETE
+REMOTE_MAIN_PUBLISHED
+REMOTE_CI_EXECUTED_PASS
+REMOTE_CI_JOBS_22_OF_22_PASS
 ```
 
 ## Fallo Jackson corregido
@@ -204,9 +206,23 @@ lifecycle scripts durante generación: NO EJECUTADOS
 
 ## CI
 
-GitHub Actions run `29848718163` para `d8a5a449…` está visible y terminó
-`success`. Jobs `backend`, `frontend`, `scripts` y `compose-images-and-smoke`
-terminaron verdes.
+GitHub Actions run `29848718163` para `d8a5a449…` cerró SEG-001 con `success`.
+
+La publicación final de `main` disparó primero el run `29950739875`, que expuso
+dos defectos deterministas de CI: `mvnw` sin modo ejecutable Unix y jobs Docker
+que construían una imagen distinta de la referencia consumida. El commit
+`b904ff37e506f058dab351c2b941e13ee4ed9981` corrigió ambos puntos.
+
+El run `29951586239` para `b904ff3`, rama `main`, evento `push`, terminó
+`completed/success` con 22/22 jobs verdes: backend unit/integration/format/
+architecture/security, frontend install/typecheck/unit/build/E2E,
+repository safety, scripts Unix/Windows, migraciones vacío/V11, compose smoke,
+perfil productivo, backup/restore, mensajería fake, outbox, inbound y dependency
+scan.
+
+GitHub Actions emitió advertencias de mantenimiento porque `actions/*@v4`
+declara Node.js 20 y el runner lo fuerza a Node.js 24. No hubo job fallido,
+cancelado ni omitido.
 
 ## Seguridad vigente
 
@@ -236,10 +252,9 @@ documental previo fueron integrados mediante fast-forward en la rama local
 `main`, sin merge commit.
 
 El plan, progreso y matriz vigentes están en `docs/execution/` y
-`docs/validation/COMPLETE-CRM-matrix.md`. La publicación directa de `main` en
-`origin/main` y la observación de GitHub Actions permanecen pendientes dentro de
-la misión actual. Las comunicaciones reales y producción continúan fuera de
-autorización.
+`docs/validation/COMPLETE-CRM-matrix.md`. `main` está sincronizada con
+`origin/main` y la CI remota final terminó `success`. Las comunicaciones reales
+y producción continúan fuera de autorización.
 
 ## Cierre SEG-010 y SEG-011
 
@@ -257,7 +272,8 @@ se corrigió la causa sin exclusiones y el nuevo scan devolvió cero hallazgos.
 Dependency-Check quedó `BLOCKED_EXTERNAL_NVD_RATE_LIMIT` y no se cuenta como
 PASS.
 
-El validador Unix integral y el workflow remoto permanecen `IMPLEMENTED_NOT_RUN`;
-la sintaxis Bash y el preflight container-only sí se ejecutaron localmente desde
-WSL. Gmail/WhatsApp continúan `IMPLEMENTED_NOT_CONNECTED`, el XLSX real
+El validador Unix integral permanece `IMPLEMENTED_NOT_RUN`; la sintaxis Bash,
+el preflight container-only y los jobs Unix de GitHub Actions sí terminaron
+`EXECUTED_PASS`. La CI remota final terminó `EXECUTED_PASS` en el run
+`29951586239`. Gmail/WhatsApp continúan `IMPLEMENTED_NOT_CONNECTED`, el XLSX real
 `BLOCKED_EXTERNAL_FILE` y producción `NOT_AUTHORIZED`/`NOT_DEPLOYED`.

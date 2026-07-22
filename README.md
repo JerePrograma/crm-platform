@@ -4,10 +4,9 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 
 ## Estado actual
 
-`main` es la fuente canónica. La implementación completa fue integrada
-localmente mediante fast-forward desde `feat/complete-crm-platform`.
-`origin/main` permanece pendiente de publicación directa y validación remota
-dentro de la misión actual; no se creó PR ni se desplegó producción.
+`main` es la fuente canónica. La implementación completa fue integrada mediante
+fast-forward desde `feat/complete-crm-platform`, publicada en `origin/main` y
+validada por GitHub Actions. No se creó PR ni se desplegó producción.
 
 ```text
 SEG-000: COMPLETE
@@ -53,8 +52,9 @@ Evidencia real disponible:
 - ambas corridas: E2E 2/2, migraciones vacío/V11→V13, cuatro bloqueos
   efectivos, cero `SENT|DELIVERED|READ`, restore y perfil productivo
   validado localmente: `PASS`;
+- GitHub Actions run `29951586239` sobre `b904ff3`: `success`, 22/22 jobs;
 - XLSX real: `BLOCKED_EXTERNAL_FILE`; producción: `NOT_AUTHORIZED` /
-  `NOT_DEPLOYED`; publicación directa de `main`: pendiente; PR: no creado.
+  `NOT_DEPLOYED`; publicación directa de `main`: completa; PR: no creado.
 
 Fuentes:
 
@@ -632,9 +632,10 @@ La segunda operación es destructiva.
 - Gmail y WhatsApp reales están implementados pero no conectados;
 - XLSX real no disponible: preview bloqueado externamente;
 - perfil productivo validado localmente; despliegue no autorizado;
-- CI ampliado está versionado y parseado localmente, pero permanece
-  `IMPLEMENTED_NOT_RUN` hasta publicar `origin/main` y observar el workflow de
-  la misión actual.
+- CI ampliado ejecutado remotamente: run `29951586239`, `success`, 22/22 jobs;
+- GitHub Actions advierte que `actions/*@v4` apunta a Node.js 20 y el runner lo
+  fuerza temporalmente a Node.js 24; actualizar las actions en mantenimiento
+  futuro, sin impacto en el cierre actual.
 
 ## Documentación
 

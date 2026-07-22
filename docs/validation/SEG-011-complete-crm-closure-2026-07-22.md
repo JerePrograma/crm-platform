@@ -80,7 +80,7 @@ REAL_COMMUNICATIONS=DISABLED_BY_POLICY
 REAL_XLSX=BLOCKED_EXTERNAL_FILE
 UNIX_INTEGRAL_VALIDATOR=IMPLEMENTED_NOT_RUN
 BASH_SYNTAX_AND_WSL_PREFLIGHT=EXECUTED_PASS
-REMOTE_CI_BEFORE_CURRENT_PUSH=IMPLEMENTED_NOT_RUN
+REMOTE_CI_FINAL=EXECUTED_PASS
 PRODUCTION=NOT_AUTHORIZED
 PRODUCTION_DEPLOYMENT=NOT_DEPLOYED
 REAL_SENDING=NOT_AUTHORIZED_NOT_TESTED
@@ -99,3 +99,38 @@ High/Critical.
 La evidencia cruda permanece fuera de Git y este documento no contiene
 credenciales, tokens, cookies, firmas, secretos webhook, payloads, datos reales
 ni filas del XLSX.
+
+## Validación remota final
+
+```text
+PUBLISHED_COMMIT=b904ff37e506f058dab351c2b941e13ee4ed9981
+BRANCH=main
+WORKFLOW=ci
+RUN_ID=29951586239
+EVENT=push
+STATUS=completed
+CONCLUSION=success
+JOBS=22/22
+FAILED_JOBS=0
+CANCELLED_JOBS=0
+SKIPPED_JOBS=0
+```
+
+El primer run remoto, `29950739875`, falló y no se contabiliza como PASS.
+Expuso `mvnw` sin modo ejecutable Unix y referencias de imagen Docker
+inconsistentes entre build y consumo dentro de jobs aislados.
+
+El commit `b904ff37e506f058dab351c2b941e13ee4ed9981` aplicó una corrección mínima:
+
+- modo Git de `mvnw`: `100644 → 100755`;
+- migraciones vacío y V11 usan explícitamente `crm-platform-backend:ci`;
+- dependency scan construye y escanea la misma tag.
+
+El run `29951586239` terminó con los 22 jobs exitosos, incluidos backend,
+frontend E2E, migraciones, smoke, perfil productivo, backup/restore, outbox,
+inbound, repository safety y Grype.
+
+Las advertencias sobre Node.js 20 en `actions/*@v4` son mantenimiento futuro:
+el runner ejecutó esas actions con Node.js 24 y ningún job falló, fue cancelado
+u omitido. No se cambió la imagen Chainguard fijada, no se desplegó producción
+y no se habilitaron comunicaciones reales.
