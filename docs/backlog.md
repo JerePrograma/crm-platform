@@ -208,7 +208,7 @@ docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
 - [x] primera validación completa Windows, 713,870 s;
 - [x] segunda validación limpia reproducible, 734,162 s;
 - [x] evidencia sanitizada y matriz final;
-- [x] documentación final preparada para commit local.
+- [x] documentación final y evidencia sanitizada versionadas.
 
 Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
 

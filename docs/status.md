@@ -8,13 +8,16 @@ Actualizado: 2026-07-22
 repositorio: JerePrograma/crm-platform
 rama predeterminada: main
 rama canónica: main
-rama de ejecución actual: feat/complete-crm-platform
+rama local actual: main
+origin/main: PENDIENTE_DE_PUBLICACION
 producción: NO DESPLEGADA
 comunicaciones: DESHABILITADAS
 lote real: FUERA DE GIT/CI/IMÁGENES
 ```
 
-`main` continúa siendo la única fuente de verdad. La segunda validación integral
+`main` es la única fuente de verdad. La historia completa fue integrada
+localmente mediante fast-forward desde `feat/complete-crm-platform`;
+`origin/main` aún no fue actualizado en este checkpoint documental. La segunda validación integral
 limpia de SEG-001 se ejecutó sobre
 `d8a5a449a72c660e2655f4be7144360cd1e719a4` con el lockfile versionado.
 
@@ -32,7 +35,7 @@ limpia de SEG-001 se ejecutó sobre
 | SEG-007 | COMPLETE | campañas, audiencias, plantillas y simulación |
 | SEG-008 | COMPLETE | mensajería segura y adaptadores deshabilitados |
 | SEG-009 | COMPLETE | outbox PostgreSQL, workers e inbound fake durable |
-| SEG-010 | COMPLETE | reportes, búsqueda, seguridad, observabilidad y producción local |
+| SEG-010 | COMPLETE | reportes, búsqueda, seguridad, observabilidad y perfil productivo validado localmente |
 | SEG-011 | COMPLETE | validación integral Windows limpia y reproducible |
 
 ## Estados operativos
@@ -226,17 +229,22 @@ También permanece prohibido:
 
 ## Ejecución integral activa
 
-La misión autorizada el 2026-07-21 activó SEG-002 en la rama
+La misión autorizada el 2026-07-21 activó SEG-002 en
 `feat/complete-crm-platform`. El baseline SEG-001 se repitió sobre `7db7e4c` y
-pasó integralmente antes de cambios. El plan, progreso y matriz vigentes están
-en `docs/execution/` y `docs/validation/COMPLETE-CRM-matrix.md`.
+pasó integralmente antes de cambios. La implementación completa y el cierre
+documental previo fueron integrados mediante fast-forward en la rama local
+`main`, sin merge commit.
 
-Las comunicaciones reales y producción continúan fuera de autorización.
+El plan, progreso y matriz vigentes están en `docs/execution/` y
+`docs/validation/COMPLETE-CRM-matrix.md`. La publicación directa de `main` en
+`origin/main` y la observación de GitHub Actions permanecen pendientes dentro de
+la misión actual. Las comunicaciones reales y producción continúan fuera de
+autorización.
 
 ## Cierre SEG-010 y SEG-011
 
 Flyway V1–V13, 79/79 backend, Spotless 159/159, ArchUnit, frontend
-unit/build/E2E, backup/restore, production profile local y el escaneo de imagen
+unit/build/E2E, backup/restore, perfil productivo validado localmente y el escaneo de imagen
 pasaron dentro del validador integral dos veces sobre `986523a`. Las corridas
 `complete-crm-20260722-173731.json` y
 `complete-crm-20260722-174938.json` finalizaron `FUNCTIONAL_PASS` en 713,870 s

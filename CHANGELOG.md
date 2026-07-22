@@ -4,6 +4,8 @@
 
 - cierra SEG-010 y SEG-011 después de dos ejecuciones limpias consecutivas del
   validador integral sobre `986523a`;
+- integra la historia completa mediante fast-forward en `main` local y agrega la
+  evidencia sanitizada final de SEG-011;
 - valida dos veces 79/79 backend, Spotless 159/159, ArchUnit, Vitest 2/2,
   Playwright 2/2, imágenes sin caché, npm audit, Grype, migraciones
   vacío/V11→V13, backup/restore y perfil productivo local;

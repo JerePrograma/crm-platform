@@ -4,8 +4,10 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 
 ## Estado actual
 
-`main` continúa como fuente canónica. La ejecución integral autorizada avanza en
-`feat/complete-crm-platform` sin push, PR, merge ni despliegue.
+`main` es la fuente canónica. La implementación completa fue integrada
+localmente mediante fast-forward desde `feat/complete-crm-platform`.
+`origin/main` permanece pendiente de publicación directa y validación remota
+dentro de la misión actual; no se creó PR ni se desplegó producción.
 
 ```text
 SEG-000: COMPLETE
@@ -14,7 +16,7 @@ SEG-002: COMPLETE — identidad, usuarios, sesión, RBAC y tenant
 SEG-003–SEG-007: COMPLETE — CRM operativo, pipeline y campañas simuladas
 SEG-008: COMPLETE — mensajería no-op/fake/manual y adapters desconectados
 SEG-009: COMPLETE — outbox, workers e inbound fake durable
-SEG-010: COMPLETE — reportes, seguridad, observabilidad y producción local
+SEG-010: COMPLETE — reportes, seguridad, observabilidad y perfil productivo validado localmente
 SEG-011: COMPLETE — dos validaciones integrales limpias reproducibles
 ```
 
@@ -43,15 +45,16 @@ Evidencia real disponible:
 - Flyway V1–V13, reporting/search/settings/tags y tenant isolation: `PASS`;
 - Maven verify SEG-010, 79/79, Spotless 159/159 y ArchUnit: `PASS`;
 - Vitest 2/2, Playwright integral 2/2, TypeScript/Vite: `PASS`;
-- backup/restore sintético y production profile local: `PASS`;
+- backup/restore sintético y perfil productivo validado localmente: `PASS`;
 - imagen backend no-root/read-only compatible, Grype High/Critical y npm audit:
   `PASS`;
 - validador completo Windows sobre `986523a`: `FUNCTIONAL_PASS` dos veces,
   713,870 s y 734,162 s, con 21 fases verdes por corrida;
 - ambas corridas: E2E 2/2, migraciones vacío/V11→V13, cuatro bloqueos
-  efectivos, cero `SENT|DELIVERED|READ`, restore y perfil productivo local:
-  `PASS`;
-- XLSX real: `BLOCKED_EXTERNAL_FILE`; producción/push/PR: `NOT_AUTHORIZED`.
+  efectivos, cero `SENT|DELIVERED|READ`, restore y perfil productivo
+  validado localmente: `PASS`;
+- XLSX real: `BLOCKED_EXTERNAL_FILE`; producción: `NOT_AUTHORIZED` /
+  `NOT_DEPLOYED`; publicación directa de `main`: pendiente; PR: no creado.
 
 Fuentes:
 
@@ -628,9 +631,10 @@ La segunda operación es destructiva.
 - Mockito deberá configurarse como agente antes de una futura restricción de Java;
 - Gmail y WhatsApp reales están implementados pero no conectados;
 - XLSX real no disponible: preview bloqueado externamente;
-- perfil productivo ejecutable solo localmente; despliegue no autorizado;
-- CI ampliado está versionado/parseado localmente pero no ejecutado remotamente
-  hasta un futuro push autorizado.
+- perfil productivo validado localmente; despliegue no autorizado;
+- CI ampliado está versionado y parseado localmente, pero permanece
+  `IMPLEMENTED_NOT_RUN` hasta publicar `origin/main` y observar el workflow de
+  la misión actual.
 
 ## Documentación
 

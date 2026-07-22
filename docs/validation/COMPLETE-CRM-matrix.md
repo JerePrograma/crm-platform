@@ -68,7 +68,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | performance sintética | EXECUTED_PASS | parser 100/1k/10k y evidencia operativa/query plan acotada |
 | accesibilidad responsive | EXECUTED_PASS | teclado/mobile E2E y corrección sidebar; no certificación WCAG |
 | backup/restore | EXECUTED_PASS | pg_dump/checksum/metadata y restore drill aislado sintético |
-| perfil producción local | EXECUTED_PASS | non-root/read-only/private network/health, sending bloqueado |
+| perfil productivo validado localmente | EXECUTED_PASS | non-root/read-only/private network/health, sending bloqueado |
 | dependency scan | EXECUTED_PASS | npm audit High y Grype High/Critical; imagen final sin hallazgos |
 | CI integral | IMPLEMENTED_NOT_RUN | workflow parseado localmente; ejecución remota requiere push |
 | validador completo Windows | EXECUTED_PASS | `986523a`, 21 fases verdes, 713,870 s |

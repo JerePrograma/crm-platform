@@ -17,7 +17,9 @@ SEG-008 COMPLETE
 SEG-009 COMPLETE
 SEG-010 COMPLETE
 SEG-011 COMPLETE
-BRANCH feat/complete-crm-platform
+BRANCH main
+LOCAL_INTEGRATION FAST_FORWARD_COMPLETE
+REMOTE_PUBLICATION PENDING_DIRECT_PUSH
 BASELINE 7db7e4c EXECUTED_PASS
 IDENTITY_COMMIT 0546e6e EXECUTED_PASS
 PRODUCCIÓN NOT_DEPLOYED
@@ -26,11 +28,16 @@ COMUNICACIONES REALES DISABLED_BY_POLICY
 
 ## Próximo paso externo
 
-No queda un segmento funcional activo. Revisar diffs y evidencia sanitizada;
-si se autoriza, ejecutar el validador integral Unix en otra plataforma y el
-workflow remoto mediante push/PR. Conectar credenciales, probar comunicaciones
-reales o desplegar requiere una autorización futura explícita y una revisión de
-seguridad separada.
+No queda un segmento funcional activo. La implementación completa ya está
+integrada mediante fast-forward en la rama local `main`.
+
+El cierre actual exige publicar directamente `main` en `origin/main` mediante
+push normal y observar GitHub Actions para el commit publicado. No se debe crear
+un pull request. La validación integral Unix queda como actividad externa
+posterior.
+
+Conectar credenciales, probar comunicaciones reales o desplegar requiere una
+autorización futura explícita y una revisión de seguridad separada.
 
 Contrato y evidencia viva:
 
@@ -56,7 +63,7 @@ docs/segments/CRM-completion.md
 
 ```powershell
 Set-Location C:\laburo\crm-platform
-git switch feat/complete-crm-platform
+git branch --show-current
 git status --short
 git log --oneline -10
 Get-Content docs\execution\complete-crm-platform-progress.md
@@ -70,4 +77,5 @@ Get-Content docs\validation\COMPLETE-CRM-matrix.md
 - no incorporar datos reales a Git, CI, imágenes o evidencia;
 - no versionar `.env` ni `validation-output/`;
 - no borrar el volumen PostgreSQL salvo prueba destructiva aislada y explícita;
-- no abrir PR, hacer push o fusionar sin autorización adicional.
+- no abrir PR ni crear merges; la misión actual autoriza únicamente un push
+  normal de `main` a `origin/main` después de las validaciones documentales.
