@@ -55,6 +55,10 @@ jobs:
 
           run_logged 'reconstrucción del transformador' bash -lc "cat .github/ux-transform-chunks/{0..5}.txt > /tmp/transform.gz.b64 && echo 'c178c29f8d93aa92320c4c1a4b08ccbb358e12177f608c77b22b9722f178d7f5  /tmp/transform.gz.b64' | sha256sum --check && base64 --decode /tmp/transform.gz.b64 | gzip --decompress > /tmp/apply-operator-ux.py && echo '523ed17d54ce38550a6006410a0a0e48591fd66e684e54f617e0b31ca32d6a41  /tmp/apply-operator-ux.py' | sha256sum --check && python -m py_compile /tmp/apply-operator-ux.py"
           code=$?
+          if [ "$code" -eq 0 ]; then
+            run_logged 'ajuste validado del transformador' python -c "from pathlib import Path; p=Path('/tmp/apply-operator-ux.py'); s=p.read_text(); old='replace_once(\"frontend/src/App.tsx\", \'<Detail label=\"Correlation ID\" value={selected.correlationId} />\', \'<Detail label=\"Identificador de seguimiento\" value={selected.correlationId} />\')'; new='replace_all(\"frontend/src/App.tsx\", \'<Detail label=\"Correlation ID\" value={selected.correlationId} />\', \'<Detail label=\"Identificador de seguimiento\" value={selected.correlationId} />\', expected=2)'; assert s.count(old)==1; p.write_text(s.replace(old,new), encoding='utf-8')"
+            code=$?
+          fi
           if [ "$code" -eq 0 ]; then run_logged 'aplicación exacta' python /tmp/apply-operator-ux.py; code=$?; fi
           if [ "$code" -eq 0 ]; then run_logged 'formato backend' ./mvnw -B -f backend/pom.xml spotless:apply; code=$?; fi
           if [ "$code" -eq 0 ]; then run_logged 'validación frontend' bash -lc 'cd frontend && npm ci --no-audit --no-fund && npm run typecheck && npm run test:unit && npm run build'; code=$?; fi
@@ -80,7 +84,9 @@ jobs:
             exit "$code"
           fi
 
-          rm -f .github/operator-ux-result.txt
+          if [ -f .github/operator-ux-result.txt ]; then
+            git rm .github/operator-ux-result.txt
+          fi
           git add \
             README.md \
             docs/ux-operador.md \
