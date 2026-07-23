@@ -1,0 +1,15 @@
+Resultado: FALLÓ
+Etapa: aplicación exacta del cierre UX
+Commit base: c5586274c9acdcc2ab8d570471c01556624c06c1
+Salida final sanitizada:
+
+### aplicación exacta del cierre UX
+Traceback (most recent call last):
+  File "/home/runner/work/crm-platform/crm-platform/.github/ux-transform-chunks/finalize-operator-ux.py", line 34, in <module>
+    replace_exact(app, '<label>Score mínimo', '<label>Puntuación mínima')
+  File "/home/runner/work/crm-platform/crm-platform/.github/ux-transform-chunks/finalize-operator-ux.py", line 9, in replace_exact
+    raise RuntimeError(
+RuntimeError: Expected 1 match(es) in frontend/src/App.tsx, found 0: '<label>Score mínimo'
+FAILED (1): aplicación exacta del cierre UX
+From https://github.com/JerePrograma/crm-platform
+ * branch            main       -> FETCH_HEAD
