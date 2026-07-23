@@ -1,4 +1,5 @@
 name: finalize-operator-ux
+# retry 2: corrected multiline score label pattern
 
 on:
   push:
