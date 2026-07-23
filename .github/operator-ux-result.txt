@@ -1,0 +1,18 @@
+Resultado: FALLÓ
+Etapa: aplicación exacta
+Commit base: 36c9a3d6883b30c0c30958bba4ab5fa14a414af8
+Salida final sanitizada:
+
+### reconstrucción del transformador
+/tmp/transform.gz.b64: OK
+/tmp/apply-operator-ux.py: OK
+PASS: reconstrucción del transformador
+
+### aplicación exacta
+Traceback (most recent call last):
+  File "/tmp/apply-operator-ux.py", line 1182, in <module>
+    replace_once("frontend/src/App.tsx", '<Detail label="Correlation ID" value={selected.correlationId} />', '<Detail label="Identificador de seguimiento" value={selected.correlationId} />')
+  File "/tmp/apply-operator-ux.py", line 23, in replace_once
+    raise RuntimeError(f"Expected exactly one match in {path}, found {count}: {old[:120]!r}")
+RuntimeError: Expected exactly one match in frontend/src/App.tsx, found 2: '<Detail label="Correlation ID" value={selected.correlationId} />'
+FAILED (1): aplicación exacta
