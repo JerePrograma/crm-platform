@@ -1,83 +1,96 @@
 Resultado: FALLÓ
 Etapa: recorrido Playwright completo
-Commit base: 8e5c026ca11193f3551b58ef263d3c01701340f2
+Commit base: 81dae030098e2884e7e10f730abeec89b1308b30
 Salida final sanitizada:
-#25 29.85 [INFO] Resolved dependency: webjars-locator-lite-1.1.3.jar
-#25 29.85 [INFO] Resolved dependency: postgresql-42.7.12.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-starter-test-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-test-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-test-autoconfigure-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: json-path-2.10.0.jar
-#25 29.85 [INFO] Resolved dependency: jakarta.xml.bind-api-4.0.5.jar
-#25 29.85 [INFO] Resolved dependency: jakarta.activation-api-2.1.4.jar
-#25 29.85 [INFO] Resolved dependency: json-smart-2.6.0.jar
-#25 29.85 [INFO] Resolved dependency: accessors-smart-2.6.0.jar
-#25 29.85 [INFO] Resolved dependency: asm-9.7.1.jar
-#25 29.85 [INFO] Resolved dependency: assertj-core-3.27.7.jar
-#25 29.85 [INFO] Resolved dependency: byte-buddy-1.18.10.jar
-#25 29.85 [INFO] Resolved dependency: awaitility-4.3.0.jar
-#25 29.85 [INFO] Resolved dependency: hamcrest-3.0.jar
-#25 29.85 [INFO] Resolved dependency: junit-jupiter-6.0.3.jar
-#25 29.85 [INFO] Resolved dependency: junit-jupiter-api-6.0.3.jar
-#25 29.85 [INFO] Resolved dependency: opentest4j-1.3.0.jar
-#25 29.85 [INFO] Resolved dependency: junit-platform-commons-6.0.3.jar
-#25 29.85 [INFO] Resolved dependency: apiguardian-api-1.1.2.jar
-#25 29.85 [INFO] Resolved dependency: junit-jupiter-params-6.0.3.jar
-#25 29.85 [INFO] Resolved dependency: junit-jupiter-engine-6.0.3.jar
-#25 29.85 [INFO] Resolved dependency: junit-platform-engine-6.0.3.jar
-#25 29.85 [INFO] Resolved dependency: mockito-core-5.23.0.jar
-#25 29.85 [INFO] Resolved dependency: byte-buddy-agent-1.18.10.jar
-#25 29.85 [INFO] Resolved dependency: objenesis-3.3.jar
-#25 29.85 [INFO] Resolved dependency: mockito-junit-jupiter-5.23.0.jar
-#25 29.85 [INFO] Resolved dependency: jsonassert-1.5.3.jar
-#25 29.85 [INFO] Resolved dependency: android-json-0.0.20131108.vaadin1.jar
-#25 29.85 [INFO] Resolved dependency: xmlunit-core-2.11.0.jar
-#25 29.85 [INFO] Resolved dependency: archunit-junit5-1.4.1.jar
-#25 29.85 [INFO] Resolved dependency: archunit-junit5-api-1.4.1.jar
-#25 29.85 [INFO] Resolved dependency: archunit-1.4.1.jar
-#25 29.85 [INFO] Resolved dependency: archunit-junit5-engine-1.4.1.jar
-#25 29.85 [INFO] Resolved dependency: archunit-junit5-engine-api-1.4.1.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-starter-webmvc-test-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-starter-jackson-test-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-starter-webmvc-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-webmvc-test-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-resttestclient-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: poi-ooxml-5.4.1.jar
-#25 29.85 [INFO] Resolved dependency: poi-5.4.1.jar
-#25 29.85 [INFO] Resolved dependency: commons-codec-1.21.0.jar
-#25 29.85 [INFO] Resolved dependency: commons-math3-3.6.1.jar
-#25 29.85 [INFO] Resolved dependency: SparseBitSet-1.3.jar
-#25 29.85 [INFO] Resolved dependency: poi-ooxml-lite-5.4.1.jar
-#25 29.85 [INFO] Resolved dependency: xmlbeans-5.3.0.jar
-#25 29.85 [INFO] Resolved dependency: commons-compress-1.27.1.jar
-#25 29.85 [INFO] Resolved dependency: commons-lang3-3.20.0.jar
-#25 29.85 [INFO] Resolved dependency: commons-io-2.18.0.jar
-#25 29.85 [INFO] Resolved dependency: curvesapi-1.08.jar
-#25 29.85 [INFO] Resolved dependency: log4j-api-2.25.4.jar
-#25 29.85 [INFO] Resolved dependency: commons-collections4-4.4.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-starter-security-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-security-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-security-config-7.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-aop-7.0.8.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-starter-validation-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-validation-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: tomcat-embed-el-11.0.22.jar
-#25 29.85 [INFO] Resolved dependency: hibernate-validator-9.1.0.Final.jar
-#25 29.85 [INFO] Resolved dependency: jakarta.validation-api-3.1.1.jar
-#25 29.85 [INFO] Resolved dependency: jboss-logging-3.6.3.Final.jar
-#25 29.85 [INFO] Resolved dependency: classmate-1.7.3.jar
-#25 29.85 [INFO] Resolved dependency: postgresql-1.21.3.jar
-#25 29.85 [INFO] Resolved dependency: jdbc-1.21.3.jar
-#25 29.85 [INFO] Resolved dependency: database-commons-1.21.3.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-starter-flyway-4.1.0.jar
-#25 29.85 [INFO] Resolved dependency: spring-boot-flyway-4.1.0.jar
-#25 29.85 [INFO] ------------------------------------------------------------------------
-#25 29.85 [INFO] BUILD SUCCESS
-#25 29.85 [INFO] ------------------------------------------------------------------------
-#25 29.85 [INFO] Total time:  27.975 s
-#25 29.85 [INFO] Finished at: 2026-07-23T18:04:44Z
-#25 29.85 [INFO] ------------------------------------------------------------------------
-#25 DONE 30.2s
+#26 39.85 [INFO] Resolved dependency: hamcrest-core-3.0.jar
+#26 39.85 [INFO] Resolved dependency: duct-tape-1.0.8.jar
+#26 39.85 [INFO] Resolved dependency: annotations-17.0.0.jar
+#26 39.85 [INFO] Resolved dependency: docker-java-api-3.4.2.jar
+#26 39.85 [INFO] Resolved dependency: docker-java-transport-zerodep-3.4.2.jar
+#26 39.85 [INFO] Resolved dependency: docker-java-transport-3.4.2.jar
+#26 39.85 [INFO] Resolved dependency: jna-5.13.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-web-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-jackson-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-jackson-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-tomcat-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-tomcat-runtime-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: tomcat-embed-core-11.0.22.jar
+#26 39.85 [INFO] Resolved dependency: tomcat-embed-websocket-11.0.22.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-tomcat-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-http-converter-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-web-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-webmvc-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-servlet-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-webmvc-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: archunit-junit5-1.4.1.jar
+#26 39.85 [INFO] Resolved dependency: archunit-junit5-api-1.4.1.jar
+#26 39.85 [INFO] Resolved dependency: archunit-1.4.1.jar
+#26 39.85 [INFO] Resolved dependency: archunit-junit5-engine-1.4.1.jar
+#26 39.85 [INFO] Resolved dependency: archunit-junit5-engine-api-1.4.1.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-security-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-security-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-security-config-7.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-aop-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: spring-beans-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: spring-security-test-7.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-security-core-7.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-security-crypto-7.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-context-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: spring-expression-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: spring-security-web-7.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-flyway-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-jdbc-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: HikariCP-7.0.2.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-flyway-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-jdbc-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-sql-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-transaction-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-persistence-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-tx-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: spring-jdbc-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: postgresql-1.21.3.jar
+#26 39.85 [INFO] Resolved dependency: jdbc-1.21.3.jar
+#26 39.85 [INFO] Resolved dependency: database-commons-1.21.3.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-webmvc-test-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-jackson-test-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-webmvc-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-webmvc-test-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-resttestclient-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-data-jpa-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-data-jpa-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-data-commons-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-data-commons-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-hibernate-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-jpa-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: jakarta.persistence-api-3.2.0.jar
+#26 39.85 [INFO] Resolved dependency: hibernate-core-7.4.1.Final.jar
+#26 39.85 [INFO] Resolved dependency: jakarta.transaction-api-2.0.1.jar
+#26 39.85 [INFO] Resolved dependency: hibernate-models-1.1.1.jar
+#26 39.85 [INFO] Resolved dependency: jaxb-runtime-4.0.9.jar
+#26 39.85 [INFO] Resolved dependency: jaxb-core-4.0.9.jar
+#26 39.85 [INFO] Resolved dependency: angus-activation-2.0.3.jar
+#26 39.85 [INFO] Resolved dependency: txw2-4.0.9.jar
+#26 39.85 [INFO] Resolved dependency: istack-commons-runtime-4.1.2.jar
+#26 39.85 [INFO] Resolved dependency: jakarta.inject-api-2.0.1.jar
+#26 39.85 [INFO] Resolved dependency: spring-orm-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: spring-data-jpa-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: antlr4-runtime-4.13.2.jar
+#26 39.85 [INFO] Resolved dependency: spring-aspects-7.0.8.jar
+#26 39.85 [INFO] Resolved dependency: aspectjweaver-1.9.25.1.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-starter-validation-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: spring-boot-validation-4.1.0.jar
+#26 39.85 [INFO] Resolved dependency: tomcat-embed-el-11.0.22.jar
+#26 39.85 [INFO] Resolved dependency: hibernate-validator-9.1.0.Final.jar
+#26 39.85 [INFO] Resolved dependency: jakarta.validation-api-3.1.1.jar
+#26 39.85 [INFO] Resolved dependency: jboss-logging-3.6.3.Final.jar
+#26 39.85 [INFO] Resolved dependency: classmate-1.7.3.jar
+#26 39.86 [INFO] ------------------------------------------------------------------------
+#26 39.86 [INFO] BUILD SUCCESS
+#26 39.86 [INFO] ------------------------------------------------------------------------
+#26 39.86 [INFO] Total time:  38.494 s
+#26 39.86 [INFO] Finished at: 2026-07-23T18:19:56Z
+#26 39.86 [INFO] ------------------------------------------------------------------------
+#26 DONE 40.1s
 
 #33 [backend backend-build 5/7] COPY backend/src ./src
 #33 DONE 0.0s
@@ -86,65 +99,65 @@ Salida final sanitizada:
 #34 DONE 0.0s
 
 #35 [backend backend-build 7/7] RUN mvn -B -DskipTests package     && javac --release 21 -d /workspace/healthcheck /workspace/healthcheck/RuntimeHealthCheck.java
-#35 1.278 [INFO] Scanning for projects...
-#35 1.536 [INFO] 
-#35 1.536 [INFO] ----------------------< com.gestudio:crm-backend >----------------------
-#35 1.536 [INFO] Building Gestudio CRM Backend 0.1.0-SNAPSHOT
-#35 1.536 [INFO]   from pom.xml
-#35 1.536 [INFO] --------------------------------[ jar ]---------------------------------
-#35 2.200 [INFO] 
-#35 2.201 [INFO] --- enforcer:3.5.0:enforce (enforce-build-environment) @ crm-backend ---
-#35 2.382 [INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
-#35 2.382 [INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
-#35 2.383 [INFO] 
-#35 2.383 [INFO] --- resources:3.5.0:resources (default-resources) @ crm-backend ---
-#35 2.451 [INFO] Copying 1 resource from src/main/resources to target/classes
-#35 2.465 [INFO] Copying 13 resources from src/main/resources to target/classes
-#35 2.468 [INFO] 
-#35 2.468 [INFO] --- compiler:3.15.0:compile (default-compile) @ crm-backend ---
-#35 2.589 [INFO] Recompiling the module because of changed source code.
-#35 2.597 [INFO] Compiling 135 source files with javac [debug parameters release 21] to target/classes
-#35 5.878 [INFO] /workspace/backend/src/main/java/com/gestudio/crm/common/ApiExceptionHandler.java: Some input files use or override a deprecated API.
-#35 5.878 [INFO] /workspace/backend/src/main/java/com/gestudio/crm/common/ApiExceptionHandler.java: Recompile with -Xlint:deprecation for details.
-#35 5.879 [INFO] 
-#35 5.879 [INFO] --- resources:3.5.0:testResources (default-testResources) @ crm-backend ---
-#35 5.885 [INFO] skip non existing resourceDirectory /workspace/backend/src/test/resources
-#35 5.885 [INFO] 
-#35 5.885 [INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ crm-backend ---
-#35 5.895 [INFO] Recompiling the module because of changed dependency.
-#35 5.896 [INFO] Compiling 28 source files with javac [debug parameters release 21] to target/test-classes
-#35 7.272 [INFO] /workspace/backend/src/test/java/com/gestudio/crm/exclusion/ExclusionIntegrationTest.java: Some input files use or override a deprecated API.
-#35 7.272 [INFO] /workspace/backend/src/test/java/com/gestudio/crm/exclusion/ExclusionIntegrationTest.java: Recompile with -Xlint:deprecation for details.
-#35 7.273 [INFO] 
-#35 7.273 [INFO] --- surefire:3.5.6:test (default-test) @ crm-backend ---
-#35 7.363 [INFO] Tests are skipped.
-#35 7.364 [INFO] 
-#35 7.364 [INFO] --- jar:3.5.0:jar (default-jar) @ crm-backend ---
-#35 7.615 [INFO] Building jar: /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar
-#35 7.704 [INFO] 
-#35 7.704 [INFO] --- spring-boot:4.1.0:repackage (repackage) @ crm-backend ---
-#35 8.180 [INFO] Replacing main artifact /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
-#35 8.182 [INFO] The original artifact has been renamed to /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar.original
-#35 8.182 [INFO] ------------------------------------------------------------------------
-#35 8.182 [INFO] BUILD SUCCESS
-#35 8.182 [INFO] ------------------------------------------------------------------------
-#35 8.183 [INFO] Total time:  6.925 s
-#35 8.183 [INFO] Finished at: 2026-07-23T18:04:52Z
-#35 8.183 [INFO] ------------------------------------------------------------------------
-#35 DONE 8.8s
+#35 1.250 [INFO] Scanning for projects...
+#35 1.502 [INFO] 
+#35 1.502 [INFO] ----------------------< com.gestudio:crm-backend >----------------------
+#35 1.502 [INFO] Building Gestudio CRM Backend 0.1.0-SNAPSHOT
+#35 1.502 [INFO]   from pom.xml
+#35 1.502 [INFO] --------------------------------[ jar ]---------------------------------
+#35 2.090 [INFO] 
+#35 2.090 [INFO] --- enforcer:3.5.0:enforce (enforce-build-environment) @ crm-backend ---
+#35 2.243 [INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
+#35 2.244 [INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
+#35 2.244 [INFO] 
+#35 2.244 [INFO] --- resources:3.5.0:resources (default-resources) @ crm-backend ---
+#35 2.302 [INFO] Copying 1 resource from src/main/resources to target/classes
+#35 2.316 [INFO] Copying 13 resources from src/main/resources to target/classes
+#35 2.319 [INFO] 
+#35 2.319 [INFO] --- compiler:3.15.0:compile (default-compile) @ crm-backend ---
+#35 2.418 [INFO] Recompiling the module because of changed source code.
+#35 2.424 [INFO] Compiling 135 source files with javac [debug parameters release 21] to target/classes
+#35 5.804 [INFO] /workspace/backend/src/main/java/com/gestudio/crm/common/ApiExceptionHandler.java: Some input files use or override a deprecated API.
+#35 5.804 [INFO] /workspace/backend/src/main/java/com/gestudio/crm/common/ApiExceptionHandler.java: Recompile with -Xlint:deprecation for details.
+#35 5.805 [INFO] 
+#35 5.805 [INFO] --- resources:3.5.0:testResources (default-testResources) @ crm-backend ---
+#35 5.811 [INFO] skip non existing resourceDirectory /workspace/backend/src/test/resources
+#35 5.811 [INFO] 
+#35 5.811 [INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ crm-backend ---
+#35 5.821 [INFO] Recompiling the module because of changed dependency.
+#35 5.821 [INFO] Compiling 28 source files with javac [debug parameters release 21] to target/test-classes
+#35 6.971 [INFO] /workspace/backend/src/test/java/com/gestudio/crm/exclusion/ExclusionIntegrationTest.java: Some input files use or override a deprecated API.
+#35 6.971 [INFO] /workspace/backend/src/test/java/com/gestudio/crm/exclusion/ExclusionIntegrationTest.java: Recompile with -Xlint:deprecation for details.
+#35 6.971 [INFO] 
+#35 6.971 [INFO] --- surefire:3.5.6:test (default-test) @ crm-backend ---
+#35 7.051 [INFO] Tests are skipped.
+#35 7.051 [INFO] 
+#35 7.051 [INFO] --- jar:3.5.0:jar (default-jar) @ crm-backend ---
+#35 7.250 [INFO] Building jar: /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar
+#35 7.354 [INFO] 
+#35 7.355 [INFO] --- spring-boot:4.1.0:repackage (repackage) @ crm-backend ---
+#35 7.765 [INFO] Replacing main artifact /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
+#35 7.765 [INFO] The original artifact has been renamed to /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar.original
+#35 7.766 [INFO] ------------------------------------------------------------------------
+#35 7.766 [INFO] BUILD SUCCESS
+#35 7.766 [INFO] ------------------------------------------------------------------------
+#35 7.767 [INFO] Total time:  6.534 s
+#35 7.767 [INFO] Finished at: 2026-07-23T18:20:04Z
+#35 7.767 [INFO] ------------------------------------------------------------------------
+#35 DONE 8.4s
 
 #36 [backend stage-1 3/4] COPY --from=backend-build /workspace/backend/target/crm-backend-*.jar /app/app.jar
-#36 DONE 0.1s
+#36 DONE 0.0s
 
 #37 [backend stage-1 4/4] COPY --from=backend-build /workspace/healthcheck/RuntimeHealthCheck.class /app/healthcheck/RuntimeHealthCheck.class
 #37 DONE 0.0s
 
 #38 [backend] exporting to image
 #38 exporting layers
-#38 exporting layers 0.8s done
-#38 writing image sha256:a58d63c99bea8c8836144d634b2086ae63df9d6b93d9bb06cbb62ec8d6e85606 done
+#38 exporting layers 0.3s done
+#38 writing image sha256:f94f0a425215c5e76628cdf464cef43c88cc0323c55b9f821ccc3e4be14108fb done
 #38 naming to docker.io/library/crm-platform-backend done
-#38 DONE 0.9s
+#38 DONE 0.3s
 
 #39 [backend] resolving provenance for metadata file
 #39 DONE 0.0s
@@ -170,11 +183,11 @@ Salida final sanitizada:
  Container crm-platform-backend-1  Healthy
  Container crm-platform-frontend-1  Starting
  Container crm-platform-frontend-1  Started
+ Container crm-platform-frontend-1  Waiting
  Container crm-platform-postgres-1  Waiting
  Container crm-platform-backend-1  Waiting
- Container crm-platform-frontend-1  Waiting
- Container crm-platform-postgres-1  Healthy
  Container crm-platform-backend-1  Healthy
+ Container crm-platform-postgres-1  Healthy
  Container crm-platform-frontend-1  Healthy
 PASS: inicio del stack fail-closed
 
@@ -189,36 +202,23 @@ Running 2 tests using 1 worker
 [1A[2K[1/2] tests/complete-crm.spec.ts:18:1 › complete synthetic CRM journey stays tenant-scoped and fail-closed
 [1A[2K  1) tests/complete-crm.spec.ts:18:1 › complete synthetic CRM journey stays tenant-scoped and fail-closed 
 
-    [31mTest timeout of 180000ms exceeded.[39m
+    Error: expect.toBeVisible: Error: strict mode violation: locator('article.duplicate-review-card').filter({ hasText: 'E2E Syntetic 1784830829800' }) resolved to 2 elements:
+        1) <article class="duplicate-review-card">…</article> aka getByRole('article').first()
+        2) <article class="duplicate-review-card">…</article> aka getByRole('article').nth(1)
 
-    Error: locator.fill: Test timeout of 180000ms exceeded.
     Call log:
-    [2m  - waiting for getByLabel('Nueva tarea')[22m
-    [2m    - locator resolved to <input value="" required=""/>[22m
-    [2m    - fill("Tarea synthetic 1784829919110")[22m
-    [2m  - attempting fill action[22m
-    [2m    2 × waiting for element to be visible, enabled and editable[22m
-    [2m      - element is not visible[22m
-    [2m    - retrying fill action[22m
-    [2m    - waiting 20ms[22m
-    [2m    2 × waiting for element to be visible, enabled and editable[22m
-    [2m      - element is not visible[22m
-    [2m    - retrying fill action[22m
-    [2m      - waiting 100ms[22m
-    [2m    352 × waiting for element to be visible, enabled and editable[22m
-    [2m        - element is not visible[22m
-    [2m      - retrying fill action[22m
-    [2m        - waiting 500ms[22m
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for locator('article.duplicate-review-card').filter({ hasText: 'E2E Syntetic 1784830829800' })[22m
 
 
-      49 |
-      50 |   const due = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-    > 51 |   await page.getByLabel("Nueva tarea").fill(`Tarea synthetic ${suffix}`);
-         |                                        ^
-      52 |   await page.getByLabel("Vencimiento").fill(due);
-      53 |   await page.getByRole("button", { name: "Crear tarea" }).click();
-      54 |   await expect(page.getByText("Tarea creada.")).toBeVisible();
-        at /home/runner/work/crm-platform/crm-platform/frontend/tests/complete-crm.spec.ts:51:40
+      94 |     .locator("article.duplicate-review-card")
+      95 |     .filter({ hasText: `E2E Syntetic ${suffix}` });
+    > 96 |   await expect(duplicateReview).toBeVisible();
+         |                                 ^
+      97 |   await duplicateReview.getByRole("button", { name: "Vincular con el existente" }).click();
+      98 |   const linkDialog = page.getByRole("dialog", { name: "Vincular con el existente" });
+      99 |   await expect(linkDialog).toBeVisible();
+        at /home/runner/work/crm-platform/crm-platform/frontend/tests/complete-crm.spec.ts:96:33
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     ../validation-output/playwright/complete-crm-complete-synt-9e153-nant-scoped-and-fail-closed/test-failed-1.png
@@ -239,10 +239,10 @@ Running 2 tests using 1 worker
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
 
-[1A[2K[2/2] tests/complete-crm.spec.ts:252:1 › responsive shell and primary navigation remain keyboard operable
+[1A[2K[2/2] tests/complete-crm.spec.ts:255:1 › responsive shell and primary navigation remain keyboard operable
 [1A[2K  1 failed
     tests/complete-crm.spec.ts:18:1 › complete synthetic CRM journey stays tenant-scoped and fail-closed 
-  1 passed (3.2m)
+  1 passed (7.5s)
 FAILED (1): recorrido Playwright completo
  Container crm-platform-frontend-1  Stopping
  Container crm-platform-frontend-1  Stopped
