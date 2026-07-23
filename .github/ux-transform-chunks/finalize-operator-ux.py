@@ -31,7 +31,9 @@ replace_exact(
 replace_exact(app, '<EmptyState text="No se pudo cargar la salud del worker." />', '<EmptyState text="No se pudo cargar el estado del proceso automático." />')
 replace_exact(app, '<Control label="Email" value={safety?.selectedEmailProvider ?? "Consultando…"} />', '<Control label="Correo electrónico" value={labelFor(safety?.selectedEmailProvider ?? "NOOP")} />')
 replace_exact(app, 'setNotice("Preview renderizado con datos sintéticos.");', 'setNotice("Vista previa generada con datos sintéticos.");')
-replace_exact(app, '<label>Score mínimo', '<label>Puntuación mínima')
+replace_exact(app, '''<label>
+                Score mínimo''', '''<label>
+                Puntuación mínima''')
 replace_exact(app, '`Simulación completa: ${result.includedCount} borradores fake y ${result.excludedCount} bloqueados.`', '`Simulación completa: ${result.includedCount} borradores de simulación y ${result.excludedCount} bloqueados.`')
 replace_exact(app, '<Control label="Proveedor" value={health?.provider ?? "FAKE_INBOUND"} />', '<Control label="Proveedor" value={labelFor(health?.provider ?? "FAKE_INBOUND")} />')
 replace_exact(app, '<Panel title="Inbound y quarantine">', '<Panel title="Mensajes recibidos pendientes o en revisión">')
