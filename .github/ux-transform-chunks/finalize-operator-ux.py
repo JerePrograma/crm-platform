@@ -35,6 +35,8 @@ replace_exact(app, '''<label>
                 Score mínimo''', '''<label>
                 Puntuación mínima''')
 replace_exact(app, '`Simulación completa: ${result.includedCount} borradores fake y ${result.excludedCount} bloqueados.`', '`Simulación completa: ${result.includedCount} borradores de simulación y ${result.excludedCount} bloqueados.`')
+replace_exact(app, 'Simular con fake', 'Simular resultado')
+replace_exact(app, '<option value="EMAIL">Email</option>', '<option value="EMAIL">Correo electrónico</option>')
 replace_exact(app, '<Control label="Proveedor" value={health?.provider ?? "FAKE_INBOUND"} />', '<Control label="Proveedor" value={labelFor(health?.provider ?? "FAKE_INBOUND")} />')
 replace_exact(app, '<Panel title="Inbound y quarantine">', '<Panel title="Mensajes recibidos pendientes o en revisión">')
 replace_exact(app, '<EmptyState text="No hay mensajes inbound." />', '<EmptyState text="No hay mensajes recibidos." />')
@@ -64,12 +66,28 @@ replace_exact(test, 'page.getByLabel("Email", { exact: true })', 'page.getByLabe
 replace_exact(test, 'page.getByText("Contacto agregado.")', 'page.getByText("Contacto agregado y elegibilidad actualizada.")')
 replace_exact(
     test,
+    '''  const due = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  await page.getByLabel("Nueva tarea").fill(`Tarea synthetic ${suffix}`);
+  await page.getByLabel("Vencimiento").fill(due);
+  await page.getByRole("button", { name: "Crear tarea" }).click();''',
+    '''  const due = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  const tasksPanel = page.locator("details.disclosure-panel").filter({ hasText: "Tareas de seguimiento" });
+  await tasksPanel.locator("summary").click();
+  await tasksPanel.getByLabel("Nueva tarea").fill(`Tarea synthetic ${suffix}`);
+  await tasksPanel.getByLabel("Vencimiento").fill(due);
+  await tasksPanel.getByRole("button", { name: "Crear tarea" }).click();''',
+)
+replace_exact(
+    test,
     '''  await page.getByLabel("Resumen de actividad").fill(`Actividad synthetic ${suffix}`);
   await page.getByRole("button", { name: "Registrar actividad" }).click();''',
     '''  const activityPanel = page.locator("details.disclosure-panel").filter({ hasText: "Actividad y notas" });
+  await activityPanel.locator("summary").click();
   await activityPanel.getByLabel("Resumen", { exact: true }).fill(`Actividad synthetic ${suffix}`);
   await activityPanel.getByRole("button", { name: "Registrar actividad" }).click();''',
 )
+replace_exact(test, 'await page.getByLabel("Nota").fill(`Nota synthetic ${suffix}`);', 'await activityPanel.getByLabel("Nota").fill(`Nota synthetic ${suffix}`);')
+replace_exact(test, 'await page.getByRole("button", { name: "Agregar nota" }).click();', 'await activityPanel.getByRole("button", { name: "Agregar nota" }).click();')
 replace_exact(
     test,
     '''  for (const status of ["QUALIFYING", "READY_TO_CONTACT", "CONTACTED"] as const) {
@@ -158,7 +176,6 @@ replace_exact(test, 'page.getByRole("button", { name: "Outbox y workers" })', 'p
 replace_exact(test, 'page.getByText("No existe una acción para forzar providers reales")', 'page.getByText("No existe una acción para forzar proveedores externos")')
 replace_exact(test, 'page.getByRole("button", { name: "Inbound y quarantine" })', 'page.getByRole("button", { name: "Mensajes recibidos" })')
 replace_exact(test, 'page.getByText("FAKE_INBOUND", { exact: true })', 'page.getByText("Recepción de prueba", { exact: true })')
-replace_exact(test, 'page.getByText("Deshabilitada", { exact: true })', 'page.getByText("Deshabilitado", { exact: true })')
 replace_exact(test, 'toContainText("EMAIL")', 'toContainText("Correo electrónico")')
 replace_exact(test, 'toContainText("PROCESSED")', 'toContainText("Procesado")')
 replace_exact(test, 'filter({ hasText: "REPLIED" })', 'filter({ hasText: "Respondió" })')
