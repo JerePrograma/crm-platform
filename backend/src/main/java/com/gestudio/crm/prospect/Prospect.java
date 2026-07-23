@@ -112,7 +112,14 @@ public class Prospect extends BaseEntity {
 
   public void markIneligible() {
     contactEligible = false;
+    eligibility = ProspectEligibility.EXCLUDED;
     status = ProspectStatus.DO_NOT_CONTACT;
+  }
+
+  public void markNeedsEnrichment() {
+    contactEligible = false;
+    eligibility = ProspectEligibility.INVALID;
+    status = ProspectStatus.NEEDS_ENRICHMENT;
   }
 
   public void changeStatus(ProspectStatus newStatus) {

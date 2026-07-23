@@ -218,7 +218,8 @@ public class ProspectImportRowProcessor {
     if (websiteDomain != null) {
       channels.add(new ChannelCandidate(ContactChannelType.WEBSITE, websiteDomain));
     }
-    return contactEligibilityService.evaluate(channels).eligible();
+    boolean hasDirectContactChannel = normalizedEmail != null || normalizedPhone != null;
+    return hasDirectContactChannel && contactEligibilityService.evaluate(channels).eligible();
   }
 
   private ImportJob getJob(UUID jobId) {

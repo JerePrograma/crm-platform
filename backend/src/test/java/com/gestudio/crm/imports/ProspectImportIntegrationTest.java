@@ -106,6 +106,24 @@ class ProspectImportIntegrationTest {
   }
 
   @Test
+  void dryRunBlocksProspectRowsWithoutAUsableChannel() {
+    byte[] csv =
+        ("Institución,Localidad\n" + "Academia sin canal,Salta\n").getBytes(StandardCharsets.UTF_8);
+
+    ImportSummary summary =
+        prospectImportService.importFile("missing-channel-preview.csv", csv, true);
+
+    ImportRow row = importRowRepository.findAll().getFirst();
+    assertThat(summary.status()).isEqualTo(ImportJob.Status.COMPLETED);
+    assertThat(summary.totalRows()).isEqualTo(1);
+    assertThat(summary.acceptedRows()).isZero();
+    assertThat(summary.excludedRows()).isEqualTo(1);
+    assertThat(row.getStatus()).isEqualTo(ImportRow.Status.EXCLUDED);
+    assertThat(prospectRepository.count()).isZero();
+    assertThat(institutionRepository.count()).isZero();
+  }
+
+  @Test
   void dryRunMarksExcludedProspectRowsWithoutWritingDomainData() {
     exclusionApplicationService.create(
         ContactChannelType.EMAIL, "blocked@example.test", ExclusionReason.MANUAL);

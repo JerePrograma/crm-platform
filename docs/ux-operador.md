@@ -54,3 +54,11 @@ npm run build --prefix frontend
 bash scripts/check-repository-safety.sh
 git diff --check
 ```
+
+## Paginación y contactabilidad
+
+- La lista de prospectos utiliza la paginación real de la API y conserva búsqueda, estado y página en la URL.
+- Un prospecto sin correo, teléfono, WhatsApp ni sitio utilizable queda pendiente de completar datos y no aparece como plenamente contactable.
+- La contactabilidad se recalcula al crear o eliminar contactos y al agregar, modificar o eliminar canales.
+- Las exclusiones siguen siendo dominantes: agregar un canal excluido no habilita el contacto comercial.
+- La vista previa y la ejecución de importaciones aplican el mismo criterio cuando una fila carece de canales utilizables.

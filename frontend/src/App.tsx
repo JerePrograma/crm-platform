@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
@@ -189,7 +190,6 @@ export function App() {
   const [session, setSession] = useState<SessionUser | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>("dashboard");
   const [prospects, setProspects] = useState<Prospect[]>([]);
-  const [prospectTotal, setProspectTotal] = useState(0);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [duplicateReviews, setDuplicateReviews] = useState<DuplicateReview[]>([]);
@@ -198,15 +198,31 @@ export function App() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
-  const [statusFilter, setStatusFilter] = useState<ProspectStatus | "">("");
-  const initialQuery = new URLSearchParams(window.location.search).get("q") ?? "";
+  const initialParameters = new URLSearchParams(window.location.search);
+  const initialQuery = initialParameters.get("q") ?? "";
+  const requestedStatus = initialParameters.get("status") as ProspectStatus | null;
+  const initialStatus =
+    requestedStatus && prospectStatuses.includes(requestedStatus) ? requestedStatus : "";
+  const requestedPage = Number.parseInt(initialParameters.get("page") ?? "0", 10);
+  const initialPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 0;
+  const [statusFilter, setStatusFilter] = useState<ProspectStatus | "">(initialStatus);
   const [searchInput, setSearchInput] = useState(initialQuery);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const prospectPageRef = useRef(initialPage);
+  const [prospectPageInfo, setProspectPageInfo] = useState({
+    totalElements: 0,
+    totalPages: 0,
+    number: initialPage,
+    size: 100,
+    first: true,
+    last: true,
+  });
+  const prospectTotal = prospectPageInfo.totalElements;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(
-    async (filter: ProspectStatus | "" = statusFilter, query = searchQuery) => {
+    async (filter: ProspectStatus | "" = statusFilter, query = searchQuery, page = prospectPageRef.current) => {
       setLoading(true);
       setError(null);
       try {
@@ -221,7 +237,7 @@ export function App() {
           templateList,
         ] =
           await Promise.all([
-          listProspects(filter || undefined, query || undefined),
+          listProspects(filter || undefined, query || undefined, page),
           listExclusions(),
           session?.permissions.includes("AUDIT_READ") ? listAuditEvents() : Promise.resolve([]),
           session?.permissions.includes("DUPLICATE_RESOLVE")
@@ -239,7 +255,15 @@ export function App() {
             : Promise.resolve([]),
         ]);
         setProspects(prospectPage.content);
-        setProspectTotal(prospectPage.totalElements);
+        prospectPageRef.current = prospectPage.number;
+        setProspectPageInfo({
+          totalElements: prospectPage.totalElements,
+          totalPages: prospectPage.totalPages,
+          number: prospectPage.number,
+          size: prospectPage.size,
+          first: prospectPage.first,
+          last: prospectPage.last,
+        });
         setExclusions(exclusionPage.content);
         setAuditEvents(audits);
         setDuplicateReviews(reviews);
@@ -297,23 +321,33 @@ export function App() {
 
   async function applyStatusFilter(value: ProspectStatus | "") {
     setStatusFilter(value);
-    updateProspectUrl(searchQuery, value);
-    await refresh(value, searchQuery);
+    prospectPageRef.current = 0;
+    updateProspectUrl(searchQuery, value, 0);
+    await refresh(value, searchQuery, 0);
   }
 
   async function applySearch(event: FormEvent) {
     event.preventDefault();
     const query = searchInput.trim();
     setSearchQuery(query);
-    updateProspectUrl(query, statusFilter);
-    await refresh(statusFilter, query);
+    prospectPageRef.current = 0;
+    updateProspectUrl(query, statusFilter, 0);
+    await refresh(statusFilter, query, 0);
   }
 
   async function clearSearch() {
     setSearchInput("");
     setSearchQuery("");
-    updateProspectUrl("", statusFilter);
-    await refresh(statusFilter, "");
+    prospectPageRef.current = 0;
+    updateProspectUrl("", statusFilter, 0);
+    await refresh(statusFilter, "", 0);
+  }
+
+  async function changeProspectPage(page: number) {
+    if (page < 0 || page >= prospectPageInfo.totalPages || page === prospectPageInfo.number) return;
+    prospectPageRef.current = page;
+    updateProspectUrl(searchQuery, statusFilter, page);
+    await refresh(statusFilter, searchQuery, page);
   }
 
   async function refreshView() {
@@ -429,7 +463,7 @@ export function App() {
         {tab === "dashboard" && (
           <section className="stack">
             <div className="metric-grid">
-              <Metric label="Prospectos visibles" value={prospects.length} />
+              <Metric label="Prospectos registrados" value={prospectTotal} />
               <Metric label="Prospectos con interés" value={dashboard.interested} />
               <Metric label="Contacto bloqueado" value={dashboard.blocked} />
               <Metric label="Exclusiones" value={exclusions.length} />
@@ -467,7 +501,9 @@ export function App() {
               {session.permissions.includes("PROSPECT_WRITE") && (
                 <CreateProspectForm
                   onCreated={async (created) => {
-                    await refresh();
+                    prospectPageRef.current = 0;
+                    updateProspectUrl(searchQuery, statusFilter, 0);
+                    await refresh(statusFilter, searchQuery, 0);
                     setSelectedProspect(created);
                   }}
                 />
@@ -550,6 +586,27 @@ export function App() {
                   </tbody>
                 </table>
               </div>
+              {prospectPageInfo.totalPages > 1 && (
+                <nav className="pagination" aria-label="Páginas de prospectos">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={prospectPageInfo.first}
+                    onClick={() => void changeProspectPage(prospectPageInfo.number - 1)}
+                  >
+                    Página anterior
+                  </button>
+                  <span>Página {prospectPageInfo.number + 1} de {prospectPageInfo.totalPages}</span>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={prospectPageInfo.last}
+                    onClick={() => void changeProspectPage(prospectPageInfo.number + 1)}
+                  >
+                    Página siguiente
+                  </button>
+                </nav>
+              )}
             </Panel>
             <Panel title="Ficha integral">
               {selectedProspect ? (
@@ -2690,12 +2747,14 @@ function title(tab: Tab): string {
   }[tab];
 }
 
-function updateProspectUrl(query: string, status: ProspectStatus | "") {
+function updateProspectUrl(query: string, status: ProspectStatus | "", page = 0) {
   const parameters = new URLSearchParams(window.location.search);
   if (query) parameters.set("q", query);
   else parameters.delete("q");
   if (status) parameters.set("status", status);
   else parameters.delete("status");
+  if (page > 0) parameters.set("page", String(page));
+  else parameters.delete("page");
   const suffix = parameters.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${suffix ? `?${suffix}` : ""}`);
 }

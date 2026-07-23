@@ -144,9 +144,15 @@ export function setUserActive(id: string, active: boolean): Promise<void> {
   });
 }
 
-export function listProspects(status?: ProspectStatus, query?: string): Promise<Page<Prospect>> {
+export function listProspects(
+  status?: ProspectStatus,
+  query?: string,
+  page = 0,
+  size = 100,
+): Promise<Page<Prospect>> {
   const params = new URLSearchParams({
-    size: "100",
+    page: String(Math.max(0, page)),
+    size: String(Math.min(Math.max(size, 1), 200)),
     sort: query?.trim() ? "relevance,desc" : "createdAt,desc",
   });
   if (status) {

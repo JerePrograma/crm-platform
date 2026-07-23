@@ -16,6 +16,8 @@ import com.gestudio.crm.contact.ContactOperationsService;
 import com.gestudio.crm.contact.ContactOperationsService.ChannelCommand;
 import com.gestudio.crm.contact.ContactOperationsService.CreateContactCommand;
 import com.gestudio.crm.contact.ContactOperationsService.UpdateContactCommand;
+import com.gestudio.crm.exclusion.ExclusionApplicationService;
+import com.gestudio.crm.exclusion.ExclusionReason;
 import com.gestudio.crm.identity.CrmPrincipal;
 import com.gestudio.crm.identity.IdentityService;
 import com.gestudio.crm.prospect.ProspectApplicationService.CreateProspectCommand;
@@ -61,6 +63,7 @@ class OperationalProspectIntegrationTest {
   @Autowired private ProspectApplicationService prospectApplicationService;
   @Autowired private ProspectOperationsService prospectOperationsService;
   @Autowired private ContactOperationsService contactOperationsService;
+  @Autowired private ExclusionApplicationService exclusionApplicationService;
   @Autowired private TimelineService timelineService;
 
   private CrmPrincipal principal;
@@ -267,11 +270,113 @@ class OperationalProspectIntegrationTest {
     assertThat(restored.status()).isEqualTo(ProspectStatus.CONTACTED);
   }
 
+  @Test
+  void synchronizesContactabilityWhenUsableChannelsAreAddedAndRemoved() {
+    String suffix = UUID.randomUUID().toString();
+    UUID prospectId = prospectApplicationService.create(createCommandWithoutChannels(suffix)).id();
+
+    var missing = prospectOperationsService.get(prospectId);
+    assertThat(missing.contactEligible()).isFalse();
+    assertThat(missing.eligibility()).isEqualTo(ProspectEligibility.INVALID);
+    assertThat(missing.status()).isEqualTo(ProspectStatus.NEEDS_ENRICHMENT);
+
+    var contact =
+        contactOperationsService.create(
+            prospectId,
+            new CreateContactCommand(
+                "Canal",
+                "Disponible",
+                "Administración",
+                true,
+                false,
+                ContactChannelType.EMAIL,
+                "UNKNOWN",
+                "MANUAL",
+                null,
+                List.of(
+                    new ChannelCommand(
+                        ContactChannelType.EMAIL,
+                        "contactable-" + suffix + "@example.test",
+                        true,
+                        true,
+                        false,
+                        "UNKNOWN",
+                        true,
+                        null))));
+
+    var contactable = prospectOperationsService.get(prospectId);
+    assertThat(contactable.contactEligible()).isTrue();
+    assertThat(contactable.eligibility()).isEqualTo(ProspectEligibility.ELIGIBLE);
+    assertThat(contactable.status()).isEqualTo(ProspectStatus.NEW);
+
+    var channel = contact.channels().getFirst();
+    contactOperationsService.deleteChannel(channel.id(), channel.version());
+
+    var missingAgain = prospectOperationsService.get(prospectId);
+    assertThat(missingAgain.contactEligible()).isFalse();
+    assertThat(missingAgain.eligibility()).isEqualTo(ProspectEligibility.INVALID);
+    assertThat(missingAgain.status()).isEqualTo(ProspectStatus.NEEDS_ENRICHMENT);
+  }
+
+  @Test
+  void keepsExclusionsDominantWhenAChannelIsAdded() {
+    String suffix = UUID.randomUUID().toString();
+    String email = "blocked-" + suffix + "@example.test";
+    UUID prospectId = prospectApplicationService.create(createCommandWithoutChannels(suffix)).id();
+    exclusionApplicationService.create(ContactChannelType.EMAIL, email, ExclusionReason.MANUAL);
+
+    contactOperationsService.create(
+        prospectId,
+        new CreateContactCommand(
+            "Canal",
+            "Excluido",
+            "Administración",
+            true,
+            false,
+            ContactChannelType.EMAIL,
+            "UNKNOWN",
+            "MANUAL",
+            null,
+            List.of(
+                new ChannelCommand(
+                    ContactChannelType.EMAIL, email, true, true, false, "UNKNOWN", true, null))));
+
+    var blocked = prospectOperationsService.get(prospectId);
+    assertThat(blocked.contactEligible()).isFalse();
+    assertThat(blocked.eligibility()).isEqualTo(ProspectEligibility.EXCLUDED);
+    assertThat(blocked.status()).isEqualTo(ProspectStatus.DO_NOT_CONTACT);
+  }
+
   private ProspectOperationsService.OperationalProspectView transition(
       UUID prospectId, ProspectStatus status) {
     long version = prospectOperationsService.get(prospectId).version();
     return prospectOperationsService.transition(
         prospectId, new TransitionCommand(version, status, null, "Integration test", null, false));
+  }
+
+  private CreateProspectCommand createCommandWithoutChannels(String suffix) {
+    return new CreateProspectCommand(
+        "Academia sin canal " + suffix,
+        "Danza",
+        "Rosario",
+        "Santa Fe",
+        "Argentina",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "NO-CHANNEL-" + suffix,
+        "fixture",
+        "Synthetic no-channel evidence",
+        50,
+        2,
+        40,
+        "Planillas",
+        "Sin canal publicado",
+        Instant.parse("2026-07-21T12:00:00Z"),
+        "operations-admin");
   }
 
   private CreateProspectCommand createCommand(String suffix) {

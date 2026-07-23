@@ -106,7 +106,9 @@ public class ProspectApplicationService {
       eligibilityCandidates.add(new ChannelCandidate(ContactChannelType.WEBSITE, websiteDomain));
     }
 
-    boolean eligible = contactEligibilityService.evaluate(eligibilityCandidates).eligible();
+    boolean hasDirectContactChannel = !preparedChannels.isEmpty();
+    var eligibilityDecision = contactEligibilityService.evaluate(eligibilityCandidates);
+    boolean eligible = hasDirectContactChannel && eligibilityDecision.eligible();
 
     if (hasContactData(command, preparedChannels)) {
       Contact contact = Contact.create(institution, command.contactName(), command.contactRole());
@@ -137,6 +139,11 @@ public class ProspectApplicationService {
             command.verifiedAt(),
             command.owner(),
             eligible);
+    if (!eligibilityDecision.eligible()) {
+      prospect.markIneligible();
+    } else if (!hasDirectContactChannel) {
+      prospect.markNeedsEnrichment();
+    }
     prospect.assignOrganization(currentActor.organizationId());
     prospectRepository.save(prospect);
 

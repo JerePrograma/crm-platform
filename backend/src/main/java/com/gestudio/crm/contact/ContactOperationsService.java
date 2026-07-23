@@ -109,6 +109,7 @@ public class ContactOperationsService {
       createChannel(prospectId, contactId, channel, first);
       first = false;
     }
+    refreshContactability(prospectId);
     auditEventWriter.record(
         "CONTACT_CREATED", "Contact", contactId, Map.of("prospectId", prospectId));
     return find(contactId);
@@ -152,6 +153,7 @@ public class ContactOperationsService {
   @Transactional
   public void delete(UUID contactId, long version) {
     find(contactId);
+    UUID prospectId = prospectForContact(contactId);
     int updated =
         jdbcTemplate.update(
             """
@@ -165,6 +167,7 @@ public class ContactOperationsService {
     if (updated == 0) {
       conflict(contactId, version);
     }
+    refreshContactability(prospectId);
     auditEventWriter.record("CONTACT_REMOVED", "Contact", contactId, Map.of());
   }
 
@@ -197,6 +200,7 @@ public class ContactOperationsService {
     find(contactId);
     UUID prospectId = prospectForContact(contactId);
     createChannel(prospectId, contactId, command, false);
+    refreshContactability(prospectId);
     auditEventWriter.record(
         "CONTACT_CHANNEL_CREATED", "Contact", contactId, Map.of("type", command.type().name()));
     return find(contactId);
@@ -240,7 +244,7 @@ public class ContactOperationsService {
     if (updated == 0) {
       throw new OptimisticConflictException("Contact channel was modified by another user");
     }
-    applyExclusion(reference.prospectId(), command.type(), normalized);
+    refreshContactability(reference.prospectId());
     auditEventWriter.record(
         "CONTACT_CHANNEL_UPDATED",
         "ContactChannel",
@@ -261,6 +265,7 @@ public class ContactOperationsService {
     if (deleted == 0) {
       throw new OptimisticConflictException("Contact channel was modified by another user");
     }
+    refreshContactability(reference.prospectId());
     auditEventWriter.record(
         "CONTACT_CHANNEL_REMOVED",
         "ContactChannel",
@@ -291,23 +296,105 @@ public class ContactOperationsService {
         consent(command.consent()),
         command.preferred(),
         timestamp(command.lastValidatedAt()));
-    applyExclusion(prospectId, command.type(), normalized);
   }
 
-  private void applyExclusion(UUID prospectId, ContactChannelType type, String normalized) {
-    if (!eligibilityService.evaluate(List.of(new ChannelCandidate(type, normalized))).eligible()) {
+  private void refreshContactability(UUID prospectId) {
+    List<ChannelCandidate> candidates =
+        jdbcTemplate.query(
+            """
+            SELECT cc.type, cc.normalized_value
+            FROM prospect p
+            JOIN contact c ON c.institution_id = p.institution_id
+              AND c.organization_id = p.organization_id
+            JOIN contact_channel cc ON cc.contact_id = c.id
+              AND cc.organization_id = c.organization_id
+            WHERE p.id = ? AND p.organization_id = ?
+              AND c.deleted_at IS NULL
+              AND cc.valid = TRUE
+              AND cc.consent <> 'DENIED'
+            UNION ALL
+            SELECT 'WEBSITE', i.website_domain
+            FROM prospect p
+            JOIN institution i ON i.id = p.institution_id
+              AND i.organization_id = p.organization_id
+            WHERE p.id = ? AND p.organization_id = ?
+              AND i.website_domain IS NOT NULL
+              AND i.website_domain <> ''
+            """,
+            (resultSet, rowNumber) ->
+                new ChannelCandidate(
+                    ContactChannelType.valueOf(resultSet.getString(1)), resultSet.getString(2)),
+            prospectId,
+            currentActor.organizationId(),
+            prospectId,
+            currentActor.organizationId());
+
+    boolean hasDirectContactChannel =
+        candidates.stream()
+            .anyMatch(
+                candidate ->
+                    candidate.type() == ContactChannelType.EMAIL
+                        || candidate.type() == ContactChannelType.PHONE
+                        || candidate.type() == ContactChannelType.WHATSAPP);
+
+    if (!eligibilityService.evaluate(candidates).eligible()) {
       jdbcTemplate.update(
           """
-          UPDATE prospect SET contact_eligible = FALSE, eligibility = 'EXCLUDED',
-            status = 'DO_NOT_CONTACT', updated_at = now(), updated_by = ?, version = version + 1
+          UPDATE prospect
+          SET contact_eligible = FALSE,
+              eligibility = CASE WHEN status = 'CUSTOMER' THEN 'CUSTOMER' ELSE 'EXCLUDED' END,
+              status = CASE WHEN status = 'CUSTOMER' THEN status ELSE 'DO_NOT_CONTACT' END,
+              updated_at = now(), updated_by = ?, version = version + 1
           WHERE id = ? AND organization_id = ?
           """,
           currentActor.userIdOrNull(),
           prospectId,
           currentActor.organizationId());
-      auditEventWriter.record(
-          "PROSPECT_EXCLUDED_BY_CONTACT", "Prospect", prospectId, Map.of("channel", type.name()));
+      return;
     }
+
+    if (!hasDirectContactChannel) {
+      jdbcTemplate.update(
+          """
+          UPDATE prospect
+          SET contact_eligible = FALSE,
+              eligibility = CASE
+                WHEN status = 'CUSTOMER' THEN 'CUSTOMER'
+                WHEN status = 'DO_NOT_CONTACT' THEN 'EXCLUDED'
+                ELSE 'INVALID'
+              END,
+              status = CASE
+                WHEN status IN ('NEW', 'READY_TO_CONTACT') THEN 'NEEDS_ENRICHMENT'
+                ELSE status
+              END,
+              updated_at = now(), updated_by = ?, version = version + 1
+          WHERE id = ? AND organization_id = ?
+          """,
+          currentActor.userIdOrNull(),
+          prospectId,
+          currentActor.organizationId());
+      return;
+    }
+
+    jdbcTemplate.update(
+        """
+        UPDATE prospect
+        SET status = CASE WHEN status = 'NEEDS_ENRICHMENT' THEN 'NEW' ELSE status END,
+            eligibility = CASE
+              WHEN status = 'CUSTOMER' THEN 'CUSTOMER'
+              WHEN status = 'DO_NOT_CONTACT' THEN 'EXCLUDED'
+              ELSE 'ELIGIBLE'
+            END,
+            contact_eligible = CASE
+              WHEN status IN ('CUSTOMER', 'DO_NOT_CONTACT') THEN FALSE
+              ELSE TRUE
+            END,
+            updated_at = now(), updated_by = ?, version = version + 1
+        WHERE id = ? AND organization_id = ?
+        """,
+        currentActor.userIdOrNull(),
+        prospectId,
+        currentActor.organizationId());
   }
 
   private ContactView find(UUID contactId) {

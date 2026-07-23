@@ -124,13 +124,13 @@ class CampaignIntegrationTest {
         campaignService.freezeAudience(
             campaign.id(),
             campaign.version(),
-            new AudienceFilter(null, "ELIGIBLE", null, null, province, null, true, false));
+            new AudienceFilter(null, null, null, null, province, null, true, false));
     assertThat(campaign.status()).isEqualTo(CampaignState.READY_FOR_REVIEW);
     assertThat(campaign.recipientCount()).isEqualTo(1);
     assertThat(campaign.excludedCount()).isEqualTo(2);
     assertThat(campaignService.audience(campaign.id()))
         .extracting(CampaignService.AudienceRecipientView::validationStatus)
-        .containsExactlyInAnyOrder("VALID", "MISSING_CHANNEL", "EXCLUDED");
+        .containsExactlyInAnyOrder("VALID", "INELIGIBLE", "EXCLUDED");
 
     campaign = campaignService.approve(campaign.id(), campaign.version());
     var simulation = campaignService.simulate(campaign.id(), "simulate-" + suffix);
