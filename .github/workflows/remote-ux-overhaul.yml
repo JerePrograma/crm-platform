@@ -1,0 +1,160 @@
+name: remote-ux-overhaul
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/remote-ux-trigger]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: remote-ux-overhaul-main
+  cancel-in-progress: false
+
+jobs:
+  apply-validate-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CRM_BOOTSTRAP_USERNAME: remote-ux-admin
+      CRM_BOOTSTRAP_PASSWORD: remote-ux-admin-password
+      SENDING_ENABLED: "false"
+      SENDING_DRY_RUN: "true"
+      SENDING_DAILY_LIMIT: "0"
+      SENDING_KILL_SWITCH: "true"
+      MESSAGING_REAL_NETWORK_ALLOWED: "false"
+      FAKE_INBOUND_ENABLED: "true"
+      FAKE_INBOUND_WEBHOOK_SECRET: remote-ux-synthetic-inbound-secret
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Guard main and expected staging history
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "main"
+          test "$(git rev-parse HEAD^^)" = "a4d975d5a7a041e492894c78583381a466482459"
+          test -z "$(git status --short)"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Apply guarded transformations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/remote-ux-preflight.py
+          python -m py_compile scripts/remote-ux-overhaul.py scripts/remote-ux-postfix.py
+          python scripts/remote-ux-overhaul.py
+          python scripts/remote-ux-postfix.py
+          ./mvnw -B -f backend/pom.xml -DskipTests spotless:apply
+
+      - name: Verify change scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed='^(README.md|docs/ux-conventions.md|frontend/src/(App.tsx|api.ts|main.tsx|styles.css|labels.ts|labels.test.ts|dialog.tsx)|backend/src/main/java/com/gestudio/crm/(deduplication/(DuplicateResolutionService.java|ImportedProspectData.java)|prospect/ProspectApplicationService.java|imports/ProspectImportRowProcessor.java|contact/ContactOperationsService.java)|backend/src/test/java/com/gestudio/crm/deduplication/ImportedProspectDataTest.java)$'
+          git diff --name-only | tee /tmp/changed-files.txt
+          while IFS= read -r path; do
+            [[ "$path" =~ $allowed ]] || { echo "Unexpected changed path: $path"; exit 1; }
+          done < /tmp/changed-files.txt
+          test -n "$(cat /tmp/changed-files.txt)"
+          ! grep -R --line-number -E 'window\.(prompt|confirm)' frontend/src
+          ! grep -R --line-number -E 'dangerouslySetInnerHTML' frontend/src
+          git diff --check
+
+      - name: Frontend checks
+        working-directory: frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run test:unit
+          npm run build
+
+      - name: Backend regression and full verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./mvnw -B -f backend/pom.xml -Dtest=ImportedProspectDataTest test
+          ./mvnw -B -f backend/pom.xml verify
+
+      - name: Repository safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/check-repository-safety.sh
+          git diff --check
+
+      - name: End-to-end responsive smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose --profile app up -d --build --wait
+          trap 'docker compose --profile app down -v --remove-orphans' EXIT
+          cd frontend
+          npx playwright install --with-deps chromium
+          CRM_E2E_BASE_URL=http://127.0.0.1:5173 \
+          CRM_E2E_USERNAME="$CRM_BOOTSTRAP_USERNAME" \
+          CRM_E2E_PASSWORD="$CRM_BOOTSTRAP_PASSWORD" \
+          CRM_E2E_BROWSER_CHANNEL=bundled \
+          CRM_E2E_INBOUND_SECRET="$FAKE_INBOUND_WEBHOOK_SECRET" \
+          npm run test:e2e
+
+      - name: Review and publish atomic functional commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$(git rev-parse HEAD)" || {
+            echo "origin/main changed during validation; refusing to push"
+            exit 1
+          }
+          rm -f \
+            scripts/remote-ux-overhaul.py \
+            scripts/remote-ux-preflight.py \
+            scripts/remote-ux-postfix.py \
+            .github/remote-ux-trigger \
+            .github/workflows/remote-ux-overhaul.yml
+          git config user.name "Gestudio Remote UX Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add \
+            README.md \
+            docs/ux-conventions.md \
+            frontend/src/App.tsx \
+            frontend/src/api.ts \
+            frontend/src/main.tsx \
+            frontend/src/styles.css \
+            frontend/src/labels.ts \
+            frontend/src/labels.test.ts \
+            frontend/src/dialog.tsx \
+            backend/src/main/java/com/gestudio/crm/deduplication/DuplicateResolutionService.java \
+            backend/src/main/java/com/gestudio/crm/deduplication/ImportedProspectData.java \
+            backend/src/main/java/com/gestudio/crm/prospect/ProspectApplicationService.java \
+            backend/src/main/java/com/gestudio/crm/imports/ProspectImportRowProcessor.java \
+            backend/src/main/java/com/gestudio/crm/contact/ContactOperationsService.java \
+            backend/src/test/java/com/gestudio/crm/deduplication/ImportedProspectDataTest.java \
+            scripts/remote-ux-overhaul.py \
+            scripts/remote-ux-preflight.py \
+            scripts/remote-ux-postfix.py \
+            .github/remote-ux-trigger \
+            .github/workflows/remote-ux-overhaul.yml
+          git diff --cached --check
+          git status --short
+          git diff --cached --stat
+          git commit -m "feat: improve CRM user experience and duplicate retention"
+          git push origin HEAD:main
+          echo "Published commit $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
