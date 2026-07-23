@@ -1,5 +1,5 @@
 name: validate-contactability-pagination
-# retry 1: align reporting fixture with direct contactability
+# retry 2: align all fixtures with direct contactability
 
 on:
   push:
@@ -81,7 +81,7 @@ jobs:
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
-            run_logged 'alineación de fixture de reportes' python .github/ux-followup-postfix.py
+            run_logged 'alineación de fixtures dependientes' python .github/ux-followup-postfix.py
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
@@ -90,7 +90,7 @@ jobs:
           fi
           if [ "$code" -eq 0 ]; then
             run_logged 'control estricto de alcance' bash -lc '
-              unexpected=$(git diff --name-only | grep -Ev "^(backend/src/main/java/com/gestudio/crm/prospect/Prospect.java|backend/src/main/java/com/gestudio/crm/prospect/ProspectApplicationService.java|backend/src/main/java/com/gestudio/crm/imports/ProspectImportRowProcessor.java|backend/src/main/java/com/gestudio/crm/contact/ContactOperationsService.java|backend/src/test/java/com/gestudio/crm/prospect/OperationalProspectIntegrationTest.java|backend/src/test/java/com/gestudio/crm/imports/ProspectImportIntegrationTest.java|backend/src/test/java/com/gestudio/crm/reporting/OperationsReportingIntegrationTest.java|frontend/src/App.tsx|frontend/src/api.ts|frontend/src/api.test.ts|docs/ux-operador.md)$" || true)
+              unexpected=$(git diff --name-only | grep -Ev "^(backend/src/main/java/com/gestudio/crm/prospect/Prospect.java|backend/src/main/java/com/gestudio/crm/prospect/ProspectApplicationService.java|backend/src/main/java/com/gestudio/crm/imports/ProspectImportRowProcessor.java|backend/src/main/java/com/gestudio/crm/contact/ContactOperationsService.java|backend/src/test/java/com/gestudio/crm/prospect/OperationalProspectIntegrationTest.java|backend/src/test/java/com/gestudio/crm/imports/ProspectImportIntegrationTest.java|backend/src/test/java/com/gestudio/crm/reporting/OperationsReportingIntegrationTest.java|backend/src/test/java/com/gestudio/crm/campaign/CampaignIntegrationTest.java|backend/src/test/java/com/gestudio/crm/sales/OpportunityIntegrationTest.java|frontend/src/App.tsx|frontend/src/api.ts|frontend/src/api.test.ts|docs/ux-operador.md)$" || true)
               if [ -n "$unexpected" ]; then
                 printf "Archivos inesperados:\n%s\n" "$unexpected"
                 exit 1
@@ -101,7 +101,7 @@ jobs:
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
-            run_logged 'pruebas backend específicas' bash -lc 'FAKE_INBOUND_ENABLED=false ./mvnw -B -f backend/pom.xml -Dtest=OperationalProspectIntegrationTest,ProspectImportIntegrationTest,OperationsReportingIntegrationTest test'
+            run_logged 'pruebas backend específicas' bash -lc 'FAKE_INBOUND_ENABLED=false ./mvnw -B -f backend/pom.xml -Dtest=OperationalProspectIntegrationTest,ProspectImportIntegrationTest,OperationsReportingIntegrationTest,CampaignIntegrationTest,OpportunityIntegrationTest test'
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
@@ -183,7 +183,7 @@ jobs:
           ## Validaciones ejecutadas
 
           - Spotless aplicado y verificado;
-          - pruebas específicas de prospectos operativos, importaciones y reportes;
+          - pruebas específicas de prospectos operativos, importaciones, reportes, campañas y oportunidades;
           - \`./mvnw -B -f backend/pom.xml verify\`;
           - \`npm ci --no-audit --no-fund\`;
           - \`npm run typecheck\`;
@@ -210,6 +210,8 @@ jobs:
             backend/src/test/java/com/gestudio/crm/prospect/OperationalProspectIntegrationTest.java \
             backend/src/test/java/com/gestudio/crm/imports/ProspectImportIntegrationTest.java \
             backend/src/test/java/com/gestudio/crm/reporting/OperationsReportingIntegrationTest.java \
+            backend/src/test/java/com/gestudio/crm/campaign/CampaignIntegrationTest.java \
+            backend/src/test/java/com/gestudio/crm/sales/OpportunityIntegrationTest.java \
             frontend/src/App.tsx \
             frontend/src/api.ts \
             frontend/src/api.test.ts \
