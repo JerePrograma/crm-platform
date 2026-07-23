@@ -1,5 +1,5 @@
 name: finalize-operator-ux
-# retry 4: exercise progressive disclosure in the operator journey
+# retry 5: resolve one duplicate review and retain the other
 
 on:
   push:
@@ -69,6 +69,10 @@ jobs:
           code=0
           run_logged 'aplicación exacta del cierre UX' python .github/ux-transform-chunks/finalize-operator-ux.py
           code=$?
+          if [ "$code" -eq 0 ]; then
+            run_logged 'selección explícita de revisión duplicada' python .github/ux-transform-chunks/finalize-e2e-postfix.py
+            code=$?
+          fi
           if [ "$code" -eq 0 ]; then
             run_logged 'validación frontend' bash -lc 'cd frontend && npm ci --no-audit --no-fund && npm run typecheck && npm run test:unit && npm run build'
             code=$?
@@ -180,6 +184,7 @@ jobs:
             .github/ux-transform-chunks/5.txt \
             .github/ux-transform-chunks/backend-independent.py \
             .github/ux-transform-chunks/finalize-operator-ux.py \
+            .github/ux-transform-chunks/finalize-e2e-postfix.py \
             .github/operator-ux-result.txt \
             .github/operator-ux-e2e-result.txt \
             .github/operator-ux-final-result.txt
