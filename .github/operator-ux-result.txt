@@ -1,6 +1,6 @@
 Resultado: FALLÓ
 Etapa: aplicación exacta
-Commit base: 725cdcc252cfdfcd3868f70e1f479e9794844063
+Commit base: bceb49f90d843ad851b2fbe7714917072468c323
 Salida final sanitizada:
 
 ### reconstrucción del transformador
@@ -13,9 +13,9 @@ PASS: ajuste validado del transformador
 
 ### aplicación exacta
 Traceback (most recent call last):
-  File "/tmp/apply-operator-ux.py", line 1223, in <module>
-    replace_all("frontend/src/App.tsx", 'label="Correlation ID"', 'label="Identificador de seguimiento"')
+  File "/tmp/apply-operator-ux.py", line 1239, in <module>
+    replace_all("frontend/src/App.tsx", "Receipt", "Mensaje recibido")
   File "/tmp/apply-operator-ux.py", line 33, in replace_all
     raise RuntimeError(f"Expected at least one match in {path}: {old[:120]!r}")
-RuntimeError: Expected at least one match in frontend/src/App.tsx: 'label="Correlation ID"'
+RuntimeError: Expected at least one match in frontend/src/App.tsx: 'Receipt'
 FAILED (1): aplicación exacta
