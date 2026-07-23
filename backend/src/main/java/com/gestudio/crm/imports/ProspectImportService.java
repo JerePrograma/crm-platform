@@ -67,10 +67,7 @@ public class ProspectImportService {
         try {
           counters.add(
               rowProcessor.processProspect(
-                  jobId,
-                  prospect,
-                  dryRun,
-                  isExcludedByImportFile(prospect, fileExclusionEmails)));
+                  jobId, prospect, dryRun, isExcludedByImportFile(prospect, fileExclusionEmails)));
         } catch (RuntimeException exception) {
           rowProcessor.recordRejectedProspect(jobId, prospect, safeMessage(exception));
           counters.rejected++;

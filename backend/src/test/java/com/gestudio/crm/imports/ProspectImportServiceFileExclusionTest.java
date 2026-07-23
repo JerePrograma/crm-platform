@@ -36,14 +36,8 @@ class ProspectImportServiceFileExclusionTest {
             null);
     ExclusionCandidate exclusion =
         new ExclusionCandidate(
-            2,
-            Map.of(),
-            "Academia",
-            "contacto@example.test",
-            "Existing conversation",
-            null);
-    ParsedImport parsed =
-        new ParsedImport(SourceType.XLSX, List.of(prospect), List.of(exclusion));
+            2, Map.of(), "Academia", "contacto@example.test", "Existing conversation", null);
+    ParsedImport parsed = new ParsedImport(SourceType.XLSX, List.of(prospect), List.of(exclusion));
 
     Set<String> exclusionEmails = ProspectImportService.fileExclusionEmails(parsed);
 

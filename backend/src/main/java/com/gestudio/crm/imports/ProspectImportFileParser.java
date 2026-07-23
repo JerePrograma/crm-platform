@@ -90,9 +90,7 @@ public class ProspectImportFileParser {
               : List.of();
 
       return new ParsedImport(
-          SourceType.XLSX,
-          prospects,
-          mergeExclusions(declaredExclusions, derivedMasterExclusions));
+          SourceType.XLSX, prospects, mergeExclusions(declaredExclusions, derivedMasterExclusions));
     } catch (IOException exception) {
       throw new IllegalArgumentException("The XLSX file could not be read", exception);
     }
@@ -143,13 +141,7 @@ public class ProspectImportFileParser {
               cleanPublished(value(headers, row, "sitio web")),
               cleanPublished(value(headers, row, "redes sociales")),
               cleanPublished(
-                  value(
-                      headers,
-                      row,
-                      "correo publicado",
-                      "correo principal",
-                      "correo",
-                      "email")),
+                  value(headers, row, "correo publicado", "correo principal", "correo", "email")),
               cleanPublished(
                   value(
                       headers,
@@ -333,13 +325,7 @@ public class ProspectImportFileParser {
               cleanPublished(value(headers, row, "sitio web")),
               cleanPublished(value(headers, row, "redes sociales")),
               cleanPublished(
-                  value(
-                      headers,
-                      row,
-                      "correo publicado",
-                      "correo principal",
-                      "correo",
-                      "email")),
+                  value(headers, row, "correo publicado", "correo principal", "correo", "email")),
               cleanPublished(
                   value(
                       headers,
