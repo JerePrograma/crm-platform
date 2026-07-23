@@ -74,6 +74,12 @@ public class ProspectImportRowProcessor {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public RowOutcome processProspect(UUID jobId, ProspectCandidate candidate, boolean dryRun) {
+    return processProspect(jobId, candidate, dryRun, false);
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public RowOutcome processProspect(
+      UUID jobId, ProspectCandidate candidate, boolean dryRun, boolean excludedByImportFile) {
     ImportJob job = getJob(jobId);
     String normalizedEmail = normalizationService.normalizeEmail(candidate.email());
     String normalizedPhone = normalizationService.normalizePhone(candidate.phoneOrWhatsapp());
@@ -115,7 +121,7 @@ public class ProspectImportRowProcessor {
     }
 
     if (dryRun) {
-      if (previewEligible(candidate, normalizedEmail, normalizedPhone)) {
+      if (!excludedByImportFile && previewEligible(candidate, normalizedEmail, normalizedPhone)) {
         row.accept(null);
         return RowOutcome.ACCEPTED;
       }
@@ -253,6 +259,7 @@ public class ProspectImportRowProcessor {
     }
     if (normalized.contains("gmail")
         || normalized.contains("conversacion")
+        || normalized.contains("conversation")
         || normalized.contains("correo enviado")) {
       return ExclusionReason.EXISTING_CONVERSATION;
     }
