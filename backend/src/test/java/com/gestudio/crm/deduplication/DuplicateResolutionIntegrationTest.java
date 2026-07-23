@@ -240,6 +240,7 @@ class DuplicateResolutionIntegrationTest {
                 "separate-" + suffix));
     assertThat(separateResult.survivorProspectId()).isNotNull().isNotEqualTo(existing);
     assertRow(separate, "ACCEPTED", separateResult.survivorProspectId());
+    assertImportedEmailPreserved(separate);
 
     UUID notDuplicate = createReview(existing, null, 14);
     var notDuplicateResult =
@@ -253,6 +254,7 @@ class DuplicateResolutionIntegrationTest {
                 "not-duplicate-" + suffix));
     assertThat(notDuplicateResult.action()).isEqualTo("MARK_NOT_DUPLICATE");
     assertRow(notDuplicate, "ACCEPTED", notDuplicateResult.survivorProspectId());
+    assertImportedEmailPreserved(notDuplicate);
   }
 
   @Test
@@ -364,6 +366,35 @@ class DuplicateResolutionIntegrationTest {
         existingProspectId,
         new BigDecimal("0.8500"));
     return reviewId;
+  }
+
+  private void assertImportedEmailPreserved(UUID reviewId) {
+    assertThat(
+            jdbcTemplate.queryForObject(
+                """
+                SELECT count(*)
+                FROM duplicate_review dr
+                JOIN import_row ir
+                  ON ir.id = dr.import_row_id AND ir.organization_id = dr.organization_id
+                JOIN prospect p
+                  ON p.id = ir.prospect_id AND p.organization_id = dr.organization_id
+                JOIN institution i
+                  ON i.id = p.institution_id AND i.organization_id = dr.organization_id
+                JOIN contact c
+                  ON c.institution_id = p.institution_id
+                  AND c.organization_id = dr.organization_id
+                  AND c.deleted_at IS NULL
+                JOIN contact_channel cc
+                  ON cc.contact_id = c.id AND cc.organization_id = dr.organization_id
+                WHERE dr.id = ? AND dr.organization_id = ?
+                  AND cc.type = 'EMAIL'
+                  AND cc.normalized_value = ir.normalized_email
+                  AND i.name = 'Synthetic candidate'
+                """,
+                Integer.class,
+                reviewId,
+                principal.organizationId()))
+        .isEqualTo(1);
   }
 
   private int count(String table, UUID prospectId) {

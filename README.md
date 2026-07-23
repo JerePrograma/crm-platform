@@ -74,6 +74,7 @@ docs/validation/SEG-011-complete-crm-closure-2026-07-22.md
 docs/execution/complete-crm-platform-plan.md
 docs/execution/complete-crm-platform-progress.md
 docs/validation/COMPLETE-CRM-matrix.md
+docs/ux-operador.md
 ```
 
 ## Alcance

@@ -115,6 +115,19 @@ import type {
   DashboardReport,
   OrganizationSettings,
 } from "./types";
+import { openDecisionDialog } from "./decisionDialog";
+import {
+  auditSummary,
+  channelLabel,
+  duplicateSourceSummary,
+  formatConfiguration,
+  humanizeError,
+  labelFor,
+  opportunityStageLabel,
+  prospectStatusLabel,
+  safeTechnicalJson,
+  suggestedDuplicateName,
+} from "./uiLabels";
 
 type Tab =
   | "dashboard"
@@ -176,6 +189,7 @@ export function App() {
   const [session, setSession] = useState<SessionUser | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>("dashboard");
   const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [prospectTotal, setProspectTotal] = useState(0);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [duplicateReviews, setDuplicateReviews] = useState<DuplicateReview[]>([]);
@@ -225,6 +239,7 @@ export function App() {
             : Promise.resolve([]),
         ]);
         setProspects(prospectPage.content);
+        setProspectTotal(prospectPage.totalElements);
         setExclusions(exclusionPage.content);
         setAuditEvents(audits);
         setDuplicateReviews(reviews);
@@ -294,6 +309,13 @@ export function App() {
     await refresh(statusFilter, query);
   }
 
+  async function clearSearch() {
+    setSearchInput("");
+    setSearchQuery("");
+    updateProspectUrl("", statusFilter);
+    await refresh(statusFilter, "");
+  }
+
   async function refreshView() {
     await refresh();
     if (selectedProspect) {
@@ -313,13 +335,13 @@ export function App() {
         </div>
         <nav aria-label="Navegación principal">
           <NavButton active={tab === "dashboard"} onClick={() => setTab("dashboard")}>
-            Dashboard
+            Resumen
           </NavButton>
           <NavButton active={tab === "prospects"} onClick={() => setTab("prospects")}>
             Prospectos
           </NavButton>
           <NavButton active={tab === "pipeline"} onClick={() => setTab("pipeline")}>
-            Pipeline
+            Oportunidades
           </NavButton>
           {session.permissions.includes("CAMPAIGN_READ") && (
             <NavButton active={tab === "campaigns"} onClick={() => setTab("campaigns")}>
@@ -333,12 +355,12 @@ export function App() {
           )}
           {session.permissions.includes("REPORT_READ") && (
             <NavButton active={tab === "outbox"} onClick={() => setTab("outbox")}>
-              Outbox y workers
+              Bandeja de salida
             </NavButton>
           )}
           {session.permissions.includes("REPORT_READ") && (
             <NavButton active={tab === "inbound"} onClick={() => setTab("inbound")}>
-              Inbound y quarantine
+              Mensajes recibidos
             </NavButton>
           )}
           {session.permissions.includes("CAMPAIGN_READ") && (
@@ -373,12 +395,11 @@ export function App() {
             Mi cuenta
           </NavButton>
         </nav>
-        <div className="safety-panel">
-          <strong>Envíos bloqueados</strong>
-          <span>enabled=false</span>
-          <span>dry-run=true</span>
-          <span>daily-limit=0</span>
-          <span>kill switch activo</span>
+        <div className="safety-panel" aria-label="Protecciones de envío activas">
+          <strong>Los envíos reales están bloqueados</strong>
+          <span>Modo de simulación activo</span>
+          <span>Límite diario: 0</span>
+          <span>Protección de emergencia activa</span>
         </div>
         <button
           className="secondary-button"
@@ -392,7 +413,7 @@ export function App() {
         <header className="topbar">
           <div>
             <h1>{title(tab)}</h1>
-            <p>Fuente de verdad: PostgreSQL. Ningún envío real está disponible.</p>
+            <p>Consultá el estado operativo y continuá con la siguiente acción segura. Ningún envío real está disponible.</p>
           </div>
           <button
             className="secondary-button"
@@ -402,7 +423,7 @@ export function App() {
           </button>
         </header>
 
-        {error && <div className="alert error">{error}</div>}
+        {error && <div className="alert error" role="alert">{error}</div>}
         {loading && <div className="loading-bar" aria-label="Cargando" />}
 
         {tab === "dashboard" && (
@@ -459,10 +480,15 @@ export function App() {
                       aria-label="Buscar prospectos"
                       value={searchInput}
                       onChange={(event) => setSearchInput(event.target.value)}
-                      placeholder="Institución, contacto, localidad o etiqueta"
+                      placeholder="Institución, contacto, correo, teléfono, localidad o etiqueta"
                     />
                   </label>
                   <button className="secondary-button" type="submit">Buscar</button>
+                  {(searchInput || searchQuery) && (
+                    <button className="link-button" type="button" onClick={() => void clearSearch()}>
+                      Limpiar búsqueda
+                    </button>
+                  )}
                 </form>
                 <label>
                   Estado
@@ -475,12 +501,19 @@ export function App() {
                     <option value="">Todos</option>
                     {prospectStatuses.map((status) => (
                       <option key={status} value={status}>
-                        {status}
+                        {prospectStatusLabel(status)}
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
+              <p className="result-context" role="status">
+                {prospectTotal === 0
+                  ? searchQuery || statusFilter
+                    ? "No se encontraron prospectos. Revisá la escritura o quitá los filtros."
+                    : "Todavía no hay prospectos cargados."
+                  : `${prospectTotal.toLocaleString("es-AR")} resultado${prospectTotal === 1 ? "" : "s"}${searchQuery ? ` para “${searchQuery}”` : ""}.`}
+              </p>
               <div className="table-scroll">
                 <table>
                   <thead>
@@ -496,14 +529,22 @@ export function App() {
                       <tr
                         key={prospect.id}
                         className={selectedProspect?.id === prospect.id ? "selected" : undefined}
+                        tabIndex={0}
+                        aria-selected={selectedProspect?.id === prospect.id}
                         onClick={() => void selectProspect(prospect.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            void selectProspect(prospect.id);
+                          }
+                        }}
                       >
                         <td>{prospect.displayName}</td>
-                        <td>{prospect.city ?? "—"}</td>
+                        <td>{prospect.city ?? "Sin localidad cargada"}</td>
                         <td>
                           <Badge value={prospect.status} />
                         </td>
-                        <td>{prospect.contactEligible ? "Sí" : "No"}</td>
+                        <td><Badge value={prospect.contactEligible ? "ELIGIBLE" : "EXCLUDED"} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -559,6 +600,7 @@ export function App() {
         {tab === "imports" && (
           <ImportsPanel
             duplicateReviews={duplicateReviews}
+            prospects={prospects}
             onChanged={() => refresh()}
           />
         )}
@@ -617,7 +659,7 @@ function ReportsPanel() {
 
   return (
     <section className="stack">
-      {error && <div className="alert error">{error}</div>}
+      {error && <div className="alert error" role="alert">{error}</div>}
       {loading && <div className="loading-bar" aria-label="Cargando reportes" />}
       <Panel title="Período y exportación">
         <form
@@ -645,8 +687,8 @@ function ReportsPanel() {
             <Metric label="Tareas abiertas" value={report.tasks.open ?? 0} />
             <Metric label="Tareas vencidas" value={report.tasks.overdue ?? 0} />
             <Metric label="Respuestas" value={report.prospectSummary.replied ?? 0} />
-            <Metric label="Dead-letter" value={report.operations.deadLetter ?? 0} />
-            <Metric label="Quarantine" value={report.operations.quarantine ?? 0} />
+            <Metric label="Mensajes que agotaron los reintentos" value={report.operations.deadLetter ?? 0} />
+            <Metric label="Mensajes que requieren revisión" value={report.operations.quarantine ?? 0} />
           </div>
           <section className="two-column equal">
             <ReportMap title="Prospectos por estado" values={report.prospectsByStatus} />
@@ -670,7 +712,7 @@ function ReportsPanel() {
 function ReportMap({ title: heading, values }: { title: string; values: Record<string, number> }) {
   return (
     <Panel title={heading}>
-      {Object.keys(values).length ? <dl className="detail-grid">{Object.entries(values).map(([key, value]) => <Detail key={key} label={key} value={String(value)} />)}</dl> : <EmptyState text="Sin datos." />}
+      {Object.keys(values).length ? <dl className="detail-grid">{Object.entries(values).map(([key, value]) => <Detail key={key} label={labelFor(key)} value={Number(value).toLocaleString("es-AR")} />)}</dl> : <EmptyState text="Sin datos." />}
     </Panel>
   );
 }
@@ -713,19 +755,19 @@ function SettingsPanel({ session, selectedProspect }: { session: SessionUser; se
   return (
     <section className="stack">
       <div className="alert safety">Los bloqueos de entorno dominan esta pantalla. Ningún usuario puede habilitar envíos reales desde la API o la UI.</div>
-      {error && <div className="alert error">{error}</div>}
-      {notice && <div className="alert success">{notice}</div>}
+      {error && <div className="alert error" role="alert">{error}</div>}
+      {notice && <div className="alert success" role="status">{notice}</div>}
       {settings ? <>
         <div className="metric-grid">
-          <Metric label="Sending enabled" value={settings.sending.environmentEnabled ? "true" : "false"} />
-          <Metric label="Dry-run" value={settings.sending.environmentDryRun ? "true" : "false"} />
-          <Metric label="Límite diario" value={settings.sending.environmentDailyLimit} />
-          <Metric label="Kill switch" value={settings.sending.environmentKillSwitch ? "activo" : "inactivo"} />
+          <Metric label="Envíos reales" value={settings.sending.environmentEnabled ? "Habilitados" : "Bloqueados"} />
+          <Metric label="Modo de simulación" value={settings.sending.environmentDryRun ? "Activo" : "Inactivo"} />
+          <Metric label="Límite diario" value={settings.sending.environmentDailyLimit.toLocaleString("es-AR")} />
+          <Metric label="Protección de emergencia" value={settings.sending.environmentKillSwitch ? "Activa" : "Inactiva"} />
         </div>
         <Panel title="Organización">
           <form className="form-grid" onSubmit={(event) => { event.preventDefault(); if (settings) void run(() => updateOrganizationSettings(settings), "Configuración actualizada; bloqueos de envío preservados."); }}>
             <label>Nombre<input disabled={!canManage} value={settings.name} onChange={(event) => setSettings({ ...settings, name: event.target.value })} /></label>
-            <label>Timezone<input disabled={!canManage} value={settings.timezone} onChange={(event) => setSettings({ ...settings, timezone: event.target.value })} /></label>
+            <label>Zona horaria<input disabled={!canManage} value={settings.timezone} onChange={(event) => setSettings({ ...settings, timezone: event.target.value })} /></label>
             <label>Moneda<input disabled={!canManage} maxLength={3} value={settings.currency} onChange={(event) => setSettings({ ...settings, currency: event.target.value.toUpperCase() })} /></label>
             <label>Idioma<select disabled={!canManage} value={settings.locale} onChange={(event) => setSettings({ ...settings, locale: event.target.value })}><option value="es-AR">Español Argentina</option><option value="es">Español</option><option value="en-US">English US</option><option value="en">English</option></select></label>
             <label>Color principal<input disabled={!canManage} type="color" value={settings.brandingPrimaryColor} onChange={(event) => setSettings({ ...settings, brandingPrimaryColor: event.target.value })} /></label>
@@ -743,7 +785,11 @@ function SettingsPanel({ session, selectedProspect }: { session: SessionUser; se
             <label>Color<input type="color" value={newTagColor} onChange={(event) => setNewTagColor(event.target.value)} /></label>
             <button className="secondary-button" type="submit">Crear</button>
           </form>}
-          {tags.length ? <ul className="plain-list">{tags.map((tag) => <li key={tag.id}><span className="tag-swatch" style={{ background: tag.color }} aria-hidden="true" /><strong>{tag.name}</strong> · {tag.usageCount} usos {!tag.active && "· inactiva"}{canManage && tag.active && <button className="link-button" onClick={() => window.confirm(`Desactivar ${tag.name}?`) && void run(() => deactivateTag(tag), "Etiqueta desactivada sin borrar historial.")}>Desactivar</button>}</li>)}</ul> : <EmptyState text="No hay etiquetas." />}
+          {tags.length ? <ul className="plain-list">{tags.map((tag) => <li key={tag.id}><span className="tag-swatch" style={{ background: tag.color }} aria-hidden="true" /><strong>{tag.name}</strong> · {tag.usageCount} usos {!tag.active && "· inactiva"}{canManage && tag.active && <button className="link-button" onClick={() => void openDecisionDialog({
+                  title: "Desactivar etiqueta",
+                  description: `La etiqueta “${tag.name}” dejará de estar disponible para nuevas asignaciones. El historial se conservará.`,
+                  confirmLabel: "Desactivar etiqueta",
+                }).then((answer) => { if (answer) return run(() => deactivateTag(tag), "Etiqueta desactivada sin borrar historial."); })}>Desactivar</button>}</li>)}</ul> : <EmptyState text="No hay etiquetas." />}
         </Panel>
         <Panel title="Asignación al prospecto seleccionado">
           {selectedProspect ? <>
@@ -812,25 +858,25 @@ function OutboxPanel({ session }: { session: SessionUser }) {
   return (
     <section className="stack">
       <div className="alert safety">
-        Los workers reevalúan los kill switches al procesar. No existe una acción para forzar
-        providers reales ni transformar un evento en SENT.
+        El proceso vuelve a comprobar todas las protecciones antes de trabajar. No existe una acción
+        para forzar proveedores externos ni marcar un mensaje como enviado.
       </div>
-      {error && <div className="alert error">{error}</div>}
-      {notice && <div className="alert success">{notice}</div>}
-      {loading && <div className="loading-bar" aria-label="Cargando outbox" />}
+      {error && <div className="alert error" role="alert">{error}</div>}
+      {notice && <div className="alert success" role="status">{notice}</div>}
+      {loading && <div className="loading-bar" aria-label="Cargando bandeja de salida" />}
       <div className="metric-grid">
         {metrics.map((metric) => (
-          <Metric key={metric.status} label={metric.status} value={metric.count} />
+          <Metric key={metric.status} label={labelFor(metric.status)} value={metric.count} />
         ))}
         {metrics.length === 0 && <Metric label="Eventos" value={0} />}
       </div>
-      <Panel title="Estado del worker">
+      <Panel title="Estado del proceso automático">
         {worker ? (
           <div className="control-grid">
-            <Control label="Scheduler" value={worker.worker.schedulerEnabled ? "Habilitado" : "Manual"} />
-            <Control label="Tenant" value={worker.tenantPaused ? "Pausado" : "Activo"} />
+            <Control label="Ejecución programada" value={worker.worker.schedulerEnabled ? "Habilitado" : "Manual"} />
+            <Control label="Organización" value={worker.tenantPaused ? "Pausado" : "Activo"} />
             <Control label="Procesando" value={worker.worker.running ? "Sí" : "No"} />
-            <Control label="Batch" value={String(worker.worker.batchSize)} />
+            <Control label="Cantidad por ejecución" value={String(worker.worker.batchSize)} />
           </div>
         ) : (
           <EmptyState text="No se pudo cargar la salud del worker." />
@@ -841,7 +887,7 @@ function OutboxPanel({ session }: { session: SessionUser }) {
               className="primary-button"
               onClick={() => void operation(async () => {
                 const result = await runOutboxWorker();
-                setNotice(`Worker: ${result.claimed} reclamados, ${result.completed} completados.`);
+                setNotice(`Proceso: ${result.claimed} tomados, ${result.completed} completados.`);
               }, "Ejecución manual finalizada.")}
             >
               Ejecutar una vez
@@ -850,7 +896,7 @@ function OutboxPanel({ session }: { session: SessionUser }) {
               className="secondary-button"
               onClick={() => void operation(
                 () => setOutboxWorkerPaused(!worker.tenantPaused),
-                worker.tenantPaused ? "Worker reanudado." : "Worker pausado.",
+                worker.tenantPaused ? "Proceso reanudado." : "Proceso pausado.",
               )}
             >
               {worker.tenantPaused ? "Reanudar" : "Pausar"}
@@ -873,7 +919,7 @@ function OutboxPanel({ session }: { session: SessionUser }) {
               >
                 <option value="">Todos</option>
                 {["PENDING", "PROCESSING", "SUCCEEDED", "RETRY", "DEAD", "CANCELLED", "BLOCKED"].map((value) => (
-                  <option key={value}>{value}</option>
+                  <option key={value} value={value}>{labelFor(value)}</option>
                 ))}
               </select>
             </label>
@@ -901,7 +947,7 @@ function OutboxPanel({ session }: { session: SessionUser }) {
                       }}
                       className={selected?.id === event.id ? "selected" : undefined}
                     >
-                      <td>{event.eventType}</td>
+                      <td>{labelFor(event.eventType)}</td>
                       <td><Badge value={event.status} /></td>
                       <td>{event.attemptCount}/{event.maxAttempts}</td>
                       <td>{dateTime(event.createdAt)}</td>
@@ -917,28 +963,32 @@ function OutboxPanel({ session }: { session: SessionUser }) {
             <div className="stack compact">
               <dl className="detail-grid">
                 <Detail label="ID" value={selected.id} />
-                <Detail label="Correlation ID" value={selected.correlationId} />
-                <Detail label="Aggregate" value={`${selected.aggregateType} / ${selected.aggregateId}`} />
+                <Detail label="Identificador de seguimiento" value={selected.correlationId} />
+                <Detail label="Registro relacionado" value={`${labelFor(selected.aggregateType)} / ${selected.aggregateId}`} />
                 <Detail label="Resultado" value={selected.resultSummary ?? selected.lastErrorCode} />
                 <Detail label="Error" value={selected.lastErrorSummary} />
                 <Detail label="Procesado" value={selected.processedAt ? dateTime(selected.processedAt) : null} />
               </dl>
-              <pre className="preview-box" aria-label="Payload sanitizado">{selected.payload}</pre>
+              <details className="technical-details">
+                <summary>Ver datos técnicos</summary>
+                <pre className="preview-box" aria-label="Datos técnicos sanitizados">{safeTechnicalJson(selected.payload)}</pre>
+              </details>
               {canOperate && (
                 <div className="button-row">
                   {selected.status === "DEAD" && (
-                    <button className="primary-button" onClick={() => {
-                      if (window.confirm("¿Reencolar este evento DEAD sin modificar su payload?")) {
-                        void operation(() => requeueOutboxEvent(selected.id), "Evento reencolado.");
-                      }
-                    }}>Reencolar</button>
+                    <button className="primary-button" onClick={() => void openDecisionDialog({
+                      title: "Reintentar procesamiento",
+                      description: "El mensaje volverá a la cola sin modificar sus datos. Las protecciones de envío seguirán activas.",
+                      confirmLabel: "Reintentar",
+                    }).then((answer) => { if (answer) return operation(() => requeueOutboxEvent(selected.id), "Evento reencolado."); })}>Reintentar</button>
                   )}
                   {["PENDING", "RETRY"].includes(selected.status) && (
-                    <button className="secondary-button" onClick={() => {
-                      if (window.confirm("¿Cancelar este evento pendiente?")) {
-                        void operation(() => cancelOutboxEvent(selected.id), "Evento cancelado.");
-                      }
-                    }}>Cancelar</button>
+                    <button className="secondary-button" onClick={() => void openDecisionDialog({
+                      title: "Cancelar procesamiento",
+                      description: "El mensaje dejará de procesarse. La evidencia y el historial se conservarán.",
+                      confirmLabel: "Cancelar procesamiento",
+                      danger: true,
+                    }).then((answer) => { if (answer) return operation(() => cancelOutboxEvent(selected.id), "Evento cancelado."); })}>Cancelar</button>
                   )}
                 </div>
               )}
@@ -998,13 +1048,13 @@ function InboundPanel({ session, prospects }: { session: SessionUser; prospects:
 
   return (
     <section className="stack">
-      {error && <div className="alert error">{error}</div>}
-      {notice && <div className="alert success">{notice}</div>}
-      {loading && <div className="loading-bar" aria-label="Cargando inbound" />}
-      <Panel title="Webhook fake">
+      {error && <div className="alert error" role="alert">{error}</div>}
+      {notice && <div className="alert success" role="status">{notice}</div>}
+      {loading && <div className="loading-bar" aria-label="Cargando mensajes recibidos" />}
+      <Panel title="Recepción de prueba">
         <div className="control-grid">
-          <Control label="Provider" value={health?.provider ?? "FAKE_INBOUND"} />
-          <Control label="Endpoint" value={health?.enabled ? "Habilitado" : "Deshabilitado"} />
+          <Control label="Proveedor" value={health?.provider ?? "FAKE_INBOUND"} />
+          <Control label="Recepción habilitada" value={health?.enabled ? "Habilitado" : "Deshabilitado"} />
           <Control label="Secreto" value={health?.configured ? "Configurado por entorno" : "No configurado"} />
           <Control label="Límite" value={health ? `${health.maxPayloadBytes} bytes` : "—"} />
           <Control label="Respuesta automática" value="Deshabilitada" />
@@ -1037,7 +1087,7 @@ function InboundPanel({ session, prospects }: { session: SessionUser; prospects:
                       }}
                       className={selected?.id === item.id ? "selected" : undefined}
                     >
-                      <td>{item.channel}</td>
+                      <td>{channelLabel(item.channel)}</td>
                       <td>{item.senderMasked}</td>
                       <td><Badge value={item.status} /></td>
                       <td>{dateTime(item.receivedAt)}</td>
@@ -1048,16 +1098,16 @@ function InboundPanel({ session, prospects }: { session: SessionUser; prospects:
             </div>
           )}
         </Panel>
-        <Panel title="Evidencia y asociación">
+        <Panel title="Detalle y asociación">
           {selected ? (
             <div className="stack compact">
               <dl className="detail-grid">
-                <Detail label="Receipt" value={selected.id} />
-                <Detail label="Correlation ID" value={selected.correlationId} />
-                <Detail label="Asociación" value={selected.associationStatus} />
+                <Detail label="Identificador del mensaje" value={selected.id} />
+                <Detail label="Identificador de seguimiento" value={selected.correlationId} />
+                <Detail label="Asociación" value={labelFor(selected.associationStatus)} />
                 <Detail label="Prospecto" value={selected.prospectId} />
-                <Detail label="Motivo quarantine" value={selected.quarantineReason} />
-                <Detail label="Hash payload" value={selected.payloadHash} />
+                <Detail label="Motivo de revisión" value={selected.quarantineReason} />
+                <Detail label="Huella de integridad" value={selected.payloadHash} />
               </dl>
               {canOperate && selected.status === "QUARANTINED" && (
                 <div className="form-grid">
@@ -1084,17 +1134,18 @@ function InboundPanel({ session, prospects }: { session: SessionUser; prospects:
                   <button
                     className="secondary-button full-width"
                     disabled={!discardReason.trim()}
-                    onClick={() => {
-                      if (window.confirm("¿Descartar lógicamente este receipt? La evidencia se conserva.")) {
-                        void operation(() => discardInbound(selected.id, discardReason), "Receipt descartado lógicamente.");
-                      }
-                    }}
+                    onClick={() => void openDecisionDialog({
+                      title: "Descartar mensaje recibido",
+                      description: "El mensaje dejará de estar pendiente de asociación. La evidencia se conservará para auditoría.",
+                      confirmLabel: "Descartar con motivo",
+                      danger: true,
+                    }).then((answer) => { if (answer) return operation(() => discardInbound(selected.id, discardReason), "Mensaje descartado lógicamente."); })}
                   >Descartar con motivo</button>
                 </div>
               )}
             </div>
           ) : (
-            <EmptyState text="Seleccioná un receipt para ver metadata sanitizada." />
+            <EmptyState text="Seleccioná un mensaje recibido para ver metadata sanitizada." />
           )}
         </Panel>
       </section>
@@ -1140,9 +1191,15 @@ function UsersPanel({ currentUser }: { currentUser: SessionUser }) {
   }
 
   async function toggleUser(user: User) {
-    if (!window.confirm(`${user.active ? "Desactivar" : "Activar"} a ${user.displayName}?`)) {
-      return;
-    }
+    const answer = await openDecisionDialog({
+      title: user.active ? "Desactivar usuario" : "Activar usuario",
+      description: user.active
+        ? `“${user.displayName}” perderá el acceso hasta que vuelva a activarse.`
+        : `“${user.displayName}” recuperará el acceso con su rol actual.`,
+      confirmLabel: user.active ? "Desactivar usuario" : "Activar usuario",
+      danger: user.active,
+    });
+    if (!answer) return;
     setError(null);
     try {
       await setUserActive(user.id, !user.active);
@@ -1154,8 +1211,8 @@ function UsersPanel({ currentUser }: { currentUser: SessionUser }) {
 
   return (
     <section className="stack">
-      {error && <div className="alert error">{error}</div>}
-      {notice && <div className="alert success">{notice}</div>}
+      {error && <div className="alert error" role="alert">{error}</div>}
+      {notice && <div className="alert success" role="status">{notice}</div>}
       <Panel title="Usuarios de la organización">
         <form className="inline-form" onSubmit={(event) => void submitUser(event)}>
           <label>
@@ -1183,8 +1240,8 @@ function UsersPanel({ currentUser }: { currentUser: SessionUser }) {
           <label>
             Rol
             <select value={role} onChange={(event) => setRole(event.target.value as User["role"])}>
-              <option value="ADMIN">Admin</option>
-              <option value="MANAGER">Manager</option>
+              <option value="ADMIN">Administrador</option>
+              <option value="MANAGER">Responsable comercial</option>
               <option value="SALES">Ventas</option>
               <option value="VIEWER">Solo lectura</option>
             </select>
@@ -1208,7 +1265,7 @@ function UsersPanel({ currentUser }: { currentUser: SessionUser }) {
                 <tr key={user.id}>
                   <td>{user.displayName}</td>
                   <td>{user.username}</td>
-                  <td>{user.role}</td>
+                  <td>{labelFor(user.role)}</td>
                   <td>{user.active ? "Activo" : "Inactivo"}</td>
                   <td>{user.lastLoginAt ? dateTime(user.lastLoginAt) : "Nunca"}</td>
                   <td>
@@ -1258,12 +1315,12 @@ function AccountPanel({
         <div className="control-grid">
           <Control label="Usuario" value={session.username} />
           <Control label="Nombre" value={session.displayName} />
-          <Control label="Rol" value={session.role} />
-          <Control label="Organización" value={session.organizationId} />
+          <Control label="Rol" value={labelFor(session.role)} />
+          <Control label="Organización" value="Organización actual" />
         </div>
       </Panel>
       <Panel title="Cambiar mi contraseña">
-        {error && <div className="alert error">{error}</div>}
+        {error && <div className="alert error" role="alert">{error}</div>}
         <form className="inline-form" onSubmit={(event) => void submitPassword(event)}>
           <label>
             Contraseña actual
@@ -1322,7 +1379,7 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: SessionUser) =>
         </div>
         <h1>Ingresar</h1>
         <p>La contraseña se usa solo para autenticar y no se conserva en el navegador.</p>
-        {error && <div className="alert error">{error}</div>}
+        {error && <div className="alert error" role="alert">{error}</div>}
         <label>
           Usuario
           <input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required />
@@ -1438,20 +1495,20 @@ function MessagesPanel({
   return (
     <section className="stack">
       <div className="alert safety" role="status">
-        No existe endpoint de envío. Los proveedores reales no pueden inicializarse mientras la red
-        real esté bloqueada, y PostgreSQL conserva un segundo kill switch.
+        Los envíos reales están bloqueados. Esta pantalla solo permite preparar borradores,
+        simular resultados o abrir una aplicación externa de forma manual.
       </div>
-      {error && <div className="alert error">{error}</div>}
+      {error && <div className="alert error" role="alert">{error}</div>}
       <div className="control-grid">
         <Control label="Email" value={safety?.selectedEmailProvider ?? "Consultando…"} />
         <Control label="WhatsApp" value={safety?.selectedWhatsAppProvider ?? "Consultando…"} />
         <Control
           label="Red real"
-          value={safety?.realNetworkAllowed ? "HABILITADA" : "BLOQUEADA"}
+          value={safety?.realNetworkAllowed ? "Habilitada" : "Bloqueada"}
         />
         <Control
           label="Endpoint de envío"
-          value={safety?.sendEndpointAvailable ? "DISPONIBLE" : "INEXISTENTE"}
+          value={safety?.sendEndpointAvailable ? "Disponible" : "No existe"}
         />
       </div>
       {(canDraft || canSimulate) && (
@@ -1478,8 +1535,8 @@ function MessagesPanel({
                 value={channel}
                 onChange={(event) => setChannel(event.target.value as CampaignChannel)}
               >
-                <option value="EMAIL">EMAIL</option>
-                <option value="WHATSAPP">WHATSAPP</option>
+                <option value="EMAIL">Correo electrónico</option>
+                <option value="WHATSAPP">WhatsApp</option>
               </select>
             </label>
             <label className="full-width">
@@ -1545,7 +1602,7 @@ function MessagesPanel({
       )}
       {result && (
         <div className="alert success" aria-live="polite">
-          {result.status} mediante {result.provider}. Bloqueo de envío: {result.sendingBlockReason}.
+          {labelFor(result.status)} mediante {labelFor(result.provider)}. Motivo de bloqueo: {labelFor(result.sendingBlockReason)}.
         </div>
       )}
       {manualLink && (
@@ -1558,10 +1615,10 @@ function MessagesPanel({
       )}
       <Panel title="Integraciones externas">
         <div className="control-grid">
-          <Control label="Gmail OAuth" value="IMPLEMENTED_NOT_CONNECTED" />
-          <Control label="WhatsApp Cloud" value="IMPLEMENTED_NOT_CONNECTED" />
-          <Control label="Modo email" value={safety?.emailMode ?? "NOOP"} />
-          <Control label="Modo WhatsApp" value={safety?.whatsAppMode ?? "DEEPLINK_ONLY"} />
+          <Control label="Gmail" value="Disponible, sin conexión externa" />
+          <Control label="WhatsApp" value="Disponible, sin conexión externa" />
+          <Control label="Modo de correo" value={labelFor(safety?.emailMode ?? "NOOP")} />
+          <Control label="Modo de WhatsApp" value={labelFor(safety?.whatsAppMode ?? "DEEPLINK_ONLY")} />
         </div>
       </Panel>
     </section>
@@ -1665,9 +1722,12 @@ function CampaignsPanel({
   }
 
   async function freeze(campaign: Campaign) {
-    if (!window.confirm("¿Congelar esta audiencia? Los filtros quedarán materializados.")) {
-      return;
-    }
+    const answer = await openDecisionDialog({
+      title: "Confirmar audiencia",
+      description: "Se guardará una copia de los destinatarios que cumplen los filtros actuales. Las exclusiones seguirán teniendo prioridad.",
+      confirmLabel: "Confirmar audiencia",
+    });
+    if (!answer) return;
     await run(async () => {
       const frozen = await freezeCampaignAudience(campaign, {
         province: province || undefined,
@@ -1675,16 +1735,19 @@ function CampaignsPanel({
       });
       setAudience(await getCampaignAudience(frozen.id));
       setNotice(
-        `Audiencia congelada: ${frozen.recipientCount} incluidos, ${frozen.excludedCount} excluidos.`,
+        `Audiencia confirmada: ${frozen.recipientCount} incluidos, ${frozen.excludedCount} excluidos.`,
       );
       await onChanged();
     });
   }
 
   async function approve(campaign: Campaign) {
-    if (!window.confirm("¿Aprobar esta campaña para simulación? Esto no habilita envíos reales.")) {
-      return;
-    }
+    const answer = await openDecisionDialog({
+      title: "Aprobar para simulación",
+      description: "La campaña quedará habilitada únicamente para generar una simulación. Esto no habilita envíos reales.",
+      confirmLabel: "Aprobar simulación",
+    });
+    if (!answer) return;
     await run(async () => {
       const approved = await approveCampaign(campaign);
       setNotice(`Campaña ${approved.name} aprobada solo para simulación.`);
@@ -1717,8 +1780,8 @@ function CampaignsPanel({
         Esta sección solo crea borradores y simulaciones. Los cuatro controles de envío
         permanecen bloqueados y no existe una acción “Enviar”.
       </div>
-      {error && <div className="alert error">{error}</div>}
-      {notice && <div className="alert success">{notice}</div>}
+      {error && <div className="alert error" role="alert">{error}</div>}
+      {notice && <div className="alert success" role="status">{notice}</div>}
       {writable && (
         <div className="two-column equal">
           <Panel title="Nueva plantilla versionada">
@@ -1730,8 +1793,8 @@ function CampaignsPanel({
               <label>
                 Canal
                 <select value={templateChannel} onChange={(event) => setTemplateChannel(event.target.value as CampaignChannel)}>
-                  <option value="EMAIL">EMAIL</option>
-                  <option value="WHATSAPP">WHATSAPP</option>
+                  <option value="EMAIL">Correo electrónico</option>
+                  <option value="WHATSAPP">WhatsApp</option>
                 </select>
               </label>
               <label className="full-width">
@@ -1761,7 +1824,7 @@ function CampaignsPanel({
                   <option value="">Seleccionar…</option>
                   {templates.map((template) => (
                     <option key={template.versionId} value={template.versionId}>
-                      {template.name} · v{template.versionNumber} · {template.channel}
+                      {template.name} · v{template.versionNumber} · {channelLabel(template.channel)}
                     </option>
                   ))}
                 </select>
@@ -1783,7 +1846,7 @@ function CampaignsPanel({
         <div className="card-grid">
           {templates.map((template) => (
             <article className="entity-card" key={template.versionId}>
-              <div><strong>{template.name}</strong><Badge value={`${template.channel} · v${template.versionNumber}`} /></div>
+              <div><strong>{template.name}</strong><span className="badge">{channelLabel(template.channel)} · v{template.versionNumber}</span></div>
               <p>{template.subject}</p>
               <small>Variables: {template.variables.join(", ") || "ninguna"}</small>
               <button className="secondary-button" type="button" onClick={() => void showPreview(template)}>Previsualizar</button>
@@ -1803,8 +1866,8 @@ function CampaignsPanel({
           {campaigns.map((campaign) => (
             <article className="entity-card" key={campaign.id}>
               <div><strong>{campaign.name}</strong><Badge value={campaign.status} /></div>
-              <p>{campaign.channel} · {campaign.templateName}</p>
-              <small>{campaign.recipientCount} incluidos · {campaign.excludedCount} excluidos · dry-run</small>
+              <p>{channelLabel(campaign.channel)} · {campaign.templateName}</p>
+              <small>{campaign.recipientCount} incluidos · {campaign.excludedCount} excluidos · modo de simulación</small>
               <div className="action-row">
                 {writable && ["DRAFT", "READY_FOR_REVIEW"].includes(campaign.status) && (
                   <button className="secondary-button" type="button" onClick={() => void freeze(campaign)}>Congelar audiencia</button>
@@ -1833,12 +1896,12 @@ function CampaignsPanel({
           </tbody></table></div>
         </Panel>
       )}
-      {simulation && <div className="alert success">Run fake {simulation.id}: ningún envío de red; {simulation.includedCount} actividades de borrador.</div>}
+      {simulation && <div className="alert success" role="status">Simulación {simulation.id.slice(0, 8)}: ningún envío real; {simulation.includedCount} borradores preparados.</div>}
       {sequence.length > 0 && (
         <Panel title="Secuencia declarativa">
           <ol className="sequence-list">
             {sequence.map((step) => (
-              <li key={step.id}><strong>{step.type}</strong><code>{JSON.stringify(step.configuration)}</code></li>
+              <li key={step.id}><strong>{labelFor(step.type)}</strong><span>{formatConfiguration(step.configuration)}</span></li>
             ))}
           </ol>
         </Panel>
@@ -1902,8 +1965,22 @@ function PipelinePanel({
   async function move(opportunity: Opportunity, stage: OpportunityStage) {
     let reason: string | undefined;
     if (stage === "LOST" || stage === "WON") {
-      reason = window.prompt(stage === "LOST" ? "Motivo de pérdida:" : "Motivo de cierre ganado:")?.trim();
-      if (!reason) return;
+      const response = await openDecisionDialog({
+        title: stage === "LOST" ? "Registrar oportunidad perdida" : "Registrar oportunidad ganada",
+        description:
+          stage === "LOST"
+            ? "Indicá el motivo para conservar contexto comercial y mejorar los reportes."
+            : "Indicá qué permitió cerrar la oportunidad para conservar el aprendizaje comercial.",
+        confirmLabel: stage === "LOST" ? "Registrar pérdida" : "Registrar cierre",
+        danger: stage === "LOST",
+        input: {
+          label: stage === "LOST" ? "Motivo de pérdida" : "Motivo del cierre",
+          placeholder: "Escribí un motivo breve y verificable",
+          required: true,
+        },
+      });
+      if (!response) return;
+      reason = response;
     }
     setBusy(true);
     setError(null);
@@ -1921,76 +1998,62 @@ function PipelinePanel({
     <section className="stack">
       <div className="metric-grid">
         <Metric label="Oportunidades activas" value={metrics?.activeCount ?? 0} />
-        <Metric label="Estancadas +30 días" value={metrics?.stalledCount ?? 0} />
-        <article className="metric-card">
-          <span>Pipeline</span>
-          <strong>{money(metrics?.totalValue ?? 0)}</strong>
-        </article>
-        <article className="metric-card">
-          <span>Forecast ponderado</span>
-          <strong>{money(metrics?.weightedValue ?? 0)}</strong>
-        </article>
+        <Metric label="Sin avances durante 30 días" value={metrics?.stalledCount ?? 0} />
+        <article className="metric-card"><span>Valor total</span><strong>{money(metrics?.totalValue ?? 0)}</strong></article>
+        <article className="metric-card"><span>Proyección ponderada</span><strong>{money(metrics?.weightedValue ?? 0)}</strong></article>
       </div>
       <Panel title="Nueva oportunidad">
-        {error && <div className="alert error">{error}</div>}
+        {error && <div className="alert error" role="alert">{error}</div>}
         {canWrite ? (
           <form className="inline-form" onSubmit={(event) => void submit(event)}>
-            <label className="grow">
-              Prospecto
-              <select value={prospectId} onChange={(event) => setProspectId(event.target.value)} required>
-                {prospects.map((prospect) => (
-                  <option key={prospect.id} value={prospect.id}>{prospect.displayName}</option>
-                ))}
-              </select>
-            </label>
-            <label className="grow">
-              Nombre
-              <input value={name} onChange={(event) => setName(event.target.value)} required />
-            </label>
-            <label>
-              Valor estimado ARS
-              <input type="number" min="0" step="0.01" value={estimatedValue} onChange={(event) => setEstimatedValue(event.target.value)} required />
-            </label>
-            <label>
-              Cierre esperado
-              <input type="date" value={expectedCloseDate} onChange={(event) => setExpectedCloseDate(event.target.value)} />
-            </label>
+            <label className="grow">Prospecto<select value={prospectId} onChange={(event) => setProspectId(event.target.value)} required>
+              <option value="">Seleccionar…</option>
+              {prospects.map((prospect) => <option key={prospect.id} value={prospect.id}>{prospect.displayName}</option>)}
+            </select></label>
+            <label className="grow">Nombre de la oportunidad<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
+            <label>Valor estimado en ARS<input type="number" min="0" step="0.01" value={estimatedValue} onChange={(event) => setEstimatedValue(event.target.value)} required /></label>
+            <label>Fecha estimada de cierre<input type="date" value={expectedCloseDate} onChange={(event) => setExpectedCloseDate(event.target.value)} /></label>
             <button className="primary-button" disabled={busy || prospects.length === 0}>Crear oportunidad</button>
           </form>
-        ) : (
-          <p className="muted">Acceso de solo lectura al pipeline.</p>
-        )}
+        ) : <p className="muted">Tu rol permite consultar oportunidades, pero no modificarlas.</p>}
       </Panel>
-      <Panel title="Pipeline por etapa">
-        <div className="kanban" aria-label="Pipeline de oportunidades">
-          {opportunityStages.map((stage) => (
-            <section className="kanban-column" key={stage}>
-              <header><strong>{stage}</strong><span>{metrics?.byStage[stage] ?? 0}</span></header>
-              {opportunities.filter((item) => item.stage === stage).map((opportunity) => (
-                <article className="opportunity-card" key={opportunity.id}>
-                  <strong>{opportunity.name}</strong>
-                  <span>{opportunity.prospectName}</span>
-                  <span>{money(opportunity.estimatedValue)} · {opportunity.probability}%</span>
-                  <small>{opportunity.ownerName}{opportunity.primaryActive ? " · Principal" : ""}</small>
-                  {canWrite && !["WON", "LOST"].includes(opportunity.stage) && (
-                    <div className="review-actions">
-                      {nextOpportunityStages(opportunity.stage).map((next) => (
-                        <button key={next} className={next === "LOST" ? "danger-button" : "secondary-button"} disabled={busy} onClick={() => void move(opportunity, next)}>
-                          {next}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </article>
-              ))}
-            </section>
-          ))}
+      <Panel title="Oportunidades por etapa">
+        <div className="kanban" aria-label="Oportunidades por etapa">
+          {opportunityStages.map((stage) => {
+            const stageItems = opportunities.filter((item) => item.stage === stage);
+            return (
+              <section className="kanban-column" key={stage} aria-labelledby={`stage-${stage}`}>
+                <header><strong id={`stage-${stage}`}>{opportunityStageLabel(stage)}</strong><span>{metrics?.byStage[stage] ?? 0}</span></header>
+                {stageItems.length === 0 && <p className="kanban-empty">Sin oportunidades en esta etapa.</p>}
+                {stageItems.map((opportunity) => (
+                  <article className="opportunity-card" key={opportunity.id}>
+                    <strong>{opportunity.name}</strong>
+                    <span>{opportunity.prospectName}</span>
+                    <span>{money(opportunity.estimatedValue)} · {opportunity.probability}% de probabilidad</span>
+                    <small>Responsable: {opportunity.ownerName}{opportunity.primaryActive ? " · Oportunidad principal" : ""}</small>
+                    <small>Último cambio: {relativeDate(opportunity.stageChangedAt)}</small>
+                    {opportunity.expectedCloseDate && <small>Cierre estimado: {dateOnly(opportunity.expectedCloseDate)}</small>}
+                    {canWrite && !["WON", "LOST"].includes(opportunity.stage) && (
+                      <div className="review-actions" aria-label={`Acciones para ${opportunity.name}`}>
+                        {nextOpportunityStages(opportunity.stage).map((next) => (
+                          <button key={next} type="button" className={next === "LOST" ? "danger-button" : "secondary-button"} disabled={busy} onClick={() => void move(opportunity, next)}>
+                            {next === "LOST" ? "Marcar como perdida" : next === "WON" ? "Marcar como ganada" : `Mover a ${opportunityStageLabel(next)}`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </section>
+            );
+          })}
         </div>
       </Panel>
-      <Panel title="Tabla de oportunidades">
-        {opportunities.length === 0 ? <EmptyState text="Todavía no hay oportunidades." /> : (
-          <div className="table-scroll"><table><thead><tr><th>Oportunidad</th><th>Prospecto</th><th>Etapa</th><th>Valor</th><th>Probabilidad</th><th>Cierre</th><th>Responsable</th></tr></thead>
-          <tbody>{opportunities.map((opportunity) => <tr key={opportunity.id}><td>{opportunity.name}</td><td>{opportunity.prospectName}</td><td><Badge value={opportunity.stage} /></td><td>{money(opportunity.estimatedValue)}</td><td>{opportunity.probability}%</td><td>{opportunity.actualCloseDate ?? opportunity.expectedCloseDate ?? "—"}</td><td>{opportunity.ownerName}</td></tr>)}</tbody></table></div>
+      <Panel title="Listado completo">
+        {opportunities.length === 0 ? <EmptyState text="Todavía no hay oportunidades. Creá la primera desde el formulario superior." /> : (
+          <div className="table-scroll"><table><thead><tr><th>Oportunidad</th><th>Prospecto</th><th>Etapa</th><th>Responsable</th><th>Valor</th><th>Probabilidad</th></tr></thead><tbody>
+            {opportunities.map((opportunity) => <tr key={opportunity.id}><td>{opportunity.name}</td><td>{opportunity.prospectName}</td><td><Badge value={opportunity.stage} /></td><td>{opportunity.ownerName}</td><td>{money(opportunity.estimatedValue)}</td><td>{opportunity.probability}%</td></tr>)}
+          </tbody></table></div>
         )}
       </Panel>
     </section>
@@ -2011,9 +2074,11 @@ function nextOpportunityStages(stage: OpportunityStage): OpportunityStage[] {
 
 function ImportsPanel({
   duplicateReviews,
+  prospects,
   onChanged,
 }: {
   duplicateReviews: DuplicateReview[];
+  prospects: Prospect[];
   onChanged: () => Promise<void>;
 }) {
   const [file, setFile] = useState<File | null>(null);
@@ -2022,21 +2087,48 @@ function ImportsPanel({
   const [busy, setBusy] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [rowStatus, setRowStatus] = useState("");
+  const [rowQuery, setRowQuery] = useState("");
+  const [rowPage, setRowPage] = useState(0);
+  const pageSize = 25;
+  const previewReady = Boolean(summary?.dryRun && file && summary.fileName === file.name);
+  const filteredRows = rows.filter((row) => {
+    const matchesStatus = !rowStatus || row.status === rowStatus;
+    const query = rowQuery.trim().toLocaleLowerCase("es-AR");
+    const matchesQuery = !query || `${row.sourceSheet} ${row.rowNumber} ${row.normalizedEmail ?? ""} ${row.normalizedPhone ?? ""} ${row.errorMessage ?? ""}`.toLocaleLowerCase("es-AR").includes(query);
+    return matchesStatus && matchesQuery;
+  });
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const visibleRows = filteredRows.slice(rowPage * pageSize, (rowPage + 1) * pageSize);
 
   async function run(execute: boolean) {
     if (!file) {
       setError("Seleccioná un archivo CSV o XLSX.");
       return;
     }
-    if (execute && !window.confirm("¿Ejecutar la importación? Esta acción escribirá en PostgreSQL.")) {
+    if (execute && !previewReady) {
+      setError("Primero ejecutá la vista previa del archivo seleccionado y revisá su resumen.");
       return;
+    }
+    if (execute) {
+      const answer = await openDecisionDialog({
+        title: "Ejecutar importación",
+        description: `Se escribirán los resultados validados de “${file.name}”. Las exclusiones tendrán prioridad y los casos ambiguos seguirán requiriendo revisión humana.`,
+        confirmLabel: "Ejecutar importación",
+        danger: true,
+      });
+      if (!answer) return;
     }
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       const result = await importProspects(file, execute);
       setSummary(result);
       setRows(await getImportRows(result.id));
+      setRowPage(0);
+      setNotice(execute ? "Importación ejecutada. Revisá el resumen y los casos pendientes." : "Vista previa completada. Revisá los resultados antes de importar.");
       await onChanged();
     } catch (caught) {
       setError(message(caught));
@@ -2048,30 +2140,68 @@ function ImportsPanel({
   async function resolve(review: DuplicateReview, action: DuplicateResolutionAction) {
     let separateName: string | undefined;
     let absorbedProspectId: string | undefined;
+    const actionLabel = labelFor(action);
     if (action === "CREATE_SEPARATE" || action === "MARK_NOT_DUPLICATE") {
-      separateName = window.prompt("Nombre del prospecto independiente:")?.trim();
-      if (!separateName) return;
-    }
-    if (action === "MERGE") {
-      absorbedProspectId = window.prompt("ID del prospecto que será absorbido:")?.trim();
-      if (!absorbedProspectId) return;
-      if (!window.confirm("El merge es transaccional y conservará la trazabilidad. ¿Continuar?")) {
+      const response = await openDecisionDialog({
+        title: actionLabel,
+        description: "Se creará un prospecto independiente conservando únicamente los campos importados conocidos, sus canales válidos y la evidencia segura.",
+        confirmLabel: actionLabel,
+        input: {
+          label: "Nombre del prospecto independiente",
+          initialValue: suggestedDuplicateName(review.sourceData, "Nuevo prospecto"),
+          required: true,
+        },
+      });
+      if (!response) return;
+      separateName = response;
+    } else if (action === "MERGE") {
+      const candidates = prospects
+        .filter((prospect) => prospect.id !== review.existingProspectId)
+        .map((prospect) => ({ value: prospect.id, label: prospect.displayName, description: prospect.city ?? "Sin localidad cargada" }));
+      if (!review.existingProspectId || candidates.length === 0) {
+        setError("No hay dos registros existentes disponibles para una fusión segura.");
         return;
       }
+      const response = await openDecisionDialog({
+        title: "Fusionar registros",
+        description: `Se conservará “${review.existingProspect?.displayName ?? "el candidato existente"}”. Seleccioná el registro que se archivará y transferirá. Esta acción no puede deshacerse desde la interfaz.`,
+        confirmLabel: "Fusionar y archivar",
+        danger: true,
+        choices: candidates,
+      });
+      if (!response) return;
+      absorbedProspectId = response;
+    } else {
+      const descriptions: Record<DuplicateResolutionAction, string> = {
+        LINK_TO_EXISTING: "La fila importada quedará vinculada al registro existente. No se creará un prospecto nuevo.",
+        DEFER: "La revisión permanecerá pendiente para resolverla más adelante.",
+        REJECT_ROW: "La fila se descartará de la importación. La evidencia se conservará para auditoría.",
+        MARK_NOT_DUPLICATE: "",
+        CREATE_SEPARATE: "",
+        MERGE: "",
+      };
+      const response = await openDecisionDialog({
+        title: actionLabel,
+        description: descriptions[action],
+        confirmLabel: actionLabel,
+        danger: action === "REJECT_ROW",
+      });
+      if (!response) return;
     }
-    if (action === "REJECT_ROW" && !window.confirm("¿Rechazar esta fila de importación?")) return;
 
     setResolvingId(review.id);
     setError(null);
+    setNotice(null);
     try {
       await resolveDuplicateReview(review.id, {
         action,
         survivorProspectId: review.existingProspectId ?? undefined,
         absorbedProspectId,
         separateName,
-        comment: `Resolución manual ${action}`,
+        comment: `Resolución manual: ${actionLabel}`,
         idempotencyKey: `${review.id}:${action}:${crypto.randomUUID()}`,
       });
+      setNotice(`Revisión resuelta: ${actionLabel}.`);
       await onChanged();
     } catch (caught) {
       setError(message(caught));
@@ -2083,120 +2213,59 @@ function ImportsPanel({
   return (
     <section className="stack">
       <Panel title="Importar prospectos y exclusiones">
-        <p className="muted">
-          El preview persiste evidencia de validación, pero no crea prospectos ni exclusiones.
-        </p>
-        {error && <div className="alert error">{error}</div>}
+        <p className="muted">La vista previa es obligatoria. Valida el archivo y guarda evidencia, pero no crea prospectos ni exclusiones.</p>
+        {error && <div className="alert error" role="alert">{error}</div>}
+        {notice && <div className="alert success" role="status">{notice}</div>}
         <div className="import-actions">
-          <input
-            type="file"
-            accept=".csv,.xlsx"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-          <button className="secondary-button" disabled={busy} onClick={() => void run(false)}>
-            Ejecutar preview
-          </button>
-          <button className="danger-button" disabled={busy} onClick={() => void run(true)}>
-            Importar con confirmación
-          </button>
+          <label className="file-control">Archivo CSV o XLSX<input type="file" accept=".csv,.xlsx" onChange={(event) => {
+            setFile(event.target.files?.[0] ?? null);
+            setSummary(null);
+            setRows([]);
+            setRowPage(0);
+            setError(null);
+            setNotice(null);
+          }} /></label>
+          <button className="secondary-button" disabled={busy || !file} onClick={() => void run(false)}>{busy ? "Procesando…" : "Generar vista previa"}</button>
+          <button className="danger-button" disabled={busy || !previewReady} title={!previewReady ? "Primero completá la vista previa del archivo seleccionado" : undefined} onClick={() => void run(true)}>Ejecutar importación</button>
         </div>
+        {file && <p className="result-context">Archivo seleccionado: <strong>{file.name}</strong> · {(file.size / 1024).toLocaleString("es-AR", { maximumFractionDigits: 1 })} KB</p>}
         {summary && <ImportSummaryView summary={summary} />}
       </Panel>
       {rows.length > 0 && (
         <Panel title="Resultado por fila">
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Hoja</th>
-                  <th>Fila</th>
-                  <th>Estado</th>
-                  <th>Error</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.sourceSheet}</td>
-                    <td>{row.rowNumber}</td>
-                    <td>
-                      <Badge value={row.status} />
-                    </td>
-                    <td>{row.errorMessage ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="toolbar">
+            <label>Resultado<select value={rowStatus} onChange={(event) => { setRowStatus(event.target.value); setRowPage(0); }}><option value="">Todos</option>{["ACCEPTED", "EXCLUDED", "REJECTED", "DUPLICATE", "REVIEW_REQUIRED", "PENDING"].map((status) => <option key={status} value={status}>{labelFor(status)}</option>)}</select></label>
+            <label className="grow">Buscar dentro de los resultados<input value={rowQuery} onChange={(event) => { setRowQuery(event.target.value); setRowPage(0); }} placeholder="Hoja, fila, correo, teléfono o error" /></label>
           </div>
+          <p className="result-context" role="status">{filteredRows.length.toLocaleString("es-AR")} de {rows.length.toLocaleString("es-AR")} filas.</p>
+          {visibleRows.length === 0 ? <EmptyState text="No hay filas que coincidan con los filtros actuales." /> : (
+            <div className="table-scroll"><table><thead><tr><th>Hoja</th><th>Fila</th><th>Resultado</th><th>Canal detectado</th><th>Detalle</th></tr></thead><tbody>
+              {visibleRows.map((row) => <tr key={row.id}><td>{row.sourceSheet}</td><td>{row.rowNumber}</td><td><Badge value={row.status} /></td><td>{row.normalizedEmail ?? row.normalizedPhone ?? "Sin canal utilizable"}</td><td>{row.errorMessage ? humanizeError(row.errorMessage) : "Sin observaciones"}</td></tr>)}
+            </tbody></table></div>
+          )}
+          <div className="pagination" aria-label="Paginación de resultados"><button className="secondary-button" disabled={rowPage === 0} onClick={() => setRowPage((page) => page - 1)}>Anterior</button><span>Página {rowPage + 1} de {pageCount}</span><button className="secondary-button" disabled={rowPage + 1 >= pageCount} onClick={() => setRowPage((page) => page + 1)}>Siguiente</button></div>
         </Panel>
       )}
-      <Panel title="Duplicados ambiguos pendientes">
-        {duplicateReviews.length === 0 ? (
-          <EmptyState text="No hay coincidencias ambiguas pendientes." />
-        ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Hoja/Fila</th>
-                  <th>Registro importado</th>
-                  <th>Coincidencia existente</th>
-                  <th>Señales</th>
-                  <th>Resolución</th>
-                </tr>
-              </thead>
-              <tbody>
-                {duplicateReviews.map((review) => (
-                  <tr key={review.id}>
-                    <td>
-                      {review.sourceSheet}/{review.rowNumber}
-                    </td>
-                    <td>
-                      <code className="source-evidence">{review.sourceData}</code>
-                      <small>{review.normalizedEmail ?? review.normalizedPhone ?? "Sin canal"}</small>
-                    </td>
-                    <td>
-                      {review.existingProspect ? (
-                        <>
-                          <strong>{review.existingProspect.displayName}</strong>
-                          <small>
-                            {review.existingProspect.locality ?? "Sin localidad"} · {review.existingProspect.status}
-                          </small>
-                        </>
-                      ) : (
-                        "Sin candidato enlazado"
-                      )}
-                    </td>
-                    <td>
-                      <Badge value={review.matchType} />
-                      <small>{Math.round(review.confidence * 100)}% · {review.matchReasons ?? "Sin detalle"}</small>
-                    </td>
-                    <td>
-                      <div className="review-actions">
-                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "LINK_TO_EXISTING")}>
-                          Vincular
-                        </button>
-                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "MARK_NOT_DUPLICATE")}>
-                          No duplicado
-                        </button>
-                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "CREATE_SEPARATE")}>
-                          Crear separado
-                        </button>
-                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "MERGE")}>
-                          Fusionar
-                        </button>
-                        <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "DEFER")}>
-                          Diferir
-                        </button>
-                        <button className="danger-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "REJECT_ROW")}>
-                          Rechazar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <Panel title="Coincidencias que requieren revisión">
+        {duplicateReviews.length === 0 ? <EmptyState text="No hay coincidencias ambiguas pendientes." /> : (
+          <div className="duplicate-review-list">
+            {duplicateReviews.map((review) => (
+              <article className="duplicate-review-card" key={review.id}>
+                <header><div><strong>Hoja {review.sourceSheet}, fila {review.rowNumber}</strong><span><Badge value={review.matchType} /> · {Math.round(review.confidence * 100)}% de coincidencia</span></div><small>{review.matchReasons ?? "La similitud requiere una decisión humana."}</small></header>
+                <div className="duplicate-comparison">
+                  <section><h3>Registro importado</h3><dl className="detail-grid">{duplicateSourceSummary(review.sourceData).map(([label, value]) => <Detail key={label} label={label} value={value} />)}<Detail label="Canal normalizado" value={review.normalizedEmail ?? review.normalizedPhone ?? "Sin canal utilizable"} /></dl><details className="technical-details"><summary>Ver evidencia técnica</summary><pre className="preview-box">{safeTechnicalJson(review.sourceData)}</pre></details></section>
+                  <section><h3>Candidato existente</h3>{review.existingProspect ? <dl className="detail-grid"><Detail label="Institución" value={review.existingProspect.displayName} /><Detail label="Localidad" value={review.existingProspect.locality ?? "Sin localidad cargada"} /><Detail label="Sitio web" value={review.existingProspect.website ?? "Sin sitio cargado"} /><Detail label="Estado" value={labelFor(review.existingProspect.status)} /></dl> : <EmptyState text="No hay un candidato existente vinculado." />}</section>
+                </div>
+                <div className="review-actions">
+                  <button className="secondary-button" disabled={resolvingId === review.id || !review.existingProspectId} onClick={() => void resolve(review, "LINK_TO_EXISTING")}>Vincular con el existente</button>
+                  <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "MARK_NOT_DUPLICATE")}>Confirmar que no es duplicado</button>
+                  <button className="secondary-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "CREATE_SEPARATE")}>Crear registro independiente</button>
+                  <button className="secondary-button" disabled={resolvingId === review.id || !review.existingProspectId} onClick={() => void resolve(review, "MERGE")}>Fusionar registros</button>
+                  <button className="link-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "DEFER")}>Resolver más tarde</button>
+                  <button className="danger-button" disabled={resolvingId === review.id} onClick={() => void resolve(review, "REJECT_ROW")}>Descartar esta fila</button>
+                </div>
+              </article>
+            ))}
           </div>
         )}
       </Panel>
@@ -2232,8 +2301,9 @@ function ExclusionsPanel({
 
   return (
     <section className="stack">
-      <Panel title="Crear exclusión dominante">
-        {error && <div className="alert error">{error}</div>}
+      <Panel title="Impedir el uso comercial de un canal">
+        <p className="muted">La exclusión impide usar este canal en contactos y campañas. No elimina el prospecto ni su historial.</p>
+        {error && <div className="alert error" role="alert">{error}</div>}
       {canWrite && <form className="inline-form" onSubmit={(event) => void submit(event)}>
           <label>
             Canal
@@ -2282,9 +2352,9 @@ function ExclusionsPanel({
             <tbody>
               {exclusions.map((exclusion) => (
                 <tr key={exclusion.id}>
-                  <td>{exclusion.channelType}</td>
+                  <td>{channelLabel(exclusion.channelType)}</td>
                   <td>{exclusion.normalizedValue}</td>
-                  <td>{exclusion.reason}</td>
+                  <td>{labelFor(exclusion.reason)}</td>
                   <td>{dateTime(exclusion.createdAt)}</td>
                 </tr>
               ))}
@@ -2356,11 +2426,15 @@ function ProspectDetail({
   const [name, setName] = useState(prospect.displayName);
   const [city, setCity] = useState(prospect.city ?? "");
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [contactRole, setContactRole] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [preferredChannel, setPreferredChannel] = useState<"EMAIL" | "PHONE" | "WHATSAPP">("EMAIL");
+  const [consent, setConsent] = useState<"UNKNOWN" | "GRANTED" | "DENIED">("UNKNOWN");
   const [note, setNote] = useState("");
-  const [activityType, setActivityType] = useState<
-    "EMAIL_SENT_MANUALLY" | "WHATSAPP_SENT_MANUALLY" | "PHONE_CALL" | "MEETING" | "DEMO"
-  >("PHONE_CALL");
+  const [activityType, setActivityType] = useState<"EMAIL_SENT_MANUALLY" | "WHATSAPP_SENT_MANUALLY" | "PHONE_CALL" | "MEETING" | "DEMO">("PHONE_CALL");
   const [activitySummary, setActivitySummary] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDueAt, setTaskDueAt] = useState("");
@@ -2371,11 +2445,7 @@ function ProspectDetail({
 
   const loadRelated = useCallback(async () => {
     try {
-      const [contactList, taskList, timelinePage] = await Promise.all([
-        listContacts(prospect.id),
-        listTasks(),
-        getTimeline(prospect.id),
-      ]);
+      const [contactList, taskList, timelinePage] = await Promise.all([listContacts(prospect.id), listTasks(), getTimeline(prospect.id)]);
       setContacts(contactList);
       setTasks(taskList.filter((task) => task.prospectId === prospect.id));
       setTimeline(timelinePage.content);
@@ -2409,194 +2479,91 @@ function ProspectDetail({
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await run(
-      () =>
-        updateProspect(prospect.id, {
-          version: prospect.version,
-          displayName: name,
-          legalName: prospect.legalName,
-          priority: prospect.priority,
-          score: prospect.score,
-          estimatedStudents: prospect.estimatedStudents,
-          source: prospect.source,
-          sourceDetail: prospect.sourceDetail,
-          ownerUserId: prospect.ownerUserId,
-          website: prospect.website,
-          address: prospect.address,
-          city,
-          province: prospect.province,
-          country: prospect.country,
-          timezone: prospect.timezone,
-          notesSummary: prospect.notesSummary,
-          nextActionAt: prospect.nextActionAt,
-        }),
-      "Prospecto actualizado.",
-    );
+    await run(() => updateProspect(prospect.id, {
+      version: prospect.version,
+      displayName: name,
+      legalName: prospect.legalName,
+      priority: prospect.priority,
+      score: prospect.score,
+      estimatedStudents: prospect.estimatedStudents,
+      source: prospect.source,
+      sourceDetail: prospect.sourceDetail,
+      ownerUserId: prospect.ownerUserId,
+      website: prospect.website,
+      address: prospect.address,
+      city,
+      province: prospect.province,
+      country: prospect.country,
+      timezone: prospect.timezone,
+      notesSummary: prospect.notesSummary,
+      nextActionAt: prospect.nextActionAt,
+    }), "Prospecto actualizado.");
+  }
+
+  async function addContact(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!email.trim() && !phone.trim() && !whatsapp.trim()) {
+      setError("Cargá al menos un correo, teléfono o WhatsApp para que el contacto sea utilizable.");
+      return;
+    }
+    await run(() => createContact(prospect.id, {
+      firstName,
+      lastName: lastName || undefined,
+      role: contactRole || undefined,
+      email: email || undefined,
+      phone: phone || undefined,
+      whatsapp: whatsapp || undefined,
+      preferredChannel,
+      consent,
+    }), "Contacto agregado y elegibilidad actualizada.");
+    setFirstName(""); setLastName(""); setContactRole(""); setEmail(""); setPhone(""); setWhatsapp(""); setConsent("UNKNOWN");
   }
 
   const transitions = allowedTransitions(prospect.status);
+  const primaryChannels = contacts.flatMap((contact) => contact.channels).filter((channel) => channel.primary || channel.preferred);
 
   return (
     <div className="stack detail-workspace">
       {error && <div className="alert error" role="alert">{error}</div>}
       {notice && <div className="alert success" role="status">{notice}</div>}
-      <dl className="detail-grid">
-        <Detail label="Institución" value={prospect.displayName} />
-        <Detail label="Razón social" value={prospect.legalName} />
-        <Detail label="Ubicación" value={[prospect.city, prospect.province].filter(Boolean).join(", ")} />
-        <Detail label="Estado" value={prospect.status} />
-        <Detail label="Elegibilidad" value={prospect.eligibility} />
-        <Detail label="Prioridad" value={prospect.priority?.toString()} />
-        <Detail label="Puntuación" value={prospect.score?.toString()} />
-        <Detail label="Responsable" value={prospect.ownerName} />
-        <Detail label="Próxima acción" value={prospect.nextActionAt ? dateTime(prospect.nextActionAt) : null} />
-        <Detail label="Último contacto" value={prospect.lastContactAt ? dateTime(prospect.lastContactAt) : null} />
+      <section className="prospect-hero">
+        <div><span className="eyebrow">Prospecto</span><h2>{prospect.displayName}</h2><p>{[prospect.city, prospect.province].filter(Boolean).join(", ") || "Sin ubicación cargada"}</p></div>
+        <div className="hero-badges"><Badge value={prospect.status} /><Badge value={prospect.eligibility} /></div>
+      </section>
+      <dl className="detail-grid priority-details">
+        <Detail label="Responsable" value={prospect.ownerName ?? "Sin responsable asignado"} />
+        <Detail label="Próxima acción" value={prospect.nextActionAt ? dateTime(prospect.nextActionAt) : "Sin próxima acción programada"} />
+        <Detail label="Última actividad de contacto" value={prospect.lastContactAt ? dateTime(prospect.lastContactAt) : "Sin contactos registrados"} />
+        <Detail label="Canal principal" value={primaryChannels[0] ? `${channelLabel(primaryChannels[0].type)}: ${primaryChannels[0].value}` : "Sin correo, teléfono o WhatsApp utilizable"} />
       </dl>
 
-      {canWrite && (
-        <form className="inline-form compact-form" onSubmit={(event) => void save(event)}>
-          <label className="grow">
-            Nombre visible
-            <input value={name} onChange={(event) => setName(event.target.value)} required />
-          </label>
-          <label>
-            Localidad
-            <input value={city} onChange={(event) => setCity(event.target.value)} />
-          </label>
-          <button className="secondary-button">Guardar</button>
-        </form>
-      )}
+      <details className="disclosure-panel" open><summary>Resumen y datos administrativos</summary><div className="disclosure-content">
+        <dl className="detail-grid">
+          <Detail label="Institución" value={prospect.displayName} /><Detail label="Razón social" value={prospect.legalName ?? "Sin razón social cargada"} />
+          <Detail label="Ubicación" value={[prospect.city, prospect.province].filter(Boolean).join(", ") || "Sin ubicación cargada"} /><Detail label="Estado" value={prospectStatusLabel(prospect.status)} />
+          <Detail label="Elegibilidad" value={labelFor(prospect.eligibility)} /><Detail label="Prioridad" value={prospect.priority === null ? "Sin prioridad definida" : String(prospect.priority)} />
+          <Detail label="Puntuación" value={prospect.score === null ? "Sin puntuación" : `${prospect.score}/100`} /><Detail label="Sitio web" value={prospect.website ?? "Sin sitio cargado"} />
+        </dl>
+        {canWrite && <form className="inline-form compact-form" onSubmit={(event) => void save(event)}><label className="grow">Nombre visible<input value={name} onChange={(event) => setName(event.target.value)} required /></label><label>Localidad<input value={city} onChange={(event) => setCity(event.target.value)} /></label><button className="secondary-button">Guardar cambios</button></form>}
+        {canWrite && transitions.length > 0 && <div className="action-row" aria-label="Cambios de estado disponibles">{transitions.map((status) => <button className="secondary-button" type="button" key={status} onClick={() => void run(() => transitionProspect(prospect.id, prospect.version, status), `Estado cambiado a ${prospectStatusLabel(status)}.`)}>Pasar a {prospectStatusLabel(status)}</button>)}</div>}
+      </div></details>
 
-      {canWrite && transitions.length > 0 && (
-        <div className="action-row" aria-label="Transiciones permitidas">
-          {transitions.map((status) => (
-            <button
-              className="secondary-button"
-              key={status}
-              onClick={() => void run(() => transitionProspect(prospect.id, prospect.version, status), `Estado cambiado a ${status}.`)}
-            >
-              Pasar a {status}
-            </button>
-          ))}
-        </div>
-      )}
+      <details className="disclosure-panel" open><summary>Contactos y canales</summary><div className="disclosure-content">
+        <p className="muted">La posibilidad de contactar se calcula con los canales válidos y las exclusiones vigentes.</p>
+        {contacts.length === 0 ? <EmptyState text="No hay contactos. Agregá una persona y al menos un canal utilizable." /> : contacts.map((contact) => <article className="contact-card" key={contact.id}><div><strong>{contact.displayName}</strong><span>{contact.role ?? "Sin cargo cargado"}</span><small>{contact.primary ? "Contacto principal" : "Contacto adicional"} · {labelFor(contact.consent)}</small></div><div className="channel-list">{contact.channels.length === 0 ? <span>Sin canales cargados</span> : contact.channels.map((channel) => <div className="channel-row" key={channel.id}><span><strong>{channelLabel(channel.type)}</strong> {channel.value}</span><span>{channel.valid ? "Válido" : "No válido"}{channel.preferred ? " · Preferido" : ""}</span><button type="button" className="link-button" onClick={() => void copyText(channel.value).then(() => setNotice(`${channelLabel(channel.type)} copiado.`)).catch(() => setError("No se pudo copiar el dato. Seleccionalo manualmente."))}>Copiar</button></div>)}</div></article>)}
+        {canWrite && <form className="form-grid compact-form" onSubmit={(event) => void addContact(event)}><label>Nombre<input value={firstName} onChange={(event) => setFirstName(event.target.value)} required /></label><label>Apellido<input value={lastName} onChange={(event) => setLastName(event.target.value)} /></label><label className="full-width">Cargo o función<input value={contactRole} onChange={(event) => setContactRole(event.target.value)} placeholder="Ej.: Administración, dirección" /></label><label>Correo electrónico<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label><label>Teléfono<input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} /></label><label>WhatsApp<input type="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} /></label><label>Canal preferido<select value={preferredChannel} onChange={(event) => setPreferredChannel(event.target.value as typeof preferredChannel)}><option value="EMAIL">Correo electrónico</option><option value="PHONE">Teléfono</option><option value="WHATSAPP">WhatsApp</option></select></label><label>Consentimiento<select value={consent} onChange={(event) => setConsent(event.target.value as typeof consent)}><option value="UNKNOWN">Sin confirmar</option><option value="GRANTED">Registrado</option><option value="DENIED">No autorizado</option></select></label><button className="primary-button full-width">Agregar contacto</button></form>}
+      </div></details>
 
-      <section className="subsection">
-        <h3>Contactos</h3>
-        {contacts.length === 0 ? <EmptyState text="No hay contactos." /> : contacts.map((contact) => (
-          <article className="timeline-item" key={contact.id}>
-            <strong>{contact.displayName}</strong>
-            <span>{contact.role ?? "Sin cargo"}</span>
-            {contact.channels.map((channel) => <small key={channel.id}>{channel.type}: {channel.value}</small>)}
-          </article>
-        ))}
-        {canWrite && (
-          <form className="inline-form compact-form" onSubmit={(event) => {
-            event.preventDefault();
-            void run(() => createContact(prospect.id, { firstName, email }), "Contacto agregado.").then(() => {
-              setFirstName("");
-              setEmail("");
-            });
-          }}>
-            <label>
-              Nombre
-              <input value={firstName} onChange={(event) => setFirstName(event.target.value)} required />
-            </label>
-            <label className="grow">
-              Email
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-            </label>
-            <button className="secondary-button">Agregar contacto</button>
-          </form>
-        )}
-      </section>
+      <details className="disclosure-panel"><summary>Tareas de seguimiento</summary><div className="disclosure-content">
+        {tasks.length === 0 ? <EmptyState text="No hay tareas. Creá una para dejar claro el próximo paso." /> : tasks.map((task) => <article className="timeline-item" key={task.id}><strong>{task.title}</strong><span>{labelFor(task.status)} · vence {dateTime(task.dueAt)}</span>{canWriteActivity && !["COMPLETED", "CANCELLED"].includes(task.status) && <button className="secondary-button" type="button" onClick={() => void run(() => changeTaskStatus(task, "COMPLETED"), "Tarea completada.")}>Marcar como completada</button>}</article>)}
+        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createTask(prospect.id, { ownerUserId: session.userId, title: taskTitle, dueAt: new Date(taskDueAt).toISOString() }), "Tarea creada.").then(() => { setTaskTitle(""); setTaskDueAt(""); }); }}><label className="grow">Nueva tarea<input value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required /></label><label>Vencimiento<input type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} required /></label><button className="secondary-button">Crear tarea</button></form>}
+      </div></details>
 
-      <section className="subsection">
-        <h3>Tareas</h3>
-        {tasks.length === 0 ? <EmptyState text="No hay tareas." /> : tasks.map((task) => (
-          <article className="timeline-item" key={task.id}>
-            <strong>{task.title}</strong>
-            <span>{task.status} · vence {dateTime(task.dueAt)}</span>
-            {canWriteActivity && task.status !== "COMPLETED" && task.status !== "CANCELLED" && (
-              <button className="secondary-button" onClick={() => void run(() => changeTaskStatus(task, "COMPLETED"), "Tarea completada.")}>Completar</button>
-            )}
-          </article>
-        ))}
-        {canWriteActivity && (
-          <form className="inline-form compact-form" onSubmit={(event) => {
-            event.preventDefault();
-            void run(() => createTask(prospect.id, { ownerUserId: session.userId, title: taskTitle, dueAt: new Date(taskDueAt).toISOString() }), "Tarea creada.").then(() => {
-              setTaskTitle("");
-              setTaskDueAt("");
-            });
-          }}>
-            <label className="grow">
-              Nueva tarea
-              <input value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required />
-            </label>
-            <label>
-              Vencimiento
-              <input type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} required />
-            </label>
-            <button className="secondary-button">Crear tarea</button>
-          </form>
-        )}
-      </section>
-
-      <section className="subsection">
-        <h3>Timeline</h3>
-        {canWriteActivity && (
-          <form className="inline-form compact-form" onSubmit={(event) => {
-            event.preventDefault();
-            void run(
-              () => createActivity(prospect.id, { type: activityType, summary: activitySummary }),
-              "Actividad registrada.",
-            ).then(() => setActivitySummary(""));
-          }}>
-            <label>
-              Tipo de actividad
-              <select
-                value={activityType}
-                onChange={(event) => setActivityType(event.target.value as typeof activityType)}
-              >
-                <option value="PHONE_CALL">Llamada</option>
-                <option value="MEETING">Reunión</option>
-                <option value="DEMO">Demo</option>
-                <option value="EMAIL_SENT_MANUALLY">Email enviado manualmente</option>
-                <option value="WHATSAPP_SENT_MANUALLY">WhatsApp enviado manualmente</option>
-              </select>
-            </label>
-            <label className="grow">
-              Resumen de actividad
-              <input
-                value={activitySummary}
-                onChange={(event) => setActivitySummary(event.target.value)}
-                required
-              />
-            </label>
-            <button className="secondary-button">Registrar actividad</button>
-          </form>
-        )}
-        {canWriteActivity && (
-          <form className="inline-form compact-form" onSubmit={(event) => {
-            event.preventDefault();
-            void run(() => createNote(prospect.id, note), "Nota registrada.").then(() => setNote(""));
-          }}>
-            <label className="grow">
-              Nota
-              <input value={note} onChange={(event) => setNote(event.target.value)} required />
-            </label>
-            <button className="secondary-button">Agregar nota</button>
-          </form>
-        )}
-        {timeline.length === 0 ? <EmptyState text="Todavía no hay eventos." /> : timeline.map((item) => (
-          <article className="timeline-item" key={`${item.eventType}-${item.id}`}>
-            <small>{dateTime(item.eventAt)} · {item.eventType}</small>
-            <strong>{item.title}</strong>
-            {item.detail && <span>{item.detail}</span>}
-          </article>
-        ))}
-      </section>
+      <details className="disclosure-panel"><summary>Actividad y notas</summary><div className="disclosure-content">
+        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createActivity(prospect.id, { type: activityType, summary: activitySummary }), "Actividad registrada.").then(() => setActivitySummary("")); }}><label>Tipo de actividad<select value={activityType} onChange={(event) => setActivityType(event.target.value as typeof activityType)}><option value="PHONE_CALL">Llamada</option><option value="MEETING">Reunión</option><option value="DEMO">Demostración</option><option value="EMAIL_SENT_MANUALLY">Correo enviado manualmente</option><option value="WHATSAPP_SENT_MANUALLY">WhatsApp enviado manualmente</option></select></label><label className="grow">Resumen<input value={activitySummary} onChange={(event) => setActivitySummary(event.target.value)} required /></label><button className="secondary-button">Registrar actividad</button></form>}
+        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createNote(prospect.id, note), "Nota registrada.").then(() => setNote("")); }}><label className="grow">Nota<input value={note} onChange={(event) => setNote(event.target.value)} required /></label><button className="secondary-button">Agregar nota</button></form>}
+        {timeline.length === 0 ? <EmptyState text="Todavía no hay actividad registrada." /> : timeline.map((item) => <article className="timeline-item" key={`${item.eventType}-${item.id}`}><small>{dateTime(item.eventAt)} · {labelFor(item.eventType)}</small><strong>{item.title}</strong>{item.detail && <span>{item.detail}</span>}</article>)}
+      </div></details>
     </div>
   );
 }
@@ -2620,8 +2587,8 @@ function allowedTransitions(status: ProspectStatus): ProspectStatus[] {
 function ImportSummaryView({ summary }: { summary: ImportSummary }) {
   return (
     <div className="summary-grid">
-      <Control label="Estado" value={summary.status} />
-      <Control label="Modo" value={summary.dryRun ? "Preview" : "Ejecución"} />
+      <Control label="Estado" value={labelFor(summary.status)} />
+      <Control label="Modo" value={summary.dryRun ? "Vista previa" : "Importación ejecutada"} />
       <Control label="Filas" value={summary.totalRows.toString()} />
       <Control label="Aceptadas" value={summary.acceptedRows.toString()} />
       <Control label="Bloqueadas" value={summary.excludedRows.toString()} />
@@ -2633,32 +2600,12 @@ function ImportSummaryView({ summary }: { summary: ImportSummary }) {
 }
 
 function AuditTable({ events }: { events: AuditEvent[] }) {
-  if (events.length === 0) {
-    return <EmptyState text="Todavía no hay eventos de auditoría." />;
-  }
+  if (events.length === 0) return <EmptyState text="Todavía no hay eventos de auditoría." />;
   return (
     <div className="table-scroll">
       <table>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Acción</th>
-            <th>Entidad</th>
-            <th>Payload</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((event) => (
-            <tr key={event.id}>
-              <td>{dateTime(event.createdAt)}</td>
-              <td>{event.action}</td>
-              <td>
-                {event.entityType} {event.entityId ? `#${event.entityId.slice(0, 8)}` : ""}
-              </td>
-              <td className="payload-cell">{event.payload}</td>
-            </tr>
-          ))}
-        </tbody>
+        <thead><tr><th>Fecha</th><th>Acción</th><th>Registro</th><th>Descripción</th><th>Detalle</th></tr></thead>
+        <tbody>{events.map((event) => <tr key={event.id}><td>{dateTime(event.createdAt)}</td><td>{labelFor(event.action)}</td><td>{labelFor(event.entityType)}{event.entityId ? ` #${event.entityId.slice(0, 8)}` : ""}</td><td>{auditSummary(event.payload)}</td><td><details className="technical-details"><summary>Ver datos técnicos</summary><pre className="preview-box">{safeTechnicalJson(event.payload)}</pre></details></td></tr>)}</tbody>
       </table>
     </div>
   );
@@ -2695,13 +2642,13 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
   return (
     <div>
       <dt>{label}</dt>
-      <dd>{value || "—"}</dd>
+      <dd>{value || "Sin información cargada"}</dd>
     </div>
   );
 }
 
 function Badge({ value }: { value: string }) {
-  return <span className={`badge badge-${value.toLowerCase().replaceAll("_", "-")}`}>{value}</span>;
+  return <span className={`badge badge-${value.toLowerCase().replaceAll("_", "-")}`}>{labelFor(value)}</span>;
 }
 
 function EmptyState({ text }: { text: string }) {
@@ -2726,17 +2673,17 @@ function NavButton({
 
 function title(tab: Tab): string {
   return {
-    dashboard: "Dashboard",
+    dashboard: "Resumen comercial",
     prospects: "Prospectos",
-    pipeline: "Pipeline",
+    pipeline: "Oportunidades",
     campaigns: "Campañas y plantillas",
     messages: "Mensajes e integraciones",
-    outbox: "Outbox y workers",
-    inbound: "Inbound y quarantine",
+    outbox: "Bandeja de salida",
+    inbound: "Mensajes recibidos",
     imports: "Importaciones",
-    exclusions: "Exclusiones",
+    exclusions: "Exclusiones de contacto",
     audit: "Auditoría",
-    reports: "Dashboard y reportes",
+    reports: "Reportes",
     settings: "Configuración, etiquetas e integraciones",
     users: "Usuarios",
     account: "Mi cuenta",
@@ -2765,7 +2712,34 @@ function dateTime(value: string): string {
 }
 
 function message(caught: unknown): string {
-  return caught instanceof Error ? caught.message : "Ocurrió un error inesperado";
+  return humanizeError(caught instanceof Error ? caught.message : "Ocurrió un error inesperado");
+}
+
+function dateOnly(value: string): string {
+  return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" }).format(new Date(value));
+}
+
+function relativeDate(value: string): string {
+  const difference = new Date(value).getTime() - Date.now();
+  const days = Math.round(difference / 86_400_000);
+  if (Math.abs(days) < 1) return "hoy";
+  return new Intl.RelativeTimeFormat("es-AR", { numeric: "auto" }).format(days, "day");
+}
+
+async function copyText(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Copy failed");
 }
 
 function escapeText(value: string): string {

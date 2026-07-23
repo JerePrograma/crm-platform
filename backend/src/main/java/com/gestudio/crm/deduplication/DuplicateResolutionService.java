@@ -5,7 +5,6 @@ import com.gestudio.crm.common.OptimisticConflictException;
 import com.gestudio.crm.common.ResourceNotFoundException;
 import com.gestudio.crm.common.UnprocessableEntityException;
 import com.gestudio.crm.prospect.ProspectApplicationService;
-import com.gestudio.crm.prospect.ProspectApplicationService.CreateProspectCommand;
 import com.gestudio.crm.security.CurrentActor;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -17,6 +16,7 @@ import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class DuplicateResolutionService {
@@ -26,18 +26,21 @@ public class DuplicateResolutionService {
   private final EntityManager entityManager;
   private final CurrentActor currentActor;
   private final AuditEventWriter auditEventWriter;
+  private final ObjectMapper objectMapper;
 
   public DuplicateResolutionService(
       JdbcTemplate jdbcTemplate,
       ProspectApplicationService prospectApplicationService,
       EntityManager entityManager,
       CurrentActor currentActor,
-      AuditEventWriter auditEventWriter) {
+      AuditEventWriter auditEventWriter,
+      ObjectMapper objectMapper) {
     this.jdbcTemplate = jdbcTemplate;
     this.prospectApplicationService = prospectApplicationService;
     this.entityManager = entityManager;
     this.currentActor = currentActor;
     this.auditEventWriter = auditEventWriter;
+    this.objectMapper = objectMapper;
   }
 
   @Transactional(readOnly = true)
@@ -145,32 +148,16 @@ public class DuplicateResolutionService {
   }
 
   private UUID createSeparate(ReviewRow review, String name) {
-    String sourceId = "duplicate-review:" + review.id();
+    SanitizedDuplicateImportData imported =
+        SanitizedDuplicateImportData.from(
+            objectMapper,
+            review.view().sourceData(),
+            review.view().normalizedEmail(),
+            review.view().normalizedPhone(),
+            name);
     UUID prospectId =
         prospectApplicationService
-            .create(
-                new CreateProspectCommand(
-                    name,
-                    null,
-                    null,
-                    null,
-                    "Argentina",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    sourceId,
-                    "DUPLICATE_REVIEW",
-                    "Created from sanitized duplicate review evidence",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    Instant.now(),
-                    null))
+            .createIndependent(imported.toCommand(review.id()), review.id())
             .id();
     entityManager.flush();
     jdbcTemplate.update(

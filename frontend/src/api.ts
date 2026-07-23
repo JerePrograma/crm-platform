@@ -193,11 +193,34 @@ export function listContacts(prospectId: string): Promise<Contact[]> {
 
 export function createContact(
   prospectId: string,
-  input: { firstName: string; lastName?: string; role?: string; email?: string },
+  input: {
+    firstName: string;
+    lastName?: string;
+    role?: string;
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+    preferredChannel?: "EMAIL" | "PHONE" | "WHATSAPP";
+    consent?: "UNKNOWN" | "GRANTED" | "DENIED";
+  },
 ): Promise<Contact> {
-  const channels = input.email
-    ? [{ type: "EMAIL", value: input.email, primary: true, valid: true, verified: false, consent: "UNKNOWN", preferred: true }]
-    : [];
+  const preferred = input.preferredChannel;
+  const channels = [
+    input.email
+      ? { type: "EMAIL", value: input.email, primary: preferred === "EMAIL", valid: true, verified: false, consent: input.consent ?? "UNKNOWN", preferred: preferred === "EMAIL" }
+      : null,
+    input.phone
+      ? { type: "PHONE", value: input.phone, primary: preferred === "PHONE", valid: true, verified: false, consent: input.consent ?? "UNKNOWN", preferred: preferred === "PHONE" }
+      : null,
+    input.whatsapp
+      ? { type: "WHATSAPP", value: input.whatsapp, primary: preferred === "WHATSAPP", valid: true, verified: false, consent: input.consent ?? "UNKNOWN", preferred: preferred === "WHATSAPP" }
+      : null,
+  ].filter((channel): channel is NonNullable<typeof channel> => channel !== null);
+  const firstChannel = channels.at(0);
+  if (firstChannel && !channels.some((channel) => channel.primary)) {
+    firstChannel.primary = true;
+    firstChannel.preferred = true;
+  }
   return request(`/api/v1/prospects/${prospectId}/contacts`, {
     method: "POST",
     body: JSON.stringify({
@@ -206,8 +229,8 @@ export function createContact(
       role: input.role,
       primary: true,
       verified: false,
-      preferredChannel: input.email ? "EMAIL" : null,
-      consent: "UNKNOWN",
+      preferredChannel: preferred ?? channels[0]?.type ?? null,
+      consent: input.consent ?? "UNKNOWN",
       source: "MANUAL",
       channels,
     }),

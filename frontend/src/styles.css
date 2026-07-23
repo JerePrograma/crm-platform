@@ -5,6 +5,16 @@
   background: #eef1f5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  --color-text: #172033;
+  --color-muted: #5f6c82;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f6f8fb;
+  --color-border: #d7dee8;
+  --color-focus: #1769aa;
+  --radius-control: 10px;
+  --radius-panel: 16px;
+  --shadow-panel: 0 8px 24px rgb(22 32 51 / 7%);
+  --content-width: 1680px;
 }
 
 * {
@@ -15,6 +25,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  color: var(--color-text);
+  line-height: 1.5;
 }
 
 button,
@@ -125,6 +137,8 @@ button:disabled {
 
 .main-content {
   min-width: 0;
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
   padding: 28px;
 }
 
@@ -438,7 +452,7 @@ label {
 input,
 select,
 textarea {
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 10px;
   border: 1px solid #cbd3de;
   border-radius: 9px;
@@ -450,7 +464,7 @@ input:focus,
 select:focus,
 textarea:focus,
 button:focus-visible {
-  outline: 3px solid rgb(71 151 219 / 24%);
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
   outline-offset: 1px;
 }
 
@@ -468,8 +482,6 @@ button:focus-visible {
 }
 
 .detail-workspace {
-  max-height: calc(100vh - 180px);
-  overflow-y: auto;
   padding-right: 4px;
 }
 
@@ -706,5 +718,321 @@ dd {
   .panel,
   .login-card {
     padding: 16px;
+  }
+}
+
+
+.result-context {
+  margin: 0 0 14px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+tbody tr[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 30%, transparent);
+  outline-offset: -3px;
+}
+
+.link-button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  color: #1b5f91;
+  background: transparent;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dialog-open {
+  overflow: hidden;
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(7 15 28 / 68%);
+}
+
+.decision-dialog {
+  width: min(560px, 100%);
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: 0 26px 80px rgb(0 0 0 / 38%);
+}
+
+.decision-dialog-form {
+  display: grid;
+  gap: 18px;
+}
+
+.decision-dialog h2,
+.decision-dialog p {
+  margin: 0;
+}
+
+.decision-dialog p {
+  color: var(--color-muted);
+}
+
+.decision-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.technical-details summary,
+.disclosure-panel > summary {
+  cursor: pointer;
+  color: #31445f;
+  font-weight: 750;
+}
+
+.technical-details[open] summary,
+.disclosure-panel[open] > summary {
+  margin-bottom: 12px;
+}
+
+.technical-details .preview-box {
+  max-height: 22rem;
+  overflow: auto;
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.disclosure-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.disclosure-panel > summary {
+  padding: 16px 18px;
+  list-style-position: inside;
+}
+
+.disclosure-content {
+  display: grid;
+  gap: 18px;
+  padding: 0 18px 18px;
+}
+
+.prospect-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: linear-gradient(135deg, #f7fbfa, #f4f7fb);
+}
+
+.prospect-hero h2,
+.prospect-hero p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.priority-details {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.contact-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+}
+
+.contact-card > div:first-child,
+.channel-list {
+  display: grid;
+  gap: 4px;
+}
+
+.contact-card span,
+.contact-card small,
+.channel-row > span:last-of-type {
+  color: var(--color-muted);
+}
+
+.channel-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding-block: 8px;
+  border-top: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+
+.duplicate-review-list {
+  display: grid;
+  gap: 16px;
+}
+
+.duplicate-review-card {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-soft);
+}
+
+.duplicate-review-card > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.duplicate-review-card > header div {
+  display: grid;
+  gap: 5px;
+}
+
+.duplicate-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.duplicate-comparison > section {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.duplicate-comparison h3 {
+  margin-top: 0;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.file-control {
+  min-width: min(100%, 320px);
+}
+
+.kanban-empty {
+  margin: 0;
+  padding: 12px;
+  color: var(--color-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: 9px;
+  font-size: 0.82rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    gap: 12px;
+    padding: 12px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 22%);
+  }
+
+  .sidebar nav {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .nav-button {
+    width: auto;
+    min-width: max-content;
+    min-height: 44px;
+  }
+
+  .sidebar > .secondary-button {
+    display: none;
+  }
+
+  .duplicate-comparison,
+  .channel-row {
+    grid-template-columns: 1fr;
+  }
+
+  .duplicate-review-card > header,
+  .prospect-hero {
+    flex-direction: column;
+  }
+
+  .hero-badges {
+    justify-content: flex-start;
+  }
+
+  .decision-dialog {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .decision-dialog-actions,
+  .pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .decision-dialog-actions button,
+  .pagination button {
+    width: 100%;
   }
 }

@@ -60,6 +60,16 @@ public class ProspectApplicationService {
 
   @Transactional
   public ProspectView create(CreateProspectCommand command) {
+    return create(command, null);
+  }
+
+  @Transactional
+  public ProspectView createIndependent(CreateProspectCommand command, UUID distinctionId) {
+    Objects.requireNonNull(distinctionId, "Distinct institution id is required");
+    return create(command, distinctionId);
+  }
+
+  private ProspectView create(CreateProspectCommand command, UUID distinctionId) {
     Objects.requireNonNull(command, "Create prospect command is required");
 
     String externalSourceId = normalizationService.trimToNull(command.externalSourceId());
@@ -77,7 +87,13 @@ public class ProspectApplicationService {
     String websiteDomain = normalizationService.normalizeDomain(command.website());
 
     Institution institution =
-        resolveInstitution(command, normalizedName, normalizedLocality, websiteDomain);
+        distinctionId == null
+            ? resolveInstitution(command, normalizedName, normalizedLocality, websiteDomain)
+            : createInstitution(
+                command,
+                normalizedName + " duplicate review " + distinctionId,
+                normalizedLocality,
+                websiteDomain);
 
     List<PreparedChannel> preparedChannels = prepareContactChannels(command);
     rejectExistingChannels(preparedChannels);
@@ -181,21 +197,27 @@ public class ProspectApplicationService {
     return byNameAndLocation
         .or(() -> byDomain)
         .orElseGet(
-            () -> {
-              Institution institution =
-                  Institution.create(
-                      command.institutionName(),
-                      normalizedName,
-                      normalizationService.trimToNull(command.category()),
-                      normalizationService.trimToNull(command.locality()),
-                      normalizedLocality,
-                      normalizationService.trimToNull(command.province()),
-                      normalizationService.trimToNull(command.country()),
-                      normalizationService.trimToNull(command.website()),
-                      websiteDomain);
-              institution.assignOrganization(currentActor.organizationId());
-              return institutionRepository.save(institution);
-            });
+            () -> createInstitution(command, normalizedName, normalizedLocality, websiteDomain));
+  }
+
+  private Institution createInstitution(
+      CreateProspectCommand command,
+      String normalizedName,
+      String normalizedLocality,
+      String websiteDomain) {
+    Institution institution =
+        Institution.create(
+            command.institutionName(),
+            normalizedName,
+            normalizationService.trimToNull(command.category()),
+            normalizationService.trimToNull(command.locality()),
+            normalizedLocality,
+            normalizationService.trimToNull(command.province()),
+            normalizationService.trimToNull(command.country()),
+            normalizationService.trimToNull(command.website()),
+            websiteDomain);
+    institution.assignOrganization(currentActor.organizationId());
+    return institutionRepository.save(institution);
   }
 
   private List<PreparedChannel> prepareContactChannels(CreateProspectCommand command) {
