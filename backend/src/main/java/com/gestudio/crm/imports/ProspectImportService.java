@@ -12,7 +12,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -50,6 +52,7 @@ public class ProspectImportService {
     MutableCounters counters = new MutableCounters();
     try {
       ParsedImport parsed = parser.parse(safeFileName, bytes);
+      Set<String> fileExclusionEmails = fileExclusionEmails(parsed);
       for (ExclusionCandidate exclusion : parsed.exclusions()) {
         counters.total++;
         try {
@@ -62,7 +65,12 @@ public class ProspectImportService {
       for (ProspectCandidate prospect : parsed.prospects()) {
         counters.total++;
         try {
-          counters.add(rowProcessor.processProspect(jobId, prospect, dryRun));
+          counters.add(
+              rowProcessor.processProspect(
+                  jobId,
+                  prospect,
+                  dryRun,
+                  isExcludedByImportFile(prospect, fileExclusionEmails)));
         } catch (RuntimeException exception) {
           rowProcessor.recordRejectedProspect(jobId, prospect, safeMessage(exception));
           counters.rejected++;
@@ -77,6 +85,27 @@ public class ProspectImportService {
 
   public ImportSummary getSummary(UUID jobId) {
     return lifecycleService.getSummary(jobId);
+  }
+
+  static Set<String> fileExclusionEmails(ParsedImport parsed) {
+    return parsed.exclusions().stream()
+        .map(ExclusionCandidate::email)
+        .map(ProspectImportService::normalizedEmailKey)
+        .filter(value -> value != null)
+        .collect(Collectors.toUnmodifiableSet());
+  }
+
+  static boolean isExcludedByImportFile(
+      ProspectCandidate prospect, Set<String> fileExclusionEmails) {
+    String email = normalizedEmailKey(prospect.email());
+    return email != null && fileExclusionEmails.contains(email);
+  }
+
+  private static String normalizedEmailKey(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return value.trim().toLowerCase(Locale.ROOT);
   }
 
   private String safeFileName(String fileName) {
