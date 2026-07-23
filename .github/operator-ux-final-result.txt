@@ -1,264 +1,264 @@
 Resultado: FALLÓ
-Etapa: verificación backend completa
-Commit base: ab7f80f56d145cd3e04763c18926fe4f4d10fd9a
+Etapa: recorrido Playwright completo
+Commit base: 8e5c026ca11193f3551b58ef263d3c01701340f2
 Salida final sanitizada:
-{"@timestamp":"2026-07-23T18:00:05.307682679Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.prospect.OperationalProspectIntegrationTest]: OperationalProspectIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:05.308845019Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.prospect.OperationalProspectIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:05.310556365Z","@version":"1","message":"Creating container for image: postgres:17-alpine","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:05.336580715Z","@version":"1","message":"Container postgres:17-alpine is starting: 27731c85fdb996c7ce6afad6ad579f2a483dc55c7d555ba026835e4ad219fe9b","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:06.739339363Z","@version":"1","message":"Container postgres:17-alpine started in PT1.428772833S","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:06.739648508Z","@version":"1","message":"Container is started (JDBC URL: jdbc:postgresql://localhost:32776/test?loggerLevel=OFF)","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:06.756207909Z","@version":"1","message":"Starting OperationalProspectIntegrationTest using Java 21.0.11 with PID 2688 (started by runner in /home/runner/work/crm-platform/crm-platform/backend)","logger_name":"com.gestudio.crm.prospect.OperationalProspectIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:06.756443684Z","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.gestudio.crm.prospect.OperationalProspectIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:06.931399731Z","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:06.94466329Z","@version":"1","message":"Finished Spring Data repository scanning in 11 ms. Found 8 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:07.013428516Z","@version":"1","message":"HikariPool-8 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.031974688Z","@version":"1","message":"HikariPool-8 - Added connection org.postgresql.jdbc.PgConnection@493cf6b2","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.032302762Z","@version":"1","message":"HikariPool-8 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.033601787Z","@version":"1","message":"Database: jdbc:postgresql://localhost:32776/test?loggerLevel=OFF (PostgreSQL 17.10)","logger_name":"org.flywaydb.core.FlywayExecutor","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.049895267Z","@version":"1","message":"Schema history table \"public\".\"flyway_schema_history\" does not exist yet","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.050498155Z","@version":"1","message":"Successfully validated 13 migrations (execution time 00:00.004s)","logger_name":"org.flywaydb.core.internal.command.DbValidate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.058136695Z","@version":"1","message":"Creating Schema History table \"public\".\"flyway_schema_history\" ...","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.08125194Z","@version":"1","message":"Current version of schema \"public\": << Empty Schema >>","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.083907638Z","@version":"1","message":"Migrating schema \"public\" to version \"1 - initial schema\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.15136116Z","@version":"1","message":"Migrating schema \"public\" to version \"2 - institution deduplication keys\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.163058766Z","@version":"1","message":"Migrating schema \"public\" to version \"3 - persistent imports and duplicate review\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.193543646Z","@version":"1","message":"Migrating schema \"public\" to version \"4 - track import source sheet\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.202368361Z","@version":"1","message":"Migrating schema \"public\" to version \"5 - track excluded import rows\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.210020241Z","@version":"1","message":"Migrating schema \"public\" to version \"6 - organizations users roles and tenant scope\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.317124708Z","@version":"1","message":"Migrating schema \"public\" to version \"7 - operational prospects contacts and timeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.370469153Z","@version":"1","message":"Migrating schema \"public\" to version \"8 - duplicate resolution and merge trace\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.402182949Z","@version":"1","message":"Migrating schema \"public\" to version \"9 - opportunities and sales pipeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.429665379Z","@version":"1","message":"Migrating schema \"public\" to version \"10 - campaigns audiences templates and simulation\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.481307206Z","@version":"1","message":"Migrating schema \"public\" to version \"11 - safe messaging and integrations\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.513428349Z","@version":"1","message":"Migrating schema \"public\" to version \"12 - transactional outbox and durable inbound\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.554376908Z","@version":"1","message":"Migrating schema \"public\" to version \"13 - reporting search settings and tags\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.627245732Z","@version":"1","message":"Successfully applied 13 migrations to schema \"public\", now at version v13 (execution time 00:00.479s)","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.650919594Z","@version":"1","message":"HHH008540: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.orm.jpa","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.667168667Z","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:07.674657601Z","@version":"1","message":"HHH10001005: Database info:\n\tDatabase JDBC URL [jdbc:postgresql://localhost:32776/test?loggerLevel=OFF]\n\tDatabase driver: PostgreSQL JDBC Driver\n\tDatabase dialect: PostgreSQLDialect\n\tDatabase version: 17.10\n\tDefault catalog/schema: test/public\n\tAutocommit mode: undefined/unknown\n\tIsolation level: READ_COMMITTED [default READ_COMMITTED]\n\tJDBC fetch size: none\n\tPool: DataSourceConnectionProvider\n\tMinimum pool size: undefined/unknown\n\tMaximum pool size: undefined/unknown","logger_name":"org.hibernate.orm.connections.pooling","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.761178509Z","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.orm.core","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:07.793157679Z","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:08.041939041Z","@version":"1","message":"Global AuthenticationManager configured with UserDetailsService bean with name identityService","logger_name":"org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:08.197033086Z","@version":"1","message":"Exposing 4 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:08.217919561Z","@version":"1","message":"Started OperationalProspectIntegrationTest in 1.475 seconds (process running for 58.888)","logger_name":"com.gestudio.crm.prospect.OperationalProspectIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:08.318628684Z","@version":"1","message":"SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-{"@timestamp":"2026-07-23T18:00:08.318801274Z","@version":"1","message":"SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.337 s -- in com.gestudio.crm.prospect.OperationalProspectIntegrationTest
-[INFO] Running com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest
-{"@timestamp":"2026-07-23T18:00:08.631309352Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest]: ProspectPersistenceIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:08.632632835Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:08.633325908Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest]: ProspectPersistenceIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:08.636908372Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:08.638453898Z","@version":"1","message":"Creating container for image: postgres:17-alpine","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:08.658693209Z","@version":"1","message":"Container postgres:17-alpine is starting: 53eb68b72fae9eaa160c084dab090b870b053cd95e74f074585a7b6d5f555abe","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.046451609Z","@version":"1","message":"Container postgres:17-alpine started in PT1.407983899S","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.046738751Z","@version":"1","message":"Container is started (JDBC URL: jdbc:postgresql://localhost:32777/test?loggerLevel=OFF)","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.064960204Z","@version":"1","message":"Starting ProspectPersistenceIntegrationTest using Java 21.0.11 with PID 2688 (started by runner in /home/runner/work/crm-platform/crm-platform/backend)","logger_name":"com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:10.065284812Z","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:10.230156278Z","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:10.247738658Z","@version":"1","message":"Finished Spring Data repository scanning in 16 ms. Found 8 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:10.333354373Z","@version":"1","message":"HikariPool-9 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.350143404Z","@version":"1","message":"HikariPool-9 - Added connection org.postgresql.jdbc.PgConnection@771be979","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.350444848Z","@version":"1","message":"HikariPool-9 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.351413907Z","@version":"1","message":"Database: jdbc:postgresql://localhost:32777/test?loggerLevel=OFF (PostgreSQL 17.10)","logger_name":"org.flywaydb.core.FlywayExecutor","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.368844358Z","@version":"1","message":"Schema history table \"public\".\"flyway_schema_history\" does not exist yet","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.369393345Z","@version":"1","message":"Successfully validated 13 migrations (execution time 00:00.005s)","logger_name":"org.flywaydb.core.internal.command.DbValidate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.376679569Z","@version":"1","message":"Creating Schema History table \"public\".\"flyway_schema_history\" ...","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.398689075Z","@version":"1","message":"Current version of schema \"public\": << Empty Schema >>","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.401223511Z","@version":"1","message":"Migrating schema \"public\" to version \"1 - initial schema\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.46288364Z","@version":"1","message":"Migrating schema \"public\" to version \"2 - institution deduplication keys\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.473478892Z","@version":"1","message":"Migrating schema \"public\" to version \"3 - persistent imports and duplicate review\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.502948383Z","@version":"1","message":"Migrating schema \"public\" to version \"4 - track import source sheet\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.510859814Z","@version":"1","message":"Migrating schema \"public\" to version \"5 - track excluded import rows\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.518234336Z","@version":"1","message":"Migrating schema \"public\" to version \"6 - organizations users roles and tenant scope\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.636893223Z","@version":"1","message":"Migrating schema \"public\" to version \"7 - operational prospects contacts and timeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.690951658Z","@version":"1","message":"Migrating schema \"public\" to version \"8 - duplicate resolution and merge trace\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.726080039Z","@version":"1","message":"Migrating schema \"public\" to version \"9 - opportunities and sales pipeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.755869412Z","@version":"1","message":"Migrating schema \"public\" to version \"10 - campaigns audiences templates and simulation\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.805506211Z","@version":"1","message":"Migrating schema \"public\" to version \"11 - safe messaging and integrations\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.835772377Z","@version":"1","message":"Migrating schema \"public\" to version \"12 - transactional outbox and durable inbound\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.873906288Z","@version":"1","message":"Migrating schema \"public\" to version \"13 - reporting search settings and tags\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.928499909Z","@version":"1","message":"Successfully applied 13 migrations to schema \"public\", now at version v13 (execution time 00:00.465s)","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.951138592Z","@version":"1","message":"HHH008540: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.orm.jpa","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:10.962572165Z","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:10.968426549Z","@version":"1","message":"HHH10001005: Database info:\n\tDatabase JDBC URL [jdbc:postgresql://localhost:32777/test?loggerLevel=OFF]\n\tDatabase driver: PostgreSQL JDBC Driver\n\tDatabase dialect: PostgreSQLDialect\n\tDatabase version: 17.10\n\tDefault catalog/schema: test/public\n\tAutocommit mode: undefined/unknown\n\tIsolation level: READ_COMMITTED [default READ_COMMITTED]\n\tJDBC fetch size: none\n\tPool: DataSourceConnectionProvider\n\tMinimum pool size: undefined/unknown\n\tMaximum pool size: undefined/unknown","logger_name":"org.hibernate.orm.connections.pooling","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:11.045746965Z","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.orm.core","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:11.075598156Z","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:11.287440957Z","@version":"1","message":"Global AuthenticationManager configured with UserDetailsService bean with name identityService","logger_name":"org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:11.447892268Z","@version":"1","message":"Exposing 4 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:11.459844041Z","@version":"1","message":"Started ProspectPersistenceIntegrationTest in 1.41 seconds (process running for 62.13)","logger_name":"com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:11.555216695Z","@version":"1","message":"SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-{"@timestamp":"2026-07-23T18:00:11.555384518Z","@version":"1","message":"SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.297 s -- in com.gestudio.crm.prospect.ProspectPersistenceIntegrationTest
-[INFO] Running com.gestudio.crm.architecture.ArchitectureTest
-{"@timestamp":"2026-07-23T18:00:11.936719991Z","@version":"1","message":"Detected Java version 21.0.11","logger_name":"com.tngtech.archunit.core.PluginLoader","thread_name":"main","level":"INFO","level_value":20000}
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.794 s -- in com.gestudio.crm.architecture.ArchitectureTest
-[INFO] Running com.gestudio.crm.reporting.OperationsReportingIntegrationTest
-{"@timestamp":"2026-07-23T18:00:14.726346723Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.reporting.OperationsReportingIntegrationTest]: OperationsReportingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:14.735884574Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.reporting.OperationsReportingIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:14.737208367Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.reporting.OperationsReportingIntegrationTest]: OperationsReportingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:14.738125428Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.reporting.OperationsReportingIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:14.740238369Z","@version":"1","message":"Creating container for image: postgres:17-alpine","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:14.773196683Z","@version":"1","message":"Container postgres:17-alpine is starting: c68ff3ea4294066aca44d5191269379292a389343cecc4812f8c96c77e426d78","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.186094116Z","@version":"1","message":"Container postgres:17-alpine started in PT1.445866462S","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.186459786Z","@version":"1","message":"Container is started (JDBC URL: jdbc:postgresql://localhost:32778/test?loggerLevel=OFF)","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.210512622Z","@version":"1","message":"Starting OperationsReportingIntegrationTest using Java 21.0.11 with PID 2688 (started by runner in /home/runner/work/crm-platform/crm-platform/backend)","logger_name":"com.gestudio.crm.reporting.OperationsReportingIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:16.210775447Z","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.gestudio.crm.reporting.OperationsReportingIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:16.38472859Z","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:16.401854536Z","@version":"1","message":"Finished Spring Data repository scanning in 15 ms. Found 8 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:16.465538182Z","@version":"1","message":"HikariPool-10 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.487491315Z","@version":"1","message":"HikariPool-10 - Added connection org.postgresql.jdbc.PgConnection@650ffed2","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.487724747Z","@version":"1","message":"HikariPool-10 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.488761047Z","@version":"1","message":"Database: jdbc:postgresql://localhost:32778/test?loggerLevel=OFF (PostgreSQL 17.10)","logger_name":"org.flywaydb.core.FlywayExecutor","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.50365352Z","@version":"1","message":"Schema history table \"public\".\"flyway_schema_history\" does not exist yet","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.504253533Z","@version":"1","message":"Successfully validated 13 migrations (execution time 00:00.004s)","logger_name":"org.flywaydb.core.internal.command.DbValidate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.511455968Z","@version":"1","message":"Creating Schema History table \"public\".\"flyway_schema_history\" ...","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.535668393Z","@version":"1","message":"Current version of schema \"public\": << Empty Schema >>","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.538368544Z","@version":"1","message":"Migrating schema \"public\" to version \"1 - initial schema\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.614020254Z","@version":"1","message":"Migrating schema \"public\" to version \"2 - institution deduplication keys\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.625493799Z","@version":"1","message":"Migrating schema \"public\" to version \"3 - persistent imports and duplicate review\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.656091208Z","@version":"1","message":"Migrating schema \"public\" to version \"4 - track import source sheet\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.665849536Z","@version":"1","message":"Migrating schema \"public\" to version \"5 - track excluded import rows\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.673889126Z","@version":"1","message":"Migrating schema \"public\" to version \"6 - organizations users roles and tenant scope\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.78413657Z","@version":"1","message":"Migrating schema \"public\" to version \"7 - operational prospects contacts and timeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.839685853Z","@version":"1","message":"Migrating schema \"public\" to version \"8 - duplicate resolution and merge trace\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.871279933Z","@version":"1","message":"Migrating schema \"public\" to version \"9 - opportunities and sales pipeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.896821495Z","@version":"1","message":"Migrating schema \"public\" to version \"10 - campaigns audiences templates and simulation\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.943463601Z","@version":"1","message":"Migrating schema \"public\" to version \"11 - safe messaging and integrations\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:16.973335002Z","@version":"1","message":"Migrating schema \"public\" to version \"12 - transactional outbox and durable inbound\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:17.010253889Z","@version":"1","message":"Migrating schema \"public\" to version \"13 - reporting search settings and tags\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:17.062883151Z","@version":"1","message":"Successfully applied 13 migrations to schema \"public\", now at version v13 (execution time 00:00.463s)","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:17.079510335Z","@version":"1","message":"HHH008540: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.orm.jpa","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:17.092813736Z","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:17.098687259Z","@version":"1","message":"HHH10001005: Database info:\n\tDatabase JDBC URL [jdbc:postgresql://localhost:32778/test?loggerLevel=OFF]\n\tDatabase driver: PostgreSQL JDBC Driver\n\tDatabase dialect: PostgreSQLDialect\n\tDatabase version: 17.10\n\tDefault catalog/schema: test/public\n\tAutocommit mode: undefined/unknown\n\tIsolation level: READ_COMMITTED [default READ_COMMITTED]\n\tJDBC fetch size: none\n\tPool: DataSourceConnectionProvider\n\tMinimum pool size: undefined/unknown\n\tMaximum pool size: undefined/unknown","logger_name":"org.hibernate.orm.connections.pooling","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:17.176658757Z","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.orm.core","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:17.201398507Z","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:17.397390087Z","@version":"1","message":"Global AuthenticationManager configured with UserDetailsService bean with name identityService","logger_name":"org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:17.624784464Z","@version":"1","message":"Exposing 4 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:17.637691788Z","@version":"1","message":"Started OperationsReportingIntegrationTest in 1.448 seconds (process running for 68.308)","logger_name":"com.gestudio.crm.reporting.OperationsReportingIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:17.733705686Z","@version":"1","message":"SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-{"@timestamp":"2026-07-23T18:00:17.733909914Z","@version":"1","message":"SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.334 s -- in com.gestudio.crm.reporting.OperationsReportingIntegrationTest
-[INFO] Running com.gestudio.crm.messaging.ProviderContractTest
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.149 s -- in com.gestudio.crm.messaging.ProviderContractTest
-[INFO] Running com.gestudio.crm.messaging.MessagingIntegrationTest
-{"@timestamp":"2026-07-23T18:00:18.217493228Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.messaging.MessagingIntegrationTest]: MessagingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:18.229798325Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.messaging.MessagingIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:18.230719111Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.messaging.MessagingIntegrationTest]: MessagingIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:18.231431484Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.messaging.MessagingIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:18.232946435Z","@version":"1","message":"Creating container for image: postgres:17-alpine","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:18.255828738Z","@version":"1","message":"Container postgres:17-alpine is starting: 6778d8dd06b43427bfc47df3e175cc70dac9902fe919387d1bda8b04af2581e8","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.647165237Z","@version":"1","message":"Container postgres:17-alpine started in PT1.414207045S","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.647514423Z","@version":"1","message":"Container is started (JDBC URL: jdbc:postgresql://localhost:32779/test?loggerLevel=OFF)","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.661066318Z","@version":"1","message":"Starting MessagingIntegrationTest using Java 21.0.11 with PID 2688 (started by runner in /home/runner/work/crm-platform/crm-platform/backend)","logger_name":"com.gestudio.crm.messaging.MessagingIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:19.661288432Z","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.gestudio.crm.messaging.MessagingIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:19.832913199Z","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:19.849054853Z","@version":"1","message":"Finished Spring Data repository scanning in 14 ms. Found 8 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:19.919160157Z","@version":"1","message":"HikariPool-11 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.939390557Z","@version":"1","message":"HikariPool-11 - Added connection org.postgresql.jdbc.PgConnection@184aa05a","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.939700384Z","@version":"1","message":"HikariPool-11 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.940879649Z","@version":"1","message":"Database: jdbc:postgresql://localhost:32779/test?loggerLevel=OFF (PostgreSQL 17.10)","logger_name":"org.flywaydb.core.FlywayExecutor","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.957731653Z","@version":"1","message":"Schema history table \"public\".\"flyway_schema_history\" does not exist yet","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.958411075Z","@version":"1","message":"Successfully validated 13 migrations (execution time 00:00.005s)","logger_name":"org.flywaydb.core.internal.command.DbValidate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.966444181Z","@version":"1","message":"Creating Schema History table \"public\".\"flyway_schema_history\" ...","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.991934941Z","@version":"1","message":"Current version of schema \"public\": << Empty Schema >>","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:19.994889289Z","@version":"1","message":"Migrating schema \"public\" to version \"1 - initial schema\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.08325683Z","@version":"1","message":"Migrating schema \"public\" to version \"2 - institution deduplication keys\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.095737261Z","@version":"1","message":"Migrating schema \"public\" to version \"3 - persistent imports and duplicate review\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.127028485Z","@version":"1","message":"Migrating schema \"public\" to version \"4 - track import source sheet\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.137121281Z","@version":"1","message":"Migrating schema \"public\" to version \"5 - track excluded import rows\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.145197391Z","@version":"1","message":"Migrating schema \"public\" to version \"6 - organizations users roles and tenant scope\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.258122627Z","@version":"1","message":"Migrating schema \"public\" to version \"7 - operational prospects contacts and timeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.311360825Z","@version":"1","message":"Migrating schema \"public\" to version \"8 - duplicate resolution and merge trace\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.344749021Z","@version":"1","message":"Migrating schema \"public\" to version \"9 - opportunities and sales pipeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.37262317Z","@version":"1","message":"Migrating schema \"public\" to version \"10 - campaigns audiences templates and simulation\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.421591154Z","@version":"1","message":"Migrating schema \"public\" to version \"11 - safe messaging and integrations\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.451716097Z","@version":"1","message":"Migrating schema \"public\" to version \"12 - transactional outbox and durable inbound\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.487442327Z","@version":"1","message":"Migrating schema \"public\" to version \"13 - reporting search settings and tags\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.539344447Z","@version":"1","message":"Successfully applied 13 migrations to schema \"public\", now at version v13 (execution time 00:00.458s)","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.558976404Z","@version":"1","message":"HHH008540: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.orm.jpa","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.573910117Z","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:20.579935203Z","@version":"1","message":"HHH10001005: Database info:\n\tDatabase JDBC URL [jdbc:postgresql://localhost:32779/test?loggerLevel=OFF]\n\tDatabase driver: PostgreSQL JDBC Driver\n\tDatabase dialect: PostgreSQLDialect\n\tDatabase version: 17.10\n\tDefault catalog/schema: test/public\n\tAutocommit mode: undefined/unknown\n\tIsolation level: READ_COMMITTED [default READ_COMMITTED]\n\tJDBC fetch size: none\n\tPool: DataSourceConnectionProvider\n\tMinimum pool size: undefined/unknown\n\tMaximum pool size: undefined/unknown","logger_name":"org.hibernate.orm.connections.pooling","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.634002753Z","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.orm.core","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:20.657054042Z","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:20.830420645Z","@version":"1","message":"Global AuthenticationManager configured with UserDetailsService bean with name identityService","logger_name":"org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:20.969792564Z","@version":"1","message":"Exposing 4 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:20.987133701Z","@version":"1","message":"Started MessagingIntegrationTest in 1.337 seconds (process running for 71.657)","logger_name":"com.gestudio.crm.messaging.MessagingIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:21.083038394Z","@version":"1","message":"SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-{"@timestamp":"2026-07-23T18:00:21.083221459Z","@version":"1","message":"SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.206 s -- in com.gestudio.crm.messaging.MessagingIntegrationTest
-[INFO] Running com.gestudio.crm.sales.OpportunityIntegrationTest
-{"@timestamp":"2026-07-23T18:00:21.424609258Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.sales.OpportunityIntegrationTest]: OpportunityIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:21.431900455Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.sales.OpportunityIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:21.432429882Z","@version":"1","message":"Could not detect default configuration classes for test class [com.gestudio.crm.sales.OpportunityIntegrationTest]: OpportunityIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:21.432833229Z","@version":"1","message":"Found @SpringBootConfiguration com.gestudio.crm.CrmApplication for test class com.gestudio.crm.sales.OpportunityIntegrationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:21.434097132Z","@version":"1","message":"Creating container for image: postgres:17-alpine","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:21.449131898Z","@version":"1","message":"Container postgres:17-alpine is starting: 1fbae06ad543904a3d4d7a58c1ab581709d4ab2953b921a4242ffc8d9cb1115d","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:22.845451932Z","@version":"1","message":"Container postgres:17-alpine started in PT1.411341169S","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:22.845743711Z","@version":"1","message":"Container is started (JDBC URL: jdbc:postgresql://localhost:32780/test?loggerLevel=OFF)","logger_name":"tc.postgres:17-alpine","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:22.863022675Z","@version":"1","message":"Starting OpportunityIntegrationTest using Java 21.0.11 with PID 2688 (started by runner in /home/runner/work/crm-platform/crm-platform/backend)","logger_name":"com.gestudio.crm.sales.OpportunityIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:22.863254975Z","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.gestudio.crm.sales.OpportunityIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:22.98063303Z","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:22.993215483Z","@version":"1","message":"Finished Spring Data repository scanning in 11 ms. Found 8 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:23.048670222Z","@version":"1","message":"HikariPool-12 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.068960729Z","@version":"1","message":"HikariPool-12 - Added connection org.postgresql.jdbc.PgConnection@6d8069eb","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.069232308Z","@version":"1","message":"HikariPool-12 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.070210411Z","@version":"1","message":"Database: jdbc:postgresql://localhost:32780/test?loggerLevel=OFF (PostgreSQL 17.10)","logger_name":"org.flywaydb.core.FlywayExecutor","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.084094354Z","@version":"1","message":"Schema history table \"public\".\"flyway_schema_history\" does not exist yet","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.084580626Z","@version":"1","message":"Successfully validated 13 migrations (execution time 00:00.004s)","logger_name":"org.flywaydb.core.internal.command.DbValidate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.091770901Z","@version":"1","message":"Creating Schema History table \"public\".\"flyway_schema_history\" ...","logger_name":"org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.114133108Z","@version":"1","message":"Current version of schema \"public\": << Empty Schema >>","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.116588575Z","@version":"1","message":"Migrating schema \"public\" to version \"1 - initial schema\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.176676989Z","@version":"1","message":"Migrating schema \"public\" to version \"2 - institution deduplication keys\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.187872915Z","@version":"1","message":"Migrating schema \"public\" to version \"3 - persistent imports and duplicate review\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.220618229Z","@version":"1","message":"Migrating schema \"public\" to version \"4 - track import source sheet\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.229653637Z","@version":"1","message":"Migrating schema \"public\" to version \"5 - track excluded import rows\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.238132022Z","@version":"1","message":"Migrating schema \"public\" to version \"6 - organizations users roles and tenant scope\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.345657444Z","@version":"1","message":"Migrating schema \"public\" to version \"7 - operational prospects contacts and timeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.399475499Z","@version":"1","message":"Migrating schema \"public\" to version \"8 - duplicate resolution and merge trace\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.432811752Z","@version":"1","message":"Migrating schema \"public\" to version \"9 - opportunities and sales pipeline\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.46340081Z","@version":"1","message":"Migrating schema \"public\" to version \"10 - campaigns audiences templates and simulation\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.517442156Z","@version":"1","message":"Migrating schema \"public\" to version \"11 - safe messaging and integrations\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.551208041Z","@version":"1","message":"Migrating schema \"public\" to version \"12 - transactional outbox and durable inbound\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.589764775Z","@version":"1","message":"Migrating schema \"public\" to version \"13 - reporting search settings and tags\"","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.643443509Z","@version":"1","message":"Successfully applied 13 migrations to schema \"public\", now at version v13 (execution time 00:00.464s)","logger_name":"org.flywaydb.core.internal.command.DbMigrate","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.658959709Z","@version":"1","message":"HHH008540: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.orm.jpa","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.669760731Z","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:23.675174201Z","@version":"1","message":"HHH10001005: Database info:\n\tDatabase JDBC URL [jdbc:postgresql://localhost:32780/test?loggerLevel=OFF]\n\tDatabase driver: PostgreSQL JDBC Driver\n\tDatabase dialect: PostgreSQLDialect\n\tDatabase version: 17.10\n\tDefault catalog/schema: test/public\n\tAutocommit mode: undefined/unknown\n\tIsolation level: READ_COMMITTED [default READ_COMMITTED]\n\tJDBC fetch size: none\n\tPool: DataSourceConnectionProvider\n\tMinimum pool size: undefined/unknown\n\tMaximum pool size: undefined/unknown","logger_name":"org.hibernate.orm.connections.pooling","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.728791673Z","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.orm.core","thread_name":"main","level":"INFO","level_value":20000}
-{"@timestamp":"2026-07-23T18:00:23.752124191Z","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:23.926428451Z","@version":"1","message":"Global AuthenticationManager configured with UserDetailsService bean with name identityService","logger_name":"org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:24.09319322Z","@version":"1","message":"Exposing 4 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:24.115573965Z","@version":"1","message":"Started OpportunityIntegrationTest in 1.267 seconds (process running for 74.786)","logger_name":"com.gestudio.crm.sales.OpportunityIntegrationTest","thread_name":"main","level":"INFO","level_value":20000,"tags":["COMMONS-LOGGING"]}
-{"@timestamp":"2026-07-23T18:00:24.226848943Z","@version":"1","message":"SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-{"@timestamp":"2026-07-23T18:00:24.227058318Z","@version":"1","message":"SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'","logger_name":"org.springdoc.core.events.SpringDocAppInitializer","thread_name":"main","level":"WARN","level_value":30000}
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.128 s -- in com.gestudio.crm.sales.OpportunityIntegrationTest
-[INFO] 
-[INFO] Results:
-[INFO] 
-[ERROR] Failures: 
-[ERROR]   SecurityAuthorizationIntegrationTest.fakeWebhookIsPublicAndCsrfExemptButStrictlyTypedAndDisabledByDefault:267 Status expected:<503> but was:<401>
-[INFO] 
-[ERROR] Tests run: 86, Failures: 1, Errors: 0, Skipped: 0
-[INFO] 
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD FAILURE
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  01:34 min
-[INFO] Finished at: 2026-07-23T18:00:24Z
-[INFO] ------------------------------------------------------------------------
-[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.6:test (default-test) on project crm-backend: There are test failures.
-[ERROR] 
-[ERROR] See /home/runner/work/crm-platform/crm-platform/backend/target/surefire-reports for the individual test results.
-[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
-[ERROR] -> [Help 1]
-[ERROR] 
-[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-[ERROR] Re-run Maven using the -X switch to enable full debug logging.
-[ERROR] 
-[ERROR] For more information about the errors and possible solutions, please read the following articles:
-[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-FAILED (1): verificación backend completa
+#25 29.85 [INFO] Resolved dependency: webjars-locator-lite-1.1.3.jar
+#25 29.85 [INFO] Resolved dependency: postgresql-42.7.12.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-starter-test-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-test-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-test-autoconfigure-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: json-path-2.10.0.jar
+#25 29.85 [INFO] Resolved dependency: jakarta.xml.bind-api-4.0.5.jar
+#25 29.85 [INFO] Resolved dependency: jakarta.activation-api-2.1.4.jar
+#25 29.85 [INFO] Resolved dependency: json-smart-2.6.0.jar
+#25 29.85 [INFO] Resolved dependency: accessors-smart-2.6.0.jar
+#25 29.85 [INFO] Resolved dependency: asm-9.7.1.jar
+#25 29.85 [INFO] Resolved dependency: assertj-core-3.27.7.jar
+#25 29.85 [INFO] Resolved dependency: byte-buddy-1.18.10.jar
+#25 29.85 [INFO] Resolved dependency: awaitility-4.3.0.jar
+#25 29.85 [INFO] Resolved dependency: hamcrest-3.0.jar
+#25 29.85 [INFO] Resolved dependency: junit-jupiter-6.0.3.jar
+#25 29.85 [INFO] Resolved dependency: junit-jupiter-api-6.0.3.jar
+#25 29.85 [INFO] Resolved dependency: opentest4j-1.3.0.jar
+#25 29.85 [INFO] Resolved dependency: junit-platform-commons-6.0.3.jar
+#25 29.85 [INFO] Resolved dependency: apiguardian-api-1.1.2.jar
+#25 29.85 [INFO] Resolved dependency: junit-jupiter-params-6.0.3.jar
+#25 29.85 [INFO] Resolved dependency: junit-jupiter-engine-6.0.3.jar
+#25 29.85 [INFO] Resolved dependency: junit-platform-engine-6.0.3.jar
+#25 29.85 [INFO] Resolved dependency: mockito-core-5.23.0.jar
+#25 29.85 [INFO] Resolved dependency: byte-buddy-agent-1.18.10.jar
+#25 29.85 [INFO] Resolved dependency: objenesis-3.3.jar
+#25 29.85 [INFO] Resolved dependency: mockito-junit-jupiter-5.23.0.jar
+#25 29.85 [INFO] Resolved dependency: jsonassert-1.5.3.jar
+#25 29.85 [INFO] Resolved dependency: android-json-0.0.20131108.vaadin1.jar
+#25 29.85 [INFO] Resolved dependency: xmlunit-core-2.11.0.jar
+#25 29.85 [INFO] Resolved dependency: archunit-junit5-1.4.1.jar
+#25 29.85 [INFO] Resolved dependency: archunit-junit5-api-1.4.1.jar
+#25 29.85 [INFO] Resolved dependency: archunit-1.4.1.jar
+#25 29.85 [INFO] Resolved dependency: archunit-junit5-engine-1.4.1.jar
+#25 29.85 [INFO] Resolved dependency: archunit-junit5-engine-api-1.4.1.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-starter-webmvc-test-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-starter-jackson-test-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-starter-webmvc-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-webmvc-test-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-resttestclient-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: poi-ooxml-5.4.1.jar
+#25 29.85 [INFO] Resolved dependency: poi-5.4.1.jar
+#25 29.85 [INFO] Resolved dependency: commons-codec-1.21.0.jar
+#25 29.85 [INFO] Resolved dependency: commons-math3-3.6.1.jar
+#25 29.85 [INFO] Resolved dependency: SparseBitSet-1.3.jar
+#25 29.85 [INFO] Resolved dependency: poi-ooxml-lite-5.4.1.jar
+#25 29.85 [INFO] Resolved dependency: xmlbeans-5.3.0.jar
+#25 29.85 [INFO] Resolved dependency: commons-compress-1.27.1.jar
+#25 29.85 [INFO] Resolved dependency: commons-lang3-3.20.0.jar
+#25 29.85 [INFO] Resolved dependency: commons-io-2.18.0.jar
+#25 29.85 [INFO] Resolved dependency: curvesapi-1.08.jar
+#25 29.85 [INFO] Resolved dependency: log4j-api-2.25.4.jar
+#25 29.85 [INFO] Resolved dependency: commons-collections4-4.4.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-starter-security-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-security-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-security-config-7.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-aop-7.0.8.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-starter-validation-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-validation-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: tomcat-embed-el-11.0.22.jar
+#25 29.85 [INFO] Resolved dependency: hibernate-validator-9.1.0.Final.jar
+#25 29.85 [INFO] Resolved dependency: jakarta.validation-api-3.1.1.jar
+#25 29.85 [INFO] Resolved dependency: jboss-logging-3.6.3.Final.jar
+#25 29.85 [INFO] Resolved dependency: classmate-1.7.3.jar
+#25 29.85 [INFO] Resolved dependency: postgresql-1.21.3.jar
+#25 29.85 [INFO] Resolved dependency: jdbc-1.21.3.jar
+#25 29.85 [INFO] Resolved dependency: database-commons-1.21.3.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-starter-flyway-4.1.0.jar
+#25 29.85 [INFO] Resolved dependency: spring-boot-flyway-4.1.0.jar
+#25 29.85 [INFO] ------------------------------------------------------------------------
+#25 29.85 [INFO] BUILD SUCCESS
+#25 29.85 [INFO] ------------------------------------------------------------------------
+#25 29.85 [INFO] Total time:  27.975 s
+#25 29.85 [INFO] Finished at: 2026-07-23T18:04:44Z
+#25 29.85 [INFO] ------------------------------------------------------------------------
+#25 DONE 30.2s
+
+#33 [backend backend-build 5/7] COPY backend/src ./src
+#33 DONE 0.0s
+
+#34 [backend backend-build 6/7] COPY deploy/RuntimeHealthCheck.java /workspace/healthcheck/RuntimeHealthCheck.java
+#34 DONE 0.0s
+
+#35 [backend backend-build 7/7] RUN mvn -B -DskipTests package     && javac --release 21 -d /workspace/healthcheck /workspace/healthcheck/RuntimeHealthCheck.java
+#35 1.278 [INFO] Scanning for projects...
+#35 1.536 [INFO] 
+#35 1.536 [INFO] ----------------------< com.gestudio:crm-backend >----------------------
+#35 1.536 [INFO] Building Gestudio CRM Backend 0.1.0-SNAPSHOT
+#35 1.536 [INFO]   from pom.xml
+#35 1.536 [INFO] --------------------------------[ jar ]---------------------------------
+#35 2.200 [INFO] 
+#35 2.201 [INFO] --- enforcer:3.5.0:enforce (enforce-build-environment) @ crm-backend ---
+#35 2.382 [INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
+#35 2.382 [INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
+#35 2.383 [INFO] 
+#35 2.383 [INFO] --- resources:3.5.0:resources (default-resources) @ crm-backend ---
+#35 2.451 [INFO] Copying 1 resource from src/main/resources to target/classes
+#35 2.465 [INFO] Copying 13 resources from src/main/resources to target/classes
+#35 2.468 [INFO] 
+#35 2.468 [INFO] --- compiler:3.15.0:compile (default-compile) @ crm-backend ---
+#35 2.589 [INFO] Recompiling the module because of changed source code.
+#35 2.597 [INFO] Compiling 135 source files with javac [debug parameters release 21] to target/classes
+#35 5.878 [INFO] /workspace/backend/src/main/java/com/gestudio/crm/common/ApiExceptionHandler.java: Some input files use or override a deprecated API.
+#35 5.878 [INFO] /workspace/backend/src/main/java/com/gestudio/crm/common/ApiExceptionHandler.java: Recompile with -Xlint:deprecation for details.
+#35 5.879 [INFO] 
+#35 5.879 [INFO] --- resources:3.5.0:testResources (default-testResources) @ crm-backend ---
+#35 5.885 [INFO] skip non existing resourceDirectory /workspace/backend/src/test/resources
+#35 5.885 [INFO] 
+#35 5.885 [INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ crm-backend ---
+#35 5.895 [INFO] Recompiling the module because of changed dependency.
+#35 5.896 [INFO] Compiling 28 source files with javac [debug parameters release 21] to target/test-classes
+#35 7.272 [INFO] /workspace/backend/src/test/java/com/gestudio/crm/exclusion/ExclusionIntegrationTest.java: Some input files use or override a deprecated API.
+#35 7.272 [INFO] /workspace/backend/src/test/java/com/gestudio/crm/exclusion/ExclusionIntegrationTest.java: Recompile with -Xlint:deprecation for details.
+#35 7.273 [INFO] 
+#35 7.273 [INFO] --- surefire:3.5.6:test (default-test) @ crm-backend ---
+#35 7.363 [INFO] Tests are skipped.
+#35 7.364 [INFO] 
+#35 7.364 [INFO] --- jar:3.5.0:jar (default-jar) @ crm-backend ---
+#35 7.615 [INFO] Building jar: /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar
+#35 7.704 [INFO] 
+#35 7.704 [INFO] --- spring-boot:4.1.0:repackage (repackage) @ crm-backend ---
+#35 8.180 [INFO] Replacing main artifact /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
+#35 8.182 [INFO] The original artifact has been renamed to /workspace/backend/target/crm-backend-0.1.0-SNAPSHOT.jar.original
+#35 8.182 [INFO] ------------------------------------------------------------------------
+#35 8.182 [INFO] BUILD SUCCESS
+#35 8.182 [INFO] ------------------------------------------------------------------------
+#35 8.183 [INFO] Total time:  6.925 s
+#35 8.183 [INFO] Finished at: 2026-07-23T18:04:52Z
+#35 8.183 [INFO] ------------------------------------------------------------------------
+#35 DONE 8.8s
+
+#36 [backend stage-1 3/4] COPY --from=backend-build /workspace/backend/target/crm-backend-*.jar /app/app.jar
+#36 DONE 0.1s
+
+#37 [backend stage-1 4/4] COPY --from=backend-build /workspace/healthcheck/RuntimeHealthCheck.class /app/healthcheck/RuntimeHealthCheck.class
+#37 DONE 0.0s
+
+#38 [backend] exporting to image
+#38 exporting layers
+#38 exporting layers 0.8s done
+#38 writing image sha256:a58d63c99bea8c8836144d634b2086ae63df9d6b93d9bb06cbb62ec8d6e85606 done
+#38 naming to docker.io/library/crm-platform-backend done
+#38 DONE 0.9s
+
+#39 [backend] resolving provenance for metadata file
+#39 DONE 0.0s
+ backend  Built
+ frontend  Built
+ Network crm-platform_default  Creating
+ Network crm-platform_default  Created
+ Volume "crm-platform_crm_postgres"  Creating
+ Volume "crm-platform_crm_postgres"  Created
+ Container crm-platform-postgres-1  Creating
+ Container crm-platform-postgres-1  Created
+ Container crm-platform-backend-1  Creating
+ Container crm-platform-backend-1  Created
+ Container crm-platform-frontend-1  Creating
+ Container crm-platform-frontend-1  Created
+ Container crm-platform-postgres-1  Starting
+ Container crm-platform-postgres-1  Started
+ Container crm-platform-postgres-1  Waiting
+ Container crm-platform-postgres-1  Healthy
+ Container crm-platform-backend-1  Starting
+ Container crm-platform-backend-1  Started
+ Container crm-platform-backend-1  Waiting
+ Container crm-platform-backend-1  Healthy
+ Container crm-platform-frontend-1  Starting
+ Container crm-platform-frontend-1  Started
+ Container crm-platform-postgres-1  Waiting
+ Container crm-platform-backend-1  Waiting
+ Container crm-platform-frontend-1  Waiting
+ Container crm-platform-postgres-1  Healthy
+ Container crm-platform-backend-1  Healthy
+ Container crm-platform-frontend-1  Healthy
+PASS: inicio del stack fail-closed
+
+### recorrido Playwright completo
+
+> gestudio-crm-frontend@0.1.0 test:e2e
+> playwright test
+
+
+Running 2 tests using 1 worker
+
+[1A[2K[1/2] tests/complete-crm.spec.ts:18:1 › complete synthetic CRM journey stays tenant-scoped and fail-closed
+[1A[2K  1) tests/complete-crm.spec.ts:18:1 › complete synthetic CRM journey stays tenant-scoped and fail-closed 
+
+    [31mTest timeout of 180000ms exceeded.[39m
+
+    Error: locator.fill: Test timeout of 180000ms exceeded.
+    Call log:
+    [2m  - waiting for getByLabel('Nueva tarea')[22m
+    [2m    - locator resolved to <input value="" required=""/>[22m
+    [2m    - fill("Tarea synthetic 1784829919110")[22m
+    [2m  - attempting fill action[22m
+    [2m    2 × waiting for element to be visible, enabled and editable[22m
+    [2m      - element is not visible[22m
+    [2m    - retrying fill action[22m
+    [2m    - waiting 20ms[22m
+    [2m    2 × waiting for element to be visible, enabled and editable[22m
+    [2m      - element is not visible[22m
+    [2m    - retrying fill action[22m
+    [2m      - waiting 100ms[22m
+    [2m    352 × waiting for element to be visible, enabled and editable[22m
+    [2m        - element is not visible[22m
+    [2m      - retrying fill action[22m
+    [2m        - waiting 500ms[22m
+
+
+      49 |
+      50 |   const due = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+    > 51 |   await page.getByLabel("Nueva tarea").fill(`Tarea synthetic ${suffix}`);
+         |                                        ^
+      52 |   await page.getByLabel("Vencimiento").fill(due);
+      53 |   await page.getByRole("button", { name: "Crear tarea" }).click();
+      54 |   await expect(page.getByText("Tarea creada.")).toBeVisible();
+        at /home/runner/work/crm-platform/crm-platform/frontend/tests/complete-crm.spec.ts:51:40
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../validation-output/playwright/complete-crm-complete-synt-9e153-nant-scoped-and-fail-closed/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../validation-output/playwright/complete-crm-complete-synt-9e153-nant-scoped-and-fail-closed/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../validation-output/playwright/complete-crm-complete-synt-9e153-nant-scoped-and-fail-closed/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../validation-output/playwright/complete-crm-complete-synt-9e153-nant-scoped-and-fail-closed/trace.zip
+    Usage:
+
+        npx playwright show-trace ../validation-output/playwright/complete-crm-complete-synt-9e153-nant-scoped-and-fail-closed/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[2/2] tests/complete-crm.spec.ts:252:1 › responsive shell and primary navigation remain keyboard operable
+[1A[2K  1 failed
+    tests/complete-crm.spec.ts:18:1 › complete synthetic CRM journey stays tenant-scoped and fail-closed 
+  1 passed (3.2m)
+FAILED (1): recorrido Playwright completo
+ Container crm-platform-frontend-1  Stopping
+ Container crm-platform-frontend-1  Stopped
+ Container crm-platform-frontend-1  Removing
+ Container crm-platform-frontend-1  Removed
+ Container crm-platform-backend-1  Stopping
+ Container crm-platform-backend-1  Stopped
+ Container crm-platform-backend-1  Removing
+ Container crm-platform-backend-1  Removed
+ Container crm-platform-postgres-1  Stopping
+ Container crm-platform-postgres-1  Stopped
+ Container crm-platform-postgres-1  Removing
+ Container crm-platform-postgres-1  Removed
+ Volume crm-platform_crm_postgres  Removing
+ Network crm-platform_default  Removing
+ Volume crm-platform_crm_postgres  Removed
+ Network crm-platform_default  Removed
 From https://github.com/JerePrograma/crm-platform
  * branch            main       -> FETCH_HEAD
