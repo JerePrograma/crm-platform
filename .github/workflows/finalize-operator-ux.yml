@@ -1,5 +1,5 @@
 name: finalize-operator-ux
-# retry 3: isolate backend default configuration from E2E fake inbound
+# retry 4: exercise progressive disclosure in the operator journey
 
 on:
   push:
@@ -93,7 +93,7 @@ jobs:
           docker compose --profile app down -v --remove-orphans >>"$LOG" 2>&1 || true
 
           if [ "$code" -eq 0 ]; then
-            run_logged 'seguridad y consistencia del diff' bash -lc "bash scripts/check-repository-safety.sh && git diff --check && ! grep -R --line-number --include='*.ts' --include='*.tsx' -E 'window\\.(prompt|confirm)' frontend/src && ! grep -nE 'Inbound y quarantine|No hay mensajes inbound|metadata sanitizada|Outbox por estado|Preview \\+ confirmación|Adaptador implementado, no conectado|Webhook fake|Score mínimo|borradores fake' frontend/src/App.tsx && git status --short && git diff --stat"
+            run_logged 'seguridad y consistencia del diff' bash -lc "bash scripts/check-repository-safety.sh && git diff --check && ! grep -R --line-number --include='*.ts' --include='*.tsx' -E 'window\\.(prompt|confirm)' frontend/src && ! grep -nE 'Inbound y quarantine|No hay mensajes inbound|metadata sanitizada|Outbox por estado|Preview \\+ confirmación|Adaptador implementado, no conectado|Webhook fake|Score mínimo|borradores fake|Simular con fake|<option value=\"EMAIL\">Email</option>' frontend/src/App.tsx && git status --short && git diff --stat"
             code=$?
           fi
 
