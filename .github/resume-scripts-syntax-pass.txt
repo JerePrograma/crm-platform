@@ -1,0 +1,3 @@
+validated_commit=08f31e49611c6dc3ac7ea3796b52a675f7eeda9c
+f9a4f969fb64785237e4a7306d81a04467162622a82ab30a4ab6def7a6794a31  scripts/generate-frontend-lock.ps1
+5dd5bee33521c1d42fe76fe8d4864c917013a8ad067f0268e116e43ad6fbc729  scripts/resume-gestudio-master-preview.ps1
