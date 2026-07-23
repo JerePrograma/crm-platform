@@ -116,9 +116,10 @@ jobs:
 
           if [ "$code" -eq 0 ]; then run_logged 'ajuste validado del transformador' python /tmp/patch-operator-ux.py; code=$?; fi
           if [ "$code" -eq 0 ]; then run_logged 'aplicación exacta' python /tmp/apply-operator-ux.py; code=$?; fi
+          if [ "$code" -eq 0 ]; then run_logged 'creación independiente de duplicados' python .github/ux-transform-chunks/backend-independent.py; code=$?; fi
           if [ "$code" -eq 0 ]; then run_logged 'formato backend' ./mvnw -B -f backend/pom.xml spotless:apply; code=$?; fi
           if [ "$code" -eq 0 ]; then run_logged 'validación frontend' bash -lc 'cd frontend && npm ci --no-audit --no-fund && npm run typecheck && npm run test:unit && npm run build'; code=$?; fi
-          if [ "$code" -eq 0 ]; then run_logged 'regresión de duplicados' ./mvnw -B -f backend/pom.xml -Dtest=SanitizedDuplicateImportDataTest test; code=$?; fi
+          if [ "$code" -eq 0 ]; then run_logged 'regresión de duplicados' ./mvnw -B -f backend/pom.xml -Dtest=SanitizedDuplicateImportDataTest,DuplicateResolutionIntegrationTest test; code=$?; fi
           if [ "$code" -eq 0 ]; then run_logged 'verificación backend completa' ./mvnw -B -f backend/pom.xml verify; code=$?; fi
           if [ "$code" -eq 0 ]; then run_logged 'seguridad del repositorio' bash scripts/check-repository-safety.sh; code=$?; fi
           if [ "$code" -eq 0 ]; then run_logged 'validación del diff' bash -lc "git diff --check && ! grep -R --line-number --include='*.ts' --include='*.tsx' -E 'window\\.(prompt|confirm)' frontend/src && git status --short && git diff --stat"; code=$?; fi
@@ -156,8 +157,10 @@ jobs:
             frontend/src/decisionDialog.ts \
             frontend/src/uiLabels.ts \
             frontend/src/uiLabels.test.ts \
+            backend/src/main/java/com/gestudio/crm/prospect/ProspectApplicationService.java \
             backend/src/main/java/com/gestudio/crm/deduplication/DuplicateResolutionService.java \
             backend/src/main/java/com/gestudio/crm/deduplication/SanitizedDuplicateImportData.java \
+            backend/src/test/java/com/gestudio/crm/deduplication/DuplicateResolutionIntegrationTest.java \
             backend/src/test/java/com/gestudio/crm/deduplication/SanitizedDuplicateImportDataTest.java
           git diff --cached --check
           git commit -m 'feat: improve operator UX and duplicate preservation'
