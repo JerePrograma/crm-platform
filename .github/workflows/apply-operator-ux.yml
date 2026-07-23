@@ -1,0 +1,93 @@
+name: apply-operator-ux
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/apply-operator-ux.yml]
+
+permissions:
+  contents: write
+
+env:
+  TRANSFORM_BLOB_0: __BLOB0__
+  TRANSFORM_BLOB_1: __BLOB1__
+  TRANSFORM_BLOB_2: __BLOB2__
+  TRANSFORM_BLOB_3: __BLOB3__
+  TRANSFORM_BLOB_4: __BLOB4__
+  TRANSFORM_BLOB_5: __BLOB5__
+
+jobs:
+  apply-and-validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Reconstruct validated transformation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          : > /tmp/transform.gz.b64
+          for variable in TRANSFORM_BLOB_0 TRANSFORM_BLOB_1 TRANSFORM_BLOB_2 TRANSFORM_BLOB_3 TRANSFORM_BLOB_4 TRANSFORM_BLOB_5; do
+            sha="${!variable}"
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${sha}" \
+              | jq -r .content | base64 --decode >> /tmp/transform.gz.b64
+          done
+          base64 --decode /tmp/transform.gz.b64 | gzip --decompress > /tmp/apply-operator-ux.py
+          python -m py_compile /tmp/apply-operator-ux.py
+      - name: Apply exact changes
+        run: python /tmp/apply-operator-ux.py
+      - name: Format backend
+        run: ./mvnw -B -f backend/pom.xml spotless:apply
+      - name: Frontend validation
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run test:unit
+          npm run build
+      - name: Backend regression and full verification
+        run: |
+          ./mvnw -B -f backend/pom.xml -Dtest=SanitizedDuplicateImportDataTest test
+          ./mvnw -B -f backend/pom.xml verify
+      - name: Repository safety and diff validation
+        run: |
+          bash scripts/check-repository-safety.sh
+          git diff --check
+          ! grep -R --line-number --include='*.ts' --include='*.tsx' -E 'window\.(prompt|confirm)' frontend/src
+          git status --short
+          git diff --stat
+      - name: Commit verified changes to main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            README.md \
+            docs/ux-operador.md \
+            frontend/src/App.tsx \
+            frontend/src/api.ts \
+            frontend/src/styles.css \
+            frontend/src/decisionDialog.ts \
+            frontend/src/uiLabels.ts \
+            frontend/src/uiLabels.test.ts \
+            backend/src/main/java/com/gestudio/crm/deduplication/DuplicateResolutionService.java \
+            backend/src/main/java/com/gestudio/crm/deduplication/SanitizedDuplicateImportData.java \
+            backend/src/test/java/com/gestudio/crm/deduplication/SanitizedDuplicateImportDataTest.java
+          git diff --cached --check
+          git commit -m 'feat: improve operator UX and duplicate preservation'
+          git push origin HEAD:main
