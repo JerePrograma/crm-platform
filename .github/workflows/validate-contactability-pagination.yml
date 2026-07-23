@@ -1,5 +1,5 @@
 name: validate-contactability-pagination
-# retry 2: align all fixtures with direct contactability
+# retry 3: expect ineligible prospects without direct channels
 
 on:
   push:
