@@ -1,5 +1,5 @@
 name: finalize-operator-ux
-# retry 5: resolve one duplicate review and retain the other
+# retry 6: disambiguate the inbound section heading
 
 on:
   push:
