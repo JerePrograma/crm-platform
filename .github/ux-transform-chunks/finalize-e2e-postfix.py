@@ -24,5 +24,14 @@ new = '''  const duplicateReviews = page
 count = source.count(old)
 if count != 1:
     raise RuntimeError(f"Expected one transformed duplicate-review block, found {count}")
-path.write_text(source.replace(old, new, 1), encoding="utf-8")
-print("Duplicate-review E2E selection made explicit.")
+source = source.replace(old, new, 1)
+
+old_heading_assertion = 'await expect(page.getByText("Recepción de prueba", { exact: true })).toBeVisible();'
+new_heading_assertion = 'await expect(page.getByRole("heading", { name: "Recepción de prueba", exact: true })).toBeVisible();'
+count = source.count(old_heading_assertion)
+if count != 1:
+    raise RuntimeError(f"Expected one inbound heading assertion, found {count}")
+source = source.replace(old_heading_assertion, new_heading_assertion, 1)
+
+path.write_text(source, encoding="utf-8")
+print("Duplicate-review and inbound E2E selections made explicit.")
