@@ -28,6 +28,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProspectImportFileParser {
 
+  private static final String PROSPECTS_SHEET = "Prospectos";
+  private static final String MASTER_SHEET = "Maestro";
+  private static final String EXCLUSIONS_SHEET = "Exclusiones";
+  private static final String PREVIOUS_EXCLUSIONS_SHEET = "Exclusiones previas";
+  private static final String MASTER_EXTERNAL_ID_PREFIX = "maestro:";
+
   private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
   private static final int MAX_FILE_BYTES = 10 * 1024 * 1024;
   private static final int MAX_DATA_ROWS = 10_000;
@@ -68,21 +74,41 @@ public class ProspectImportFileParser {
 
   private ParsedImport parseWorkbook(byte[] bytes) {
     try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(bytes))) {
-      Sheet prospectsSheet = workbook.getSheet("Prospectos");
-      if (prospectsSheet == null && workbook.getNumberOfSheets() > 0) {
-        prospectsSheet = workbook.getSheetAt(0);
-      }
-      if (prospectsSheet == null) {
-        throw new IllegalArgumentException("The workbook does not contain a prospect sheet");
-      }
+      Sheet prospectsSheet = supportedProspectSheet(workbook);
       List<ProspectCandidate> prospects = parseProspectSheet(prospectsSheet);
-      Sheet exclusionsSheet = workbook.getSheet("Exclusiones");
-      List<ExclusionCandidate> exclusions =
+
+      Sheet exclusionsSheet = workbook.getSheet(EXCLUSIONS_SHEET);
+      if (exclusionsSheet == null) {
+        exclusionsSheet = workbook.getSheet(PREVIOUS_EXCLUSIONS_SHEET);
+      }
+
+      List<ExclusionCandidate> declaredExclusions =
           exclusionsSheet == null ? List.of() : parseExclusionSheet(exclusionsSheet);
-      return new ParsedImport(SourceType.XLSX, prospects, exclusions);
+      List<ExclusionCandidate> derivedMasterExclusions =
+          MASTER_SHEET.equals(prospectsSheet.getSheetName())
+              ? parseMasterExclusions(prospectsSheet)
+              : List.of();
+
+      return new ParsedImport(
+          SourceType.XLSX,
+          prospects,
+          mergeExclusions(declaredExclusions, derivedMasterExclusions));
     } catch (IOException exception) {
       throw new IllegalArgumentException("The XLSX file could not be read", exception);
     }
+  }
+
+  private Sheet supportedProspectSheet(Workbook workbook) {
+    Sheet prospectsSheet = workbook.getSheet(PROSPECTS_SHEET);
+    if (prospectsSheet != null) {
+      return prospectsSheet;
+    }
+    Sheet masterSheet = workbook.getSheet(MASTER_SHEET);
+    if (masterSheet != null) {
+      return masterSheet;
+    }
+    throw new IllegalArgumentException(
+        "The workbook must contain a 'Prospectos' or 'Maestro' sheet");
   }
 
   private List<ProspectCandidate> parseProspectSheet(Sheet sheet) {
@@ -90,6 +116,7 @@ public class ProspectImportFileParser {
     Map<String, Integer> headers = headers(headerRow);
     requireHeader(headers, "institucion");
 
+    boolean masterSheet = MASTER_SHEET.equals(sheet.getSheetName());
     List<ProspectCandidate> candidates = new ArrayList<>();
     if (sheet.getLastRowNum() - headerRow.getRowNum() > MAX_DATA_ROWS) {
       throw new IllegalArgumentException("Import contains more than 10000 prospect rows");
@@ -108,14 +135,21 @@ public class ProspectImportFileParser {
           new ProspectCandidate(
               row.getRowNum() + 1,
               rawData,
-              value(headers, row, "id"),
+              externalId(masterSheet, value(headers, row, "id")),
               institutionName,
               value(headers, row, "localidad"),
               value(headers, row, "provincia"),
               value(headers, row, "categoria"),
               cleanPublished(value(headers, row, "sitio web")),
               cleanPublished(value(headers, row, "redes sociales")),
-              cleanPublished(value(headers, row, "correo publicado", "correo", "email")),
+              cleanPublished(
+                  value(
+                      headers,
+                      row,
+                      "correo publicado",
+                      "correo principal",
+                      "correo",
+                      "email")),
               cleanPublished(
                   value(
                       headers,
@@ -124,16 +158,119 @@ public class ProspectImportFileParser {
                       "telefono o whatsapp",
                       "telefono",
                       "whatsapp")),
-              value(headers, row, "fuente"),
-              dateValue(headers, row, "fecha de verificacion"),
+              value(headers, row, "fuente", "origen"),
+              dateValue(headers, row, "fecha de verificacion", "fecha auditoria"),
               value(headers, row, "motivo de encaje"),
               priority(value(headers, row, "prioridad")),
               joinEvidence(
+                  value(headers, row, "fuente evidencia"),
                   value(headers, row, "validacion publicada"),
+                  value(headers, row, "correos alternativos"),
+                  value(headers, row, "estado comercial"),
+                  value(headers, row, "primer contacto"),
+                  value(headers, row, "ultimo contacto"),
+                  value(headers, row, "mensajes salientes"),
+                  value(headers, row, "respondio"),
+                  value(headers, row, "resultado de respuesta"),
+                  value(headers, row, "entrega rebote"),
+                  value(headers, row, "adjuntos"),
+                  value(headers, row, "proxima accion"),
+                  value(headers, row, "ultimo asunto"),
+                  value(headers, row, "senales etiquetas"),
                   value(headers, row, "observaciones"),
-                  value(headers, row, "observacion de control"))));
+                  value(headers, row, "observacion de control"),
+                  value(headers, row, "lote"))));
     }
     return List.copyOf(candidates);
+  }
+
+  private List<ExclusionCandidate> parseMasterExclusions(Sheet sheet) {
+    Row headerRow = sheet.getRow(sheet.getFirstRowNum());
+    Map<String, Integer> headers = headers(headerRow);
+    List<ExclusionCandidate> candidates = new ArrayList<>();
+
+    for (int index = headerRow.getRowNum() + 1; index <= sheet.getLastRowNum(); index++) {
+      Row row = sheet.getRow(index);
+      if (row == null) {
+        continue;
+      }
+      String email =
+          cleanPublished(value(headers, row, "correo principal", "correo publicado", "correo"));
+      if (email == null) {
+        continue;
+      }
+      String firstContact = value(headers, row, "primer contacto");
+      String commercialStatus = value(headers, row, "estado comercial");
+      String delivery = value(headers, row, "entrega rebote");
+      if (!requiresMasterExclusion(firstContact, commercialStatus, delivery)) {
+        continue;
+      }
+      candidates.add(
+          new ExclusionCandidate(
+              row.getRowNum() + 1,
+              rawData(headers, row),
+              value(headers, row, "institucion"),
+              email,
+              masterExclusionReason(commercialStatus, delivery),
+              dateValue(headers, row, "ultimo contacto", "primer contacto")));
+    }
+    return List.copyOf(candidates);
+  }
+
+  private boolean requiresMasterExclusion(
+      String firstContact, String commercialStatus, String delivery) {
+    if (normalizationService.trimToNull(firstContact) != null) {
+      return true;
+    }
+    String status = normalizationService.normalizeText(commercialStatus);
+    if (status != null
+        && (status.contains("no contactar")
+            || status.contains("cerrado")
+            || status.contains("respondio")
+            || status.contains("interesado")
+            || status.contains("seguimiento")
+            || status.contains("rebote")
+            || status.contains("invalido")
+            || status.contains("cliente"))) {
+      return true;
+    }
+    String deliveryStatus = normalizationService.normalizeText(delivery);
+    return deliveryStatus != null
+        && (deliveryStatus.contains("rebote")
+            || deliveryStatus.contains("invalido")
+            || deliveryStatus.contains("no existe"));
+  }
+
+  private String masterExclusionReason(String commercialStatus, String delivery) {
+    return joinEvidence(
+        "Existing conversation or non-contactable record from Gestudio master",
+        commercialStatus,
+        delivery);
+  }
+
+  private List<ExclusionCandidate> mergeExclusions(
+      List<ExclusionCandidate> declared, List<ExclusionCandidate> derived) {
+    Map<String, ExclusionCandidate> exclusionsByEmail = new LinkedHashMap<>();
+    for (ExclusionCandidate candidate : declared) {
+      exclusionsByEmail.putIfAbsent(exclusionKey(candidate.email()), candidate);
+    }
+    for (ExclusionCandidate candidate : derived) {
+      exclusionsByEmail.putIfAbsent(exclusionKey(candidate.email()), candidate);
+    }
+    return List.copyOf(exclusionsByEmail.values());
+  }
+
+  private String exclusionKey(String email) {
+    String normalized = normalizationService.trimToNull(email);
+    return normalized == null ? "" : normalized.toLowerCase(Locale.ROOT);
+  }
+
+  private String externalId(boolean masterSheet, String value) {
+    String normalized = normalizationService.trimToNull(value);
+    if (normalized == null || !masterSheet || normalized.startsWith(MASTER_EXTERNAL_ID_PREFIX)) {
+      return normalized;
+    }
+    return MASTER_EXTERNAL_ID_PREFIX + normalized;
   }
 
   private List<ExclusionCandidate> parseExclusionSheet(Sheet sheet) {
@@ -195,7 +332,14 @@ public class ProspectImportFileParser {
               value(headers, row, "categoria"),
               cleanPublished(value(headers, row, "sitio web")),
               cleanPublished(value(headers, row, "redes sociales")),
-              cleanPublished(value(headers, row, "correo publicado", "correo", "email")),
+              cleanPublished(
+                  value(
+                      headers,
+                      row,
+                      "correo publicado",
+                      "correo principal",
+                      "correo",
+                      "email")),
               cleanPublished(
                   value(
                       headers,
@@ -204,14 +348,28 @@ public class ProspectImportFileParser {
                       "telefono o whatsapp",
                       "telefono",
                       "whatsapp")),
-              value(headers, row, "fuente"),
-              parseDate(value(headers, row, "fecha de verificacion")),
+              value(headers, row, "fuente", "origen"),
+              parseDate(value(headers, row, "fecha de verificacion", "fecha auditoria")),
               value(headers, row, "motivo de encaje"),
               priority(value(headers, row, "prioridad")),
               joinEvidence(
+                  value(headers, row, "fuente evidencia"),
                   value(headers, row, "validacion publicada"),
+                  value(headers, row, "correos alternativos"),
+                  value(headers, row, "estado comercial"),
+                  value(headers, row, "primer contacto"),
+                  value(headers, row, "ultimo contacto"),
+                  value(headers, row, "mensajes salientes"),
+                  value(headers, row, "respondio"),
+                  value(headers, row, "resultado de respuesta"),
+                  value(headers, row, "entrega rebote"),
+                  value(headers, row, "adjuntos"),
+                  value(headers, row, "proxima accion"),
+                  value(headers, row, "ultimo asunto"),
+                  value(headers, row, "senales etiquetas"),
                   value(headers, row, "observaciones"),
-                  value(headers, row, "observacion de control"))));
+                  value(headers, row, "observacion de control"),
+                  value(headers, row, "lote"))));
     }
     return new ParsedImport(SourceType.CSV, List.copyOf(candidates), List.of());
   }
@@ -278,20 +436,26 @@ public class ProspectImportFileParser {
     return null;
   }
 
-  private Instant dateValue(Map<String, Integer> headers, Row row, String alias) {
-    Integer index = headers.get(alias);
-    if (index == null) {
-      return null;
+  private Instant dateValue(Map<String, Integer> headers, Row row, String... aliases) {
+    for (String alias : aliases) {
+      Integer index = headers.get(alias);
+      if (index == null) {
+        continue;
+      }
+      Cell cell = row.getCell(index);
+      if (cell == null) {
+        continue;
+      }
+      if (cell.getCellType() == CellType.NUMERIC
+          && DateUtil.isValidExcelDate(cell.getNumericCellValue())) {
+        return DateUtil.getJavaDate(cell.getNumericCellValue(), false, UTC).toInstant();
+      }
+      Instant parsed = parseDate(dataFormatter.formatCellValue(cell));
+      if (parsed != null) {
+        return parsed;
+      }
     }
-    Cell cell = row.getCell(index);
-    if (cell == null) {
-      return null;
-    }
-    if (cell.getCellType() == CellType.NUMERIC
-        && DateUtil.isValidExcelDate(cell.getNumericCellValue())) {
-      return DateUtil.getJavaDate(cell.getNumericCellValue(), false, UTC).toInstant();
-    }
-    return parseDate(dataFormatter.formatCellValue(cell));
+    return null;
   }
 
   private Instant parseDate(String value) {
