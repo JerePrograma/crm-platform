@@ -65,6 +65,16 @@ jobs:
           fi
           docker compose --profile app down -v --remove-orphans >>"$LOG" 2>&1 || true
 
+          git fetch origin main >>"$LOG" 2>&1
+          sync_code=$?
+          if [ "$sync_code" -eq 0 ]; then
+            git pull --ff-only origin main >>"$LOG" 2>&1
+            sync_code=$?
+          fi
+          if [ "$code" -eq 0 ] && [ "$sync_code" -ne 0 ]; then
+            code=$sync_code
+          fi
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           {
