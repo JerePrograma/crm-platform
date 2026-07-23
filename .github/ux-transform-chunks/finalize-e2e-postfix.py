@@ -33,5 +33,18 @@ if count != 1:
     raise RuntimeError(f"Expected one inbound heading assertion, found {count}")
 source = source.replace(old_heading_assertion, new_heading_assertion, 1)
 
+old_activity_assertion = '''  await expect(page.getByRole("definition").filter({ hasText: "Respondió" })).toBeVisible();
+  await expect(page.getByText("Respuesta inbound recibida")).toBeVisible();'''
+new_activity_assertion = '''  await expect(page.getByRole("definition").filter({ hasText: "Respondió" })).toBeVisible();
+  const inboundActivityPanel = page.locator("details.disclosure-panel").filter({ hasText: "Actividad y notas" });
+  if (!(await inboundActivityPanel.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await inboundActivityPanel.locator("summary").click();
+  }
+  await expect(inboundActivityPanel.getByText("Respuesta inbound recibida")).toBeVisible();'''
+count = source.count(old_activity_assertion)
+if count != 1:
+    raise RuntimeError(f"Expected one inbound activity assertion, found {count}")
+source = source.replace(old_activity_assertion, new_activity_assertion, 1)
+
 path.write_text(source, encoding="utf-8")
-print("Duplicate-review and inbound E2E selections made explicit.")
+print("Duplicate-review, inbound heading and progressive-disclosure E2E selections made explicit.")
