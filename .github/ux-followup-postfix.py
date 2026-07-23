@@ -39,6 +39,12 @@ replace_once(
     'new AudienceFilter(null, null, null, null, province, null, true, false)',
     "campaign audience filter",
 )
+replace_once(
+    "backend/src/test/java/com/gestudio/crm/campaign/CampaignIntegrationTest.java",
+    '.containsExactlyInAnyOrder("VALID", "MISSING_CHANNEL", "EXCLUDED");',
+    '.containsExactlyInAnyOrder("VALID", "INELIGIBLE", "EXCLUDED");',
+    "campaign validation-status expectation",
+)
 
 replace_once(
     "backend/src/test/java/com/gestudio/crm/sales/OpportunityIntegrationTest.java",
