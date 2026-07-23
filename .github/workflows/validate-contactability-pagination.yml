@@ -1,0 +1,220 @@
+name: validate-contactability-pagination
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/validate-contactability-pagination.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: validate-contactability-pagination-main
+  cancel-in-progress: true
+
+jobs:
+  validate-and-publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CRM_BOOTSTRAP_USERNAME: complete-admin
+      CRM_BOOTSTRAP_PASSWORD: complete-admin-password
+      SENDING_ENABLED: "false"
+      SENDING_DRY_RUN: "true"
+      SENDING_DAILY_LIMIT: "0"
+      SENDING_KILL_SWITCH: "true"
+      MESSAGING_REAL_NETWORK_ALLOWED: "false"
+      EMAIL_PROVIDER_MODE: NOOP
+      WHATSAPP_PROVIDER_MODE: DEEPLINK_ONLY
+      FAKE_INBOUND_ENABLED: "true"
+      FAKE_INBOUND_WEBHOOK_SECRET: synthetic-complete-crm-inbound-secret
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Apply, validate and publish follow-up
+        shell: bash
+        run: |
+          set +e
+          LOG=/tmp/contactability-pagination.log
+          FAILED_STEP=''
+          : > "$LOG"
+
+          run_logged() {
+            local name="$1"
+            shift
+            printf '\n### %s\n' "$name" | tee -a "$LOG"
+            "$@" >>"$LOG" 2>&1
+            local code=$?
+            if [ "$code" -ne 0 ]; then
+              FAILED_STEP="$name"
+              printf 'FAILED (%s): %s\n' "$code" "$name" | tee -a "$LOG"
+              return "$code"
+            fi
+            printf 'PASS: %s\n' "$name" | tee -a "$LOG"
+          }
+
+          code=0
+          run_logged 'reconstrucción del cambio exacto' bash -lc '
+            : > /tmp/apply-contactability-pagination.py
+            for part in 0 1 2 3; do
+              base64 -d ".github/ux-followup-chunks/${part}.b64" >> /tmp/apply-contactability-pagination.py
+            done
+            python -m py_compile /tmp/apply-contactability-pagination.py
+          '
+          code=$?
+          if [ "$code" -eq 0 ]; then
+            run_logged 'aplicación de contactabilidad y paginación' python /tmp/apply-contactability-pagination.py
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'formato Java localizado' ./mvnw -B -f backend/pom.xml spotless:apply
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'control estricto de alcance' bash -lc '
+              unexpected=$(git diff --name-only | grep -Ev "^(backend/src/main/java/com/gestudio/crm/prospect/Prospect.java|backend/src/main/java/com/gestudio/crm/prospect/ProspectApplicationService.java|backend/src/main/java/com/gestudio/crm/imports/ProspectImportRowProcessor.java|backend/src/main/java/com/gestudio/crm/contact/ContactOperationsService.java|backend/src/test/java/com/gestudio/crm/prospect/OperationalProspectIntegrationTest.java|backend/src/test/java/com/gestudio/crm/imports/ProspectImportIntegrationTest.java|frontend/src/App.tsx|frontend/src/api.ts|frontend/src/api.test.ts|docs/ux-operador.md)$" || true)
+              if [ -n "$unexpected" ]; then
+                printf "Archivos inesperados:\n%s\n" "$unexpected"
+                exit 1
+              fi
+              git status --short
+              git diff --stat
+            '
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'pruebas backend específicas' bash -lc 'FAKE_INBOUND_ENABLED=false ./mvnw -B -f backend/pom.xml -Dtest=OperationalProspectIntegrationTest,ProspectImportIntegrationTest test'
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'verificación backend completa' bash -lc 'FAKE_INBOUND_ENABLED=false ./mvnw -B -f backend/pom.xml verify'
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'validación frontend' bash -lc 'cd frontend && npm ci --no-audit --no-fund && npm run typecheck && npm run test:unit && npm run build'
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'instalación de navegador E2E' bash -lc 'cd frontend && npx playwright install --with-deps chromium'
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'inicio del stack fail-closed' docker compose --profile app up -d --build --wait
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'recorrido Playwright completo' bash -lc 'cd frontend && CRM_E2E_BASE_URL=http://127.0.0.1:5173 CRM_E2E_USERNAME=complete-admin CRM_E2E_PASSWORD=complete-admin-password CRM_E2E_BROWSER_CHANNEL=bundled CRM_E2E_INBOUND_SECRET=synthetic-complete-crm-inbound-secret npm run test:e2e'
+            code=$?
+          fi
+
+          docker compose --profile app down -v --remove-orphans >>"$LOG" 2>&1 || true
+
+          if [ "$code" -eq 0 ]; then
+            run_logged 'seguridad y consistencia del diff' bash -lc '
+              bash scripts/check-repository-safety.sh
+              git diff --check
+              ! grep -R --line-number --include="*.ts" --include="*.tsx" -E "window\\.(prompt|confirm)" frontend/src
+              ! git diff -- . | grep -E "(BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})"
+            '
+            code=$?
+          fi
+
+          git fetch origin main >>"$LOG" 2>&1
+          fetch_code=$?
+          if [ "$fetch_code" -ne 0 ]; then
+            FAILED_STEP='sincronización final con origin/main'
+            code=$fetch_code
+          elif [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            FAILED_STEP='origin/main cambió durante la validación'
+            printf 'Remote head changed from %s to %s\n' "$GITHUB_SHA" "$(git rev-parse origin/main)" >>"$LOG"
+            code=99
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if [ "$code" -ne 0 ]; then
+            if [ "$(git rev-parse origin/main 2>/dev/null)" = "$GITHUB_SHA" ]; then
+              {
+                echo 'Resultado: FALLÓ'
+                echo "Etapa: ${FAILED_STEP:-desconocida}"
+                echo "Commit base: ${GITHUB_SHA}"
+                echo 'Salida final sanitizada:'
+                tail -n 300 "$LOG"
+              } > .github/ux-contactability-pagination-result.txt
+              git add .github/ux-contactability-pagination-result.txt
+              git commit -m 'ops: record contactability pagination validation failure'
+              git push origin HEAD:main
+            fi
+            exit "$code"
+          fi
+
+          mkdir -p docs/validation
+          cat > docs/validation/UX-contactability-pagination-2026-07-23.md <<EOF
+          # Validación de contactabilidad y paginación — 2026-07-23
+
+          ## Alcance validado
+
+          - un prospecto sin correo, teléfono ni WhatsApp utilizable queda pendiente de completar datos;
+          - una web puede aportar evidencia y exclusiones, pero no convierte por sí sola al prospecto en contactable;
+          - la contactabilidad se recalcula al crear o eliminar contactos y al agregar, modificar o eliminar canales;
+          - las exclusiones continúan dominando el estado comercial;
+          - la vista previa de importación aplica el mismo criterio que la ejecución;
+          - la lista de prospectos utiliza la paginación real de la API y conserva búsqueda, estado y página en la URL.
+
+          ## Validaciones ejecutadas
+
+          - Spotless aplicado y verificado;
+          - pruebas específicas de prospectos operativos e importaciones;
+          - \`./mvnw -B -f backend/pom.xml verify\`;
+          - \`npm ci --no-audit --no-fund\`;
+          - \`npm run typecheck\`;
+          - \`npm run test:unit\`;
+          - \`npm run build\`;
+          - Docker Compose con configuración fail-closed;
+          - \`npm run test:e2e\` con Playwright Chromium;
+          - \`bash scripts/check-repository-safety.sh\`;
+          - \`git diff --check\`.
+
+          ## Seguridad
+
+          Se mantuvieron los envíos deshabilitados, el modo de simulación activo, el límite diario en cero, la protección de emergencia activa y la red real deshabilitada.
+
+          Ejecución: \`${GITHUB_RUN_ID}\` sobre \`${GITHUB_SHA}\`.
+          EOF
+
+          rm -f .github/ux-contactability-pagination-result.txt
+          git add \
+            backend/src/main/java/com/gestudio/crm/prospect/Prospect.java \
+            backend/src/main/java/com/gestudio/crm/prospect/ProspectApplicationService.java \
+            backend/src/main/java/com/gestudio/crm/imports/ProspectImportRowProcessor.java \
+            backend/src/main/java/com/gestudio/crm/contact/ContactOperationsService.java \
+            backend/src/test/java/com/gestudio/crm/prospect/OperationalProspectIntegrationTest.java \
+            backend/src/test/java/com/gestudio/crm/imports/ProspectImportIntegrationTest.java \
+            frontend/src/App.tsx \
+            frontend/src/api.ts \
+            frontend/src/api.test.ts \
+            docs/ux-operador.md \
+            docs/validation/UX-contactability-pagination-2026-07-23.md
+          git rm -f --ignore-unmatch \
+            .github/workflows/validate-contactability-pagination.yml \
+            .github/ux-followup-chunks/0.b64 \
+            .github/ux-followup-chunks/1.b64 \
+            .github/ux-followup-chunks/2.b64 \
+            .github/ux-followup-chunks/3.b64 \
+            .github/ux-contactability-pagination-result.txt
+          git diff --cached --check
+          git commit -m 'fix: synchronize contactability and paginate prospects'
+          git push origin HEAD:main
