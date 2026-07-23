@@ -12,7 +12,7 @@ async function login(page: Page, username: string, password: string) {
   await page.getByLabel("Usuario").fill(username);
   await page.getByLabel("Contraseña").fill(password);
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen comercial" })).toBeVisible();
 }
 
 test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async ({ page }) => {
@@ -25,7 +25,7 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
   const viewerPassword = `viewer-${suffix}-password`;
 
   await login(page, adminUser, adminPassword);
-  await expect(page.getByText("Envíos bloqueados", { exact: true })).toBeVisible();
+  await expect(page.getByText("Los envíos reales están bloqueados", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Usuarios" }).click();
   await page.getByRole("main").getByLabel("Usuario").fill(viewerUser);
@@ -43,24 +43,28 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
   await page.getByRole("cell", { name: prospectName }).click();
 
   await page.getByLabel("Nombre", { exact: true }).fill("Contacto sintético");
-  await page.getByLabel("Email", { exact: true }).fill(`synthetic-${suffix}@example.test`);
+  await page.getByLabel("Correo electrónico", { exact: true }).fill(`synthetic-${suffix}@example.test`);
   await page.getByRole("button", { name: "Agregar contacto" }).click();
-  await expect(page.getByText("Contacto agregado.")).toBeVisible();
+  await expect(page.getByText("Contacto agregado y elegibilidad actualizada.")).toBeVisible();
 
   const due = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-  await page.getByLabel("Nueva tarea").fill(`Tarea synthetic ${suffix}`);
-  await page.getByLabel("Vencimiento").fill(due);
-  await page.getByRole("button", { name: "Crear tarea" }).click();
+  const tasksPanel = page.locator("details.disclosure-panel").filter({ hasText: "Tareas de seguimiento" });
+  await tasksPanel.locator("summary").click();
+  await tasksPanel.getByLabel("Nueva tarea").fill(`Tarea synthetic ${suffix}`);
+  await tasksPanel.getByLabel("Vencimiento").fill(due);
+  await tasksPanel.getByRole("button", { name: "Crear tarea" }).click();
   await expect(page.getByText("Tarea creada.")).toBeVisible();
-  await page.getByLabel("Resumen de actividad").fill(`Actividad synthetic ${suffix}`);
-  await page.getByRole("button", { name: "Registrar actividad" }).click();
+  const activityPanel = page.locator("details.disclosure-panel").filter({ hasText: "Actividad y notas" });
+  await activityPanel.locator("summary").click();
+  await activityPanel.getByLabel("Resumen", { exact: true }).fill(`Actividad synthetic ${suffix}`);
+  await activityPanel.getByRole("button", { name: "Registrar actividad" }).click();
   await expect(page.getByText("Actividad registrada.")).toBeVisible();
-  for (const status of ["QUALIFYING", "READY_TO_CONTACT", "CONTACTED"] as const) {
+  for (const status of ["En calificación", "Listo para contactar", "Contactado"] as const) {
     await page.getByRole("button", { name: `Pasar a ${status}` }).click();
   }
-  await expect(page.getByRole("button", { name: "Pasar a REPLIED" })).toBeVisible();
-  await page.getByLabel("Nota").fill(`Nota synthetic ${suffix}`);
-  await page.getByRole("button", { name: "Agregar nota" }).click();
+  await expect(page.getByRole("button", { name: "Pasar a Respondió" })).toBeVisible();
+  await activityPanel.getByLabel("Nota").fill(`Nota synthetic ${suffix}`);
+  await activityPanel.getByRole("button", { name: "Agregar nota" }).click();
   await expect(page.getByText("Nota registrada.")).toBeVisible();
 
   await page.getByRole("button", { name: "Prospectos" }).click();
@@ -79,38 +83,47 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
     mimeType: "text/csv",
     buffer: csv,
   });
-  await page.getByRole("button", { name: "Ejecutar preview" }).click();
-  await expect(page.getByText("Preview", { exact: true })).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Importar con confirmación" }).click();
-  await expect(page.getByText("Ejecución", { exact: true })).toBeVisible();
-  const duplicateRow = page
-    .getByRole("row")
+  await page.getByRole("button", { name: "Generar vista previa" }).click();
+  await expect(page.getByText("Vista previa", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Ejecutar importación" }).click();
+  const importDialog = page.getByRole("dialog", { name: "Ejecutar importación" });
+  await expect(importDialog).toBeVisible();
+  await importDialog.getByRole("button", { name: "Ejecutar importación" }).click();
+  await expect(page.getByText("Importación ejecutada", { exact: true })).toBeVisible();
+  const duplicateReviews = page
+    .locator("article.duplicate-review-card")
     .filter({ hasText: `E2E Syntetic ${suffix}` });
-  const linkDuplicates = duplicateRow.getByRole("button", { name: "Vincular" });
-  await expect(linkDuplicates).toHaveCount(2);
-  await linkDuplicates.first().click();
-  await expect(linkDuplicates).toHaveCount(1);
+  await expect(duplicateReviews).toHaveCount(2);
+  const duplicateReview = duplicateReviews.first();
+  await duplicateReview.getByRole("button", { name: "Vincular con el existente" }).click();
+  const linkDialog = page.getByRole("dialog", { name: "Vincular con el existente" });
+  await expect(linkDialog).toBeVisible();
+  await linkDialog.getByRole("button", { name: "Vincular con el existente" }).click();
+  await expect(duplicateReviews).toHaveCount(1);
 
   await page.getByRole("button", { name: "Exclusiones" }).click();
   await page.getByLabel("Valor").fill(`excluded-${suffix}@example.test`);
   await page.getByRole("button", { name: "Excluir" }).click();
   await expect(page.getByRole("cell", { name: `excluded-${suffix}@example.test` })).toBeVisible();
 
-  await page.getByRole("button", { name: "Pipeline" }).click();
+  await page.getByRole("button", { name: "Oportunidades" }).click();
   const opportunityPanel = page.getByRole("heading", { name: "Nueva oportunidad" }).locator("..");
   await opportunityPanel.getByLabel("Prospecto").selectOption({ label: opportunityProspectName });
-  await opportunityPanel.getByLabel("Nombre").fill(`Venta synthetic ${suffix}`);
-  await opportunityPanel.getByLabel("Valor estimado ARS").fill("250000");
+  await opportunityPanel.getByLabel("Nombre de la oportunidad").fill(`Venta synthetic ${suffix}`);
+  await opportunityPanel.getByLabel("Valor estimado en ARS").fill("250000");
   await opportunityPanel.getByRole("button", { name: "Crear oportunidad" }).click();
   await expect(page.getByText(`Venta synthetic ${suffix}`).first()).toBeVisible();
-  for (const stage of ["DISCOVERY", "DEMO", "PROPOSAL", "WON"] as const) {
+  for (const action of ["Mover a Diagnóstico", "Mover a Demostración", "Mover a Propuesta"] as const) {
     const card = page.locator("article.opportunity-card").filter({ hasText: `Venta synthetic ${suffix}` });
-    if (stage === "WON") page.once("dialog", (dialog) => dialog.accept("Cierre sintético E2E"));
-    await card.getByRole("button", { name: stage, exact: true }).click();
+    await card.getByRole("button", { name: action, exact: true }).click();
     await expect(card).toBeVisible();
-    if (stage === "WON") await expect(card).toContainText("100%");
   }
+  const wonCard = page.locator("article.opportunity-card").filter({ hasText: `Venta synthetic ${suffix}` });
+  await wonCard.getByRole("button", { name: "Marcar como ganada" }).click();
+  const closeDialog = page.getByRole("dialog", { name: "Registrar oportunidad ganada" });
+  await closeDialog.getByLabel("Motivo del cierre").fill("Cierre sintético E2E");
+  await closeDialog.getByRole("button", { name: "Registrar cierre" }).click();
+  await expect(wonCard).toContainText("100%");
 
   await page.getByRole("button", { name: "Campañas" }).click();
   const templatePanel = page.getByRole("heading", { name: "Nueva plantilla versionada" }).locator("..");
@@ -128,20 +141,22 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
   await campaignPanel.getByLabel("Plantilla").selectOption(templateValue!);
   await campaignPanel.getByRole("button", { name: "Crear borrador" }).click();
   const campaignCard = () => page.locator("article.entity-card").filter({ hasText: `Campaign synthetic ${suffix}` });
-  await expect(campaignCard()).toContainText("DRAFT");
+  await expect(campaignCard()).toContainText("Borrador");
   await campaignCard().getByRole("button", { name: "Configurar secuencia segura" }).click();
   await expect(page.getByText("Secuencia declarativa de contacto, espera y parada configurada.")).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
   await campaignCard().getByRole("button", { name: "Congelar audiencia" }).click();
-  await expect(campaignCard()).toContainText("READY_FOR_REVIEW");
-  page.once("dialog", (dialog) => dialog.accept());
+  const audienceDialog = page.getByRole("dialog", { name: "Confirmar audiencia" });
+  await audienceDialog.getByRole("button", { name: "Confirmar audiencia" }).click();
+  await expect(campaignCard()).toContainText("Listo para revisión");
   await campaignCard().getByRole("button", { name: "Aprobar" }).click();
-  await expect(campaignCard()).toContainText("APPROVED");
+  const approvalDialog = page.getByRole("dialog", { name: "Aprobar para simulación" });
+  await approvalDialog.getByRole("button", { name: "Aprobar simulación" }).click();
+  await expect(campaignCard()).toContainText("Aprobado");
   await campaignCard().getByRole("button", { name: "Simular" }).click();
   await expect(page.getByText(/Simulación completa:/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Outbox y workers" }).click();
-  await expect(page.getByText("No existe una acción para forzar providers reales")).toBeVisible();
+  await page.getByRole("button", { name: "Bandeja de salida" }).click();
+  await expect(page.getByText("No existe una acción para forzar proveedores externos")).toBeVisible();
   await page.getByRole("button", { name: "Ejecutar una vez" }).click();
   await expect(page.getByText(/Ejecución manual finalizada\./)).toBeVisible();
 
@@ -182,21 +197,25 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
   expect(replay.status()).toBe(200);
   await page.getByRole("button", { name: "Ejecutar una vez" }).click();
 
-  await page.getByRole("button", { name: "Inbound y quarantine" }).click();
-  await expect(page.getByText("FAKE_INBOUND", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Mensajes recibidos" }).click();
+  await expect(page.getByRole("heading", { name: "Recepción de prueba", exact: true })).toBeVisible();
   await expect(page.getByText("Deshabilitada", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Reintentar carga" }).click();
   const newestInbound = page.locator("tbody tr").first();
-  await expect(newestInbound).toContainText("EMAIL");
-  await expect(newestInbound).toContainText("PROCESSED");
+  await expect(newestInbound).toContainText("Correo electrónico");
+  await expect(newestInbound).toContainText("Procesado");
 
   await page.getByRole("button", { name: "Prospectos" }).click();
   await page.getByLabel("Buscar prospectos").fill(prospectName);
   await page.getByRole("button", { name: "Buscar" }).click();
   await expect(page.getByRole("cell", { name: prospectName })).toBeVisible();
   await page.getByRole("cell", { name: prospectName }).click();
-  await expect(page.getByRole("definition").filter({ hasText: "REPLIED" })).toBeVisible();
-  await expect(page.getByText("Respuesta inbound recibida")).toBeVisible();
+  await expect(page.getByRole("definition").filter({ hasText: "Respondió" })).toBeVisible();
+  const inboundActivityPanel = page.locator("details.disclosure-panel").filter({ hasText: "Actividad y notas" });
+  if (!(await inboundActivityPanel.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await inboundActivityPanel.locator("summary").click();
+  }
+  await expect(inboundActivityPanel.getByText("Respuesta inbound recibida")).toBeVisible();
 
   await page.getByRole("button", { name: "Reportes" }).click();
   await expect(page.getByRole("heading", { name: "Período y exportación" })).toBeVisible();
@@ -204,8 +223,8 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
 
   await page.getByRole("button", { name: "Configuración" }).click();
   await expect(page.getByText("Ningún usuario puede habilitar envíos reales")).toBeVisible();
-  await expect(page.getByText("Adaptador implementado, no conectado").first()).toBeVisible();
-  await expect(page.getByText("false", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Disponible, sin conexión externa").first()).toBeVisible();
+  await expect(page.getByText("Bloqueados", { exact: true }).first()).toBeVisible();
 
   const csrfResponse = await page.request.get("/api/v1/auth/csrf");
   expect(csrfResponse.ok()).toBeTruthy();

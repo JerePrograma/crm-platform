@@ -430,7 +430,7 @@ export function App() {
           <section className="stack">
             <div className="metric-grid">
               <Metric label="Prospectos visibles" value={prospects.length} />
-              <Metric label="Interés o pipeline" value={dashboard.interested} />
+              <Metric label="Prospectos con interés" value={dashboard.interested} />
               <Metric label="Contacto bloqueado" value={dashboard.blocked} />
               <Metric label="Exclusiones" value={exclusions.length} />
               <Metric label="Revisiones pendientes" value={duplicateReviews.length} />
@@ -448,9 +448,9 @@ export function App() {
             <Panel title="Controles activos">
               <div className="control-grid">
                 <Control label="Aprobación de campañas" value="Obligatoria" />
-                <Control label="Importación" value="Preview + confirmación" />
+                <Control label="Importación" value="Vista previa y confirmación" />
                 <Control label="Duplicados ambiguos" value="Revisión humana" />
-                <Control label="Sesión" value="Cookie HttpOnly + CSRF" />
+                <Control label="Sesión" value="Protegida y aislada por organización" />
               </div>
             </Panel>
             {session.permissions.includes("AUDIT_READ") && (
@@ -694,7 +694,7 @@ function ReportsPanel() {
             <ReportMap title="Prospectos por estado" values={report.prospectsByStatus} />
             <ReportMap title="Prospectos por fuente" values={report.prospectsBySource} />
             <ReportMap title="Oportunidades por etapa" values={report.opportunitiesByStage} />
-            <ReportMap title="Outbox por estado" values={report.outbox} />
+            <ReportMap title="Bandeja de salida por estado" values={report.outbox} />
           </section>
           <Panel title="Valor por moneda">
             {report.opportunityValues.length ? (
@@ -754,7 +754,7 @@ function SettingsPanel({ session, selectedProspect }: { session: SessionUser; se
 
   return (
     <section className="stack">
-      <div className="alert safety">Los bloqueos de entorno dominan esta pantalla. Ningún usuario puede habilitar envíos reales desde la API o la UI.</div>
+      <div className="alert safety">Los bloqueos de seguridad tienen prioridad. Ningún usuario puede habilitar envíos reales desde esta pantalla ni desde otras funciones del sistema.</div>
       {error && <div className="alert error" role="alert">{error}</div>}
       {notice && <div className="alert success" role="status">{notice}</div>}
       {settings ? <>
@@ -769,7 +769,7 @@ function SettingsPanel({ session, selectedProspect }: { session: SessionUser; se
             <label>Nombre<input disabled={!canManage} value={settings.name} onChange={(event) => setSettings({ ...settings, name: event.target.value })} /></label>
             <label>Zona horaria<input disabled={!canManage} value={settings.timezone} onChange={(event) => setSettings({ ...settings, timezone: event.target.value })} /></label>
             <label>Moneda<input disabled={!canManage} maxLength={3} value={settings.currency} onChange={(event) => setSettings({ ...settings, currency: event.target.value.toUpperCase() })} /></label>
-            <label>Idioma<select disabled={!canManage} value={settings.locale} onChange={(event) => setSettings({ ...settings, locale: event.target.value })}><option value="es-AR">Español Argentina</option><option value="es">Español</option><option value="en-US">English US</option><option value="en">English</option></select></label>
+            <label>Idioma<select disabled={!canManage} value={settings.locale} onChange={(event) => setSettings({ ...settings, locale: event.target.value })}><option value="es-AR">Español Argentina</option><option value="es">Español</option><option value="en-US">Inglés (Estados Unidos)</option><option value="en">Inglés</option></select></label>
             <label>Color principal<input disabled={!canManage} type="color" value={settings.brandingPrimaryColor} onChange={(event) => setSettings({ ...settings, brandingPrimaryColor: event.target.value })} /></label>
             <label>Seguimiento (días)<input disabled={!canManage} type="number" min="1" max="365" value={settings.followUpDays} onChange={(event) => setSettings({ ...settings, followUpDays: Number(event.target.value) })} /></label>
             <label>Inicio operativo<input disabled={!canManage} type="time" value={settings.operatingWindowStart} onChange={(event) => setSettings({ ...settings, operatingWindowStart: event.target.value })} /></label>
@@ -801,7 +801,7 @@ function SettingsPanel({ session, selectedProspect }: { session: SessionUser; se
           </> : <EmptyState text="Seleccioná un prospecto en la ficha y volvé a Configuración para asignar etiquetas." />}
         </Panel>
       </section>
-      <Panel title="Integraciones"><div className="control-grid"><Control label="Gmail" value="Adaptador implementado, no conectado" /><Control label="WhatsApp Cloud" value="Adaptador implementado, no conectado" /><Control label="Webhook fake" value="Solo entorno sintético firmado" /></div></Panel>
+      <Panel title="Integraciones"><div className="control-grid"><Control label="Gmail" value="Disponible, sin conexión externa" /><Control label="WhatsApp" value="Disponible, sin conexión externa" /><Control label="Recepción de prueba" value="Solo entorno sintético firmado" /></div></Panel>
     </section>
   );
 }
@@ -879,7 +879,7 @@ function OutboxPanel({ session }: { session: SessionUser }) {
             <Control label="Cantidad por ejecución" value={String(worker.worker.batchSize)} />
           </div>
         ) : (
-          <EmptyState text="No se pudo cargar la salud del worker." />
+          <EmptyState text="No se pudo cargar el estado del proceso automático." />
         )}
         {canOperate && worker && (
           <div className="button-row">
@@ -1053,7 +1053,7 @@ function InboundPanel({ session, prospects }: { session: SessionUser; prospects:
       {loading && <div className="loading-bar" aria-label="Cargando mensajes recibidos" />}
       <Panel title="Recepción de prueba">
         <div className="control-grid">
-          <Control label="Proveedor" value={health?.provider ?? "FAKE_INBOUND"} />
+          <Control label="Proveedor" value={labelFor(health?.provider ?? "FAKE_INBOUND")} />
           <Control label="Recepción habilitada" value={health?.enabled ? "Habilitado" : "Deshabilitado"} />
           <Control label="Secreto" value={health?.configured ? "Configurado por entorno" : "No configurado"} />
           <Control label="Límite" value={health ? `${health.maxPayloadBytes} bytes` : "—"} />
@@ -1061,14 +1061,14 @@ function InboundPanel({ session, prospects }: { session: SessionUser; prospects:
         </div>
       </Panel>
       <section className="two-column equal">
-        <Panel title="Inbound y quarantine">
+        <Panel title="Mensajes recibidos pendientes o en revisión">
           <div className="toolbar">
             <button className="secondary-button" onClick={() => void refreshInbound()}>
               Reintentar carga
             </button>
           </div>
           {items.length === 0 && !loading ? (
-            <EmptyState text="No hay mensajes inbound." />
+            <EmptyState text="No hay mensajes recibidos." />
           ) : (
             <div className="table-scroll">
               <table>
@@ -1145,7 +1145,7 @@ function InboundPanel({ session, prospects }: { session: SessionUser; prospects:
               )}
             </div>
           ) : (
-            <EmptyState text="Seleccioná un mensaje recibido para ver metadata sanitizada." />
+            <EmptyState text="Seleccioná un mensaje recibido para ver sus datos operativos." />
           )}
         </Panel>
       </section>
@@ -1500,7 +1500,7 @@ function MessagesPanel({
       </div>
       {error && <div className="alert error" role="alert">{error}</div>}
       <div className="control-grid">
-        <Control label="Email" value={safety?.selectedEmailProvider ?? "Consultando…"} />
+        <Control label="Correo electrónico" value={labelFor(safety?.selectedEmailProvider ?? "NOOP")} />
         <Control label="WhatsApp" value={safety?.selectedWhatsAppProvider ?? "Consultando…"} />
         <Control
           label="Red real"
@@ -1584,7 +1584,7 @@ function MessagesPanel({
                   disabled={busy || !contactId}
                   onClick={() => void run("simulate")}
                 >
-                  Simular con fake
+                  Simular resultado
                 </button>
               )}
               {canDraft && (
@@ -1717,7 +1717,7 @@ function CampaignsPanel({
           "campaign.name": campaignName || "Campaña de ejemplo",
         }),
       );
-      setNotice("Preview renderizado con datos sintéticos.");
+      setNotice("Vista previa generada con datos sintéticos.");
     });
   }
 
@@ -1760,7 +1760,7 @@ function CampaignsPanel({
       const result = await simulateCampaign(campaign);
       setSimulation(result);
       setNotice(
-        `Simulación completa: ${result.includedCount} borradores fake y ${result.excludedCount} bloqueados.`,
+        `Simulación completa: ${result.includedCount} borradores de simulación y ${result.excludedCount} bloqueados.`,
       );
       await onChanged();
     });
@@ -1834,7 +1834,7 @@ function CampaignsPanel({
                 <input value={province} onChange={(event) => setProvince(event.target.value)} />
               </label>
               <label>
-                Score mínimo
+                Puntuación mínima
                 <input type="number" min="0" max="100" value={scoreAtLeast} onChange={(event) => setScoreAtLeast(event.target.value)} />
               </label>
               <button className="primary-button" type="submit">Crear borrador</button>
@@ -2311,7 +2311,7 @@ function ExclusionsPanel({
               value={channelType}
               onChange={(event) => setChannelType(event.target.value as Exclusion["channelType"])}
             >
-              <option value="EMAIL">Email</option>
+              <option value="EMAIL">Correo electrónico</option>
               <option value="PHONE">Teléfono</option>
               <option value="WHATSAPP">WhatsApp</option>
               <option value="WEBSITE">Sitio web</option>
