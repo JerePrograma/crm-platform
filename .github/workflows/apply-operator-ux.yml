@@ -8,14 +8,6 @@ on:
 permissions:
   contents: write
 
-env:
-  TRANSFORM_BLOB_0: __BLOB0__
-  TRANSFORM_BLOB_1: __BLOB1__
-  TRANSFORM_BLOB_2: __BLOB2__
-  TRANSFORM_BLOB_3: __BLOB3__
-  TRANSFORM_BLOB_4: __BLOB4__
-  TRANSFORM_BLOB_5: __BLOB5__
-
 jobs:
   apply-and-validate:
     if: github.actor != 'github-actions[bot]'
@@ -36,19 +28,11 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Reconstruct validated transformation
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          : > /tmp/transform.gz.b64
-          for variable in TRANSFORM_BLOB_0 TRANSFORM_BLOB_1 TRANSFORM_BLOB_2 TRANSFORM_BLOB_3 TRANSFORM_BLOB_4 TRANSFORM_BLOB_5; do
-            sha="${!variable}"
-            curl --fail --silent --show-error \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${sha}" \
-              | jq -r .content | base64 --decode >> /tmp/transform.gz.b64
-          done
+          cat .github/ux-transform-chunks/{0..5}.txt > /tmp/transform.gz.b64
+          echo 'c178c29f8d93aa92320c4c1a4b08ccbb358e12177f608c77b22b9722f178d7f5  /tmp/transform.gz.b64' | sha256sum --check
           base64 --decode /tmp/transform.gz.b64 | gzip --decompress > /tmp/apply-operator-ux.py
+          echo '523ed17d54ce38550a6006410a0a0e48591fd66e684e54f617e0b31ca32d6a41  /tmp/apply-operator-ux.py' | sha256sum --check
           python -m py_compile /tmp/apply-operator-ux.py
       - name: Apply exact changes
         run: python /tmp/apply-operator-ux.py
