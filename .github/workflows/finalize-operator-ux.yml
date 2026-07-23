@@ -1,5 +1,5 @@
 name: finalize-operator-ux
-# retry 2: corrected multiline score label pattern
+# retry 3: isolate backend default configuration from E2E fake inbound
 
 on:
   push:
@@ -74,7 +74,7 @@ jobs:
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
-            run_logged 'verificación backend completa' ./mvnw -B -f backend/pom.xml verify
+            run_logged 'verificación backend completa' bash -lc 'FAKE_INBOUND_ENABLED=false ./mvnw -B -f backend/pom.xml verify'
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
