@@ -131,8 +131,12 @@ jobs:
               echo 'Resultado: FALLÓ'
               echo "Etapa: ${FAILED_STEP:-desconocida}"
               echo "Commit base: ${GITHUB_SHA}"
+              if [ -d backend/target/surefire-reports ]; then
+                echo 'Resumen de pruebas Surefire:'
+                grep -R -nE '<<< (FAILURE|ERROR)|Tests run:|Caused by:|Exception|AssertionError|expected:|but was:' backend/target/surefire-reports | tail -n 180 || true
+              fi
               echo 'Salida final sanitizada:'
-              tail -n 220 "$LOG"
+              tail -n 180 "$LOG"
             } > .github/operator-ux-result.txt
             git add .github/operator-ux-result.txt
             git commit -m 'ops: record remote UX validation failure'
