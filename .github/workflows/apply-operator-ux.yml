@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: apply-operator-ux-main
+  cancel-in-progress: true
+
 jobs:
   apply-and-validate:
     if: github.actor != 'github-actions[bot]'
@@ -27,39 +31,56 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Reconstruct validated transformation
+      - name: Apply, validate and publish atomically
+        shell: bash
         run: |
-          cat .github/ux-transform-chunks/{0..5}.txt > /tmp/transform.gz.b64
-          echo 'c178c29f8d93aa92320c4c1a4b08ccbb358e12177f608c77b22b9722f178d7f5  /tmp/transform.gz.b64' | sha256sum --check
-          base64 --decode /tmp/transform.gz.b64 | gzip --decompress > /tmp/apply-operator-ux.py
-          echo '523ed17d54ce38550a6006410a0a0e48591fd66e684e54f617e0b31ca32d6a41  /tmp/apply-operator-ux.py' | sha256sum --check
-          python -m py_compile /tmp/apply-operator-ux.py
-      - name: Apply exact changes
-        run: python /tmp/apply-operator-ux.py
-      - name: Format backend
-        run: ./mvnw -B -f backend/pom.xml spotless:apply
-      - name: Frontend validation
-        working-directory: frontend
-        run: |
-          npm ci --no-audit --no-fund
-          npm run typecheck
-          npm run test:unit
-          npm run build
-      - name: Backend regression and full verification
-        run: |
-          ./mvnw -B -f backend/pom.xml -Dtest=SanitizedDuplicateImportDataTest test
-          ./mvnw -B -f backend/pom.xml verify
-      - name: Repository safety and diff validation
-        run: |
-          bash scripts/check-repository-safety.sh
-          git diff --check
-          ! grep -R --line-number --include='*.ts' --include='*.tsx' -E 'window\.(prompt|confirm)' frontend/src
-          git status --short
-          git diff --stat
-      - name: Commit verified changes to main
-        run: |
+          set +e
+          LOG=/tmp/operator-ux.log
+          FAILED_STEP=''
+          : > "$LOG"
+
+          run_logged() {
+            local name="$1"
+            shift
+            printf '\n### %s\n' "$name" | tee -a "$LOG"
+            "$@" >>"$LOG" 2>&1
+            local code=$?
+            if [ "$code" -ne 0 ]; then
+              FAILED_STEP="$name"
+              printf 'FAILED (%s): %s\n' "$code" "$name" | tee -a "$LOG"
+              return "$code"
+            fi
+            printf 'PASS: %s\n' "$name" | tee -a "$LOG"
+          }
+
+          run_logged 'reconstrucción del transformador' bash -lc "cat .github/ux-transform-chunks/{0..5}.txt > /tmp/transform.gz.b64 && echo 'c178c29f8d93aa92320c4c1a4b08ccbb358e12177f608c77b22b9722f178d7f5  /tmp/transform.gz.b64' | sha256sum --check && base64 --decode /tmp/transform.gz.b64 | gzip --decompress > /tmp/apply-operator-ux.py && echo '523ed17d54ce38550a6006410a0a0e48591fd66e684e54f617e0b31ca32d6a41  /tmp/apply-operator-ux.py' | sha256sum --check && python -m py_compile /tmp/apply-operator-ux.py"
+          code=$?
+          if [ "$code" -eq 0 ]; then run_logged 'aplicación exacta' python /tmp/apply-operator-ux.py; code=$?; fi
+          if [ "$code" -eq 0 ]; then run_logged 'formato backend' ./mvnw -B -f backend/pom.xml spotless:apply; code=$?; fi
+          if [ "$code" -eq 0 ]; then run_logged 'validación frontend' bash -lc 'cd frontend && npm ci --no-audit --no-fund && npm run typecheck && npm run test:unit && npm run build'; code=$?; fi
+          if [ "$code" -eq 0 ]; then run_logged 'regresión de duplicados' ./mvnw -B -f backend/pom.xml -Dtest=SanitizedDuplicateImportDataTest test; code=$?; fi
+          if [ "$code" -eq 0 ]; then run_logged 'verificación backend completa' ./mvnw -B -f backend/pom.xml verify; code=$?; fi
+          if [ "$code" -eq 0 ]; then run_logged 'seguridad del repositorio' bash scripts/check-repository-safety.sh; code=$?; fi
+          if [ "$code" -eq 0 ]; then run_logged 'validación del diff' bash -lc "git diff --check && ! grep -R --line-number --include='*.ts' --include='*.tsx' -E 'window\\.(prompt|confirm)' frontend/src && git status --short && git diff --stat"; code=$?; fi
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Resultado: FALLÓ'
+              echo "Etapa: ${FAILED_STEP:-desconocida}"
+              echo "Commit base: ${GITHUB_SHA}"
+              echo 'Salida final sanitizada:'
+              tail -n 220 "$LOG"
+            } > .github/operator-ux-result.txt
+            git add .github/operator-ux-result.txt
+            git commit -m 'ops: record remote UX validation failure'
+            git push origin HEAD:main
+            exit "$code"
+          fi
+
+          rm -f .github/operator-ux-result.txt
           git add \
             README.md \
             docs/ux-operador.md \
