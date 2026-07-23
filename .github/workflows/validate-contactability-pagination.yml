@@ -1,4 +1,5 @@
 name: validate-contactability-pagination
+# retry 1: align reporting fixture with direct contactability
 
 on:
   push:
@@ -72,10 +73,15 @@ jobs:
               base64 -d ".github/ux-followup-chunks/${part}.b64" >> /tmp/apply-contactability-pagination.py
             done
             python -m py_compile /tmp/apply-contactability-pagination.py
+            python -m py_compile .github/ux-followup-postfix.py
           '
           code=$?
           if [ "$code" -eq 0 ]; then
             run_logged 'aplicación de contactabilidad y paginación' python /tmp/apply-contactability-pagination.py
+            code=$?
+          fi
+          if [ "$code" -eq 0 ]; then
+            run_logged 'alineación de fixture de reportes' python .github/ux-followup-postfix.py
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
@@ -84,7 +90,7 @@ jobs:
           fi
           if [ "$code" -eq 0 ]; then
             run_logged 'control estricto de alcance' bash -lc '
-              unexpected=$(git diff --name-only | grep -Ev "^(backend/src/main/java/com/gestudio/crm/prospect/Prospect.java|backend/src/main/java/com/gestudio/crm/prospect/ProspectApplicationService.java|backend/src/main/java/com/gestudio/crm/imports/ProspectImportRowProcessor.java|backend/src/main/java/com/gestudio/crm/contact/ContactOperationsService.java|backend/src/test/java/com/gestudio/crm/prospect/OperationalProspectIntegrationTest.java|backend/src/test/java/com/gestudio/crm/imports/ProspectImportIntegrationTest.java|frontend/src/App.tsx|frontend/src/api.ts|frontend/src/api.test.ts|docs/ux-operador.md)$" || true)
+              unexpected=$(git diff --name-only | grep -Ev "^(backend/src/main/java/com/gestudio/crm/prospect/Prospect.java|backend/src/main/java/com/gestudio/crm/prospect/ProspectApplicationService.java|backend/src/main/java/com/gestudio/crm/imports/ProspectImportRowProcessor.java|backend/src/main/java/com/gestudio/crm/contact/ContactOperationsService.java|backend/src/test/java/com/gestudio/crm/prospect/OperationalProspectIntegrationTest.java|backend/src/test/java/com/gestudio/crm/imports/ProspectImportIntegrationTest.java|backend/src/test/java/com/gestudio/crm/reporting/OperationsReportingIntegrationTest.java|frontend/src/App.tsx|frontend/src/api.ts|frontend/src/api.test.ts|docs/ux-operador.md)$" || true)
               if [ -n "$unexpected" ]; then
                 printf "Archivos inesperados:\n%s\n" "$unexpected"
                 exit 1
@@ -95,7 +101,7 @@ jobs:
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
-            run_logged 'pruebas backend específicas' bash -lc 'FAKE_INBOUND_ENABLED=false ./mvnw -B -f backend/pom.xml -Dtest=OperationalProspectIntegrationTest,ProspectImportIntegrationTest test'
+            run_logged 'pruebas backend específicas' bash -lc 'FAKE_INBOUND_ENABLED=false ./mvnw -B -f backend/pom.xml -Dtest=OperationalProspectIntegrationTest,ProspectImportIntegrationTest,OperationsReportingIntegrationTest test'
             code=$?
           fi
           if [ "$code" -eq 0 ]; then
@@ -177,7 +183,7 @@ jobs:
           ## Validaciones ejecutadas
 
           - Spotless aplicado y verificado;
-          - pruebas específicas de prospectos operativos e importaciones;
+          - pruebas específicas de prospectos operativos, importaciones y reportes;
           - \`./mvnw -B -f backend/pom.xml verify\`;
           - \`npm ci --no-audit --no-fund\`;
           - \`npm run typecheck\`;
@@ -203,6 +209,7 @@ jobs:
             backend/src/main/java/com/gestudio/crm/contact/ContactOperationsService.java \
             backend/src/test/java/com/gestudio/crm/prospect/OperationalProspectIntegrationTest.java \
             backend/src/test/java/com/gestudio/crm/imports/ProspectImportIntegrationTest.java \
+            backend/src/test/java/com/gestudio/crm/reporting/OperationsReportingIntegrationTest.java \
             frontend/src/App.tsx \
             frontend/src/api.ts \
             frontend/src/api.test.ts \
@@ -214,6 +221,7 @@ jobs:
             .github/ux-followup-chunks/1.b64 \
             .github/ux-followup-chunks/2.b64 \
             .github/ux-followup-chunks/3.b64 \
+            .github/ux-followup-postfix.py \
             .github/ux-contactability-pagination-result.txt
           git diff --cached --check
           git commit -m 'fix: synchronize contactability and paginate prospects'
