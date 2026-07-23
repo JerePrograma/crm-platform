@@ -1,5 +1,5 @@
 name: finalize-operator-ux
-# retry 6: disambiguate the inbound section heading
+# retry 7: open progressive disclosure before checking inbound activity
 
 on:
   push:
