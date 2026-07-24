@@ -7,42 +7,45 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 `main` es la única fuente canónica.
 
 ```text
-baseline funcional publicado: 83e181ce614f145bbfe141cc7603c3042569be51
-continuidad documental inicial: f25051884b7aadd5837286dedd9ae0eee899cb5a
-parser exacto de .Config.Env: IMPLEMENTED_NOT_FULLY_VALIDATED
+commit funcional validado: 0448c0e060311c284f4e4be4612982818a8480c4
+parser exacto de .Config.Env: FUNCTIONAL_PASS
+corridas integrales consecutivas: 2/2 FUNCTIONAL_PASS
+CI del SHA validado: NO_CHECKS_REPORTED
 candidato histórico 9e058d...: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
 producción: NOT_DEPLOYED
 comunicaciones reales: DISABLED_BY_POLICY
 ```
 
-El CRM conserva el cierre funcional histórico para demostración, evaluación interna y operación comercial segura sin envíos reales. No está autorizado para producción ni para conectar proveedores externos.
+El CRM conserva el cierre funcional para demostración, evaluación interna y operación comercial segura sin envíos reales. No está autorizado para producción ni para conectar proveedores externos.
 
 ## Consolidación remota del 24 de julio de 2026
 
-Se verificó el estado real de GitHub y se corrigieron defectos objetivos de los validadores canónicos:
+Se corrigieron y validaron los defectos objetivos de los validadores canónicos:
 
-- Windows y Unix ahora exigen la rama `main`;
-- el JSON de `docker inspect ... {{json .Config.Env}}` se parsea como array real;
-- las entradas se comparan por membresía exacta;
+- Windows y Unix exigen la rama `main`;
+- `.Config.Env` se parsea como un array JSON real;
+- las siete guardas se comparan por membresía exacta;
 - JSON vacío, inválido o con raíz no-array falla;
-- se comprueban las siete guardas, incluidos los modos de providers;
-- existen self-tests PowerShell y Node;
-- el self-test Node fue ejecutado con Node 22 y pasó.
+- existen self-tests PowerShell 5.1 y Node 22;
+- el perfil productivo exige también `EMAIL_PROVIDER_MODE=NOOP` y `WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY`;
+- no se imprimen secretos ni el entorno completo.
 
-Pendiente antes de declarar cierre:
-
-- PowerShell 5.1;
-- Docker `productionProfileSmoke`;
-- `finalTreeClean`;
-- repository safety;
-- `git diff --check`;
-- dos validaciones integrales limpias sobre el mismo commit;
-- comprobación de CI del SHA exacto.
-
-Evidencia:
+El cierre local se realizó sobre `0448c0e060311c284f4e4be4612982818a8480c4` mediante dos corridas integrales consecutivas:
 
 ```text
-docs/validation/remote-main-hardening-2026-07-24.md
+complete-crm-20260724-201944.json
+SHA-256 4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527
+
+complete-crm-20260724-202955.json
+SHA-256 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
+```
+
+Ambas terminaron `FUNCTIONAL_PASS`, incluido `productionProfileSmoke`, bloqueo efectivo de envíos, cero estados enviados, repository safety y `finalTreeClean`.
+
+Evidencia canónica:
+
+```text
+docs/validation/main-hardening-functional-closure-2026-07-24.md
 ```
 
 ## Candidato post-hardening histórico
@@ -147,21 +150,23 @@ Detenerse ante cambios locales no relacionados, conflicto o divergencia.
 
 ## Validación integral
 
+El cierre funcional del hardening ya fue ejecutado dos veces sobre el mismo commit. Esta actualización es exclusivamente documental y no modifica código, configuración, dependencias, contenedores, migraciones ni pruebas; por ello no repite Maven, npm, Docker, Playwright ni los análisis ya cerrados.
+
+Para futuros cambios funcionales continúan disponibles:
+
 Windows:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test-container-env-assertions.ps1
 powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
 ```
 
 Unix:
 
 ```bash
-node scripts/test-container-env-assertions.js
 bash scripts/validate-complete-crm.sh
 ```
 
-El cierre exige dos corridas limpias consecutivas sobre el mismo commit.
+Todo nuevo cambio funcional debe volver a generar evidencia sobre su SHA exacto.
 
 ## Documentación canónica
 

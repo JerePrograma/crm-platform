@@ -445,3 +445,21 @@ Todo cambio posterior debe:
 7. revisar el diff completo;
 8. publicar en `main` solo con evidencia verde;
 9. actualizar este documento cuando cambie el estado real.
+
+## Actualización 2026-07-24 — cierre del hardening de validación
+
+El commit `0448c0e060311c284f4e4be4612982818a8480c4` fue validado mediante dos corridas integrales consecutivas en Windows PowerShell 5.1 y Docker Desktop.
+
+```text
+run 1: complete-crm-20260724-201944.json
+SHA-256: 4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527
+
+run 2: complete-crm-20260724-202955.json
+SHA-256: 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
+```
+
+Resultado: `2/2 FUNCTIONAL_PASS`, incluido backend, frontend, Docker, migraciones, E2E, dependency scans, backup/restore, perfil productivo, bloqueo efectivo de envíos, cero estados enviados, repository safety y árbol final limpio.
+
+La demo remota continúa activa en `127.0.0.1:18080`. El siguiente gap verificable es anticipar la comprobación de `ProductionFrontendPort` durante el preflight (`VAL-002`).
+
+Producción permanece no autorizada y no desplegada. Gmail, SMTP y WhatsApp reales continúan desconectados. No se realizaron envíos reales ni se incorporó el XLSX externo.

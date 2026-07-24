@@ -7,31 +7,40 @@ Actualizado: 2026-07-24
 ```text
 repositorio: JerePrograma/crm-platform
 rama única: main
-HEAD verificado antes de la consolidación: f25051884b7aadd5837286dedd9ae0eee899cb5a
+commit funcional validado: 0448c0e060311c284f4e4be4612982818a8480c4
 baseline funcional publicado: 83e181ce614f145bbfe141cc7603c3042569be51
-hardening remoto del parser: IMPLEMENTED_NOT_FULLY_VALIDATED
+hardening remoto del parser: FUNCTIONAL_PASS
+corridas integrales consecutivas: 2/2 FUNCTIONAL_PASS
+CI del SHA validado: NO_CHECKS_REPORTED
 producción: NOT_AUTHORIZED / NOT_DEPLOYED
 comunicaciones reales: DISABLED_BY_POLICY
 proveedores reales: IMPLEMENTED_NOT_CONNECTED
 XLSX real: OUTSIDE_GIT_CI_IMAGES
 ```
 
-`main` es la única fuente de verdad. La comparación remota confirmó que `f250518...` estaba exactamente un commit por delante de `83e181c`, únicamente por `AGENTS.md` y `docs/continuity/`.
+`main` es la única fuente de verdad. El cierre funcional se sustenta en salida estructurada local sobre el commit exacto, no únicamente en código versionado.
 
 ## Veredicto
 
-El CRM publicado conserva el cierre funcional previo para demostración, evaluación interna y operación comercial segura sin envíos reales.
+El hardening del parser `.Config.Env` quedó funcionalmente cerrado sobre `0448c0e060311c284f4e4be4612982818a8480c4`.
 
-La consolidación remota del 24 de julio corrigió los validadores versionados para:
+La validación confirmó:
 
-- trabajar sobre `main`;
-- parsear `.Config.Env` como arreglo JSON real;
-- comprobar membresía exacta de las siete guardas;
-- fallar ante JSON vacío, inválido o con raíz no-array;
-- ejecutar regresiones PowerShell y Node;
-- no imprimir el entorno completo ni debilitar el fail-closed.
+- PowerShell 5.1 y Node 22;
+- sintaxis PowerShell y Bash;
+- backend Maven Verify con 89/89 pruebas;
+- frontend typecheck, 5/5 pruebas unitarias y build;
+- Docker, health y smoke;
+- migraciones V1–V13 y V11→V13;
+- dependency scans;
+- Playwright;
+- siete guardas exactas de envío;
+- cero estados `SENT|DELIVERED|READ`;
+- backup/restore;
+- perfil productivo local;
+- repository safety y árbol final limpio.
 
-Ese hardening está implementado en `main`, pero no puede declararse cerrado: faltan PowerShell 5.1, Docker, `productionProfileSmoke`, `finalTreeClean` y las dos corridas integrales limpias sobre el mismo commit.
+El CRM continúa apto para demostración y evaluación interna segura, pero no está autorizado para producción real ni para conectar proveedores externos.
 
 ## Candidato post-hardening histórico
 
@@ -99,16 +108,34 @@ Permanece prohibido:
 |---|---|
 | inspección y comparación remota | EXECUTED_PASS |
 | self-test Node del parser | EXECUTED_PASS |
-| self-test PowerShell | IMPLEMENTED_NOT_RUN |
-| parser conectado al validador Windows | IMPLEMENTED_NOT_RUN |
-| parser conectado al validador Unix | IMPLEMENTED_NOT_RUN |
-| `productionProfileSmoke` | IMPLEMENTED_NOT_RUN |
-| `finalTreeClean` | IMPLEMENTED_NOT_RUN |
-| validador integral corrida 1 | IMPLEMENTED_NOT_RUN |
-| validador integral corrida 2 | IMPLEMENTED_NOT_RUN |
-| CI del commit final | PENDING_VERIFICATION |
+| self-test PowerShell 5.1 | EXECUTED_PASS |
+| sintaxis PowerShell y Bash | EXECUTED_PASS |
+| backend Maven Verify | FUNCTIONAL_PASS — 89/89 |
+| frontend typecheck/unit/build | FUNCTIONAL_PASS — 5/5 |
+| Docker, health y smoke | FUNCTIONAL_PASS |
+| migraciones | FUNCTIONAL_PASS |
+| dependency scans | FUNCTIONAL_PASS |
+| Playwright | FUNCTIONAL_PASS |
+| `effectiveSendingBlockade` | FUNCTIONAL_PASS |
+| `zeroSent` | FUNCTIONAL_PASS |
+| backup/restore | FUNCTIONAL_PASS |
+| `productionProfileSmoke` | FUNCTIONAL_PASS |
+| repository safety | FUNCTIONAL_PASS |
+| `git diff --check` | EXECUTED_PASS |
+| `finalTreeClean` | FUNCTIONAL_PASS |
+| validador integral corrida 1 | FUNCTIONAL_PASS |
+| validador integral corrida 2 | FUNCTIONAL_PASS |
+| CI del commit validado | NO_CHECKS_REPORTED |
 
-No debe interpretarse código versionado como `FUNCTIONAL_PASS`.
+Evidencia:
+
+```text
+complete-crm-20260724-201944.json
+SHA-256 4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527
+
+complete-crm-20260724-202955.json
+SHA-256 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
+```
 
 ## Capacidades funcionales publicadas previamente
 
@@ -118,11 +145,12 @@ El nuevo candidato local que añadía métricas tenant-wide, paginación adicion
 
 ## Próximo paso obligatorio
 
-Desde un checkout limpio de `main` en Windows con Docker operativo:
+El siguiente cambio funcional debe ser pequeño e independiente:
 
-1. ejecutar `scripts/test-container-env-assertions.ps1`;
-2. ejecutar dos veces `scripts/validate-complete-crm.ps1` sobre el mismo commit;
-3. exigir `FUNCTIONAL_PASS` en ambas salidas JSON;
-4. comprobar `productionProfileSmoke` y `finalTreeClean`;
-5. verificar `git diff --check` y repository safety;
-6. comprobar GitHub Actions del SHA exacto.
+1. ampliar el preflight de `scripts/validate-complete-crm.ps1` para comprobar también `ProductionFrontendPort`;
+2. localizar y actualizar su equivalente Unix si corresponde;
+3. añadir una regresión que falle temprano cuando ese puerto esté ocupado;
+4. preservar la demo remota que publica `127.0.0.1:18080`;
+5. validar el cambio sobre su nuevo SHA.
+
+No repetir las suites ya cerradas para esta actualización exclusivamente documental.

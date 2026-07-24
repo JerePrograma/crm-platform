@@ -14,42 +14,71 @@ El commit `f25051884b7aadd5837286dedd9ae0eee899cb5a` añadió únicamente contin
 
 ## VAL-001 — Parser exacto de `.Config.Env`
 
-Estado: `IMPLEMENTED_NOT_FULLY_VALIDATED`
+Estado: `COMPLETE_WITH_CI_NO_CHECKS_REPORTED`
 
-Implementado:
+Implementado y validado:
 
 - [x] parser PowerShell fail-closed;
 - [x] parser Node para Unix;
 - [x] membresía exacta de siete guardas;
 - [x] rechazo de JSON vacío, inválido o con raíz no-array;
-- [x] prueba con guardas completas;
-- [x] prueba con `SENDING_ENABLED=false` ausente;
-- [x] prueba con `SENDING_ENABLED=true`;
-- [x] prueba con JSON inválido;
-- [x] prueba con líneas vacías;
+- [x] cobertura de guardas completas, faltantes, inseguras, JSON inválido y líneas vacías;
 - [x] integración en validadores Windows y Unix;
 - [x] validadores alineados con rama `main`;
-- [x] self-test Node ejecutado en Node 22;
-- [ ] self-test PowerShell 5.1 ejecutado;
-- [ ] `productionProfileSmoke` ejecutado;
-- [ ] `finalTreeClean` ejecutado;
-- [ ] corrida integral 1;
-- [ ] corrida integral 2 sobre el mismo commit;
-- [ ] CI del SHA exacto comprobado.
-
-Criterio de aceptación:
-
-```text
-productionProfileSmoke=FUNCTIONAL_PASS
-finalTreeClean=FUNCTIONAL_PASS
-summary.status=FUNCTIONAL_PASS
-dos corridas consecutivas sobre el mismo commit
-```
+- [x] self-test PowerShell 5.1;
+- [x] self-test Node 22;
+- [x] sintaxis PowerShell y Bash;
+- [x] `productionProfileSmoke`;
+- [x] bloqueo efectivo de envíos;
+- [x] cero estados enviados;
+- [x] repository safety;
+- [x] `git diff --check`;
+- [x] `finalTreeClean`;
+- [x] corrida integral 1;
+- [x] corrida integral 2 sobre el mismo commit;
+- [x] estado de CI consultado: `NO_CHECKS_REPORTED`.
 
 Evidencia:
 
 ```text
-docs/validation/remote-main-hardening-2026-07-24.md
+commit: 0448c0e060311c284f4e4be4612982818a8480c4
+run 1: complete-crm-20260724-201944.json
+run 1 SHA-256: 4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527
+run 2: complete-crm-20260724-202955.json
+run 2 SHA-256: 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
+detalle: docs/validation/main-hardening-functional-closure-2026-07-24.md
+```
+
+## VAL-002 — Preflight de `ProductionFrontendPort`
+
+Estado: `READY`
+
+Problema confirmado:
+
+- `scripts/validate-complete-crm.ps1` acepta `ProductionFrontendPort`;
+- el preflight actual comprueba PostgreSQL, backend y frontend, pero no ese cuarto puerto;
+- una colisión con `127.0.0.1:18080` se descubrió al final de dos intentos costosos;
+- el puerto pertenecía a la demo autorizada `gestudio-remote-demo-backend-1`;
+- la demo no fue detenida ni modificada;
+- las corridas válidas posteriores utilizaron `48080`.
+
+Tareas:
+
+- [ ] inspeccionar la firma y consumidores reales de `scripts/check-host-ports.ps1`;
+- [ ] agregar comprobación temprana del puerto productivo sin romper compatibilidad;
+- [ ] actualizar Windows y Unix de forma equivalente cuando corresponda;
+- [ ] añadir cobertura para puerto libre y ocupado;
+- [ ] preservar puertos configurables;
+- [ ] detenerse antes de suites costosas ante una colisión;
+- [ ] validar sobre un nuevo SHA.
+
+Criterio de aceptación:
+
+```text
+un ProductionFrontendPort ocupado falla durante tooling/preflight
+no se inicia Maven, npm, Docker build, migraciones ni E2E
+un puerto libre permite continuar
+la demo remota no se detiene ni se modifica
 ```
 
 ## REC-001 — Recuperación del candidato histórico
@@ -82,7 +111,7 @@ No reconstruir el candidato por descripción documental.
 
 ## UX-003 — Limpieza de automatización remota obsoleta
 
-Estado: `READY_AFTER_VAL_001`
+Estado: `READY`
 
 - [ ] verificar que `.github/remote-ux-trigger`, el workflow remoto y los scripts `remote-ux-*` siguen presentes;
 - [ ] confirmar que ningún workflow canónico depende de ellos;
@@ -92,7 +121,7 @@ Estado: `READY_AFTER_VAL_001`
 
 ## UX-004 — Métricas tenant-wide del dashboard
 
-Estado: `READY_AFTER_VAL_001`
+Estado: `READY`
 
 Problema publicado: los conteos de interés y bloqueo pueden depender de la página de prospectos cargada.
 

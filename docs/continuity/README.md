@@ -36,28 +36,30 @@ Un script implementado no equivale a un script ejecutado. `IMPLEMENTED_NOT_RUN`,
 
 ```text
 baseline funcional publicado: 83e181ce614f145bbfe141cc7603c3042569be51
-HEAD antes de la consolidación: f25051884b7aadd5837286dedd9ae0eee899cb5a
-parser exacto de .Config.Env: IMPLEMENTED_NOT_FULLY_VALIDATED
+commit funcional validado: 0448c0e060311c284f4e4be4612982818a8480c4
+parser exacto de .Config.Env: FUNCTIONAL_PASS
+corridas integrales consecutivas: 2/2 FUNCTIONAL_PASS
+CI del SHA validado: NO_CHECKS_REPORTED
 candidato histórico 9e058d...: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
 producción: NOT_DEPLOYED
 envíos reales: DISABLED
 ```
 
-La comparación remota confirmó que `f250518...` estaba un commit por delante del baseline y solo agregaba continuidad documental.
-
 ## Hardening incorporado
 
-Los validadores canónicos ahora:
+Los validadores canónicos:
 
 - exigen `main`;
 - parsean `.Config.Env` como array JSON;
-- comprueban las siete guardas por coincidencia exacta;
+- comprueban siete guardas mediante coincidencia exacta;
 - fallan ante JSON vacío o inválido;
 - incluyen self-tests PowerShell y Node;
 - no imprimen el entorno completo;
-- mantienen los providers reales desconectados.
+- mantienen providers reales desconectados.
 
-El self-test Node pasó. PowerShell, Docker, `productionProfileSmoke`, `finalTreeClean` y las dos corridas integrales siguen pendientes.
+PowerShell 5.1, Node 22, sintaxis Bash, Docker, backend, frontend, migraciones, E2E, dependency scans, backup/restore, `productionProfileSmoke`, bloqueo efectivo de envíos, cero estados enviados, repository safety y `finalTreeClean` pasaron.
+
+La evidencia principal está en `docs/validation/main-hardening-functional-closure-2026-07-24.md`.
 
 ## Candidato local histórico
 

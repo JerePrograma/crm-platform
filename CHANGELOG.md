@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-07-24 — Cierre funcional local del hardening de `main`
+
+- valida en Windows PowerShell 5.1 y Docker Desktop el commit `0448c0e060311c284f4e4be4612982818a8480c4`;
+- ejecuta y aprueba sintaxis PowerShell/Bash y self-tests PowerShell/Node del parser;
+- completa dos corridas integrales consecutivas con backend 89/89, frontend 5/5, Docker, migraciones, E2E, seguridad y backup/restore;
+- confirma `productionProfileSmoke`, bloqueo efectivo de envíos, cero estados enviados, repository safety y `finalTreeClean`;
+- registra `complete-crm-20260724-201944.json` con SHA-256 `4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527`;
+- registra `complete-crm-20260724-202955.json` con SHA-256 `2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774`;
+- documenta dos intentos previos fallidos por colisión externa con la demo autorizada en `127.0.0.1:18080`;
+- mantiene la demo remota intacta y usa `48080` para el perfil productivo sintético;
+- registra `NO_CHECKS_REPORTED` para el SHA exacto, sin presentarlo como CI verde;
+- no repite suites funcionales para este commit exclusivamente documental;
+- mantiene producción no desplegada, providers reales desconectados y envíos reales deshabilitados.
+
 ## 2026-07-24 — Consolidación remota de `main` y parser fail-closed
 
 - verifica que el `HEAD` remoto inicial de `main` era `f25051884b7aadd5837286dedd9ae0eee899cb5a`, un commit documental por delante de `83e181c`;

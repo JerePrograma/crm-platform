@@ -139,12 +139,26 @@ WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 
 ## Próximo gate obligatorio
 
-Sobre el `HEAD` remoto final de esta consolidación, ejecutar desde un checkout limpio de `main`:
+El gate remoto inicial fue cerrado posteriormente desde un checkout limpio de `main` con Windows PowerShell 5.1 y Docker Desktop.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test-container-env-assertions.ps1
-powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
-powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
+```text
+commit validado: 0448c0e060311c284f4e4be4612982818a8480c4
+run 1: complete-crm-20260724-201944.json
+run 1 SHA-256: 4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527
+run 2: complete-crm-20260724-202955.json
+run 2 SHA-256: 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
+resultado: TWO_NEW_RUNS=FUNCTIONAL_PASS
+CI: NO_CHECKS_REPORTED
 ```
 
-Las dos corridas integrales deben terminar `FUNCTIONAL_PASS` sobre el mismo commit. Después debe comprobarse el estado de GitHub Actions del SHA exacto.
+Los dos resúmenes registran `productionProfileSmoke`, `effectiveSendingBlockade`, `zeroSent`, repository safety y `finalTreeClean` en `FUNCTIONAL_PASS`.
+
+Dos intentos anteriores fallaron únicamente por una colisión externa: el puerto predeterminado `18080` estaba publicado por `gestudio-remote-demo-backend-1`. La demo autorizada no fue detenida ni modificada. Las corridas válidas usaron `48080`.
+
+Detalle completo:
+
+```text
+docs/validation/main-hardening-functional-closure-2026-07-24.md
+```
+
+El siguiente cambio funcional es `VAL-002`: comprobar `ProductionFrontendPort` durante el preflight para fallar antes de ejecutar suites costosas.

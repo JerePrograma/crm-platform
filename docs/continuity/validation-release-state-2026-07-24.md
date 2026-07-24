@@ -4,8 +4,10 @@
 
 ```text
 baseline funcional publicado: 83e181ce614f145bbfe141cc7603c3042569be51
-HEAD remoto antes de la consolidación: f25051884b7aadd5837286dedd9ae0eee899cb5a
-hardening parser .Config.Env: IMPLEMENTED_NOT_FULLY_VALIDATED
+commit funcional validado: 0448c0e060311c284f4e4be4612982818a8480c4
+hardening parser .Config.Env: FUNCTIONAL_PASS
+corridas integrales consecutivas: 2/2 FUNCTIONAL_PASS
+CI del SHA validado: NO_CHECKS_REPORTED
 candidato post-hardening local: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
 producción real: NO DESPLEGADA
 envíos reales: DESHABILITADOS
@@ -102,37 +104,47 @@ WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 |---|---|
 | inspección del remoto | EXECUTED_PASS |
 | self-test Node | EXECUTED_PASS |
-| self-test PowerShell 5.1 | IMPLEMENTED_NOT_RUN |
-| sintaxis PowerShell | IMPLEMENTED_NOT_RUN |
-| sintaxis Bash | IMPLEMENTED_NOT_RUN |
-| `productionProfileSmoke` | IMPLEMENTED_NOT_RUN |
-| cleanup de recursos | IMPLEMENTED_NOT_RUN |
-| `finalTreeClean` | IMPLEMENTED_NOT_RUN |
-| repository safety | IMPLEMENTED_NOT_RUN |
-| `git diff --check` | IMPLEMENTED_NOT_RUN |
-| corrida integral 1 | IMPLEMENTED_NOT_RUN |
-| corrida integral 2 | IMPLEMENTED_NOT_RUN |
-| CI del HEAD final | PENDING_VERIFICATION |
+| self-test PowerShell 5.1 | EXECUTED_PASS |
+| sintaxis PowerShell | EXECUTED_PASS |
+| sintaxis Bash | EXECUTED_PASS |
+| backend Maven Verify | FUNCTIONAL_PASS — 89/89 |
+| frontend typecheck/unit/build | FUNCTIONAL_PASS — 5/5 |
+| Docker/health/smoke | FUNCTIONAL_PASS |
+| migraciones | FUNCTIONAL_PASS |
+| dependency scans | FUNCTIONAL_PASS |
+| Playwright | FUNCTIONAL_PASS |
+| `effectiveSendingBlockade` | FUNCTIONAL_PASS |
+| `zeroSent` | FUNCTIONAL_PASS |
+| backup/restore | FUNCTIONAL_PASS |
+| `productionProfileSmoke` | FUNCTIONAL_PASS |
+| cleanup de recursos | EXECUTED_PASS |
+| `finalTreeClean` | FUNCTIONAL_PASS |
+| repository safety | EXECUTED_PASS |
+| `git diff --check` | EXECUTED_PASS |
+| corrida integral 1 | FUNCTIONAL_PASS |
+| corrida integral 2 | FUNCTIONAL_PASS |
+| CI del HEAD validado | NO_CHECKS_REPORTED |
 
-No existe evidencia suficiente para declarar `FUNCTIONAL_PASS` del nuevo HEAD.
+Existe evidencia estructurada suficiente para declarar `FUNCTIONAL_PASS` del commit `0448c0e060311c284f4e4be4612982818a8480c4`.
 
 ## Evidencia nueva
 
 ```text
 docs/validation/remote-main-hardening-2026-07-24.md
+docs/validation/main-hardening-functional-closure-2026-07-24.md
+
+complete-crm-20260724-201944.json
+SHA-256 4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527
+
+complete-crm-20260724-202955.json
+SHA-256 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
 ```
 
 ## Próxima acción
 
-Desde un checkout limpio de `main` con PowerShell 5.1 y Docker:
+Implementar `VAL-002` en un commit funcional independiente para comprobar `ProductionFrontendPort` durante el preflight.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test-container-env-assertions.ps1
-powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
-powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
-```
-
-Las dos corridas deben terminar `FUNCTIONAL_PASS` sobre el mismo commit. Hasta entonces, el hardening está implementado pero no cerrado.
+La demo remota que publica `127.0.0.1:18080` debe permanecer activa. La actualización documental actual no repite suites funcionales ya ejecutadas y no cambia código, configuración, dependencias, contenedores, migraciones ni pruebas.
 
 ## Fronteras
 

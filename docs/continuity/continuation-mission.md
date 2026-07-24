@@ -4,18 +4,23 @@ Actualizado: 2026-07-24
 
 ## Objetivo inmediato
 
-Validar funcionalmente el hardening remoto del parser `.Config.Env` ya publicado en `main`. No comenzar otra mejora funcional antes de cerrar este gate.
+Publicar el cierre documental del hardening ya validado y continuar con `VAL-002`, que debe detectar tempranamente colisiones de `ProductionFrontendPort`.
 
 ## Estado de entrada
 
 ```text
 rama: main
-parser PowerShell: IMPLEMENTED_NOT_RUN
-parser Node: EXECUTED_PASS en self-test aislado
-productionProfileSmoke: IMPLEMENTED_NOT_RUN
-finalTreeClean: IMPLEMENTED_NOT_RUN
-validación integral 1: IMPLEMENTED_NOT_RUN
-validación integral 2: IMPLEMENTED_NOT_RUN
+commit funcional validado: 0448c0e060311c284f4e4be4612982818a8480c4
+parser PowerShell: EXECUTED_PASS
+parser Node: EXECUTED_PASS
+productionProfileSmoke: FUNCTIONAL_PASS
+effectiveSendingBlockade: FUNCTIONAL_PASS
+zeroSent: FUNCTIONAL_PASS
+finalTreeClean: FUNCTIONAL_PASS
+validación integral 1: FUNCTIONAL_PASS
+validación integral 2: FUNCTIONAL_PASS
+CI: NO_CHECKS_REPORTED
+demo remota: ACTIVE_ON_127.0.0.1_18080
 candidato histórico 9e058d...: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
 ```
 
@@ -50,67 +55,44 @@ Detenerse ante cambios locales no relacionados, divergencia, remoto inesperado o
 
 ## Validación focalizada
 
-Ejecutar primero:
+No repetir las validaciones ya cerradas para una actualización exclusivamente documental.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check-powershell-syntax.ps1
-powershell -ExecutionPolicy Bypass -File scripts/test-container-env-assertions.ps1
-node scripts/test-container-env-assertions.js
+Evidencia vigente:
+
+```text
+complete-crm-20260724-201944.json
+SHA-256 4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527
+
+complete-crm-20260724-202955.json
+SHA-256 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
 ```
 
-Confirmar en PowerShell 5.1:
-
-- guardas completas → PASS;
-- falta `SENDING_ENABLED=false` → FAIL;
-- `SENDING_ENABLED=true` → FAIL;
-- JSON inválido → FAIL;
-- líneas vacías → PASS;
-- el resultado de `ConvertFrom-Json` se maneja como colección real;
-- no se imprime el entorno completo.
+Ambas corridas corresponden a `main` y al commit exacto `0448c0e060311c284f4e4be4612982818a8480c4`.
 
 ## Validación integral
 
-Ejecutar dos veces, sin modificar el commit entre corridas:
+Para `VAL-002`:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
-powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
-```
+1. inspeccionar rutas, firmas y consumidores reales;
+2. agregar la comprobación de `ProductionFrontendPort` al preflight;
+3. añadir pruebas focalizadas;
+4. ejecutar primero esas pruebas;
+5. ejecutar validaciones generales solo si el cambio funcional lo requiere;
+6. detenerse ante cambios locales, conflictos, secretos, fallos o necesidad de force push.
 
-Exigir en ambos JSON:
-
-```text
-status=FUNCTIONAL_PASS
-productionProfileSmoke=FUNCTIONAL_PASS
-finalTreeClean=FUNCTIONAL_PASS
-```
-
-Revisar además:
-
-- parser y self-tests;
-- backend format/unit/integration/architecture/security;
-- frontend install/typecheck/unit/build;
-- Compose y health;
-- dependency scans;
-- migraciones;
-- outbox/inbound;
-- Playwright;
-- siete guardas exactas;
-- cero estados enviados;
-- backup/restore;
-- repository safety;
-- tree limpio.
-
-No convertir bloqueos externos de red en PASS.
+No detener ni modificar la demo remota que ocupa `127.0.0.1:18080`.
 
 ## Después de validar
 
 1. ejecutar `git diff --check`;
 2. ejecutar repository safety;
-3. revisar `git status --short`;
-4. comprobar que no hay `.env`, XLSX, ZIP, logs, `validation-output/` ni secretos versionados;
-5. comprobar CI del SHA exacto;
-6. actualizar evidencia y documentación solo con resultados ejecutados.
+3. revisar el diff completo;
+4. confirmar que solo existen cambios de `VAL-002`;
+5. validar el nuevo SHA;
+6. commit y push fast-forward a `main`;
+7. actualizar evidencia con resultados realmente ejecutados.
+
+La documentación actual ya registra el cierre de `VAL-001`.
 
 ## Candidato histórico
 

@@ -6,13 +6,16 @@ Actualizado: 2026-07-24
 
 ```text
 BRANCH main
-REMOTE_BASELINE_BEFORE_CONSOLIDATION f25051884b7aadd5837286dedd9ae0eee899cb5a
+VALIDATED_COMMIT 0448c0e060311c284f4e4be4612982818a8480c4
 FUNCTIONAL_BASELINE 83e181ce614f145bbfe141cc7603c3042569be51
-ENV_JSON_PARSER IMPLEMENTED
-PRODUCTION_PROFILE_SMOKE IMPLEMENTED_NOT_RUN
-FINAL_TREE_CLEAN IMPLEMENTED_NOT_RUN
-FULL_VALIDATION_RUN_1 IMPLEMENTED_NOT_RUN
-FULL_VALIDATION_RUN_2 IMPLEMENTED_NOT_RUN
+ENV_JSON_PARSER FUNCTIONAL_PASS
+PRODUCTION_PROFILE_SMOKE FUNCTIONAL_PASS
+EFFECTIVE_SENDING_BLOCKADE FUNCTIONAL_PASS
+ZERO_SENT FUNCTIONAL_PASS
+FINAL_TREE_CLEAN FUNCTIONAL_PASS
+FULL_VALIDATION_RUN_1 FUNCTIONAL_PASS
+FULL_VALIDATION_RUN_2 FUNCTIONAL_PASS
+CI NO_CHECKS_REPORTED
 PRODUCTION NOT_DEPLOYED
 REAL_COMMUNICATIONS DISABLED_BY_POLICY
 ```
@@ -23,9 +26,12 @@ REAL_COMMUNICATIONS DISABLED_BY_POLICY
 - `.Config.Env` se parsea como array JSON real;
 - las siete guardas se comparan por membresía exacta;
 - JSON vacío, inválido o con raíz incorrecta falla;
-- existen self-tests PowerShell y Node;
-- el perfil productivo comprueba también `EMAIL_PROVIDER_MODE=NOOP` y `WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY`;
-- la evidencia remota quedó registrada en `docs/validation/remote-main-hardening-2026-07-24.md`.
+- los self-tests PowerShell 5.1 y Node 22 pasaron;
+- backend, frontend, Docker, migraciones, E2E, seguridad y backup/restore pasaron;
+- `productionProfileSmoke`, bloqueo de envíos, cero estados enviados y `finalTreeClean` pasaron;
+- existen dos corridas integrales consecutivas sobre el mismo SHA;
+- GitHub fue consultado para el SHA exacto y no reportó checks;
+- la evidencia quedó registrada en `docs/validation/main-hardening-functional-closure-2026-07-24.md`.
 
 ## Qué no quedó resuelto
 
@@ -44,38 +50,30 @@ Esas capacidades deben tratarse como backlog o recuperarse desde patches verific
 
 ## Próximo paso obligatorio
 
-No implementar funcionalidad adicional todavía.
+Implementar `VAL-002` como cambio independiente:
 
-Ejecutar en un checkout limpio de `main`, sobre el mismo SHA:
+1. inspeccionar `scripts/check-host-ports.ps1`, `scripts/validate-complete-crm.ps1` y sus consumidores reales;
+2. comprobar `ProductionFrontendPort` durante el preflight, antes de las suites costosas;
+3. añadir cobertura para puerto libre y puerto ocupado;
+4. no detener ni modificar `gestudio-remote-demo-backend-1`;
+5. mantener puertos configurables y comportamiento fail-closed;
+6. ejecutar las validaciones correspondientes al nuevo cambio.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test-container-env-assertions.ps1
-powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
-powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
-```
-
-Criterios de cierre:
-
-1. self-test PowerShell PASS en PowerShell 5.1;
-2. `productionProfileSmoke=FUNCTIONAL_PASS`;
-3. `finalTreeClean=FUNCTIONAL_PASS`;
-4. resumen global `FUNCTIONAL_PASS`;
-5. dos corridas limpias consecutivas sobre el mismo commit;
-6. repository safety PASS;
-7. `git diff --check` PASS;
-8. CI verde o estado externo documentado sin falsear PASS.
+La actualización documental actual reutiliza evidencia ya cerrada y no repite Maven, npm, Docker, migraciones, Playwright ni dependency scans.
 
 ## Después del gate
 
-Solo con el cierre anterior:
+El orden seguro posterior es:
 
-1. localizar y verificar los cuatro patches históricos mediante SHA-256;
-2. aplicar `git apply --check` sobre un clon temporal del `main` actual;
-3. portar únicamente cambios comprobables;
-4. volver a ejecutar dos validaciones integrales;
-5. actualizar evidencia y documentación.
+1. `VAL-002` — preflight del puerto productivo sintético;
+2. `UX-003` — limpieza de automatización remota obsoleta, después de confirmar que no participa en CI;
+3. `UX-004` — métricas tenant-wide del dashboard;
+4. paginación backend de importaciones;
+5. paginación de outbox e inbound;
+6. validación multibrowser y accesibilidad manual;
+7. modularización incremental sin reescritura.
 
-Sin patches verificables, ejecutar el backlog directamente desde el código remoto actual, en cambios pequeños e independientes.
+El candidato histórico `9e058d...` solo puede recuperarse mediante patches o commits verificables; no debe reconstruirse por descripción.
 
 ## Backlog inmediato alternativo
 
