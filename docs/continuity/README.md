@@ -2,15 +2,13 @@
 
 Actualizado: 2026-07-24
 
-Este directorio existe para que una sesión nueva pueda retomar el proyecto sin depender del historial de una conversación, de archivos temporales ni de afirmaciones no verificadas.
+Este directorio permite retomar `JerePrograma/crm-platform` sin depender de chats, archivos temporales ni afirmaciones no verificadas.
 
-## Qué representa este repositorio
+## Qué representa el repositorio
 
-`JerePrograma/crm-platform` es el CRM comercial utilizado para prospectar, calificar y acompañar instituciones potencialmente interesadas en Gestudio. No es la aplicación operativa que usan las academias para administrar alumnos, cuotas y asistencia; esa es la solución comercializada.
+Este repositorio implementa el CRM comercial utilizado para vender Gestudio. No es la aplicación operativa de academias que administra alumnos, cuotas y asistencia.
 
 ## Lectura obligatoria
-
-Antes de proponer o ejecutar cambios, leer en este orden:
 
 1. [`product-purpose-architecture.md`](product-purpose-architecture.md)
 2. [`configuration-environments-data.md`](configuration-environments-data.md)
@@ -20,44 +18,65 @@ Antes de proponer o ejecutar cambios, leer en este orden:
 6. `docs/status.md`
 7. `docs/next-step.md`
 8. `docs/backlog.md`
-9. el ADR, módulo y validación específicos del cambio
+9. `docs/validation/remote-main-hardening-2026-07-24.md`
+10. el ADR, módulo y validación específicos del cambio
 
 ## Jerarquía de fuentes
 
-Cuando haya contradicciones:
-
-1. código y configuración versionados;
+1. código y configuración versionados en `main`;
 2. salida estructurada de comandos sobre el commit exacto;
-3. estos documentos de continuidad;
-4. documentos históricos;
-5. transcripts o resúmenes conversacionales.
+3. documentos de validación;
+4. documentos de continuidad;
+5. documentos históricos;
+6. transcripts o resúmenes conversacionales.
 
-Un transcript no equivale a una validación aprobada. Un resultado solo es `PASS` cuando el JSON de evidencia y los códigos de salida lo demuestran.
+Un script implementado no equivale a un script ejecutado. `IMPLEMENTED_NOT_RUN`, `BLOCKED_EXTERNAL` y `EXECUTED_PASS` no son intercambiables.
 
-## Estado de publicación
-
-El baseline funcional que precede a esta documentación es:
-
-```text
-83e181ce614f145bbfe141cc7603c3042569be51
-```
-
-Existe un candidato post-hardening reconstruible cuyo tree validado parcialmente es:
+## Estado remoto consolidado
 
 ```text
-9e058d7044415b80af554ab8ae4fe3170585b1c9
+baseline funcional publicado: 83e181ce614f145bbfe141cc7603c3042569be51
+HEAD antes de la consolidación: f25051884b7aadd5837286dedd9ae0eee899cb5a
+parser exacto de .Config.Env: IMPLEMENTED_NOT_FULLY_VALIDATED
+candidato histórico 9e058d...: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
+producción: NOT_DEPLOYED
+envíos reales: DISABLED
 ```
 
-Ese candidato no estaba publicado en `origin/main` al redactar este documento. La publicación de estos archivos de continuidad puede adelantar `main` respecto del baseline anterior; por eso las sesiones futuras deben resolver siempre el `HEAD` actual y nunca asumir que `83e181c` sigue siendo la punta remota.
+La comparación remota confirmó que `f250518...` estaba un commit por delante del baseline y solo agregaba continuidad documental.
+
+## Hardening incorporado
+
+Los validadores canónicos ahora:
+
+- exigen `main`;
+- parsean `.Config.Env` como array JSON;
+- comprueban las siete guardas por coincidencia exacta;
+- fallan ante JSON vacío o inválido;
+- incluyen self-tests PowerShell y Node;
+- no imprimen el entorno completo;
+- mantienen los providers reales desconectados.
+
+El self-test Node pasó. PowerShell, Docker, `productionProfileSmoke`, `finalTreeClean` y las dos corridas integrales siguen pendientes.
+
+## Candidato local histórico
+
+```text
+v6: e3a9728e717b7c8a4d92f9fab31f709bf5d66464
+locators: 24df4c7f26ffde0f044f681f9130fa254f15debd
+foco inicial: fa8c15172dfa9a0cfa5cbd00f7aab42733d516ba
+foco explícito: 9e058d7044415b80af554ab8ae4fe3170585b1c9
+```
+
+Son referencias de trees locales. No se encontraron commits, ramas o PRs remotos que los materialicen. No deben describirse como integrados.
 
 ## Invariantes
 
-- trabajar directamente sobre `main`, salvo instrucción explícita distinta;
-- detenerse ante cambios locales ajenos, conflictos o divergencia;
+- trabajar directamente sobre `main`;
+- no crear ramas o PRs salvo instrucción explícita distinta;
 - no usar force push, reset destructivo ni reescritura de historia;
 - no desplegar producción ni habilitar comunicaciones reales;
-- no versionar `.env`, secretos, credenciales, datos de clientes ni el XLSX real;
+- no versionar `.env`, secretos, credenciales, ZIP, logs, datos reales ni el XLSX real;
 - mantener PostgreSQL como fuente de verdad;
-- conservar aislamiento por tenant, CSRF, RBAC, exclusiones, idempotencia y fail-closed;
-- no repetir fases aprobadas cuando existe evidencia estructurada íntegra y el código cubierto no cambió;
-- volver a ejecutar una fase si cambió cualquiera de sus archivos, dependencias, configuración o entorno relevante.
+- conservar RBAC, tenant isolation, CSRF, exclusiones, idempotencia y fail-closed;
+- volver a ejecutar cualquier fase cuyos archivos o dependencias hayan cambiado.
