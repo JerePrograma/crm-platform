@@ -1,6 +1,7 @@
 param([int]$FrontendPort = 18080)
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'container-env-assertions.ps1')
 $project = "crm-production-smoke-$PID"
 $compose = Join-Path (Split-Path -Parent $PSScriptRoot) 'deploy/docker-compose.production.yml'
 $env:DATABASE_PASSWORD = 'synthetic-production-drill-password'
@@ -16,9 +17,15 @@ try {
   $backend = (& docker compose --project-name $project -f $compose ps -q backend).Trim()
   $postgres = (& docker compose --project-name $project -f $compose ps -q postgres).Trim()
   $environment = & docker inspect $backend --format '{{json .Config.Env}}'
-  foreach ($required in @('SENDING_ENABLED=false','SENDING_DRY_RUN=true','SENDING_DAILY_LIMIT=0','SENDING_KILL_SWITCH=true','MESSAGING_REAL_NETWORK_ALLOWED=false')) {
-    if ($environment -notmatch [regex]::Escape($required)) { throw "Missing production blockade: $required" }
-  }
+  Assert-ContainerEnvironmentEntries -Json $environment -RequiredEntries @(
+    'SENDING_ENABLED=false',
+    'SENDING_DRY_RUN=true',
+    'SENDING_DAILY_LIMIT=0',
+    'SENDING_KILL_SWITCH=true',
+    'MESSAGING_REAL_NETWORK_ALLOWED=false',
+    'EMAIL_PROVIDER_MODE=NOOP',
+    'WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY'
+  )
   $sent = (& docker exec $postgres psql -U gestudio -d gestudio_crm -At -c "SELECT count(*) FROM message_record WHERE status IN ('SENT','DELIVERED','READ');").Trim()
   if ($sent -ne '0') { throw 'Production profile smoke found forbidden sent states.' }
   Write-Host 'Production profile local smoke passed: health, non-root/read-only services, blocked providers, zero SENT.'
