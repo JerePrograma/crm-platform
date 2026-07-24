@@ -26,12 +26,7 @@ function ConvertFrom-ContainerEnvironmentJson {
     throw 'Container environment JSON is invalid.'
   }
 
-  $entries = @($parsed | ForEach-Object { [string]$_ })
-  if ($null -eq $entries) {
-    throw 'Container environment JSON did not produce an enumerable result.'
-  }
-
-  return ,$entries
+  @($parsed | ForEach-Object { [string]$_ })
 }
 
 function Assert-ContainerEnvironmentEntries {
