@@ -7,10 +7,8 @@ Actualizado: 2026-07-24
 - Git;
 - Docker Desktop o Docker Engine con Compose;
 - Java 21 para ejecución separada;
-- Node.js 22 y npm para frontend local;
+- Node.js 22 y npm;
 - PowerShell 5.1+ en Windows o Bash en Unix.
-
-El recorrido completamente contenedorizado no requiere Java, Maven o Node en el host.
 
 ## Inicio seguro
 
@@ -21,20 +19,34 @@ git remote -v
 git fetch origin
 git switch main
 git pull --ff-only origin main
+git rev-parse HEAD
+git rev-parse origin/main
 ```
 
-Detenerse si existen cambios no relacionados, conflicto, divergencia o un remoto inesperado.
+El validador integral exige ahora la rama `main`. Detenerse ante cambios no relacionados, conflicto, divergencia o remoto inesperado.
 
-## Documentación operativa existente
+## Self-test del parser de contenedores
 
-- `docs/local-development-and-usage.md`: procesos separados;
-- `docs/containerized-quickstart.md`: recorrido Docker;
-- `docs/production/`: contrato productivo local;
-- `docs/runbooks/`: incidentes y recuperación;
-- `docs/disaster-recovery.md`: continuidad;
-- `docs/testing.md`: estrategia de pruebas.
+Windows:
 
-No duplicar comandos cuando el repositorio ya tiene un script canónico.
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-powershell-syntax.ps1
+powershell -ExecutionPolicy Bypass -File scripts/test-container-env-assertions.ps1
+```
+
+Unix:
+
+```bash
+node scripts/test-container-env-assertions.js
+```
+
+Los self-tests verifican:
+
+- las siete guardas presentes;
+- una guarda ausente;
+- un valor inseguro alternativo;
+- JSON inválido;
+- líneas vacías alrededor del JSON.
 
 ## Validadores canónicos
 
@@ -50,72 +62,103 @@ Unix:
 bash scripts/validate-complete-crm.sh
 ```
 
-o:
+O:
 
 ```bash
 make validate-complete-crm
 ```
 
-Los comandos SEG-001 siguen disponibles para su alcance histórico, pero el cierre integral usa los validadores completos.
+El cierre exige dos corridas limpias consecutivas sobre el mismo commit.
+
+## Parseo de `.Config.Env`
+
+Los validadores capturan:
+
+```text
+docker inspect <container> --format {{json .Config.Env}}
+```
+
+Contrato:
+
+1. entrada no vacía;
+2. JSON válido;
+3. raíz de tipo array;
+4. entradas convertidas a string sin alterar nombre ni valor;
+5. membresía exacta;
+6. fallo si falta una guarda;
+7. no imprimir el entorno completo.
+
+No usar regex, `-match` o `grep` sobre el transcript completo para decidir el gate de seguridad.
 
 ## Perfil productivo local
 
-El perfil productivo local es un smoke técnico, no un despliegue. Debe verificar:
+El perfil productivo local es un smoke técnico, no un despliegue. Debe comprobar:
 
 - PostgreSQL, backend y frontend saludables;
-- imágenes exactas del candidato;
-- filesystems, redes y usuarios endurecidos;
-- PostgreSQL sin publicación pública;
-- variables fail-closed;
-- ausencia de credenciales de proveedores reales;
-- cleanup exclusivo de los recursos creados por la corrida.
+- filesystem y usuarios endurecidos;
+- PostgreSQL sin puerto público;
+- siete variables fail-closed exactas;
+- cero estados `SENT`, `DELIVERED` o `READ`;
+- cleanup exclusivo de sus recursos sintéticos.
 
-`PRODUCTION_PROFILE=EXECUTED_PASS_LOCALLY` no significa producción desplegada.
+```text
+PRODUCTION_PROFILE=EXECUTED_PASS_LOCALLY
+```
 
-## Evidencia
+no significa producción desplegada.
 
-La evidencia válida debe incluir:
+## Guardas
 
-- JSON de resumen;
+```text
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
+EMAIL_PROVIDER_MODE=NOOP
+WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
+```
+
+## Evidencia válida
+
+Debe incluir:
+
+- commit exacto;
+- rama `main`;
 - códigos de salida;
-- commit y tree exactos;
-- fases ejecutadas y omitidas;
-- IDs de imágenes;
-- puertos seleccionados;
-- estado de envío;
-- confirmación de checkout principal no modificado;
-- confirmación de que no se realizó push.
+- JSON de resumen;
+- fases ejecutadas y no ejecutadas;
+- `productionProfileSmoke`;
+- `finalTreeClean`;
+- puertos e IDs de imágenes cuando corresponda;
+- cleanup;
+- estado de envíos;
+- repository safety;
+- `git diff --check`;
+- estado de CI.
 
-`validation-output/` y ZIP de evidencia son artefactos locales; no deben versionarse.
+`validation-output/` y los ZIP son evidencia local y no deben versionarse.
 
-## Reutilización de validaciones
+## Reutilización
 
-Se puede omitir una fase solo cuando:
+Solo omitir una fase cuando:
 
 1. existe evidencia estructurada íntegra;
 2. el commit/tree cubierto es identificable;
-3. no cambiaron archivos, dependencias ni configuración de esa fase;
-4. el entorno relevante es equivalente;
-5. el script registra explícitamente qué se omitió y por qué.
+3. no cambiaron archivos ni dependencias de la fase;
+4. el entorno es equivalente;
+5. la omisión queda registrada.
 
-Si una corrección modifica el código cubierto, volver a ejecutar la prueba específica y las validaciones generales razonables.
+Los scripts de validación cambiaron en la consolidación del 24 de julio; por eso `productionProfileSmoke`, `finalTreeClean` y el cierre integral deben volver a ejecutarse.
 
 ## Despliegue
 
-Producción continúa `NOT_AUTHORIZED / NOT_DEPLOYED`.
+Producción continúa:
 
-Antes de cualquier despliegue real se requieren:
+```text
+NOT_AUTHORIZED / NOT_DEPLOYED
+```
 
-- infraestructura y dominio aprobados;
-- TLS;
-- secretos gestionados;
-- backup/restore en el entorno objetivo;
-- rollback probado;
-- privacidad y retención;
-- observabilidad y alertas;
-- carga y accesibilidad manual;
-- proveedores revisados en fase separada;
-- CI verde sobre el commit exacto;
-- autorización explícita.
+Antes de cualquier despliegue se requieren infraestructura, TLS, secretos administrados, backup/restore, rollback, privacidad, observabilidad, carga, accesibilidad, providers revisados, CI verde y autorización explícita.
 
 No desplegar como consecuencia automática de una validación local.
