@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-07-23 — Experiencia integral de operador
+
+- centraliza estados, canales, roles, etapas, acciones, motivos y eventos visibles en español mediante `frontend/src/uiLabels.ts`;
+- humaniza navegación, dashboard, prospectos, contactos, importaciones, duplicados, pipeline, campañas, mensajes, outbox, inbound, exclusiones, auditoría, usuarios, configuración y cuenta;
+- reemplaza `window.prompt` y `window.confirm` por diálogos accesibles con focus trap, Escape y retorno de foco;
+- agrega foco visible, controles táctiles, responsive, tablas navegables, revelado progresivo, estados vacíos y errores orientativos;
+- reorganiza la ficha de prospecto y agrega copia segura de canales;
+- mejora importaciones con resumen, filtros, búsqueda, paginación visual y confirmación explícita;
+- evita JSON crudo como vista principal de auditoría y oculta claves sensibles;
+- conserva de forma controlada correo, teléfono/WhatsApp, ubicación, categoría, sitio, fuente, evidencia, prioridad y fecha al crear registros independientes desde duplicados;
+- agrega `SanitizedDuplicateImportData` y regresiones para impedir persistencia arbitraria desde `raw_data`;
+- valida frontend, Maven Verify, Docker fail-closed, Playwright, repository safety y `git diff --check` en el run `30034176306`;
+- publica el cierre funcional en `8d12f8ff772d3445440e4419b22d5c81b102cb15`.
+
+## 2026-07-23 — Contactabilidad y paginación
+
+- corrige la clasificación de prospectos sin correo, teléfono ni WhatsApp utilizable, que quedan en `NEEDS_ENRICHMENT` en lugar de aparecer como contactables;
+- mantiene las exclusiones como regla dominante y permite que el sitio participe en exclusiones sin convertir por sí solo al prospecto en contactable;
+- recalcula contactabilidad al crear o eliminar contactos y al agregar, modificar o eliminar canales;
+- aplica el mismo criterio en vista previa y ejecución de importaciones;
+- conecta la lista de prospectos con la paginación real de la API y conserva búsqueda, estado y página en la URL;
+- amplía pruebas de prospectos, importaciones, reportes, campañas, oportunidades y API frontend;
+- valida Spotless, pruebas específicas, Maven Verify, frontend, Docker fail-closed, Playwright, repository safety y `git diff --check` en el run `30036648327`;
+- publica el cierre funcional en `19732dec9638cd47fee4b39ac41c5968693b5b7a`.
+
 ## 2026-07-22 — SEG-011 complete CRM closure
 
 - cierra SEG-010 y SEG-011 después de dos ejecuciones limpias consecutivas del
@@ -118,169 +143,3 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - `.gitattributes` multiplataforma;
 - configuradores coordinados de puertos Windows/Unix;
 - checker PowerShell de sintaxis;
-- checker Windows de enlace y propiedad Docker de puertos;
-- validador Docker Windows con clean builds, health, smoke y evidencia JSON;
-- validadores integrales PowerShell y Bash;
-- backend Maven verify/Testcontainers contenedorizado;
-- generadores Docker de `package-lock.json`;
-- escaneo centralizado del repositorio Windows/Unix;
-- CI con backend, frontend, scripts, regresiones de puertos y stack E2E;
-- fixtures, Testcontainers y ArchUnit;
-- documentación técnica, operativa y evidencias fechadas.
-
-### Changed
-
-- `main` es la única rama canónica;
-- PostgreSQL, backend y frontend publican puertos host configurables solo en loopback;
-- valores predeterminados: 55432, 8080 y 5173;
-- preflight valida daemon Docker, puertos, URL DB, credenciales y guardas;
-- validadores integrales exigen `main` y working tree limpio;
-- builds de cierre exigen `--no-cache`;
-- Maven verify puede ejecutarse sin Java instalado en el host;
-- Dockerfile frontend usa `npm ci` cuando existe lockfile y `npm install` cuando falta;
-- el validador inicia PostgreSQL y espera health antes de reconstruir imágenes;
-- `stackKeptRunning` refleja contenedores realmente activos;
-- resultados de importación se ordenan por hoja/fila;
-- Basic Auth frontend usa UTF-8;
-- CSV admite coma y punto y coma;
-- fechas Excel usan UTC;
-- documentación diferencia PASS, FAIL, PASS_PARTIAL, NOT_RUN y PENDING;
-- `org.flywaydb:flyway-core` directo fue reemplazado por `org.springframework.boot:spring-boot-starter-flyway` para habilitar la auto-configuración de Spring Boot 4;
-- se conserva `org.flywaydb:flyway-database-postgresql`;
-- `spring.flyway.fail-on-missing-locations=true` activa fail-fast cuando faltan recursos de migración.
-- código propio de serialización JSON usa Jackson 3 administrado por Spring Boot
-  4.1; Jackson 2 queda restringido a dependencias transitivas de springdoc;
-- wrappers Maven/Testcontainers detectan la API Docker del daemon y la propagan
-  a docker-java;
-- healthcheck frontend usa loopback IPv4 explícito;
-- `frontend/package-lock.json` está versionado y los builds usan `npm ci`.
-
-### Fixed
-
-- exclusiones importadas usan el caso de uso manual, suprimen y auditan;
-- preview conserva revisiones ambiguas y aplica exclusiones;
-- duplicados exactos enlazan prospecto existente;
-- `EXCLUDED` está separado de accepted;
-- correo inválido se rechaza por fila;
-- límites multipart/funcional 10 MB y HTTP 413;
-- CSV y headers inválidos se rechazan;
-- filenames se saneán;
-- backend y PostgreSQL comparten credenciales;
-- callbacks autenticados no reciben `Credentials | null`;
-- imports CSS reconocidos por TypeScript;
-- conflicto inicial del puerto PostgreSQL 5432 mediante puerto configurable;
-- riesgo de BOM en `.env` PowerShell;
-- comandos Compose con `--progress` en posición correcta;
-- splatting de parámetros del validador integral;
-- escaneo del lote operativo en cualquier subdirectorio;
-- generadores de lockfile no crean `node_modules` ni ejecutan lifecycle scripts;
-- propiedad Unix del lockfile;
-- rutas con espacios en el escaneo Unix;
-- interpolación inválida `$LASTEXITCODE:` en scripts PowerShell;
-- detección tardía de puertos reservados u ocupados en Windows;
-- detección de puertos publicados por otros contenedores Docker;
-- mensaje engañoso de `-KeepRunning` cuando no existía stack activo;
-- ausencia de auto-configuración Flyway en Spring Boot 4 que dejaba el esquema vacío y provocaba `Schema validation: missing table [contact]`.
-- incompatibilidad entre `com.fasterxml.jackson.databind.ObjectMapper` solicitado
-  por código propio y `tools.jackson.databind.ObjectMapper` registrado por Spring
-  Boot 4;
-- timestamps de auditoría enviados como `Instant` sin tipo SQL inferible por el
-  driver PostgreSQL;
-- flag Docker inválido `--environment` en el verificador backend;
-- API docker-java predeterminada 1.32 rechazada por Docker Engine 29;
-- fixture transaccional de deduplicación incompatible con el límite real
-  `REQUIRES_NEW`;
-- healthcheck Nginx que resolvía `localhost` por IPv6 aunque Nginx escuchaba IPv4.
-
-### Validation
-
-Ejecución real acumulada:
-
-- preflight PowerShell inicial: PASS;
-- guardas de envío: PASS;
-- npm install frontend: PASS;
-- frontend TypeScript inicial: FAIL reproducido y corregido;
-- imágenes frontend/backend desde caché: PASS_FROM_CACHE en una ejecución temprana;
-- arranque inicial: FAIL por puerto 5432;
-- PowerShell parser: FAIL reproducido, corregido y luego PASS sobre 11 scripts;
-- frontend clean build sin caché: PASS;
-- backend clean image build sin caché: PASS;
-- intento con `55432`: FAIL por bind Windows;
-- intento con `15432`: FAIL porque Docker tenía el puerto asignado;
-- checker Docker/Windows actualizado: PASS sobre 25432/8080/5173;
-- publicación PostgreSQL en 25432: PASS;
-- PostgreSQL health: PASS;
-- frontend clean build `--no-cache`: PASS;
-- TypeScript strict/Vite production build: PASS;
-- backend clean image build `--no-cache`: PASS;
-- Maven package con tests omitidos: PASS_PARTIAL;
-- conexión backend → PostgreSQL 17.10: PASS;
-- sexta ejecución integral: FAIL por ausencia de auto-configuración Flyway;
-- migraciones V1–V5: NOT_RUN en esa ejecución;
-- Hibernate validate: FAIL por tabla `contact` ausente;
-- backend/frontend health y smoke: NOT_RUN;
-- Maven verify, Spotless, unit tests, ArchUnit y Testcontainers: NOT_RUN;
-- package-lock y npm ci: NOT_RUN;
-- working tree posterior: PASS, limpio;
-- corrección `spring-boot-starter-flyway`: EXECUTED_PASS;
-- ejecución sobre `a9e2c44`: Flyway V1–V5 e Hibernate PASS; FAIL al crear
-  `AuditEventWriter` por mapper Jackson 2 inexistente;
-- regresión `ExclusionIntegrationTest`: PASS para contexto Spring, mapper Jackson
-  3 y persistencia JSONB con mapa, UUID, fechas, enum y null;
-- primera validación integral completa sobre `951d19b`: PASS;
-- lockfile SHA-256:
-  `1936217c0598825ef43519069a3ba89a974e2b30e3b9f2619d4e62dd10810c98`;
-- segunda validación limpia sobre `d8a5a44`: PASS con `npm ci` desde el primer
-  build;
-- PostgreSQL/backend/frontend: healthy;
-- smoke host/contenedor inicial y final: PASS;
-- Maven verify: PASS, 29/29 tests;
-- Spotless: PASS, 55/55;
-- ArchUnit/Testcontainers: PASS;
-- repository safety: PASS;
-- GitHub Actions run `29848718163`: success en backend, frontend, scripts y
-  compose-images-and-smoke.
-
-Evidencias principales:
-
-```text
-docs/validation/SEG-001-static-automation-2026-07-20.md
-docs/validation/SEG-001-container-build-2026-07-20.md
-docs/validation/SEG-001-rerun-2026-07-20.md
-docs/validation/SEG-001-local-orchestration-2026-07-20.md
-docs/validation/SEG-001-complete-validation-automation-2026-07-20.md
-docs/validation/SEG-001-cross-platform-validation-2026-07-20.md
-docs/validation/SEG-001-powershell-parser-failure-2026-07-21.md
-docs/validation/SEG-001-port-bind-failure-2026-07-21.md
-docs/validation/SEG-001-docker-port-owner-failure-2026-07-21.md
-docs/validation/SEG-001-flyway-autoconfiguration-failure-2026-07-21.md
-docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
-```
-
-### Security
-
-- sin credenciales bootstrap no hay API de negocio;
-- sin adaptador de envío;
-- cuatro guardas `SENDING_*` cerradas;
-- Maven Wrapper verificado;
-- datos reales fuera de Git, CI e imágenes;
-- contextos Docker sin `.env`, planillas o claves;
-- servicios solo en localhost;
-- smoke realiza lecturas;
-- lockfile se genera con lifecycle scripts deshabilitados;
-- scripts de seguridad bloquean entorno, evidencia, datos privados, lote, claves y credenciales;
-- transcripts locales fuera de Git;
-- CI usa credenciales ficticias;
-- ninguna validación habilita comunicaciones.
-
-### Known limitations
-
-- recorrido integral funcional Bash/Linux/macOS no ejecutado localmente;
-- advertencias Hikari al cerrar bases Testcontainers efímeras, sin fallos;
-- Mockito todavía se auto-adjunta como agente y requerirá configuración explícita
-  ante futuras restricciones del JDK;
-- HTTP Basic es temporal;
-- revisiones ambiguas no tienen resolución UI;
-- jobs sin retry;
-- sin campañas, Gmail, Sheets o cloud;
-- Compose es local, no producción.
