@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-07-24 — Consolidación remota de `main` y parser fail-closed
+
+- verifica que el `HEAD` remoto inicial de `main` era `f25051884b7aadd5837286dedd9ae0eee899cb5a`, un commit documental por delante de `83e181c`;
+- confirma que el tree histórico `9e058d7044415b80af554ab8ae4fe3170585b1c9` no está disponible como commit, rama o PR remoto y no lo declara integrado;
+- alinea los validadores integrales Windows y Unix con la rama canónica `main`;
+- agrega parseo real de `docker inspect ... {{json .Config.Env}}` en PowerShell y Node;
+- reemplaza regex/grep ambiguos por membresía exacta de las siete guardas fail-closed;
+- rechaza JSON vacío, inválido o con raíz distinta de array;
+- agrega self-tests para guardas presentes, faltantes, valor inseguro, JSON inválido y líneas vacías;
+- conecta los self-tests a los validadores canónicos;
+- exige `EMAIL_PROVIDER_MODE=NOOP` y `WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY` también en el smoke productivo;
+- ejecuta el self-test Node con Node 22 y registra PowerShell/Docker como `IMPLEMENTED_NOT_RUN`;
+- actualiza las fuentes canónicas y agrega `docs/validation/remote-main-hardening-2026-07-24.md`;
+- mantiene producción no desplegada, providers desconectados y envíos reales deshabilitados.
+
 ## 2026-07-23 — Experiencia integral de operador
 
 - centraliza estados, canales, roles, etapas, acciones, motivos y eventos visibles en español mediante `frontend/src/uiLabels.ts`;
@@ -27,40 +42,24 @@
 
 ## 2026-07-22 — SEG-011 complete CRM closure
 
-- cierra SEG-010 y SEG-011 después de dos ejecuciones limpias consecutivas del
-  validador integral sobre `986523a`;
-- integra la historia completa mediante fast-forward en `main`, agrega la
-  evidencia sanitizada final de SEG-011 y publica en `origin/main`;
-- corrige el modo ejecutable Unix de `mvnw` y alinea las tags Docker aisladas
-  por job; GitHub Actions run `29951586239` termina `success` con 22/22 jobs;
-- valida dos veces 79/79 backend, Spotless 159/159, ArchUnit, Vitest 2/2,
-  Playwright 2/2, imágenes sin caché, npm audit, Grype, migraciones
-  vacío/V11→V13, backup/restore y perfil productivo local;
-- confirma en ambas corridas los cuatro bloqueos efectivos, providers reales no
-  conectados y cero `SENT|DELIVERED|READ`;
-- corrige la precedencia entorno/`.env` de preflight/smoke y elimina una carrera
-  ADMIN→VIEWER esperando el estado observable de logout, sin sleeps;
-- mantiene Unix integral y CI remoto sin ejecutar, XLSX real bloqueado por
-  archivo externo, producción/push/PR no autorizados y comunicaciones reales
-  deshabilitadas.
+- cierra SEG-010 y SEG-011 después de dos ejecuciones limpias consecutivas del validador integral sobre `986523a`;
+- integra la historia completa mediante fast-forward en `main`, agrega la evidencia sanitizada final de SEG-011 y publica en `origin/main`;
+- corrige el modo ejecutable Unix de `mvnw` y alinea las tags Docker aisladas por job; GitHub Actions run `29951586239` termina `success` con 22/22 jobs;
+- valida dos veces 79/79 backend, Spotless 159/159, ArchUnit, Vitest 2/2, Playwright 2/2, imágenes sin caché, npm audit, Grype, migraciones vacío/V11→V13, backup/restore y perfil productivo local;
+- confirma en ambas corridas los cuatro bloqueos efectivos, providers reales no conectados y cero `SENT|DELIVERED|READ`;
+- corrige la precedencia entorno/`.env` de preflight/smoke y elimina una carrera ADMIN→VIEWER esperando el estado observable de logout, sin sleeps;
+- mantiene Unix integral y CI remoto sin ejecutar, XLSX real bloqueado por archivo externo, producción/push/PR no autorizados y comunicaciones reales deshabilitadas.
 
 ## 2026-07-22 — SEG-010 operations candidate
 
 - agrega V13 con configuración, etiquetas e índices de búsqueda/reporting;
-- incorpora reporting tenant-scoped, monedas separadas, búsqueda PostgreSQL y
-  exportación formula-safe;
+- incorpora reporting tenant-scoped, monedas separadas, búsqueda PostgreSQL y exportación formula-safe;
 - completa UI operativa, Vitest y Playwright integral para CRM/outbox/inbound;
-- agrega correlation ID, Micrometer/probes, límites de importación y threat
-  model/PII;
-- agrega backup/restore probado, perfil productivo local, runbooks, CI y
-  validadores CRM Windows/Unix;
-- endurece backend con JRE mínima no-root fijada, healthcheck Java, JDBC/Jackson
-  parchados y Grype sin High/Critical;
-- mantiene Gmail/WhatsApp no conectados, XLSX real bloqueado externamente,
-  envío real deshabilitado y producción no desplegada;
-- valida focalmente 79/79 backend, Spotless 159/159, ArchUnit, Vitest 2/2,
-  Playwright 2/2, backup/restore y production profile; el cierre integral
-  repetido pertenece a SEG-011.
+- agrega correlation ID, Micrometer/probes, límites de importación y threat model/PII;
+- agrega backup/restore probado, perfil productivo local, runbooks, CI y validadores CRM Windows/Unix;
+- endurece backend con JRE mínima no-root fijada, healthcheck Java, JDBC/Jackson parchados y Grype sin High/Critical;
+- mantiene Gmail/WhatsApp no conectados, XLSX real bloqueado externamente, envío real deshabilitado y producción no desplegada;
+- valida focalmente 79/79 backend, Spotless 159/159, ArchUnit, Vitest 2/2, Playwright 2/2, backup/restore y production profile; el cierre integral repetido pertenece a SEG-011.
 
 ## 2026-07-22 — SEG-009 outbox e inbound durable
 
@@ -73,19 +72,14 @@
 ## 2026-07-21 — SEG-008
 
 - agregó V11 con conexiones externas, mensajes e intentos tenant-scoped;
-- implementó contratos, policy fail-closed, providers no-op/fake y enlaces
-  manuales;
-- agregó adapters Gmail draft-only y WhatsApp Cloud detrás de red real
-  deshabilitada y configuración completa obligatoria;
-- incorporó UI de mensajes/integraciones, contract tests loopback y regresión de
-  merge;
-- migró el volumen sintético V10→V11, ejecutó frontend/Docker/health/Playwright
-  y demostró cero estados `SENT`.
+- implementó contratos, policy fail-closed, providers no-op/fake y enlaces manuales;
+- agregó adapters Gmail draft-only y WhatsApp Cloud detrás de red real deshabilitada y configuración completa obligatoria;
+- incorporó UI de mensajes/integraciones, contract tests loopback y regresión de merge;
+- migró el volumen sintético V10→V11, ejecutó frontend/Docker/health/Playwright y demostró cero estados `SENT`.
 
 ## 2026-07-21 — SEG-007
 
-- agregó V10 con campañas, audiencia congelada, secuencias y resultados de
-  simulación;
+- agregó V10 con campañas, audiencia congelada, secuencias y resultados de simulación;
 - implementó plantillas versionadas y renderer de variables allow-listed;
 - incorporó aprobación RBAC, idempotencia y bloqueo persistente/ambiental;
 - conectó UI de preview, audiencia, secuencia y simulación sin botón de envío;
@@ -93,25 +87,21 @@
 
 ## 2026-07-21 — SEG-006
 
-- agregó V9 con oportunidades, historial de etapas y unicidad de oportunidad
-  activa principal;
-- implementó transiciones, control optimista, reglas de cierre y sincronización
-  con prospectos y tareas;
+- agregó V9 con oportunidades, historial de etapas y unicidad de oportunidad activa principal;
+- implementó transiciones, control optimista, reglas de cierre y sincronización con prospectos y tareas;
 - incorporó pipeline kanban, tabla, forecast, aging y oportunidades estancadas;
 - validó Flyway V1–V9, Maven 45/45, frontend, Docker, smoke y Playwright.
 
 ## 2026-07-21 — SEG-005
 
 - agregó V8 con resolución trazable, mapas de merge y redirect del absorbido;
-- implementó seis acciones tenant-scoped, merge transaccional e idempotente y
-  preservación de referencias;
+- implementó seis acciones tenant-scoped, merge transaccional e idempotente y preservación de referencias;
 - convirtió la bandeja de duplicados en una comparación accionable;
 - validó Flyway V1–V8, Maven 42/42, frontend, Docker, smoke y Playwright.
 
 ## 2026-07-21 — SEG-003 y SEG-004
 
-- agregó el modelo operativo V7 de prospectos, contactos, estados, notas,
-  actividades, tareas y timeline;
+- agregó el modelo operativo V7 de prospectos, contactos, estados, notas, actividades, tareas y timeline;
 - agregó CRUD tenant-scoped, control optimista, CSV seguro y ciclo comercial;
 - conectó formularios React para alta, edición, contacto, nota, tarea y transición;
 - validó Flyway V1–V7, Maven 39/39, frontend, Docker, smoke y Playwright.
@@ -123,9 +113,7 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 ### Added
 
 - plan vivo, progreso y matriz ejecutable para completar SEG-002–SEG-011;
-- activación formal de SEG-002 en la rama de integración
-  `feat/complete-crm-platform` después de repetir el baseline SEG-001;
-
+- activación formal de SEG-002 en la rama de integración `feat/complete-crm-platform` después de repetir el baseline SEG-001;
 - Java 21, Spring Boot 4.1, Maven Wrapper, PostgreSQL y Flyway;
 - instituciones, contactos, canales, prospectos y exclusiones;
 - normalización y deduplicación exacta/ambigua;
@@ -142,4 +130,4 @@ Todos los cambios relevantes se documentan aquí. El proyecto todavía no tiene 
 - Makefile y `.dockerignore` raíz/frontend;
 - `.gitattributes` multiplataforma;
 - configuradores coordinados de puertos Windows/Unix;
-- checker PowerShell de sintaxis;
+- checker PowerShell de sintaxis.
