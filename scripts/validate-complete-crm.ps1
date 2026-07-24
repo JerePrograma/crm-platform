@@ -8,6 +8,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'container-env-assertions.ps1')
 $outputDirectory = Join-Path $repoRoot 'validation-output'
 New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss')
@@ -66,7 +67,7 @@ try {
   $summary.commit = (& git rev-parse HEAD).Trim()
   $summary.branch = (& git branch --show-current).Trim()
   Run-Phase 'trackedTreeClean' {
-    if ($summary.branch -ne 'feat/complete-crm-platform') { throw "Expected feat/complete-crm-platform, found $($summary.branch)" }
+    if ($summary.branch -ne 'main') { throw "Expected main, found $($summary.branch)" }
     $changes = @(& git status --porcelain)
     if ($changes.Count -ne 0) { throw "Validation requires a clean tracked tree:`n$($changes -join "`n")" }
   }
@@ -79,6 +80,8 @@ try {
   Run-Phase 'repositorySafety' { & (Join-Path $PSScriptRoot 'check-repository-safety.ps1') }
   Run-Phase 'scriptSyntax' {
     & (Join-Path $PSScriptRoot 'check-powershell-syntax.ps1')
+    & (Join-Path $PSScriptRoot 'test-container-env-assertions.ps1')
+    Invoke-Checked 'node' @('scripts/test-container-env-assertions.js')
     if (Get-Command bash -ErrorAction SilentlyContinue) {
       Get-ChildItem scripts -Filter '*.sh' | ForEach-Object {
         Invoke-Checked 'bash' @('-n', ("scripts/{0}" -f $_.Name))
@@ -122,9 +125,11 @@ try {
     & (Join-Path $PSScriptRoot 'validate-docker-stack.ps1') -PostgresPort $PostgresPort -BackendPort $BackendPort -FrontendPort $FrontendPort -KeepRunning -NoTranscript
     $backendContainerForEnvironmentCheck = (& docker compose --profile app ps -q backend).Trim()
     $backendEnvironment = & docker inspect $backendContainerForEnvironmentCheck --format '{{json .Config.Env}}'
-    foreach ($required in @('CRM_BOOTSTRAP_USERNAME=complete-admin','FAKE_INBOUND_ENABLED=true','OUTBOX_WORKER_ENABLED=false')) {
-      if ($backendEnvironment -notmatch [regex]::Escape($required)) { throw "Validation environment was overridden: $required" }
-    }
+    Assert-ContainerEnvironmentEntries -Json $backendEnvironment -RequiredEntries @(
+      'CRM_BOOTSTRAP_USERNAME=complete-admin',
+      'FAKE_INBOUND_ENABLED=true',
+      'OUTBOX_WORKER_ENABLED=false'
+    )
   }
   $backendContainer = (& docker compose --profile app ps -q backend).Trim()
   $backendImage = (& docker inspect $backendContainer --format '{{.Config.Image}}').Trim()
@@ -155,9 +160,15 @@ try {
   }
   Run-Phase 'effectiveSendingBlockade' {
     $environment = & docker inspect $backendContainer --format '{{json .Config.Env}}'
-    foreach ($required in @('SENDING_ENABLED=false','SENDING_DRY_RUN=true','SENDING_DAILY_LIMIT=0','SENDING_KILL_SWITCH=true','MESSAGING_REAL_NETWORK_ALLOWED=false','EMAIL_PROVIDER_MODE=NOOP','WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY')) {
-      if ($environment -notmatch [regex]::Escape($required)) { throw "Missing blockade: $required" }
-    }
+    Assert-ContainerEnvironmentEntries -Json $environment -RequiredEntries @(
+      'SENDING_ENABLED=false',
+      'SENDING_DRY_RUN=true',
+      'SENDING_DAILY_LIMIT=0',
+      'SENDING_KILL_SWITCH=true',
+      'MESSAGING_REAL_NETWORK_ALLOWED=false',
+      'EMAIL_PROVIDER_MODE=NOOP',
+      'WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY'
+    )
     $postgresContainer = (& docker compose ps -q postgres).Trim()
     $database = (& docker exec $postgresContainer printenv POSTGRES_DB).Trim()
     $databaseUser = (& docker exec $postgresContainer printenv POSTGRES_USER).Trim()
