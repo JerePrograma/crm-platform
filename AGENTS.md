@@ -13,6 +13,11 @@
 
 ## Continuidad obligatoria
 
+Antes de cualquier misión de continuidad post-hardening, leer primero:
+
+1. `docs/continuity/README.md`;
+2. todos los documentos enlazados desde ese índice.
+
 Antes de modificar el repositorio, leer en este orden:
 
 1. `docs/status.md`;
