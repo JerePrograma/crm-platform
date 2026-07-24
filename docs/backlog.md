@@ -1,224 +1,263 @@
 # Backlog ejecutable
 
-Solo un segmento puede estar `ACTIVE`. `COMPLETE` exige evidencia ejecutada, no solo código versionado.
+Actualizado: 2026-07-23
 
 Rama canónica: `main`.
 
-## Resumen
-
-| ID | Segmento | Estado | Dependencia | Resultado verificable |
-|---|---|---|---|---|
-| SEG-000 | Repositorio y continuidad | COMPLETE | — | fuente canónica, reglas y documentación |
-| SEG-001 | Vertical slice persistente de prospectos | COMPLETE | SEG-000 | importación, exclusiones, UI y stack con matriz verde |
-| SEG-002 | Identidad, usuarios y RBAC | COMPLETE | SEG-001 COMPLETE | sesión segura, permisos y aislamiento por organización |
-| SEG-003 | Prospectos operativos y contactos | COMPLETE | SEG-002 | CRUD, ciclo comercial y búsqueda |
-| SEG-004 | Actividades, tareas y timeline | COMPLETE | SEG-003 | seguimiento comercial trazable |
-| SEG-005 | Resolución de duplicados | COMPLETE | SEG-004 | bandeja y merge transaccional |
-| SEG-006 | Oportunidades y pipeline | COMPLETE | SEG-003 | ciclo de venta y forecast |
-| SEG-007 | Campañas y plantillas | COMPLETE | SEG-003, SEG-006 | audiencia congelada y simulación |
-| SEG-008 | Mensajería segura y adaptadores | COMPLETE | SEG-007 | no-op, fake, manual y red deshabilitada |
-| SEG-009 | Outbox, workers e inbound | COMPLETE | SEG-008 | async idempotente y respuesta fake |
-| SEG-010 | Reportes, seguridad y producción | COMPLETE | SEG-002–009 | focales y validador integral repetido |
-| SEG-011 | Validación integral y cierre | COMPLETE | SEG-010 | dos recorridos reproducibles y evidencia |
-
-## SEG-001 — Completado
-
-- [x] modelo institucional, contactos, canales, prospectos y exclusiones;
-- [x] normalización y deduplicación exacta/ambigua;
-- [x] importación CSV/XLSX con preview y ejecución confirmada;
-- [x] métricas `ACCEPTED`, `EXCLUDED`, `REJECTED`, `DUPLICATE`, `REVIEW_REQUIRED`;
-- [x] persistencia, auditoría y API;
-- [x] autenticación bootstrap fail-closed;
-- [x] frontend React/TypeScript/Vite;
-- [x] Dockerfiles multi-stage;
-- [x] perfiles Compose `app` y `smoke`;
-- [x] puertos host configurables y loopback-only;
-- [x] preflight Windows/Unix;
-- [x] checker PowerShell de sintaxis;
-- [x] checker de puertos Windows y propiedad Docker;
-- [x] validadores integrales PowerShell/Bash;
-- [x] Maven verify/Testcontainers contenedorizado;
-- [x] generación segura de lockfile;
-- [x] escaneo de seguridad del repositorio;
-- [x] CI estructural y smoke E2E;
-- [x] consolidación completa en `main`;
-- [x] PowerShell syntax ejecutado;
-- [x] preflight ejecutado;
-- [x] frontend clean build ejecutado;
-- [x] backend clean image build ejecutado;
-- [x] comprobación Windows/Docker de puertos ejecutada;
-- [x] publicación PostgreSQL ejecutada;
-- [x] health PostgreSQL ejecutado;
-- [x] diagnóstico de auto-configuración Flyway;
-- [x] `spring-boot-starter-flyway` versionado;
-- [x] fail-fast por ubicación de migraciones versionado.
-- [x] Flyway V1–V5 ejecutado antes de Hibernate;
-- [x] Jackson propio alineado con el mapper administrado por Spring Boot 4;
-- [x] regresión de contexto y persistencia JSONB de auditoría;
-- [x] PostgreSQL/backend/frontend healthy;
-- [x] smoke host y contenedor;
-- [x] Maven verify, 29/29 tests, Spotless, ArchUnit y Testcontainers;
-- [x] lockfile generado, revisado y versionado;
-- [x] segunda ejecución limpia mediante `npm ci`;
-- [x] repository safety;
-- [x] GitHub Actions visible y verde;
-- [x] documentación y evidencia final sincronizadas.
-
-## SEG-001 — Cierre ejecutado
-
-- [x] actualizar checkout al último `main`;
-- [x] retirar stack parcial sin `-v`;
-- [x] reejecutar validador completo con PostgreSQL host `25432`;
-- [x] confirmar que Flyway crea/valida `flyway_schema_history`;
-- [x] confirmar aplicación de migraciones V1–V5;
-- [x] confirmar Hibernate validate PASS;
-- [x] confirmar backend/frontend healthy;
-- [x] ejecutar smoke host y contenedor;
-- [x] ejecutar Maven verify;
-- [x] ejecutar Spotless;
-- [x] ejecutar unit tests;
-- [x] ejecutar ArchUnit;
-- [x] ejecutar Testcontainers;
-- [x] generar `frontend/package-lock.json` mediante el validador;
-- [x] revisar SHA-256 y diff;
-- [x] versionar únicamente el lockfile;
-- [x] repetir desde árbol limpio para demostrar `npm ci`;
-- [x] ejecutar seguridad final;
-- [x] conservar JSON/transcript local fuera de Git;
-- [x] observar CI verde;
-- [x] sincronizar estado final;
-- [x] marcar SEG-001 COMPLETE;
-- [ ] activar SEG-002.
-
-## Evidencia de cierre
+Fuente de estado y contexto:
 
 ```text
-LOCAL_COMPLETE_VALIDATION=PASS
-LOCKFILE_VERSIONED
-SECOND_CLEAN_NPM_CI_RUN=PASS
-CI_VISIBLE_GREEN
-SEG_001_COMPLETE
+docs/estado-integral-y-roadmap.md
 ```
 
-La segunda ejecución limpia sobre `d8a5a449…` cerró toda la matriz. GitHub
-Actions run `29848718163` terminó `success`.
+Un elemento solo puede declararse `COMPLETE` con evidencia ejecutada. Código versionado sin pruebas no equivale a cierre.
 
-Evidencia:
+## Resumen de segmentos cerrados
 
-```text
-docs/validation/SEG-001-jackson-objectmapper-failure-2026-07-21.md
-```
+| ID | Segmento | Estado | Resultado verificable |
+|---|---|---|---|
+| SEG-000 | Repositorio y continuidad | COMPLETE | fuente canónica, reglas y documentación |
+| SEG-001 | Vertical slice persistente | COMPLETE | importación, exclusiones, UI, stack y CI |
+| SEG-002 | Identidad, usuarios y RBAC | COMPLETE | sesión, permisos y tenant isolation |
+| SEG-003 | Prospectos y contactos | COMPLETE | CRUD, búsqueda, paginación y ciclo comercial |
+| SEG-004 | Actividades y tareas | COMPLETE | seguimiento y timeline trazable |
+| SEG-005 | Duplicados | COMPLETE | revisión y merge transaccional |
+| SEG-006 | Oportunidades | COMPLETE | pipeline, forecast y aging |
+| SEG-007 | Campañas | COMPLETE | audiencias, plantillas y simulación |
+| SEG-008 | Mensajería segura | COMPLETE | no-op, fake, manual y red bloqueada |
+| SEG-009 | Outbox e inbound | COMPLETE | async idempotente e inbound firmado |
+| SEG-010 | Reportes y producción local | COMPLETE | reportes, seguridad, observabilidad y perfil endurecido |
+| SEG-011 | Validación integral | COMPLETE | dos recorridos reproducibles y evidencia |
+| UX-001 | Experiencia de operador | COMPLETE | español, orientación, diálogos, accesibilidad y responsive |
+| UX-002 | Contactabilidad y paginación | COMPLETE | reglas coherentes y paginación real |
 
-## SEG-002 — Completo
+## Capacidades completas
 
-- [x] organización bootstrap y backfill seguro;
-- [x] usuarios persistentes con contraseña hasheada;
-- [x] roles, permisos y membresías;
-- [x] sesión cookie same-origin con CSRF;
-- [x] login, logout, expiración e invalidación;
-- [x] bloqueo temporal y usuario inactivo;
-- [x] tenant isolation;
-- [x] auditoría de autenticación;
-- [x] UI de login y usuarios;
-- [x] migración desde vacío y V1-V5;
-- [x] pruebas y checkpoint verde.
+### Plataforma y seguridad
 
-## SEG-003 — Completo
-
-- [x] CRUD integral y archivo/restauración de prospectos;
-- [x] múltiples contactos normalizados;
-- [x] propietario persistente, prioridad, score y próxima acción;
-- [x] búsqueda, filtros, orden, paginación y CSV seguro;
-- [x] optimistic locking con `409` y manejo UI;
-- [x] ciclo comercial e historial de transiciones;
-- [x] autorización, auditoría y tenant isolation;
-- [x] migración, backend, frontend, smoke y regresiones.
-
-## SEG-004 — Completo
-
-- [x] notas sanitizadas y eliminación lógica;
-- [x] actividades tipadas con metadata JSONB;
-- [x] tareas, responsables, recordatorios y estados;
-- [x] próxima acción derivada;
-- [x] timeline paginado y tenant-scoped;
-- [x] integración PostgreSQL y recorrido UI ejecutado.
-
-## SEG-005 — Completo
-
-- [x] acciones completas sobre revisiones ambiguas;
-- [x] comparación lado a lado;
-- [x] merge transaccional e idempotente;
-- [x] preservación de referencias y redirect del absorbido;
-- [x] API, permisos, auditoría, UI y recorrido Playwright.
-
-## SEG-006 — Completo
-
-- [x] oportunidades con control optimista e historial;
-- [x] etapas y transiciones ganada/perdida;
-- [x] sincronización con prospecto y tareas;
-- [x] pipeline, tabla, forecast y aging;
-- [x] API, permisos, auditoría, UI y E2E.
-
-## SEG-007 — Completo
-
-- [x] campañas tenant-scoped y estados seguros;
-- [x] audiencias materializadas y reproducibles;
-- [x] plantillas versionadas y renderer limitado;
-- [x] secuencias declarativas;
-- [x] aprobación y simulación sin envío.
-
-## SEG-008 — Completo
-
-- [x] contratos de email, WhatsApp, rendering, policy, dispatch e inbound;
-- [x] providers no-op y fake;
-- [x] borradores manuales mailto/deep-link;
-- [x] adaptadores reales deshabilitados por defecto y contract tests;
-- [x] prueba de inexistencia de bypass de envío.
-
-## SEG-009 — Completo
-
-- [x] transactional outbox tenant-scoped;
-- [x] worker con lock/lease/retry/dead-letter;
-- [x] idempotencia asíncrona y requeue autorizada;
-- [x] webhook fake con firma, replay protection y quarantine;
-- [x] actividad inbound, transición, parada de secuencia y tarea;
-- [x] API/UI operativa y E2E sobre stack real;
-- [x] Flyway V1–V12, Hibernate, 69/69, ArchUnit, frontend y Docker smoke.
-
-## SEG-010 — Completo
-
-- [x] inventario UI y navegación protegida;
-- [x] dashboard/reporting tenant-scoped y monedas separadas;
-- [x] búsqueda PostgreSQL paginada e indexada;
-- [x] CSV formula-safe;
-- [x] settings invariantes y tags auditados;
-- [x] threat model, PII/retención y controles automatizados;
-- [x] correlation ID, logs, Micrometer y probes;
-- [x] límites de importación y performance sintética documentada;
-- [x] accesibilidad responsive automatizada básica;
+- [x] Java 21 y Spring Boot 4.1;
+- [x] PostgreSQL 17 y Flyway V1–V13;
+- [x] Hibernate validate;
+- [x] sesión cookie HttpOnly same-origin y CSRF;
+- [x] roles, permisos y aislamiento por organización;
+- [x] auditoría JSONB y correlation ID;
+- [x] métricas y health probes;
+- [x] Docker Compose y perfil productivo local;
 - [x] backup/restore sintético;
-- [x] perfil productivo local endurecido;
-- [x] CI y validadores Windows/Unix;
-- [x] backend 79/79, frontend Vitest/Playwright y scans focales;
-- [x] dos ejecuciones limpias del validador integral (SEG-011).
+- [x] CI backend, frontend, migraciones, smoke y seguridad.
 
-## SEG-011 — Completo
+### CRM operativo
 
-- [x] checkpoint SEG-010 versionado y árbol limpio;
-- [x] primera validación completa Windows, 713,870 s;
-- [x] segunda validación limpia reproducible, 734,162 s;
-- [x] evidencia sanitizada y matriz final;
-- [x] documentación final y evidencia sanitizada versionadas.
+- [x] instituciones, prospectos, contactos y canales;
+- [x] exclusiones dominantes;
+- [x] búsqueda por institución, ubicación, contacto, correo, teléfono y etiquetas;
+- [x] filtros, orden, paginación y CSV seguro;
+- [x] notas, actividades, tareas y timeline;
+- [x] ciclo comercial e historial;
+- [x] oportunidades, pipeline, forecast y aging;
+- [x] campañas, plantillas, audiencias y simulación;
+- [x] outbox, retry, dead-letter y requeue;
+- [x] inbound firmado, replay protection, cuarentena y asociación;
+- [x] reportes, settings, usuarios y etiquetas.
 
-Contrato completo y checkpoints: `docs/execution/complete-crm-platform-plan.md`.
+### Importaciones y duplicados
 
-## Restricciones permanentes durante SEG-001
+- [x] CSV y XLSX;
+- [x] vista previa obligatoria;
+- [x] ejecución confirmada;
+- [x] idempotencia y evidencia por fila;
+- [x] resultados aceptados, excluidos, rechazados, duplicados y a revisión;
+- [x] comparación de duplicados;
+- [x] vinculación, creación separada, no duplicado, merge, descarte y defer;
+- [x] conservación segura de correo, teléfono/WhatsApp, ubicación, sitio, fuente y evidencia;
+- [x] extracción limitada a campos conocidos;
+- [x] auditoría y aislamiento por organización.
+
+### Experiencia de operador
+
+- [x] interfaz principal en español;
+- [x] diccionario centralizado de etiquetas;
+- [x] errores y éxitos orientativos;
+- [x] estados vacíos y datos faltantes explícitos;
+- [x] formularios con labels y ayudas;
+- [x] tablas con filtros, conteos y paginación;
+- [x] ficha de prospecto con revelado progresivo;
+- [x] auditoría sin JSON crudo como contenido principal;
+- [x] importaciones resumidas y navegables;
+- [x] duplicados con diferencias y consecuencias;
+- [x] diálogos accesibles sin `window.prompt` ni `window.confirm`;
+- [x] foco visible, teclado, Escape y retorno de foco;
+- [x] responsive probado en móvil;
+- [x] contactabilidad recalculada ante cambios de canales;
+- [x] paginación real de prospectos con URL persistente.
+
+## Backlog activo
+
+No existe un segmento funcional activo. El backlog siguiente es post-cierre y debe ejecutarse de forma incremental.
+
+### UX-003 — Limpieza de automatización remota
+
+Estado: `READY`
+
+Alcance:
+
+- [ ] eliminar `.github/remote-ux-trigger`;
+- [ ] eliminar `.github/workflows/remote-ux-overhaul.yml`;
+- [ ] eliminar `scripts/remote-ux-preflight.py`;
+- [ ] eliminar `scripts/remote-ux-overhaul.py`;
+- [ ] eliminar `scripts/remote-ux-postfix.py`;
+- [ ] confirmar que la CI canónica no depende de esos archivos;
+- [ ] ejecutar repository safety;
+- [ ] ejecutar `git diff --check`;
+- [ ] documentar la limpieza.
+
+Condición de aceptación:
+
+```text
+no quedan scripts de aplicación remota obsoletos
+no cambia código funcional
+CI canónica permanece intacta
+```
+
+### UX-004 — Métricas globales del dashboard
+
+Estado: `READY`
+
+Problema:
+
+Las métricas de interés y bloqueo se calculan sobre la página de prospectos cargada en el frontend.
+
+Alcance:
+
+- [ ] localizar el reporte o endpoint agregado existente;
+- [ ] exponer conteos tenant-scoped sin romper contratos;
+- [ ] evitar cargar todas las páginas;
+- [ ] actualizar dashboard;
+- [ ] añadir pruebas con más de una página;
+- [ ] validar permisos y aislamiento;
+- [ ] ejecutar backend, frontend y E2E.
+
+Criterio de aceptación:
+
+```text
+las métricas no cambian al navegar entre páginas
+los conteos representan el total de la organización
+```
+
+### UX-005 — Auditoría manual WCAG 2.1 AA
+
+Estado: `BLOCKED_MANUAL_VALIDATION`
+
+- [ ] teclado completo;
+- [ ] lector de pantalla;
+- [ ] zoom 200 %;
+- [ ] contraste medido;
+- [ ] mensajes dinámicos;
+- [ ] foco en diálogos;
+- [ ] navegación móvil;
+- [ ] registro de defectos y correcciones.
+
+### PERF-001 — Escala representativa
+
+Estado: `BLOCKED_AUTHORIZED_DATASET`
+
+- [ ] definir volúmenes objetivo;
+- [ ] generar datos sintéticos equivalentes;
+- [ ] medir búsquedas y paginación;
+- [ ] medir importaciones y duplicados;
+- [ ] medir auditoría y reportes;
+- [ ] revisar índices y consultas N+1;
+- [ ] documentar umbrales.
+
+### UX-006 — Importaciones de gran volumen
+
+Estado: `PLANNED`
+
+- [ ] paginación backend de filas importadas;
+- [ ] filtros backend por hoja y resultado;
+- [ ] búsqueda backend;
+- [ ] conservar resumen y revelado progresivo;
+- [ ] validar aislamiento e idempotencia.
+
+### UX-007 — Navegadores y navegación móvil
+
+Estado: `PLANNED`
+
+- [ ] Playwright Firefox;
+- [ ] Playwright WebKit;
+- [ ] evaluar drawer móvil;
+- [ ] comprobar scroll y modales;
+- [ ] corregir únicamente defectos observables.
+
+### TECH-001 — Modularización gradual del frontend
+
+Estado: `PLANNED`
+
+- [ ] inventariar componentes dentro de `frontend/src/App.tsx`;
+- [ ] extraer por módulo sin cambiar comportamiento;
+- [ ] evitar cambio de framework;
+- [ ] mantener pruebas E2E;
+- [ ] no realizar reformateo masivo.
+
+## Pendientes externos
+
+### EXT-001 — Validador Unix integral en host real
+
+Estado: `IMPLEMENTED_NOT_RUN`
+
+La sintaxis Bash, CI Unix y preflight contenedorizado pasaron. Falta una ejecución integral en un host Unix real.
+
+### EXT-002 — XLSX real
+
+Estado: `BLOCKED_EXTERNAL_FILE`
+
+No incorporar el archivo a Git, CI, imágenes ni documentación. Solo podrá evaluarse desde un entorno autorizado y con datos tratados según la política definida.
+
+### EXT-003 — Producción
+
+Estado: `NOT_AUTHORIZED`
+
+- [ ] infraestructura objetivo;
+- [ ] secretos administrados;
+- [ ] backup/restore y rollback;
+- [ ] observabilidad y alertas;
+- [ ] revisión de privacidad;
+- [ ] pruebas de carga;
+- [ ] autorización formal.
+
+### EXT-004 — Proveedores reales
+
+Estado: `IMPLEMENTED_NOT_CONNECTED`
+
+- [ ] revisión separada de Gmail/SMTP;
+- [ ] revisión separada de WhatsApp Cloud;
+- [ ] límites y rate limiting;
+- [ ] idempotencia con proveedor;
+- [ ] kill switch probado;
+- [ ] autorización de comunicaciones.
+
+## Restricciones permanentes
 
 ```text
 SENDING_ENABLED=false
 SENDING_DRY_RUN=true
 SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
+EMAIL_PROVIDER_MODE=NOOP
+WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 ```
 
-No versionar `.env`, `validation-output/`, datos reales, claves o credenciales. No usar `docker compose down -v` salvo destrucción intencional ni `docker system prune` como diagnóstico normal.
+No versionar `.env`, `validation-output/`, secretos, credenciales o datos reales. No desplegar ni habilitar red real dentro de tareas de UX, mantenimiento o documentación.
+
+## Evidencia
+
+```text
+docs/status.md
+docs/estado-integral-y-roadmap.md
+docs/next-step.md
+docs/ux-operador.md
+docs/validation/COMPLETE-CRM-matrix.md
+docs/validation/UX-operator-overhaul-2026-07-23.md
+docs/validation/UX-contactability-pagination-2026-07-23.md
+```
