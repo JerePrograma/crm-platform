@@ -1,125 +1,76 @@
 # Estado actual
 
-Actualizado: 2026-07-23
+Actualizado: 2026-07-24
 
-La descripción exhaustiva del producto, la arquitectura, el enfoque UX, las validaciones y el roadmap se encuentra en:
-
-```text
-docs/estado-integral-y-roadmap.md
-```
-
-Este archivo conserva el resumen operativo que debe consultarse antes de iniciar cualquier cambio.
-
-## Repositorio
+## Repositorio canónico
 
 ```text
 repositorio: JerePrograma/crm-platform
-rama predeterminada: main
-rama canónica: main
-último commit funcional: 19732dec9638cd47fee4b39ac41c5968693b5b7a
-último cierre UX principal: 8d12f8ff772d3445440e4419b22d5c81b102cb15
-producción: NO DESPLEGADA
-comunicaciones reales: DESHABILITADAS
-proveedores externos: IMPLEMENTADOS_NO_CONECTADOS
-lote real: FUERA_DE_GIT_CI_E_IMÁGENES
+rama única: main
+HEAD verificado antes de la consolidación: f25051884b7aadd5837286dedd9ae0eee899cb5a
+baseline funcional publicado: 83e181ce614f145bbfe141cc7603c3042569be51
+hardening remoto del parser: IMPLEMENTED_NOT_FULLY_VALIDATED
+producción: NOT_AUTHORIZED / NOT_DEPLOYED
+comunicaciones reales: DISABLED_BY_POLICY
+proveedores reales: IMPLEMENTED_NOT_CONNECTED
+XLSX real: OUTSIDE_GIT_CI_IMAGES
 ```
 
-`main` es la única fuente de verdad. No debe recuperarse trabajo desde ramas históricas sin demostrar que contiene cambios exclusivos y compatibles.
+`main` es la única fuente de verdad. La comparación remota confirmó que `f250518...` estaba exactamente un commit por delante de `83e181c`, únicamente por `AGENTS.md` y `docs/continuity/`.
 
 ## Veredicto
 
-El CRM está **funcionalmente completo y validado para demostración, evaluación interna y operación comercial segura sin envíos reales**.
+El CRM publicado conserva el cierre funcional previo para demostración, evaluación interna y operación comercial segura sin envíos reales.
 
-No está autorizado ni validado para producción real. No existe endpoint de envío real y no deben conectarse Gmail, SMTP, WhatsApp Cloud, secretos o datos reales sin una fase separada y autorización explícita.
+La consolidación remota del 24 de julio corrigió los validadores versionados para:
 
-## Segmentos
+- trabajar sobre `main`;
+- parsear `.Config.Env` como arreglo JSON real;
+- comprobar membresía exacta de las siete guardas;
+- fallar ante JSON vacío, inválido o con raíz no-array;
+- ejecutar regresiones PowerShell y Node;
+- no imprimir el entorno completo ni debilitar el fail-closed.
 
-| ID | Estado | Resumen |
-|---|---|---|
-| SEG-000 | COMPLETE | repositorio, continuidad y documentación canónica |
-| SEG-001 | COMPLETE | vertical slice, persistencia, importación, seguridad y CI |
-| SEG-002 | COMPLETE | identidad, organizaciones, usuarios, sesiones y RBAC |
-| SEG-003 | COMPLETE | prospectos operativos, contactos, búsqueda y ciclo comercial |
-| SEG-004 | COMPLETE | actividades, notas, tareas y timeline |
-| SEG-005 | COMPLETE | resolución transaccional de duplicados |
-| SEG-006 | COMPLETE | oportunidades, pipeline, forecast y aging |
-| SEG-007 | COMPLETE | campañas, audiencias, plantillas y simulación |
-| SEG-008 | COMPLETE | mensajería segura y adaptadores desconectados |
-| SEG-009 | COMPLETE | outbox PostgreSQL, workers e inbound de prueba |
-| SEG-010 | COMPLETE | reportes, seguridad, observabilidad y perfil productivo local |
-| SEG-011 | COMPLETE | validación integral reproducible y cierre |
-| UX-2026-07-23 | COMPLETE | experiencia de operador en español y flujos guiados |
-| UX-CONTACTABILITY | COMPLETE | contactabilidad coherente y paginación real de prospectos |
+Ese hardening está implementado en `main`, pero no puede declararse cerrado: faltan PowerShell 5.1, Docker, `productionProfileSmoke`, `finalTreeClean` y las dos corridas integrales limpias sobre el mismo commit.
 
-## Arquitectura vigente
+## Candidato post-hardening histórico
 
-- Java 21 y Spring Boot 4.1.
-- PostgreSQL 17.
-- Flyway V1–V13.
-- Hibernate validate.
-- Spring Security, sesión HttpOnly same-origin, CSRF, RBAC y tenant isolation.
-- React, TypeScript strict y Vite.
-- Vitest y Playwright Chromium.
-- Docker Compose, Testcontainers, ArchUnit y Maven Verify.
-- OpenAPI, RFC 7807, auditoría JSONB, métricas y health probes.
+```text
+tree documentado: 9e058d7044415b80af554ab8ae4fe3170585b1c9
+estado remoto: NOT_AVAILABLE_AS_COMMIT_OR_BRANCH
+estado de integración: NOT_INTEGRATED
+```
 
-## Funcionalidad disponible
+No se localizaron objetos remotos verificables que permitan integrar ese candidato. No se reconstruyó por inferencia y no se usaron patches locales inaccesibles.
 
-- dashboard y reportes;
-- prospectos, instituciones, contactos y canales;
-- búsqueda por institución, ubicación, sitio, contacto, correo, teléfono y etiquetas;
-- filtros, orden, paginación y URL persistente;
-- notas, actividades, tareas y timeline;
-- importación CSV/XLSX con vista previa y ejecución confirmada;
-- exclusiones dominantes;
-- duplicados exactos y ambiguos;
-- vinculación, creación independiente, merge, descarte y postergación;
-- oportunidades, pipeline, forecast y aging;
-- campañas, plantillas, audiencias congeladas y simulación;
-- borradores y enlaces manuales;
-- outbox, worker, retry, dead-letter y requeue;
-- inbound de prueba firmado, replay protection, cuarentena y asociación;
-- auditoría, settings, usuarios, roles, cuenta y etiquetas.
+## Cambios versionados en esta consolidación
 
-## Experiencia de operador
+- `scripts/container-env-assertions.ps1`;
+- `scripts/test-container-env-assertions.ps1`;
+- `scripts/assert-container-env.js`;
+- `scripts/test-container-env-assertions.js`;
+- `scripts/validate-complete-crm.ps1`;
+- `scripts/validate-complete-crm.sh`;
+- `scripts/verify-production-profile.ps1`;
+- `scripts/verify-production-profile.sh`.
 
-Implementado y validado:
+Evidencia:
 
-- textos principales en español claro;
-- etiquetas técnicas centralizadas en `frontend/src/uiLabels.ts`;
-- navegación y títulos humanizados;
-- formularios con orientación y validación;
-- errores y éxitos comprensibles;
-- estados vacíos y datos faltantes explícitos;
-- tablas con filtros, conteos, scroll y paginación;
-- ficha de prospecto organizada mediante revelado progresivo;
-- importaciones con resumen, filtros, búsqueda y paginación visual;
-- auditoría con resumen legible y datos técnicos expandibles;
-- diálogos accesibles en lugar de `window.prompt` y `window.confirm`;
-- foco visible, teclado, Escape, focus trap y retorno de foco;
-- responsive para escritorio y móvil;
-- controles táctiles mínimos y reducción de movimiento.
+```text
+docs/validation/remote-main-hardening-2026-07-24.md
+```
 
-## Correcciones funcionales de UX
+## Causa raíz corregida
 
-### Duplicados
+Los validadores canónicos trataban el JSON completo de:
 
-`CREATE_SEPARATE` y `MARK_NOT_DUPLICATE` conservan de forma validada institución, localidad, provincia, categoría, sitio, fuente, evidencia, prioridad, fecha de verificación, correo, teléfono/WhatsApp e identificador externo seguro.
+```text
+docker inspect <container> --format {{json .Config.Env}}
+```
 
-La extracción se limita a campos conocidos mediante `SanitizedDuplicateImportData`. No se persiste JSON arbitrario.
+como un string y buscaban valores mediante regex o `grep`. La nueva implementación convierte el JSON en una colección real y exige coincidencia exacta.
 
-### Contactabilidad
-
-- sin correo, teléfono ni WhatsApp utilizable, el prospecto queda en `NEEDS_ENRICHMENT`;
-- una web no convierte por sí sola al prospecto en contactable;
-- las exclusiones siguen dominando;
-- crear o eliminar contactos recalcula la condición;
-- agregar, modificar o eliminar canales recalcula la condición;
-- vista previa y ejecución de importación usan la misma regla.
-
-### Paginación
-
-La pantalla de prospectos consume la paginación real de la API y conserva `q`, `status` y `page` en la URL.
+Además, los validadores integrales todavía exigían `feat/complete-crm-platform`; ahora exigen `main`, en línea con `AGENTS.md`.
 
 ## Seguridad vigente
 
@@ -136,96 +87,42 @@ WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 Permanece prohibido:
 
 - desplegar producción sin autorización;
-- habilitar o probar envíos reales;
-- agregar un endpoint de envío;
-- incluir secretos o `.env` en Git;
-- usar datos reales en código, pruebas o documentación;
-- importar el XLSX real en Git, CI o imágenes;
-- debilitar exclusiones, idempotencia, CSRF, permisos o tenant isolation.
+- habilitar envíos reales;
+- conectar credenciales o proveedores;
+- incorporar `.env`, secretos, ZIP de evidencia, logs o datos reales;
+- incorporar `gestudio_lote_100_prospectos.xlsx`;
+- debilitar RBAC, tenant isolation, CSRF, exclusiones o idempotencia.
 
-## Evidencia ejecutada
+## Validación actual
 
-### Cierre integral de plataforma
+| Gate | Estado |
+|---|---|
+| inspección y comparación remota | EXECUTED_PASS |
+| self-test Node del parser | EXECUTED_PASS |
+| self-test PowerShell | IMPLEMENTED_NOT_RUN |
+| parser conectado al validador Windows | IMPLEMENTED_NOT_RUN |
+| parser conectado al validador Unix | IMPLEMENTED_NOT_RUN |
+| `productionProfileSmoke` | IMPLEMENTED_NOT_RUN |
+| `finalTreeClean` | IMPLEMENTED_NOT_RUN |
+| validador integral corrida 1 | IMPLEMENTED_NOT_RUN |
+| validador integral corrida 2 | IMPLEMENTED_NOT_RUN |
+| CI del commit final | PENDING_VERIFICATION |
 
-```text
-GitHub Actions run: 29951586239
-commit: b904ff37e506f058dab351c2b941e13ee4ed9981
-resultado: 22/22 jobs success
-```
+No debe interpretarse código versionado como `FUNCTIONAL_PASS`.
 
-Incluyó backend, frontend, migraciones, smoke, perfil productivo, backup/restore, mensajería, outbox, inbound y dependency scan.
+## Capacidades funcionales publicadas previamente
 
-### Experiencia de operador
+Permanecen las capacidades SEG-000–SEG-011 y los cierres UX/contactabilidad ya documentados en la historia: identidad, RBAC, tenant isolation, prospectos, contactos, importaciones, duplicados, actividades, tareas, oportunidades, campañas, mensajería simulada, outbox, inbound de prueba, reporting, auditoría, configuración y frontend operativo.
 
-```text
-commit final: 8d12f8ff772d3445440e4419b22d5c81b102cb15
-workflow base: 9b1d6483864291a35cce3e3ad9a2932268353fdd
-run: 30034176306
-resultado: PASS
-```
+El nuevo candidato local que añadía métricas tenant-wide, paginación adicional, drawer, multibrowser y retorno de foco explícito no se declara publicado mientras no exista en el contenido remoto verificable.
 
-### Contactabilidad y paginación
+## Próximo paso obligatorio
 
-```text
-commit final: 19732dec9638cd47fee4b39ac41c5968693b5b7a
-workflow base: 42d1574e7558f544e5894aef1a69a72a7e08da6f
-run: 30036648327
-resultado: PASS
-```
+Desde un checkout limpio de `main` en Windows con Docker operativo:
 
-Validaciones confirmadas en los cierres UX:
-
-- Spotless;
-- pruebas específicas backend;
-- Maven Verify completo;
-- npm ci;
-- TypeScript typecheck;
-- Vitest;
-- build frontend;
-- Docker Compose fail-closed;
-- Playwright Chromium;
-- repository safety;
-- `git diff --check`;
-- ausencia de diálogos nativos en `frontend/src`.
-
-## Pendientes prioritarios
-
-1. Corregir las métricas del dashboard que hoy calculan interés y bloqueo sobre la página cargada, no sobre el total tenant-scoped.
-2. Eliminar `.github/remote-ux-trigger`, `.github/workflows/remote-ux-overhaul.yml` y los scripts `scripts/remote-ux-*.py`; están inertes por su guarda fija, pero son deuda técnica.
-3. Ejecutar auditoría manual WCAG 2.1 AA con lector de pantalla, zoom, contraste y teclado completo.
-4. Ejecutar pruebas de escala con volúmenes representativos y datos sintéticos autorizados.
-5. Validar Firefox y WebKit.
-
-Pendientes de prioridad media:
-
-- paginación y filtros backend para importaciones de varios miles de filas;
-- modularización gradual de `frontend/src/App.tsx`;
-- posible drawer móvil si la navegación horizontal resulta insuficiente;
-- skeletons más completos para operaciones lentas;
-- revisión visual manual de contraste y estados disabled.
-
-## Estado externo
-
-```text
-Gmail: IMPLEMENTED_NOT_CONNECTED
-WhatsApp Cloud: IMPLEMENTED_NOT_CONNECTED
-XLSX real: BLOCKED_EXTERNAL_FILE
-validador Unix integral en host real: IMPLEMENTED_NOT_RUN
-producción: NOT_AUTHORIZED / NOT_DEPLOYED
-```
-
-La sintaxis Bash, los jobs Unix de CI y los preflight contenedorizados sí pasaron. La ausencia de una corrida integral en un host Unix real no invalida las validaciones Windows y CI, pero sigue siendo evidencia pendiente.
-
-## Fuentes
-
-```text
-docs/estado-integral-y-roadmap.md
-docs/next-step.md
-docs/backlog.md
-docs/ux-operador.md
-docs/execution/complete-crm-platform-plan.md
-docs/execution/complete-crm-platform-progress.md
-docs/validation/COMPLETE-CRM-matrix.md
-docs/validation/UX-operator-overhaul-2026-07-23.md
-docs/validation/UX-contactability-pagination-2026-07-23.md
-```
+1. ejecutar `scripts/test-container-env-assertions.ps1`;
+2. ejecutar dos veces `scripts/validate-complete-crm.ps1` sobre el mismo commit;
+3. exigir `FUNCTIONAL_PASS` en ambas salidas JSON;
+4. comprobar `productionProfileSmoke` y `finalTreeClean`;
+5. verificar `git diff --check` y repository safety;
+6. comprobar GitHub Actions del SHA exacto.
