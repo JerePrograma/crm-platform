@@ -1,6 +1,12 @@
-# Continuidad de la ejecución integral
+# Continuidad y próximos pasos
 
-Actualizado: 2026-07-22
+Actualizado: 2026-07-23
+
+Fuente detallada:
+
+```text
+docs/estado-integral-y-roadmap.md
+```
 
 ## Estado
 
@@ -17,66 +23,194 @@ SEG-008 COMPLETE
 SEG-009 COMPLETE
 SEG-010 COMPLETE
 SEG-011 COMPLETE
+UX_OPERATOR_OVERHAUL COMPLETE
+CONTACTABILITY_SYNC COMPLETE
+PROSPECT_PAGINATION COMPLETE
 BRANCH main
-LOCAL_INTEGRATION FAST_FORWARD_COMPLETE
-REMOTE_PUBLICATION EXECUTED_PASS
-REMOTE_CI_VALIDATED_COMMIT b904ff37e506f058dab351c2b941e13ee4ed9981
-REMOTE_CI_RUN 29951586239
-REMOTE_CI EXECUTED_PASS_22_OF_22
-BASELINE 7db7e4c EXECUTED_PASS
-IDENTITY_COMMIT 0546e6e EXECUTED_PASS
-PRODUCCIÓN NOT_DEPLOYED
-COMUNICACIONES REALES DISABLED_BY_POLICY
+FUNCTIONAL_HEAD 19732dec9638cd47fee4b39ac41c5968693b5b7a
+PRODUCTION NOT_DEPLOYED
+REAL_COMMUNICATIONS DISABLED_BY_POLICY
 ```
 
-## Próximo paso externo
+No existe un segmento funcional activo. El CRM está cerrado para demostración y operación segura simulada, pero tiene deuda y validaciones pendientes antes de una fase productiva.
 
-No queda un segmento funcional activo. La implementación completa está
-integrada en `main`, publicada en `origin/main` y validada remotamente por
-GitHub Actions run `29951586239`, con 22/22 jobs exitosos.
+## Próximo cambio recomendado
 
-Las acciones pendientes son externas al cierre: ejecutar el validador integral
-en un host Unix real, disponer del XLSX autorizado o iniciar una revisión
-separada para proveedores y despliegue. Conectar credenciales, probar
-comunicaciones reales o desplegar requiere autorización futura explícita.
+El siguiente cambio debe ser pequeño y autónomo:
 
-Contrato y evidencia viva:
+### 1. Limpieza de automatización remota obsoleta
+
+Eliminar únicamente:
 
 ```text
-docs/execution/complete-crm-platform-plan.md
-docs/execution/complete-crm-platform-progress.md
+.github/remote-ux-trigger
+.github/workflows/remote-ux-overhaul.yml
+scripts/remote-ux-preflight.py
+scripts/remote-ux-overhaul.py
+scripts/remote-ux-postfix.py
+```
+
+Motivo:
+
+- fueron utilizados para aplicar la primera etapa UX de forma remota;
+- la guarda del workflow depende de una historia fija que ya no coincide con `main`;
+- el workflow está inerte, pero conservar código operativo obsoleto confunde el mantenimiento;
+- la eliminación no debe tocar la implementación funcional ni la CI canónica.
+
+Validaciones mínimas:
+
+```text
+git diff --check
+bash scripts/check-repository-safety.sh
+revisión de .github/workflows y scripts
+```
+
+### 2. Corregir métricas parciales del dashboard
+
+Problema:
+
+- `frontend/src/App.tsx` calcula “prospectos con interés” y “contacto bloqueado” sobre `prospects`, que contiene solo la página actual;
+- después de introducir paginación real, esas métricas pueden ser menores que el total real.
+
+Resultado esperado:
+
+- usar un endpoint agregado tenant-scoped existente o ampliarlo de forma compatible;
+- no cargar todas las páginas para calcular métricas;
+- mantener etiquetas y seguridad existentes;
+- añadir prueba backend y frontend que demuestre que la métrica no depende de la página seleccionada.
+
+## Roadmap prioritario
+
+### Prioridad alta
+
+1. eliminar la automatización remota obsoleta;
+2. corregir métricas parciales del dashboard;
+3. ejecutar auditoría manual WCAG 2.1 AA;
+4. probar escala con datos sintéticos equivalentes a producción;
+5. validar Firefox y WebKit.
+
+### Prioridad media
+
+1. llevar búsqueda, filtros y paginación de filas de importación al backend para lotes grandes;
+2. dividir `frontend/src/App.tsx` por módulos sin cambiar contratos;
+3. evaluar drawer móvil frente a la navegación horizontal actual;
+4. ampliar skeletons y estados de carga;
+5. revisar contraste y estados disabled manualmente;
+6. normalizar términos técnicos residuales en OpenAPI y paneles avanzados.
+
+### Prioridad baja
+
+1. internacionalización formal;
+2. preferencias de densidad;
+3. atajos de teclado;
+4. personalización visual avanzada;
+5. telemetría UX anonimizada con política aprobada.
+
+## Validaciones vigentes
+
+### Plataforma completa
+
+```text
+run: 29951586239
+commit: b904ff37e506f058dab351c2b941e13ee4ed9981
+resultado: 22/22 jobs success
+```
+
+### Mejora UX
+
+```text
+run: 30034176306
+commit funcional: 8d12f8ff772d3445440e4419b22d5c81b102cb15
+resultado: PASS
+```
+
+### Contactabilidad y paginación
+
+```text
+run: 30036648327
+commit funcional: 19732dec9638cd47fee4b39ac41c5968693b5b7a
+resultado: PASS
+```
+
+## Pendientes externos
+
+- validador integral en un host Unix real;
+- evaluación del XLSX real autorizado fuera de Git y CI;
+- infraestructura productiva;
+- gestión de secretos;
+- conexión de proveedores;
+- pruebas con red real;
+- autorización de despliegue y comunicaciones.
+
+Ninguno de estos puntos debe resolverse dentro de un cambio UX o de mantenimiento general.
+
+## Condiciones para una fase productiva
+
+Antes de producción deben existir:
+
+- plan de despliegue y rollback;
+- backup/restore probado en el entorno objetivo;
+- secretos fuera de Git;
+- revisión de privacidad y retención;
+- auditoría manual de accesibilidad;
+- pruebas de carga;
+- observabilidad y alertas;
+- proveedores reales revisados en una fase separada;
+- límites, kill switch e idempotencia verificados;
+- CI verde sobre el commit exacto;
+- autorización explícita.
+
+## Contrato de seguridad
+
+Debe permanecer:
+
+```text
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
+EMAIL_PROVIDER_MODE=NOOP
+WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
+```
+
+No realizar:
+
+- despliegue productivo;
+- envío real;
+- conexión de credenciales;
+- importación de datos reales en Git, CI o imágenes;
+- migraciones destructivas;
+- reescritura del frontend;
+- debilitamiento de permisos, exclusiones, CSRF, idempotencia o tenant isolation.
+
+## Flujo Git para el próximo cambio
+
+```text
+1. git status --short
+2. git branch --show-current
+3. git remote -v
+4. git fetch origin
+5. git switch main
+6. git pull --ff-only origin main
+7. detenerse ante cambios locales, conflicto o divergencia
+8. modificar solo archivos del alcance
+9. ejecutar pruebas específicas y generales
+10. ejecutar git diff --check
+11. revisar status y diff completo
+12. git add únicamente archivos relacionados
+13. commit lógico
+14. git push origin main solo con validaciones verdes
+```
+
+## Evidencia viva
+
+```text
+docs/status.md
+docs/estado-integral-y-roadmap.md
+docs/backlog.md
+docs/ux-operador.md
 docs/validation/COMPLETE-CRM-matrix.md
-docs/validation/SEG-002-identity-rbac-2026-07-21.md
-docs/validation/SEG-003-004-operational-crm-2026-07-21.md
-docs/validation/SEG-005-duplicate-resolution-2026-07-21.md
-docs/validation/SEG-006-opportunities-pipeline-2026-07-21.md
-docs/validation/SEG-007-campaign-simulation-2026-07-21.md
-docs/validation/SEG-008-safe-messaging-2026-07-21.md
-docs/validation/SEG-009-transactional-outbox-inbound-2026-07-22.md
-docs/validation/SEG-010-operations-production-2026-07-22.md
-docs/validation/SEG-010-performance-accessibility-2026-07-22.md
-docs/validation/SEG-011-complete-crm-closure-2026-07-22.md
-docs/segments/SEG-011.md
-docs/segments/CRM-completion.md
+docs/validation/UX-operator-overhaul-2026-07-23.md
+docs/validation/UX-contactability-pagination-2026-07-23.md
 ```
-
-## Comandos de revisión
-
-```powershell
-Set-Location C:\laburo\crm-platform
-git branch --show-current
-git status --short
-git log --oneline -10
-Get-Content docs\execution\complete-crm-platform-progress.md
-Get-Content docs\validation\COMPLETE-CRM-matrix.md
-```
-
-## Restricciones permanentes
-
-- no desplegar producción;
-- no habilitar ni probar envíos reales;
-- no incorporar datos reales a Git, CI, imágenes o evidencia;
-- no versionar `.env` ni `validation-output/`;
-- no borrar el volumen PostgreSQL salvo prueba destructiva aislada y explícita;
-- no abrir PR, crear merges ni realizar nuevos pushes sin un cambio posterior
-  revisado, validado y autorizado.
