@@ -4,110 +4,157 @@ Actualizado: 2026-07-24
 
 ## Objetivo inmediato
 
-Cerrar el candidato post-hardening de forma segura, integrarlo sobre el `main` actual y publicarlo únicamente después de obtener evidencia verde sobre el contenido exacto que se enviará.
+Validar funcionalmente el hardening remoto del parser `.Config.Env` ya publicado en `main`. No comenzar otra mejora funcional antes de cerrar este gate.
 
-## Primer paso obligatorio
+## Estado de entrada
 
-Leer todo `docs/continuity/` y luego inspeccionar:
+```text
+rama: main
+parser PowerShell: IMPLEMENTED_NOT_RUN
+parser Node: EXECUTED_PASS en self-test aislado
+productionProfileSmoke: IMPLEMENTED_NOT_RUN
+finalTreeClean: IMPLEMENTED_NOT_RUN
+validación integral 1: IMPLEMENTED_NOT_RUN
+validación integral 2: IMPLEMENTED_NOT_RUN
+candidato histórico 9e058d...: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
+```
+
+## Lectura obligatoria
 
 - `AGENTS.md`;
+- `docs/continuity/README.md`;
 - `docs/status.md`;
 - `docs/next-step.md`;
 - `docs/backlog.md`;
 - `docs/estado-integral-y-roadmap.md`;
 - `docs/validation/COMPLETE-CRM-matrix.md`;
-- scripts de validación;
-- configuración Docker/Compose;
-- diff real del candidato.
+- `docs/validation/remote-main-hardening-2026-07-24.md`;
+- los cuatro scripts de aserción/test;
+- los cuatro validadores modificados;
+- Compose y Dockerfiles afectados.
 
-No asumir rutas, nombres, comandos ni estado remoto.
+## Inicio seguro
 
-## Investigación del fallo pendiente
+```powershell
+git status --short
+git branch --show-current
+git remote -v
+git fetch origin
+git switch main
+git pull --ff-only origin main
+git rev-parse HEAD
+git rev-parse origin/main
+```
 
-La última ejecución levantó correctamente el perfil productivo y mostró `SENDING_ENABLED=false`, pero la aserción del harness la reportó como ausente.
+Detenerse ante cambios locales no relacionados, divergencia, remoto inesperado o falta de fast-forward.
 
-Localizar:
+## Validación focalizada
 
-- función que captura `docker inspect ... {{json .Config.Env}}`;
-- tipo de dato devuelto;
-- comprobación de membresía;
-- serialización o saltos de línea;
-- pruebas existentes del script;
-- diferencias PowerShell 5.1/7.
+Ejecutar primero:
 
-Corregir el parser o la aserción, no debilitar el gate.
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-powershell-syntax.ps1
+powershell -ExecutionPolicy Bypass -File scripts/test-container-env-assertions.ps1
+node scripts/test-container-env-assertions.js
+```
 
-## Integración
+Confirmar en PowerShell 5.1:
 
-El candidato histórico parte de `83e181c`, pero la documentación de continuidad habrá adelantado `main`.
+- guardas completas → PASS;
+- falta `SENDING_ENABLED=false` → FAIL;
+- `SENDING_ENABLED=true` → FAIL;
+- JSON inválido → FAIL;
+- líneas vacías → PASS;
+- el resultado de `ConvertFrom-Json` se maneja como colección real;
+- no se imprime el entorno completo.
 
-Procedimiento:
+## Validación integral
 
-1. confirmar `git status --short`, rama y remotos;
-2. detenerse ante cambios locales ajenos;
-3. `git fetch origin`;
-4. `git switch main`;
-5. `git pull --ff-only origin main`;
-6. conservar el commit documental actual;
-7. reconstruir o aplicar los cambios del candidato sobre ese `main`;
-8. resolver únicamente conflictos reales revisados;
-9. calcular el nuevo tree final;
-10. revisar diff completo contra el `main` documental.
+Ejecutar dos veces, sin modificar el commit entre corridas:
 
-No usar force push, rebase de commits publicados ni reset destructivo.
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
+powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
+```
 
-## Validación mínima de reanudación
+Exigir en ambos JSON:
 
-- prueba específica de la aserción de entorno;
-- `productionProfileSmoke`;
-- `finalTreeClean`;
-- `git diff --check`;
+```text
+status=FUNCTIONAL_PASS
+productionProfileSmoke=FUNCTIONAL_PASS
+finalTreeClean=FUNCTIONAL_PASS
+```
+
+Revisar además:
+
+- parser y self-tests;
+- backend format/unit/integration/architecture/security;
+- frontend install/typecheck/unit/build;
+- Compose y health;
+- dependency scans;
+- migraciones;
+- outbox/inbound;
+- Playwright;
+- siete guardas exactas;
+- cero estados enviados;
+- backup/restore;
 - repository safety;
-- status y diff final.
+- tree limpio.
 
-## Validación de cierre
+No convertir bloqueos externos de red en PASS.
 
-Antes de publicar, ejecutar el contrato canónico requerido por el repositorio sobre el commit exacto. Si la documentación o integración alteró archivos cubiertos, no reutilizar evidencia antigua para esas fases.
+## Después de validar
 
-El cierre histórico exige dos corridas limpias consecutivas del validador integral. Confirmar si esa regla sigue vigente en `AGENTS.md` y cumplirla, salvo instrucción explícita del usuario que cambie el contrato.
+1. ejecutar `git diff --check`;
+2. ejecutar repository safety;
+3. revisar `git status --short`;
+4. comprobar que no hay `.env`, XLSX, ZIP, logs, `validation-output/` ni secretos versionados;
+5. comprobar CI del SHA exacto;
+6. actualizar evidencia y documentación solo con resultados ejecutados.
 
-## Documentación a actualizar al cerrar
+## Candidato histórico
 
-- `docs/status.md`;
-- `docs/next-step.md`;
-- `docs/backlog.md`;
-- `docs/estado-integral-y-roadmap.md`;
-- `docs/execution/complete-crm-platform-progress.md`;
-- `docs/validation/COMPLETE-CRM-matrix.md`;
-- documento de evidencia nuevo;
-- `CHANGELOG.md`;
-- `README.md`;
-- estos archivos de continuidad si el estado cambia.
+No intentar integrar `9e058d7044415b80af554ab8ae4fe3170585b1c9` desde la documentación.
+
+Solo puede retomarse si aparecen:
+
+- los cuatro patches;
+- un manifiesto de hashes verificable;
+- o commits/ramas remotos que materialicen el contenido.
+
+En ese caso:
+
+1. verificar SHA-256;
+2. usar clon temporal del `main` actual;
+3. ejecutar `git apply --check` en orden;
+4. revisar cada diff;
+5. preservar continuidad;
+6. validar nuevamente dos veces.
 
 ## Condiciones de parada
 
-Detenerse sin commit ni push ante:
+Detenerse sin nuevos commits ni push cuando:
 
-- cambios locales previos no relacionados;
-- divergencia o conflicto remoto;
-- evidencia inconsistente;
-- secretos o datos reales;
-- fallo que no pueda demostrarse como previo;
-- necesidad de migración destructiva;
-- incompatibilidad del candidato con el `main` actual;
-- necesidad de force push;
-- validaciones requeridas fallidas.
+- falle el self-test PowerShell;
+- falle `productionProfileSmoke`;
+- falle `finalTreeClean`;
+- una corrida integral no termine `FUNCTIONAL_PASS`;
+- el segundo recorrido use otro commit;
+- aparezcan secretos o datos reales;
+- se requiera force push;
+- el remoto avance y no pueda reconciliarse por fast-forward;
+- CI falle y el fallo no pueda resolverse dentro del alcance.
 
-## Informe final requerido
+## Seguridad
 
-1. resumen implementado;
-2. archivos modificados;
-3. comandos ejecutados;
-4. resultado de cada validación;
-5. commit y hash;
-6. resultado del push a `main`;
-7. estado de CI;
-8. riesgos, limitaciones y pendientes;
-9. desviaciones del alcance.
+```text
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
+EMAIL_PROVIDER_MODE=NOOP
+WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
+```
 
-No afirmar ejecución sin salida de comandos.
+Producción continúa no desplegada y no se autorizan envíos reales.
