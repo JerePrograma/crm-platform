@@ -3,65 +3,48 @@
 ## Estado ejecutivo
 
 ```text
-baseline funcional previo: 83e181ce614f145bbfe141cc7603c3042569be51
-candidato post-hardening: NO PUBLICADO
-tree del candidato: 9e058d7044415b80af554ab8ae4fe3170585b1c9
+baseline funcional publicado: 83e181ce614f145bbfe141cc7603c3042569be51
+HEAD remoto antes de la consolidación: f25051884b7aadd5837286dedd9ae0eee899cb5a
+hardening parser .Config.Env: IMPLEMENTED_NOT_FULLY_VALIDATED
+candidato post-hardening local: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
 producción real: NO DESPLEGADA
 envíos reales: DESHABILITADOS
 ```
 
-La publicación de estos documentos de continuidad puede mover `origin/main` después del baseline. El SHA anterior sigue siendo la base histórica del candidato, no necesariamente la punta remota actual.
+## Verificación del remoto
 
-## Cadena reproducible del candidato
+La comparación `83e181c...main` previa a los cambios devolvió:
 
 ```text
-v6 candidate tree:
-e3a9728e717b7c8a4d92f9fab31f709bf5d66464
-
-+ locators E2E:
-24df4c7f26ffde0f044f681f9130fa254f15debd
-
-+ primera restauración de foco:
-fa8c15172dfa9a0cfa5cbd00f7aab42733d516ba
-
-+ disparador de foco explícito:
-9e058d7044415b80af554ab8ae4fe3170585b1c9
+status: ahead
+ahead_by: 1
+behind_by: 0
+commit adicional: f25051884b7aadd5837286dedd9ae0eee899cb5a
 ```
 
-Los SHAs de commits temporales cambian en cada reconstrucción; los trees son la referencia estable de contenido.
+Ese commit modificaba únicamente `AGENTS.md` y agregaba `docs/continuity/`.
 
-## Cambios incluidos en el candidato
-
-- eliminación de automatización UX remota obsoleta;
-- métricas tenant-wide del dashboard;
-- navegación accesible y drawer móvil;
-- resultados de importación paginados y filtrados en backend;
-- aislamiento tenant y corrección de búsqueda PostgreSQL;
-- paginación de outbox e inbound;
-- modularización incremental del frontend;
-- feedback para operaciones lentas;
-- reporting de destinatarios excluidos;
-- pruebas multibrowser;
-- corrección de retorno de foco explícito en WebKit;
-- alineación y endurecimiento de validadores.
-
-## Evidencia más reciente
-
-Archivo:
+## Candidato histórico
 
 ```text
-gestudio-runtime-resume-evidence-9e058d704441-20260724-124206.zip
+v6 candidate tree: e3a9728e717b7c8a4d92f9fab31f709bf5d66464
++ locators E2E: 24df4c7f26ffde0f044f681f9130fa254f15debd
++ primera restauración de foco: fa8c15172dfa9a0cfa5cbd00f7aab42733d516ba
++ disparador de foco explícito: 9e058d7044415b80af554ab8ae4fe3170585b1c9
 ```
 
-SHA-256:
+No se localizaron commits, ramas o PRs remotos correspondientes. Los patches y su manifiesto no están disponibles en GitHub. Estado correcto:
 
 ```text
-C70E6105E0D0AFA0A902BBAC2F1F7E1B0DD646F2B9406391FC405249328908ED
+REMOTE_OBJECT=NOT_FOUND
+INTEGRATION=NOT_PERFORMED
 ```
 
-Resumen estructurado:
+## Evidencia histórica del fallo
 
 ```text
+archivo: gestudio-runtime-resume-evidence-9e058d704441-20260724-124206.zip
+SHA-256: C70E6105E0D0AFA0A902BBAC2F1F7E1B0DD646F2B9406391FC405249328908ED
 status: EXECUTED_FAIL
 productionProfileSmoke: EXECUTED_FAIL
 finalTreeClean: NOT_RUN
@@ -69,72 +52,94 @@ checkoutModified: false
 remotePushPerformed: false
 ```
 
-## Interpretación exacta del último fallo
+El entorno mostrado en esa evidencia contenía las guardas seguras, pero el harness externo informó ausente `SENDING_ENABLED=false`.
 
-El perfil productivo local:
+## Causa raíz encontrada en el repositorio
 
-- seleccionó el puerto libre `18081`;
-- levantó PostgreSQL, backend y frontend como `healthy`;
-- ejecutó con los IDs de imágenes esperados;
-- mostró en el entorno del backend las guardas fail-closed, incluida `SENDING_ENABLED=false`;
-- limpió contenedores, redes y volumen creados.
+Aunque el reanudador externo no estaba versionado, el patrón defectuoso sí existía en los validadores canónicos:
 
-Sin embargo, el harness terminó con:
+- PowerShell aplicaba regex al string JSON completo;
+- Unix aplicaba `grep` al string JSON completo;
+- ambos validadores integrales exigían una rama histórica en lugar de `main`.
+
+## Corrección publicada en `main`
+
+- `scripts/container-env-assertions.ps1`;
+- `scripts/test-container-env-assertions.ps1`;
+- `scripts/assert-container-env.js`;
+- `scripts/test-container-env-assertions.js`;
+- `scripts/validate-complete-crm.ps1`;
+- `scripts/validate-complete-crm.sh`;
+- `scripts/verify-production-profile.ps1`;
+- `scripts/verify-production-profile.sh`.
+
+El parser:
+
+1. rechaza entrada vacía;
+2. parsea JSON real;
+3. exige raíz array;
+4. normaliza las entradas a string;
+5. comprueba membresía exacta;
+6. informa solo guardas faltantes;
+7. falla ante JSON inválido;
+8. no imprime secretos ni el entorno completo.
+
+## Guardas obligatorias
 
 ```text
-Falta el bloqueo de producción: SENDING_ENABLED=false
+SENDING_ENABLED=false
+SENDING_DRY_RUN=true
+SENDING_DAILY_LIMIT=0
+SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
+EMAIL_PROVIDER_MODE=NOOP
+WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 ```
 
-La evidencia demuestra que la variable sí estaba presente dentro del JSON retornado por:
+## Validación posterior al cambio
+
+| Gate | Estado |
+|---|---|
+| inspección del remoto | EXECUTED_PASS |
+| self-test Node | EXECUTED_PASS |
+| self-test PowerShell 5.1 | IMPLEMENTED_NOT_RUN |
+| sintaxis PowerShell | IMPLEMENTED_NOT_RUN |
+| sintaxis Bash | IMPLEMENTED_NOT_RUN |
+| `productionProfileSmoke` | IMPLEMENTED_NOT_RUN |
+| cleanup de recursos | IMPLEMENTED_NOT_RUN |
+| `finalTreeClean` | IMPLEMENTED_NOT_RUN |
+| repository safety | IMPLEMENTED_NOT_RUN |
+| `git diff --check` | IMPLEMENTED_NOT_RUN |
+| corrida integral 1 | IMPLEMENTED_NOT_RUN |
+| corrida integral 2 | IMPLEMENTED_NOT_RUN |
+| CI del HEAD final | PENDING_VERIFICATION |
+
+No existe evidencia suficiente para declarar `FUNCTIONAL_PASS` del nuevo HEAD.
+
+## Evidencia nueva
 
 ```text
-docker inspect <backend> --format {{json .Config.Env}}
+docs/validation/remote-main-hardening-2026-07-24.md
 ```
 
-Por tanto, el bloqueo pendiente es una aserción/parsing defectuoso del reanudador, no ausencia de la guarda en el contenedor. Aun así, el estado formal sigue siendo `EXECUTED_FAIL` porque el script no completó `finalTreeClean`.
+## Próxima acción
 
-## Próxima corrección obligatoria
-
-Localizar el script real usado para la reanudación o trasladar la corrección al validador canónico. Parsear el resultado JSON como arreglo antes de comprobar membresía. En PowerShell, el comportamiento esperado es conceptualmente:
+Desde un checkout limpio de `main` con PowerShell 5.1 y Docker:
 
 ```powershell
-$environment = $json | ConvertFrom-Json
-if ($environment -notcontains 'SENDING_ENABLED=false') {
-    throw 'Falta el bloqueo de producción: SENDING_ENABLED=false'
-}
+powershell -ExecutionPolicy Bypass -File scripts/test-container-env-assertions.ps1
+powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
+powershell -ExecutionPolicy Bypass -File scripts/validate-complete-crm.ps1
 ```
 
-No copiar este fragmento sin confirmar los nombres y tipos reales del script.
+Las dos corridas deben terminar `FUNCTIONAL_PASS` sobre el mismo commit. Hasta entonces, el hardening está implementado pero no cerrado.
 
-Después:
+## Fronteras
 
-1. ejecutar únicamente la prueba específica del parser/aserción;
-2. reanudar `productionProfileSmoke`;
-3. ejecutar `finalTreeClean`;
-4. exigir `FUNCTIONAL_PASS` en JSON estructurado;
-5. reconstruir el candidato sobre el `main` actual;
-6. ejecutar las validaciones afectadas por la nueva base documental;
-7. publicar en `main` solo si todo termina verde.
-
-## Importante sobre la nueva base remota
-
-Los archivos de `docs/continuity/` y la modificación de `AGENTS.md` son documentación añadida después del baseline del candidato. Al integrar el candidato:
-
-- no forzar `main` de vuelta a `83e181c`;
-- preservar el commit documental;
-- aplicar o cherry-pickear los cambios funcionales encima del `HEAD` actual;
-- recalcular el tree final;
-- comprobar que no haya conflictos ni cambios colaterales;
-- volver a validar los archivos afectados por la integración.
-
-## No repetir
-
-No repetir backend completo, frontend unitario, builds, migraciones, Playwright, bloqueo de envíos, cero enviados o backup/restore solo para volver a demostrar resultados ya cubiertos, salvo que:
-
-- cambie código o configuración de esas fases;
-- la evidencia no sea íntegra;
-- cambien dependencias;
-- el nuevo `main` introduzca solapamientos;
-- el validador canónico exija una corrida integral final del commit exacto.
-
-El cierre definitivo puede requerir una corrida integral sobre el commit que se publicará, aunque durante el diagnóstico se reutilicen fases anteriores.
+- producción continúa `NOT_AUTHORIZED / NOT_DEPLOYED`;
+- Gmail, SMTP y WhatsApp Cloud continúan `IMPLEMENTED_NOT_CONNECTED`;
+- no se realizaron envíos reales;
+- no se incorporó el XLSX real;
+- no se creó rama ni PR;
+- no se usó force push;
+- no se añadieron migraciones ni dependencias.
