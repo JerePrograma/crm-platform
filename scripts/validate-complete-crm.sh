@@ -32,13 +32,14 @@ cleanup() {
 trap cleanup EXIT
 exec > >(tee "$log") 2>&1
 
-[ "$(git branch --show-current)" = feat/complete-crm-platform ]
+[ "$(git branch --show-current)" = main ]
 [ -z "$(git status --porcelain)" ]
 for command in git docker node npm mvn bash; do command -v "$command" >/dev/null; done
 phase=repository-safety
 bash scripts/check-repository-safety.sh
 phase=script-syntax
 for script in scripts/*.sh; do bash -n "$script"; done
+node scripts/test-container-env-assertions.js
 phase=backend
 bash scripts/verify-backend-container.sh
 phase=frontend
@@ -55,6 +56,15 @@ docker compose --profile app up -d --wait
 bash scripts/smoke-test.sh
 backend_container=$(docker compose --profile app ps -q backend)
 backend_image=$(docker inspect "$backend_container" --format '{{.Config.Image}}')
+environment=$(docker inspect "$backend_container" --format '{{json .Config.Env}}')
+printf '%s' "$environment" | node scripts/assert-container-env.js \
+  SENDING_ENABLED=false \
+  SENDING_DRY_RUN=true \
+  SENDING_DAILY_LIMIT=0 \
+  SENDING_KILL_SWITCH=true \
+  MESSAGING_REAL_NETWORK_ALLOWED=false \
+  EMAIL_PROVIDER_MODE=NOOP \
+  WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 phase=dependency-scan
 (cd frontend && npm audit --audit-level=high)
 docker volume create crm_grype_cache >/dev/null
