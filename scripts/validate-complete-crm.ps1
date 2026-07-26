@@ -75,13 +75,19 @@ try {
     foreach ($command in @('git','docker','node','npm','mvn')) { if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command missing: $command" } }
     Invoke-Checked 'docker' @('info')
     Invoke-Checked 'docker' @('compose','version')
-    & (Join-Path $PSScriptRoot 'check-host-ports.ps1') -PostgresPort $PostgresPort -BackendPort $BackendPort -FrontendPort $FrontendPort
+    & (Join-Path $PSScriptRoot 'check-host-ports.ps1') `
+      -PostgresPort $PostgresPort `
+      -BackendPort $BackendPort `
+      -FrontendPort $FrontendPort `
+      -ProductionFrontendPort $ProductionFrontendPort
   }
   Run-Phase 'repositorySafety' { & (Join-Path $PSScriptRoot 'check-repository-safety.ps1') }
   Run-Phase 'scriptSyntax' {
     & (Join-Path $PSScriptRoot 'check-powershell-syntax.ps1')
     & (Join-Path $PSScriptRoot 'test-container-env-assertions.ps1')
+    & (Join-Path $PSScriptRoot 'test-check-host-ports.ps1')
     Invoke-Checked 'node' @('scripts/test-container-env-assertions.js')
+    Invoke-Checked 'node' @('scripts/test-check-host-ports.js')
     if (Get-Command bash -ErrorAction SilentlyContinue) {
       Get-ChildItem scripts -Filter '*.sh' | ForEach-Object {
         Invoke-Checked 'bash' @('-n', ("scripts/{0}" -f $_.Name))

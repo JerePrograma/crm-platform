@@ -137,6 +137,34 @@ complete-crm-20260724-202955.json
 SHA-256 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
 ```
 
+## VAL-002 — Preflight de `ProductionFrontendPort`
+
+Estado: `FUNCTIONAL_PASS_FOCUSED`
+
+Cambios:
+
+- `scripts/check-host-ports.ps1` acepta un cuarto puerto opcional;
+- `scripts/validate-complete-crm.ps1` proporciona `ProductionFrontendPort` durante `tooling`;
+- `scripts/check-host-ports.js` implementa el chequeo equivalente para Unix;
+- `scripts/validate-complete-crm.sh` acepta `--production-frontend-port`;
+- el smoke productivo Unix deja de fijar `18080`;
+- se agregaron regresiones PowerShell y Node.
+
+Validación ejecutada:
+
+```text
+PowerShell syntax: EXECUTED_PASS
+PowerShell free/duplicate/occupied port tests: EXECUTED_PASS
+Node free/duplicate/occupied/Docker publication tests: EXECUTED_PASS
+Bash syntax: EXECUTED_PASS
+demo collision detection: EXECUTED_PASS id=d0420be3a84d
+repository safety: EXECUTED_PASS
+git diff --check: EXECUTED_PASS
+full suites repeated: false
+```
+
+La prueba con la demo solo consulta su publicación Docker. No ejecuta `stop`, `down`, `rm` ni modifica su configuración.
+
 ## Capacidades funcionales publicadas previamente
 
 Permanecen las capacidades SEG-000–SEG-011 y los cierres UX/contactabilidad ya documentados en la historia: identidad, RBAC, tenant isolation, prospectos, contactos, importaciones, duplicados, actividades, tareas, oportunidades, campañas, mensajería simulada, outbox, inbound de prueba, reporting, auditoría, configuración y frontend operativo.
@@ -145,12 +173,13 @@ El nuevo candidato local que añadía métricas tenant-wide, paginación adicion
 
 ## Próximo paso obligatorio
 
-El siguiente cambio funcional debe ser pequeño e independiente:
+El siguiente cambio autorizado por el backlog es `UX-003`:
 
-1. ampliar el preflight de `scripts/validate-complete-crm.ps1` para comprobar también `ProductionFrontendPort`;
-2. localizar y actualizar su equivalente Unix si corresponde;
-3. añadir una regresión que falle temprano cuando ese puerto esté ocupado;
-4. preservar la demo remota que publica `127.0.0.1:18080`;
-5. validar el cambio sobre su nuevo SHA.
+1. verificar si `.github/remote-ux-trigger`, el workflow remoto y los scripts `remote-ux-*` continúan presentes;
+2. localizar todos sus consumidores reales;
+3. confirmar que ningún workflow canónico depende de ellos;
+4. eliminar únicamente automatización obsoleta comprobada;
+5. ejecutar repository safety, `git diff --check` y validaciones focalizadas;
+6. detenerse ante cualquier dependencia activa o alcance mayor.
 
-No repetir las suites ya cerradas para esta actualización exclusivamente documental.
+No iniciar `UX-004` en el mismo commit.

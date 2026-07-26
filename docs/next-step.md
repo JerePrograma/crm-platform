@@ -6,32 +6,26 @@ Actualizado: 2026-07-24
 
 ```text
 BRANCH main
-VALIDATED_COMMIT 0448c0e060311c284f4e4be4612982818a8480c4
-FUNCTIONAL_BASELINE 83e181ce614f145bbfe141cc7603c3042569be51
-ENV_JSON_PARSER FUNCTIONAL_PASS
-PRODUCTION_PROFILE_SMOKE FUNCTIONAL_PASS
-EFFECTIVE_SENDING_BLOCKADE FUNCTIONAL_PASS
-ZERO_SENT FUNCTIONAL_PASS
-FINAL_TREE_CLEAN FUNCTIONAL_PASS
-FULL_VALIDATION_RUN_1 FUNCTIONAL_PASS
-FULL_VALIDATION_RUN_2 FUNCTIONAL_PASS
-CI NO_CHECKS_REPORTED
+VAL_001 FUNCTIONAL_PASS
+VAL_002 FUNCTIONAL_PASS_FOCUSED
+PRODUCTION_PORT_PREFLIGHT WINDOWS_AND_UNIX
+DEMO_18080 PRESERVED
+FULL_SUITES_REPEATED false
+CI PENDING_POST_PUSH_VERIFICATION
 PRODUCTION NOT_DEPLOYED
 REAL_COMMUNICATIONS DISABLED_BY_POLICY
 ```
 
 ## Qué quedó resuelto
 
-- los validadores Windows y Unix exigen `main`;
-- `.Config.Env` se parsea como array JSON real;
-- las siete guardas se comparan por membresía exacta;
-- JSON vacío, inválido o con raíz incorrecta falla;
-- los self-tests PowerShell 5.1 y Node 22 pasaron;
-- backend, frontend, Docker, migraciones, E2E, seguridad y backup/restore pasaron;
-- `productionProfileSmoke`, bloqueo de envíos, cero estados enviados y `finalTreeClean` pasaron;
-- existen dos corridas integrales consecutivas sobre el mismo SHA;
-- GitHub fue consultado para el SHA exacto y no reportó checks;
-- la evidencia quedó registrada en `docs/validation/main-hardening-functional-closure-2026-07-24.md`.
+- `VAL-001` permanece cerrado mediante dos corridas integrales sobre `0448c0e060311c284f4e4be4612982818a8480c4`;
+- `VAL-002` comprueba `ProductionFrontendPort` antes de Maven, npm, builds Docker, migraciones y E2E;
+- Windows conserva compatibilidad con tres puertos;
+- Unix acepta un puerto productivo configurable;
+- existen regresiones PowerShell y Node para puerto libre y ocupado;
+- la demo autorizada en `127.0.0.1:18080` fue detectada sin detenerla;
+- repository safety y `git diff --check` pasaron;
+- no se repitieron suites funcionales no afectadas.
 
 ## Qué no quedó resuelto
 
@@ -50,30 +44,29 @@ Esas capacidades deben tratarse como backlog o recuperarse desde patches verific
 
 ## Próximo paso obligatorio
 
-Implementar `VAL-002` como cambio independiente:
+Implementar `UX-003` como cambio independiente:
 
-1. inspeccionar `scripts/check-host-ports.ps1`, `scripts/validate-complete-crm.ps1` y sus consumidores reales;
-2. comprobar `ProductionFrontendPort` durante el preflight, antes de las suites costosas;
-3. añadir cobertura para puerto libre y puerto ocupado;
-4. no detener ni modificar `gestudio-remote-demo-backend-1`;
-5. mantener puertos configurables y comportamiento fail-closed;
-6. ejecutar las validaciones correspondientes al nuevo cambio.
-
-La actualización documental actual reutiliza evidencia ya cerrada y no repite Maven, npm, Docker, migraciones, Playwright ni dependency scans.
+1. inspeccionar `.github/remote-ux-trigger`;
+2. localizar workflows y scripts `remote-ux-*`;
+3. buscar referencias por nombre, ruta, comando y artefacto;
+4. demostrar que ningún workflow canónico depende de ellos;
+5. eliminar solo archivos obsoletos comprobados;
+6. actualizar documentación y evidencia;
+7. no mezclar métricas del dashboard ni cambios funcionales de UX.
 
 ## Después del gate
 
-El orden seguro posterior es:
+Después de `UX-003`, continuar con `UX-004` — métricas tenant-wide del dashboard.
 
-1. `VAL-002` — preflight del puerto productivo sintético;
-2. `UX-003` — limpieza de automatización remota obsoleta, después de confirmar que no participa en CI;
-3. `UX-004` — métricas tenant-wide del dashboard;
-4. paginación backend de importaciones;
-5. paginación de outbox e inbound;
-6. validación multibrowser y accesibilidad manual;
-7. modularización incremental sin reescritura.
+El resto del orden se mantiene:
 
-El candidato histórico `9e058d...` solo puede recuperarse mediante patches o commits verificables; no debe reconstruirse por descripción.
+1. métricas tenant-wide;
+2. paginación backend de importaciones;
+3. paginación de outbox e inbound;
+4. validación multibrowser y accesibilidad manual;
+5. modularización incremental.
+
+El candidato histórico `9e058d...` no debe reconstruirse por descripción.
 
 ## Backlog inmediato alternativo
 

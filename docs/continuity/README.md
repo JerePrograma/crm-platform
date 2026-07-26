@@ -82,3 +82,20 @@ Son referencias de trees locales. No se encontraron commits, ramas o PRs remotos
 - mantener PostgreSQL como fuente de verdad;
 - conservar RBAC, tenant isolation, CSRF, exclusiones, idempotencia y fail-closed;
 - volver a ejecutar cualquier fase cuyos archivos o dependencias hayan cambiado.
+
+## VAL-002 — Puerto productivo en preflight
+
+El puerto del perfil productivo sintético forma parte del preflight en Windows y Unix.
+
+```text
+Windows checker: scripts/check-host-ports.ps1
+Unix checker: scripts/check-host-ports.js
+PowerShell regression: scripts/test-check-host-ports.ps1
+Node regression: scripts/test-check-host-ports.js
+estado: FUNCTIONAL_PASS_FOCUSED
+full suites repeated: false
+```
+
+La demo autorizada que publica `127.0.0.1:18080` permanece fuera del proyecto Compose sintético y no fue modificada.
+
+Siguiente gate: `UX-003`.

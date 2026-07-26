@@ -6,14 +6,27 @@ param(
   [int]$BackendPort = 8080,
 
   [ValidateRange(1, 65535)]
-  [int]$FrontendPort = 5173
+  [int]$FrontendPort = 5173,
+
+  [ValidateRange(1, 65535)]
+  [Nullable[int]]$ProductionFrontendPort = $null
 )
 
 $ErrorActionPreference = 'Stop'
 
-$ports = @($PostgresPort, $BackendPort, $FrontendPort)
+$requestedPorts = [ordered]@{
+  'PostgreSQL' = $PostgresPort
+  'Backend' = $BackendPort
+  'Frontend' = $FrontendPort
+}
+
+if ($null -ne $ProductionFrontendPort) {
+  $requestedPorts['Production frontend'] = [int]$ProductionFrontendPort
+}
+
+$ports = @($requestedPorts.Values | ForEach-Object { [int]$_ })
 if (($ports | Select-Object -Unique).Count -ne $ports.Count) {
-  throw 'PostgresPort, BackendPort and FrontendPort must be different.'
+  throw 'All requested host ports must be different.'
 }
 
 function Assert-DockerPortNotPublished([string]$Name, [int]$Port) {
@@ -64,12 +77,12 @@ Underlying error: $message
   }
 }
 
-Assert-DockerPortNotPublished 'PostgreSQL' $PostgresPort
-Assert-DockerPortNotPublished 'Backend' $BackendPort
-Assert-DockerPortNotPublished 'Frontend' $FrontendPort
+foreach ($entry in $requestedPorts.GetEnumerator()) {
+  Assert-DockerPortNotPublished $entry.Key ([int]$entry.Value)
+}
 
-Assert-LoopbackPortAvailable 'PostgreSQL' $PostgresPort
-Assert-LoopbackPortAvailable 'Backend' $BackendPort
-Assert-LoopbackPortAvailable 'Frontend' $FrontendPort
+foreach ($entry in $requestedPorts.GetEnumerator()) {
+  Assert-LoopbackPortAvailable $entry.Key ([int]$entry.Value)
+}
 
 Write-Host 'All requested host ports are available to Windows and not published by Docker.'

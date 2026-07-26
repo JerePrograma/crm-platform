@@ -155,3 +155,26 @@ La demo remota que publica `127.0.0.1:18080` debe permanecer activa. La actualiz
 - no se creó rama ni PR;
 - no se usó force push;
 - no se añadieron migraciones ni dependencias.
+
+## VAL-002 — Estado de publicación
+
+```text
+estado funcional: FUNCTIONAL_PASS_FOCUSED
+preflight Windows: EXECUTED_PASS
+preflight Unix/Node: EXECUTED_PASS
+puerto libre: EXECUTED_PASS
+puerto ocupado: EXECUTED_PASS
+publicación Docker ocupada: EXECUTED_PASS
+demo 18080: EXECUTED_PASS id=d0420be3a84d
+PowerShell syntax: EXECUTED_PASS
+Node syntax: EXECUTED_PASS
+Bash syntax: EXECUTED_PASS
+repository safety: EXECUTED_PASS
+git diff --check: EXECUTED_PASS
+full suites repeated: false
+CI: PENDING_POST_PUSH_VERIFICATION
+```
+
+No se modificaron backend, frontend, base de datos, dependencias, Dockerfiles, Compose productivo ni políticas de envío.
+
+Evidencia: `docs/validation/production-frontend-port-preflight-2026-07-24.md`.

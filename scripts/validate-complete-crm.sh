@@ -4,11 +4,13 @@ set -Eeuo pipefail
 postgres_port=25432
 backend_port=8080
 frontend_port=5173
+production_frontend_port=18080
 while (($#)); do
   case "$1" in
     --postgres-port) postgres_port=$2; shift 2 ;;
     --backend-port) backend_port=$2; shift 2 ;;
     --frontend-port) frontend_port=$2; shift 2 ;;
+    --production-frontend-port) production_frontend_port=$2; shift 2 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; exit 1 ;;
   esac
 done
@@ -35,11 +37,18 @@ exec > >(tee "$log") 2>&1
 [ "$(git branch --show-current)" = main ]
 [ -z "$(git status --porcelain)" ]
 for command in git docker node npm mvn bash; do command -v "$command" >/dev/null; done
+phase=host-port-preflight
+node scripts/check-host-ports.js \
+  "PostgreSQL=$postgres_port" \
+  "Backend=$backend_port" \
+  "Frontend=$frontend_port" \
+  "Production frontend=$production_frontend_port"
 phase=repository-safety
 bash scripts/check-repository-safety.sh
 phase=script-syntax
 for script in scripts/*.sh; do bash -n "$script"; done
 node scripts/test-container-env-assertions.js
+node scripts/test-check-host-ports.js
 phase=backend
 bash scripts/verify-backend-container.sh
 phase=frontend
@@ -85,7 +94,7 @@ database_user=$(docker exec "$postgres" printenv POSTGRES_USER)
 phase=backup-restore
 bash scripts/verify-backup-restore.sh
 phase=production-profile
-bash scripts/verify-production-profile.sh 18080
+bash scripts/verify-production-profile.sh "$production_frontend_port"
 phase=final-safety
 bash scripts/check-repository-safety.sh
 [ -z "$(git status --porcelain)" ]

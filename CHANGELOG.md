@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-07-24 — VAL-002 preflight de `ProductionFrontendPort`
+
+- amplía `scripts/check-host-ports.ps1` con un cuarto puerto opcional y conserva compatibilidad con tres puertos;
+- conecta `ProductionFrontendPort` al preflight de `scripts/validate-complete-crm.ps1`;
+- agrega `scripts/check-host-ports.js` para la validación Unix sin dependencias nuevas;
+- agrega regresiones PowerShell y Node para puertos libres, duplicados, ocupados y publicados por Docker;
+- añade `--production-frontend-port` a `scripts/validate-complete-crm.sh`;
+- transmite el puerto configurado al smoke productivo Unix;
+- demuestra que `127.0.0.1:18080` falla temprano cuando pertenece a `gestudio-remote-demo-backend-1`;
+- mantiene la demo remota activa y sin modificaciones;
+- valida sintaxis PowerShell/Node/Bash, repository safety y `git diff --check`;
+- no repite Maven, npm, builds Docker, migraciones, Playwright ni dependency scans;
+- mantiene producción no desplegada y envíos reales deshabilitados.
+
 ## 2026-07-24 — Cierre funcional local del hardening de `main`
 
 - valida en Windows PowerShell 5.1 y Docker Desktop el commit `0448c0e060311c284f4e4be4612982818a8480c4`;

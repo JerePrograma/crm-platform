@@ -51,28 +51,28 @@ detalle: docs/validation/main-hardening-functional-closure-2026-07-24.md
 
 ## VAL-002 — Preflight de `ProductionFrontendPort`
 
-Estado: `READY`
+Estado: `COMPLETE_WITH_FOCUSED_VALIDATION`
 
-Problema confirmado:
+Implementado:
 
-- `scripts/validate-complete-crm.ps1` acepta `ProductionFrontendPort`;
-- el preflight actual comprueba PostgreSQL, backend y frontend, pero no ese cuarto puerto;
-- una colisión con `127.0.0.1:18080` se descubrió al final de dos intentos costosos;
-- el puerto pertenecía a la demo autorizada `gestudio-remote-demo-backend-1`;
-- la demo no fue detenida ni modificada;
-- las corridas válidas posteriores utilizaron `48080`.
+- [x] inspección de `scripts/check-host-ports.ps1`, validadores y consumidores;
+- [x] parámetro opcional `ProductionFrontendPort` en Windows;
+- [x] compatibilidad con consumidores existentes de tres puertos;
+- [x] comprobación durante `tooling`, antes de suites costosas;
+- [x] checker Node para Unix;
+- [x] opción Unix `--production-frontend-port`;
+- [x] puerto transmitido al smoke productivo Unix;
+- [x] cobertura de puerto libre;
+- [x] cobertura de puerto duplicado;
+- [x] cobertura de listener ocupado;
+- [x] cobertura de publicación Docker;
+- [x] preservación de la demo autorizada;
+- [x] sintaxis PowerShell, Node y Bash;
+- [x] repository safety;
+- [x] `git diff --check`;
+- [x] validación focalizada sin repetir suites no afectadas.
 
-Tareas:
-
-- [ ] inspeccionar la firma y consumidores reales de `scripts/check-host-ports.ps1`;
-- [ ] agregar comprobación temprana del puerto productivo sin romper compatibilidad;
-- [ ] actualizar Windows y Unix de forma equivalente cuando corresponda;
-- [ ] añadir cobertura para puerto libre y ocupado;
-- [ ] preservar puertos configurables;
-- [ ] detenerse antes de suites costosas ante una colisión;
-- [ ] validar sobre un nuevo SHA.
-
-Criterio de aceptación:
+Resultado observable:
 
 ```text
 un ProductionFrontendPort ocupado falla durante tooling/preflight
@@ -80,6 +80,14 @@ no se inicia Maven, npm, Docker build, migraciones ni E2E
 un puerto libre permite continuar
 la demo remota no se detiene ni se modifica
 ```
+
+Evidencia:
+
+```text
+docs/validation/production-frontend-port-preflight-2026-07-24.md
+```
+
+CI del commit final: `PENDING_POST_PUSH_VERIFICATION`.
 
 ## REC-001 — Recuperación del candidato histórico
 

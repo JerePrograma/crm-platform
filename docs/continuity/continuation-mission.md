@@ -4,24 +4,19 @@ Actualizado: 2026-07-24
 
 ## Objetivo inmediato
 
-Publicar el cierre documental del hardening ya validado y continuar con `VAL-002`, que debe detectar tempranamente colisiones de `ProductionFrontendPort`.
+Ejecutar `UX-003`: demostrar si la automatización UX remota histórica está obsoleta y eliminar únicamente los archivos sin consumidores.
 
 ## Estado de entrada
 
 ```text
 rama: main
-commit funcional validado: 0448c0e060311c284f4e4be4612982818a8480c4
-parser PowerShell: EXECUTED_PASS
-parser Node: EXECUTED_PASS
-productionProfileSmoke: FUNCTIONAL_PASS
-effectiveSendingBlockade: FUNCTIONAL_PASS
-zeroSent: FUNCTIONAL_PASS
-finalTreeClean: FUNCTIONAL_PASS
-validación integral 1: FUNCTIONAL_PASS
-validación integral 2: FUNCTIONAL_PASS
-CI: NO_CHECKS_REPORTED
-demo remota: ACTIVE_ON_127.0.0.1_18080
-candidato histórico 9e058d...: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
+VAL-001: FUNCTIONAL_PASS
+VAL-002: FUNCTIONAL_PASS_FOCUSED
+ProductionFrontendPort preflight: WINDOWS_AND_UNIX
+demo remota 18080: PRESERVED
+producción: NOT_DEPLOYED
+envíos reales: DISABLED
+siguiente gate: UX-003
 ```
 
 ## Lectura obligatoria
@@ -55,32 +50,27 @@ Detenerse ante cambios locales no relacionados, divergencia, remoto inesperado o
 
 ## Validación focalizada
 
-No repetir las validaciones ya cerradas para una actualización exclusivamente documental.
+Para `UX-003`:
 
-Evidencia vigente:
-
-```text
-complete-crm-20260724-201944.json
-SHA-256 4D87175F8985B406DB1EB29E2B6F60EDB26F1C1A1FE9F927FB76FEB9A4DB4527
-
-complete-crm-20260724-202955.json
-SHA-256 2A538402F41AD30FF14F683DA2709B3F0369C6F9946026A1E3FBDE8522602774
-```
-
-Ambas corridas corresponden a `main` y al commit exacto `0448c0e060311c284f4e4be4612982818a8480c4`.
+1. listar archivos `.github/remote-ux-trigger`, workflows y scripts `remote-ux-*`;
+2. buscar consumidores por ruta, nombre, comando, variable y artefacto;
+3. revisar triggers y dependencias de workflows;
+4. detenerse si existe un consumidor canónico;
+5. eliminar solo automatización demostrablemente obsoleta;
+6. ejecutar repository safety, sintaxis afectada y `git diff --check`.
 
 ## Validación integral
 
-Para `VAL-002`:
+No ejecutar suites backend/frontend/Docker salvo que la inspección revele que los archivos remotos participan en una ruta funcional.
 
-1. inspeccionar rutas, firmas y consumidores reales;
-2. agregar la comprobación de `ProductionFrontendPort` al preflight;
-3. añadir pruebas focalizadas;
-4. ejecutar primero esas pruebas;
-5. ejecutar validaciones generales solo si el cambio funcional lo requiere;
-6. detenerse ante cambios locales, conflictos, secretos, fallos o necesidad de force push.
+No mezclar `UX-003` con:
 
-No detener ni modificar la demo remota que ocupa `127.0.0.1:18080`.
+- métricas tenant-wide;
+- paginación;
+- drawer móvil;
+- foco;
+- multibrowser;
+- modularización.
 
 ## Después de validar
 

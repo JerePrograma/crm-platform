@@ -463,3 +463,19 @@ Resultado: `2/2 FUNCTIONAL_PASS`, incluido backend, frontend, Docker, migracione
 La demo remota continúa activa en `127.0.0.1:18080`. El siguiente gap verificable es anticipar la comprobación de `ProductionFrontendPort` durante el preflight (`VAL-002`).
 
 Producción permanece no autorizada y no desplegada. Gmail, SMTP y WhatsApp reales continúan desconectados. No se realizaron envíos reales ni se incorporó el XLSX externo.
+
+## Actualización 2026-07-24 — VAL-002
+
+El puerto productivo sintético se valida ahora durante el preflight:
+
+- Windows: cuarto parámetro opcional en `check-host-ports.ps1`;
+- Unix: checker Node y argumento `--production-frontend-port`;
+- puertos duplicados fallan antes de consultar servicios;
+- listeners ocupados y publicaciones Docker fallan antes de suites costosas;
+- la demo autorizada en `127.0.0.1:18080` fue preservada.
+
+Validación focalizada: PowerShell, Node, Bash, repository safety y `git diff --check`.
+
+No se repitieron backend, frontend, builds, migraciones, E2E ni dependency scans.
+
+Siguiente iniciativa: `UX-003`.

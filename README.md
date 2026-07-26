@@ -189,3 +189,37 @@ docs/validation/remote-main-hardening-2026-07-24.md
 - el XLSX real;
 - migraciones destructivas;
 - debilitamiento de RBAC, tenant isolation, CSRF, exclusiones o idempotencia.
+
+## VAL-002 — Preflight de `ProductionFrontendPort`
+
+El validador integral comprueba ahora los cuatro puertos antes de iniciar suites costosas:
+
+```text
+PostgreSQL
+Backend
+Frontend
+Production frontend
+```
+
+Windows conserva compatibilidad con los consumidores de tres puertos y acepta `ProductionFrontendPort` como parámetro opcional en `scripts/check-host-ports.ps1`. `scripts/validate-complete-crm.ps1` lo proporciona siempre.
+
+Unix acepta `--production-frontend-port`, ejecuta el checker Node fail-closed durante el preflight y transmite el valor al smoke productivo.
+
+Cobertura focalizada:
+
+- tres puertos para compatibilidad;
+- cuatro puertos libres;
+- puertos duplicados;
+- listener de loopback ocupado;
+- publicación Docker ocupada;
+- detección de la demo autorizada en `127.0.0.1:18080` sin detenerla;
+- sintaxis PowerShell, Node y Bash;
+- repository safety y `git diff --check`.
+
+No se repitieron backend, frontend, builds Docker, migraciones, Playwright ni dependency scans porque VAL-002 modifica exclusivamente el preflight y sus regresiones.
+
+Evidencia:
+
+```text
+docs/validation/production-frontend-port-preflight-2026-07-24.md
+```
