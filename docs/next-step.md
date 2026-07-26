@@ -7,25 +7,25 @@ Actualizado: 2026-07-24
 ```text
 BRANCH main
 VAL_001 FUNCTIONAL_PASS
-VAL_002 FUNCTIONAL_PASS_FOCUSED
-PRODUCTION_PORT_PREFLIGHT WINDOWS_AND_UNIX
-DEMO_18080 PRESERVED
-FULL_SUITES_REPEATED false
-CI PENDING_POST_PUSH_VERIFICATION
+VAL_002 COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
+UX_003 COMPLETE_WITH_FOCUSED_VALIDATION
+REMOTE_UX_AUTOMATION REMOVED
 PRODUCTION NOT_DEPLOYED
 REAL_COMMUNICATIONS DISABLED_BY_POLICY
+NEXT UX_004
 ```
 
 ## Qué quedó resuelto
 
-- `VAL-001` permanece cerrado mediante dos corridas integrales sobre `0448c0e060311c284f4e4be4612982818a8480c4`;
-- `VAL-002` comprueba `ProductionFrontendPort` antes de Maven, npm, builds Docker, migraciones y E2E;
-- Windows conserva compatibilidad con tres puertos;
-- Unix acepta un puerto productivo configurable;
-- existen regresiones PowerShell y Node para puerto libre y ocupado;
-- la demo autorizada en `127.0.0.1:18080` fue detectada sin detenerla;
-- repository safety y `git diff --check` pasaron;
-- no se repitieron suites funcionales no afectadas.
+- `VAL-001` continúa cerrado;
+- `VAL-002` continúa cerrado con verificación focalizada y `NO_CHECKS_REPORTED`;
+- se localizaron los cinco archivos exactos de la automatización remota histórica;
+- el trigger era el único evento del workflow;
+- la guarda de ancestry fija ya no coincide con `main`;
+- los scripts Python no tenían consumidores fuera del workflow;
+- ningún otro workflow dependía del conjunto;
+- los cinco archivos fueron eliminados sin modificar funcionalidad;
+- repository safety y `git diff --check` pasaron.
 
 ## Qué no quedó resuelto
 
@@ -44,29 +44,27 @@ Esas capacidades deben tratarse como backlog o recuperarse desde patches verific
 
 ## Próximo paso obligatorio
 
-Implementar `UX-003` como cambio independiente:
+Implementar `UX-004` como cambio independiente:
 
-1. inspeccionar `.github/remote-ux-trigger`;
-2. localizar workflows y scripts `remote-ux-*`;
-3. buscar referencias por nombre, ruta, comando y artefacto;
-4. demostrar que ningún workflow canónico depende de ellos;
-5. eliminar solo archivos obsoletos comprobados;
-6. actualizar documentación y evidencia;
-7. no mezclar métricas del dashboard ni cambios funcionales de UX.
+1. inspeccionar dashboard, API, reportes y tipos reales;
+2. identificar los conteos que dependen de la página cargada;
+3. localizar una agregación tenant-scoped existente o crear el mínimo contrato compatible;
+4. no cargar todas las páginas para calcular métricas;
+5. añadir pruebas con más de una página;
+6. validar permisos y aislamiento entre organizaciones;
+7. actualizar documentación y evidencia.
 
 ## Después del gate
 
-Después de `UX-003`, continuar con `UX-004` — métricas tenant-wide del dashboard.
+Después de `UX-004`, continuar en este orden:
 
-El resto del orden se mantiene:
+1. `UX-006` — importaciones de gran volumen;
+2. `OPS-001` — outbox e inbound paginados;
+3. `UX-007` — navegadores, foco y móvil;
+4. `TECH-001` — modularización gradual;
+5. `PERF-001` — escala representativa autorizada.
 
-1. métricas tenant-wide;
-2. paginación backend de importaciones;
-3. paginación de outbox e inbound;
-4. validación multibrowser y accesibilidad manual;
-5. modularización incremental.
-
-El candidato histórico `9e058d...` no debe reconstruirse por descripción.
+No reconstruir el candidato histórico `9e058d...` por descripción.
 
 ## Backlog inmediato alternativo
 

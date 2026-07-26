@@ -99,3 +99,17 @@ full suites repeated: false
 La demo autorizada que publica `127.0.0.1:18080` permanece fuera del proyecto Compose sintético y no fue modificada.
 
 Siguiente gate: `UX-003`.
+
+## UX-003 — Automatización remota eliminada
+
+La automatización `remote-ux-overhaul` fue eliminada después de comprobar que:
+
+- su único trigger era un archivo histórico;
+- su guarda fija ya no podía cumplirse sobre `main`;
+- los tres scripts Python solo eran consumidos por ese workflow;
+- ningún otro workflow o script dependía del conjunto;
+- la funcionalidad generada por aquella ejecución ya está integrada en el código publicado.
+
+Estado: `COMPLETE_WITH_FOCUSED_VALIDATION`.
+
+Siguiente gate: `UX-004`.

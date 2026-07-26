@@ -178,3 +178,21 @@ CI: PENDING_POST_PUSH_VERIFICATION
 No se modificaron backend, frontend, base de datos, dependencias, Dockerfiles, Compose productivo ni políticas de envío.
 
 Evidencia: `docs/validation/production-frontend-port-preflight-2026-07-24.md`.
+
+## UX-003 — Estado de publicación
+
+```text
+estado: COMPLETE_WITH_FOCUSED_VALIDATION
+archivos eliminados: 5
+consumidores operativos externos: 0
+dependencias desde otros workflows: 0
+guarda histórica obsoleta: true
+repository safety: EXECUTED_PASS
+git diff --check: EXECUTED_PASS
+full suites repeated: false
+CI: PENDING_POST_PUSH_VERIFICATION
+```
+
+No se modificaron backend, frontend, migraciones, dependencias, Dockerfiles, Compose ni políticas de envío.
+
+Evidencia: `docs/validation/ux-003-remote-automation-cleanup-2026-07-26.md`.

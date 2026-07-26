@@ -119,13 +119,36 @@ No reconstruir el candidato por descripción documental.
 
 ## UX-003 — Limpieza de automatización remota obsoleta
 
-Estado: `READY`
+Estado: `COMPLETE_WITH_FOCUSED_VALIDATION`
 
-- [ ] verificar que `.github/remote-ux-trigger`, el workflow remoto y los scripts `remote-ux-*` siguen presentes;
-- [ ] confirmar que ningún workflow canónico depende de ellos;
-- [ ] eliminar solo esos archivos;
-- [ ] ejecutar repository safety y `git diff --check`;
-- [ ] documentar el resultado.
+Inventario eliminado:
+
+- [x] `.github/remote-ux-trigger`;
+- [x] `.github/workflows/remote-ux-overhaul.yml`;
+- [x] `scripts/remote-ux-preflight.py`;
+- [x] `scripts/remote-ux-overhaul.py`;
+- [x] `scripts/remote-ux-postfix.py`.
+
+Verificaciones:
+
+- [x] trigger exclusivo del workflow;
+- [x] guarda histórica fija identificada;
+- [x] guarda incompatible con la historia actual de `main`;
+- [x] cero consumidores operativos externos;
+- [x] cero dependencias desde otros workflows;
+- [x] el workflow declaraba su propia eliminación;
+- [x] repository safety;
+- [x] `git diff --check`;
+- [x] alcance limitado;
+- [x] sin repetición de suites funcionales no afectadas.
+
+Evidencia:
+
+```text
+docs/validation/ux-003-remote-automation-cleanup-2026-07-26.md
+```
+
+CI del commit final: `PENDING_POST_PUSH_VERIFICATION`.
 
 ## UX-004 — Métricas tenant-wide del dashboard
 

@@ -4,19 +4,19 @@ Actualizado: 2026-07-24
 
 ## Objetivo inmediato
 
-Ejecutar `UX-003`: demostrar si la automatización UX remota histórica está obsoleta y eliminar únicamente los archivos sin consumidores.
+Ejecutar `UX-004`: corregir las métricas tenant-wide del dashboard sin depender de la página de prospectos cargada.
 
 ## Estado de entrada
 
 ```text
 rama: main
 VAL-001: FUNCTIONAL_PASS
-VAL-002: FUNCTIONAL_PASS_FOCUSED
-ProductionFrontendPort preflight: WINDOWS_AND_UNIX
-demo remota 18080: PRESERVED
+VAL-002: COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
+UX-003: COMPLETE_WITH_FOCUSED_VALIDATION
+remote UX automation: REMOVED
 producción: NOT_DEPLOYED
 envíos reales: DISABLED
-siguiente gate: UX-003
+siguiente gate: UX-004
 ```
 
 ## Lectura obligatoria
@@ -50,39 +50,40 @@ Detenerse ante cambios locales no relacionados, divergencia, remoto inesperado o
 
 ## Validación focalizada
 
-Para `UX-003`:
+Para `UX-004`:
 
-1. listar archivos `.github/remote-ux-trigger`, workflows y scripts `remote-ux-*`;
-2. buscar consumidores por ruta, nombre, comando, variable y artefacto;
-3. revisar triggers y dependencias de workflows;
-4. detenerse si existe un consumidor canónico;
-5. eliminar solo automatización demostrablemente obsoleta;
-6. ejecutar repository safety, sintaxis afectada y `git diff --check`.
+1. localizar el componente real del dashboard;
+2. identificar APIs, reportes y selectores usados por sus métricas;
+3. reproducir el problema con más de una página;
+4. localizar todos los consumidores del contrato que cambie;
+5. preservar RBAC y tenant isolation;
+6. añadir pruebas backend y frontend;
+7. evitar cargar todas las páginas.
 
 ## Validación integral
 
-No ejecutar suites backend/frontend/Docker salvo que la inspección revele que los archivos remotos participan en una ruta funcional.
+Ejecutar primero pruebas focalizadas del endpoint/reporte y del consumidor frontend.
 
-No mezclar `UX-003` con:
+Después ejecutar las validaciones generales reales del repositorio que correspondan al alcance:
 
-- métricas tenant-wide;
-- paginación;
-- drawer móvil;
-- foco;
-- multibrowser;
-- modularización.
+- formato y tipos;
+- pruebas backend afectadas;
+- pruebas frontend afectadas;
+- build;
+- repository safety;
+- `git diff --check`.
+
+No mezclar importaciones, outbox/inbound, multibrowser ni modularización.
 
 ## Después de validar
 
-1. ejecutar `git diff --check`;
-2. ejecutar repository safety;
-3. revisar el diff completo;
-4. confirmar que solo existen cambios de `VAL-002`;
-5. validar el nuevo SHA;
-6. commit y push fast-forward a `main`;
-7. actualizar evidencia con resultados realmente ejecutados.
-
-La documentación actual ya registra el cierre de `VAL-001`.
+1. revisar el diff completo;
+2. confirmar aislamiento tenant y permisos;
+3. comprobar que las métricas no dependen de la página visible;
+4. actualizar status, backlog, next-step, continuidad, matriz y evidencia;
+5. commit lógico único;
+6. push fast-forward a `main`;
+7. verificar CI del SHA exacto.
 
 ## Candidato histórico
 

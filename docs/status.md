@@ -165,6 +165,33 @@ full suites repeated: false
 
 La prueba con la demo solo consulta su publicación Docker. No ejecuta `stop`, `down`, `rm` ni modifica su configuración.
 
+## UX-003 — Automatización UX remota histórica
+
+Estado: `COMPLETE_WITH_FOCUSED_VALIDATION`
+
+Archivos eliminados:
+
+```text
+.github/remote-ux-trigger
+.github/workflows/remote-ux-overhaul.yml
+scripts/remote-ux-preflight.py
+scripts/remote-ux-overhaul.py
+scripts/remote-ux-postfix.py
+```
+
+Criterios verificados:
+
+- trigger exclusivo;
+- guarda histórica obsoleta;
+- cero consumidores operativos externos;
+- cero dependencias desde otros workflows;
+- eliminación limitada a los cinco archivos;
+- repository safety aprobado;
+- `git diff --check` aprobado;
+- suites funcionales no repetidas por no existir cambios funcionales.
+
+Evidencia: `docs/validation/ux-003-remote-automation-cleanup-2026-07-26.md`.
+
 ## Capacidades funcionales publicadas previamente
 
 Permanecen las capacidades SEG-000–SEG-011 y los cierres UX/contactabilidad ya documentados en la historia: identidad, RBAC, tenant isolation, prospectos, contactos, importaciones, duplicados, actividades, tareas, oportunidades, campañas, mensajería simulada, outbox, inbound de prueba, reporting, auditoría, configuración y frontend operativo.
@@ -173,13 +200,12 @@ El nuevo candidato local que añadía métricas tenant-wide, paginación adicion
 
 ## Próximo paso obligatorio
 
-El siguiente cambio autorizado por el backlog es `UX-003`:
+El siguiente cambio independiente es `UX-004` — métricas tenant-wide del dashboard:
 
-1. verificar si `.github/remote-ux-trigger`, el workflow remoto y los scripts `remote-ux-*` continúan presentes;
-2. localizar todos sus consumidores reales;
-3. confirmar que ningún workflow canónico depende de ellos;
-4. eliminar únicamente automatización obsoleta comprobada;
-5. ejecutar repository safety, `git diff --check` y validaciones focalizadas;
-6. detenerse ante cualquier dependencia activa o alcance mayor.
-
-No iniciar `UX-004` en el mismo commit.
+1. localizar el endpoint o reporte agregado real;
+2. confirmar cómo se calculan actualmente los conteos visibles;
+3. reproducir el defecto con más de una página de prospectos;
+4. implementar agregaciones tenant-scoped sin cargar todas las páginas;
+5. conservar RBAC, tenant isolation, filtros y contratos existentes;
+6. añadir pruebas backend y frontend;
+7. no mezclar paginación de importaciones, outbox/inbound ni refactorización de `App.tsx`.

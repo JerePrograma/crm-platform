@@ -223,3 +223,32 @@ Evidencia:
 ```text
 docs/validation/production-frontend-port-preflight-2026-07-24.md
 ```
+
+## UX-003 — Limpieza de automatización UX remota
+
+Se eliminó la automatización histórica de una sola ejecución:
+
+```text
+.github/remote-ux-trigger
+.github/workflows/remote-ux-overhaul.yml
+scripts/remote-ux-preflight.py
+scripts/remote-ux-overhaul.py
+scripts/remote-ux-postfix.py
+```
+
+La inspección confirmó:
+
+- el workflow solo se activaba mediante `.github/remote-ux-trigger`;
+- exigía una relación histórica fija con `a4d975d5a7a041e492894c78583381a466482459`;
+- la guarda ya no coincide con la historia actual de `main`;
+- los tres scripts Python solo eran consumidos por ese workflow;
+- ningún otro workflow, script, configuración o ruta funcional los consumía;
+- el propio workflow intentaba eliminar los cinco archivos después de publicar su resultado.
+
+No se modificaron backend, frontend, base de datos, dependencias, Docker, migraciones ni políticas de envío.
+
+Evidencia:
+
+```text
+docs/validation/ux-003-remote-automation-cleanup-2026-07-26.md
+```

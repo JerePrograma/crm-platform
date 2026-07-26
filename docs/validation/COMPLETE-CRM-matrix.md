@@ -70,6 +70,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | backup/restore | EXECUTED_PASS | pg_dump/checksum/metadata y restore drill aislado sintético |
 | perfil productivo validado localmente | EXECUTED_PASS | non-root/read-only/private network/health, sending bloqueado |
 | preflight `ProductionFrontendPort` | EXECUTED_PASS | Windows y Unix fallan temprano ante puerto ocupado; regresiones libres/ocupadas; demo 18080 preservada |
+| automatización UX remota histórica | EXECUTED_PASS | trigger, workflow y tres scripts eliminados tras comprobar cero consumidores operativos |
 | dependency scan | EXECUTED_PASS | npm audit High y Grype High/Critical; imagen final sin hallazgos |
 | CI integral | EXECUTED_PASS | run `29951586239`, commit `b904ff3`, push a `main`, 22/22 jobs success |
 | validador completo Windows | EXECUTED_PASS | `986523a`, 21 fases verdes, 713,870 s |

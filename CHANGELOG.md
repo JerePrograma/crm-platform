@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-07-26 — UX-003 limpieza de automatización remota obsoleta
+
+- inventaría el trigger, workflow y tres scripts Python de la automatización `remote-ux-overhaul`;
+- confirma que el workflow solo se activa por `.github/remote-ux-trigger`;
+- confirma que su guarda de ancestry fija ya no coincide con `main`;
+- demuestra que ningún otro workflow, script o configuración consume esos archivos;
+- elimina únicamente los cinco archivos históricos;
+- conserva todos los cambios funcionales de UX ya publicados;
+- valida repository safety, ausencia de referencias operativas y `git diff --check`;
+- no ejecuta backend, frontend, Docker, migraciones ni E2E porque no cambia código funcional;
+- mantiene producción no desplegada y envíos reales deshabilitados.
+
 ## 2026-07-24 — VAL-002 preflight de `ProductionFrontendPort`
 
 - amplía `scripts/check-host-ports.ps1` con un cuarto puerto opcional y conserva compatibilidad con tres puertos;

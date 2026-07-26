@@ -479,3 +479,19 @@ Validación focalizada: PowerShell, Node, Bash, repository safety y `git diff --
 No se repitieron backend, frontend, builds, migraciones, E2E ni dependency scans.
 
 Siguiente iniciativa: `UX-003`.
+
+## Actualización 2026-07-26 — UX-003
+
+Se eliminó la automatización remota histórica `remote-ux-overhaul`:
+
+- trigger;
+- workflow con permisos de escritura;
+- preflight Python;
+- transformación Python;
+- postfix Python.
+
+La eliminación se realizó después de comprobar cero consumidores operativos externos y cero dependencias desde otros workflows.
+
+No se modificó funcionalidad del CRM. No se repitieron backend, frontend, Docker, migraciones ni E2E.
+
+Siguiente iniciativa: `UX-004` — métricas tenant-wide del dashboard.
