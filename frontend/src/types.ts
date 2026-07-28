@@ -39,6 +39,11 @@ export type Page<T> = {
   last: boolean;
 };
 
+export type ProspectDashboardMetrics = {
+  interested: number;
+  blocked: number;
+};
+
 export type CurrencyTotal = {
   currency: string;
   opportunityCount: number;

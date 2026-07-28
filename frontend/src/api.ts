@@ -16,6 +16,7 @@ import type {
   PipelineMetrics,
   Page,
   Prospect,
+  ProspectDashboardMetrics,
   ProspectStatus,
   Contact,
   Task,
@@ -162,6 +163,10 @@ export function listProspects(
     params.set("query", query.trim());
   }
   return request(`/api/v1/prospects?${params.toString()}`);
+}
+
+export function getProspectDashboardMetrics(): Promise<ProspectDashboardMetrics> {
+  return request("/api/v1/prospects/metrics");
 }
 
 export function createProspect(input: {

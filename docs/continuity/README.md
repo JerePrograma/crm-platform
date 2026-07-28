@@ -113,3 +113,20 @@ La automatización `remote-ux-overhaul` fue eliminada después de comprobar que:
 Estado: `COMPLETE_WITH_FOCUSED_VALIDATION`.
 
 Siguiente gate: `UX-004`.
+
+## UX-004 — Métricas globales del resumen
+
+El dashboard usa `GET /api/v1/prospects/metrics` para interés y bloqueo.
+
+```text
+scope: organization_id del actor
+archived: excluded
+interested statuses: INTERESTED, QUALIFIED, TRIAL_ACTIVE, QUOTED, NEGOTIATION
+blocked: NOT contact_eligible
+pagination dependency: none
+status: FUNCTIONAL_PASS
+```
+
+La regresión usa 105 prospectos y una página de 100.
+
+Siguiente gate: `UX-006`.

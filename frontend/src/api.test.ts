@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { listProspects } from "./api";
+import { getProspectDashboardMetrics, listProspects } from "./api";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -34,6 +34,26 @@ describe("listProspects", () => {
     expect(String(url)).toContain("size=50");
     expect(String(url)).toContain("status=READY_TO_CONTACT");
     expect(String(url)).toContain("query=correo%40example.test");
+    expect(init).toMatchObject({ credentials: "same-origin" });
+  });
+});
+describe("getProspectDashboardMetrics", () => {
+  it("loads tenant-wide dashboard counts from the aggregate endpoint", async () => {
+    const response = { interested: 5, blocked: 98 };
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(response), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+    await expect(getProspectDashboardMetrics()).resolves.toEqual(response);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(String(url)).toBe("/api/v1/prospects/metrics");
     expect(init).toMatchObject({ credentials: "same-origin" });
   });
 });

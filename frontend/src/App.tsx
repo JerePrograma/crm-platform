@@ -29,6 +29,7 @@ import {
   getPendingDuplicateReviews,
   getPipelineMetrics,
   getProspect,
+  getProspectDashboardMetrics,
   getTimeline,
   getSession,
   importProspects,
@@ -100,6 +101,7 @@ import type {
   OpportunityStage,
   PipelineMetrics,
   Prospect,
+  ProspectDashboardMetrics,
   ProspectStatus,
   RenderedTemplate,
   SessionUser,
@@ -218,6 +220,8 @@ export function App() {
     last: true,
   });
   const prospectTotal = prospectPageInfo.totalElements;
+  const [prospectDashboardMetrics, setProspectDashboardMetrics] =
+    useState<ProspectDashboardMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -228,6 +232,7 @@ export function App() {
       try {
         const [
           prospectPage,
+          prospectMetrics,
           exclusionPage,
           audits,
           reviews,
@@ -238,6 +243,7 @@ export function App() {
         ] =
           await Promise.all([
           listProspects(filter || undefined, query || undefined, page),
+          getProspectDashboardMetrics(),
           listExclusions(),
           session?.permissions.includes("AUDIT_READ") ? listAuditEvents() : Promise.resolve([]),
           session?.permissions.includes("DUPLICATE_RESOLVE")
@@ -255,6 +261,7 @@ export function App() {
             : Promise.resolve([]),
         ]);
         setProspects(prospectPage.content);
+        setProspectDashboardMetrics(prospectMetrics);
         prospectPageRef.current = prospectPage.number;
         setProspectPageInfo({
           totalElements: prospectPage.totalElements,
@@ -292,15 +299,6 @@ export function App() {
     }
   }, [session, refresh]);
 
-  const dashboard = useMemo(() => {
-    const interested = prospects.filter((prospect) =>
-      ["INTERESTED", "QUALIFIED", "TRIAL_ACTIVE", "QUOTED", "NEGOTIATION"].includes(
-        prospect.status,
-      ),
-    ).length;
-    const blocked = prospects.filter((prospect) => !prospect.contactEligible).length;
-    return { interested, blocked };
-  }, [prospects]);
 
   if (session === undefined) {
     return <main className="login-page" aria-label="Restaurando sesión" />;
@@ -464,8 +462,14 @@ export function App() {
           <section className="stack">
             <div className="metric-grid">
               <Metric label="Prospectos registrados" value={prospectTotal} />
-              <Metric label="Prospectos con interés" value={dashboard.interested} />
-              <Metric label="Contacto bloqueado" value={dashboard.blocked} />
+              <Metric
+                label="Prospectos con interés"
+                value={prospectDashboardMetrics?.interested ?? 0}
+              />
+              <Metric
+                label="Contacto bloqueado"
+                value={prospectDashboardMetrics?.blocked ?? 0}
+              />
               <Metric label="Exclusiones" value={exclusions.length} />
               <Metric label="Revisiones pendientes" value={duplicateReviews.length} />
               <Metric label="Oportunidades activas" value={pipelineMetrics?.activeCount ?? 0} />

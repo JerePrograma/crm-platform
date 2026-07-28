@@ -152,26 +152,46 @@ CI del commit final: `PENDING_POST_PUSH_VERIFICATION`.
 
 ## UX-004 — Métricas tenant-wide del dashboard
 
-Estado: `READY`
+Estado: `COMPLETE_WITH_FUNCTIONAL_VALIDATION`
 
-Problema publicado: los conteos de interés y bloqueo pueden depender de la página de prospectos cargada.
+Implementado:
 
-- [ ] localizar endpoint/reporte agregado real;
-- [ ] exponer conteos tenant-scoped compatibles;
-- [ ] no cargar todas las páginas;
-- [ ] actualizar consumidor frontend;
-- [ ] añadir pruebas backend y frontend con más de una página;
-- [ ] validar RBAC y tenant isolation.
+- [x] localizado el cálculo basado en la página frontend;
+- [x] agregado tenant-scoped en PostgreSQL;
+- [x] endpoint compatible protegido por `PROSPECT_READ`;
+- [x] sin carga de páginas adicionales;
+- [x] consumidor frontend actualizado;
+- [x] prueba con 105 prospectos y página de 100;
+- [x] semántica de cinco estados de interés preservada;
+- [x] bloqueo por `NOT contact_eligible`;
+- [x] acceso `VIEWER`;
+- [x] tenant isolation;
+- [x] pruebas backend focalizadas;
+- [x] Maven Verify completo;
+- [x] prueba API frontend;
+- [x] typecheck, unit tests y build;
+- [x] repository safety y `git diff --check`.
+
+Evidencia:
+
+```text
+docs/validation/ux-004-tenant-wide-dashboard-metrics-2026-07-26.md
+```
+
+CI del commit final: `PENDING_POST_PUSH_VERIFICATION`.
 
 ## UX-006 — Importaciones de gran volumen
 
-Estado: `PLANNED`
+Estado: `READY`
 
+- [ ] inspeccionar endpoint, servicio, repositorio y consumidores de filas;
 - [ ] paginación backend de resultados;
 - [ ] filtros backend por hoja y resultado;
 - [ ] búsqueda backend;
 - [ ] límites explícitos;
-- [ ] pruebas de aislamiento e idempotencia.
+- [ ] pruebas de aislamiento e idempotencia;
+- [ ] consumidor frontend paginado;
+- [ ] evidencia funcional.
 
 ## OPS-001 — Outbox e inbound paginados
 

@@ -158,6 +158,11 @@ class SecurityAuthorizationIntegrationTest {
     MockHttpSession session = session(login("read-only-user", "viewer-password-1").andReturn());
 
     mockMvc.perform(get("/api/v1/prospects").session(session)).andExpect(status().isOk());
+    mockMvc
+        .perform(get("/api/v1/prospects/metrics").session(session))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.interested").isNumber())
+        .andExpect(jsonPath("$.blocked").isNumber());
     mockMvc.perform(get("/api/v1/templates").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/campaigns").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/messages/safety").session(session)).andExpect(status().isOk());
@@ -372,6 +377,11 @@ class SecurityAuthorizationIntegrationTest {
     mockMvc
         .perform(get("/api/v1/prospects/{id}", prospectId).session(tenantB))
         .andExpect(status().isNotFound());
+    mockMvc
+        .perform(get("/api/v1/prospects/metrics").session(tenantB))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.interested").value(0))
+        .andExpect(jsonPath("$.blocked").value(0));
   }
 
   private org.springframework.test.web.servlet.ResultActions login(String username, String password)

@@ -3,6 +3,7 @@ package com.gestudio.crm.prospect;
 import com.gestudio.crm.prospect.ProspectApplicationService.CreateProspectCommand;
 import com.gestudio.crm.prospect.ProspectOperationsService.OperationalProspectView;
 import com.gestudio.crm.prospect.ProspectOperationsService.PageResult;
+import com.gestudio.crm.prospect.ProspectOperationsService.ProspectDashboardMetrics;
 import com.gestudio.crm.prospect.ProspectOperationsService.SearchFilter;
 import com.gestudio.crm.prospect.ProspectOperationsService.TransitionCommand;
 import com.gestudio.crm.prospect.ProspectOperationsService.UpdateProspectCommand;
@@ -52,6 +53,13 @@ public class ProspectController {
     UUID id = prospectApplicationService.create(request.toCommand()).id();
     return ResponseEntity.created(URI.create("/api/v1/prospects/" + id))
         .body(prospectOperationsService.get(id));
+  }
+
+  @GetMapping("/metrics")
+  @PreAuthorize("hasAuthority('PROSPECT_READ')")
+  @Operation(summary = "Get tenant-wide prospect dashboard metrics")
+  public ProspectDashboardMetrics metrics() {
+    return prospectOperationsService.dashboardMetrics();
   }
 
   @GetMapping("/{id}")

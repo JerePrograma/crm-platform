@@ -25,6 +25,7 @@ import com.gestudio.crm.prospect.ProspectOperationsService.SearchFilter;
 import com.gestudio.crm.prospect.ProspectOperationsService.TransitionCommand;
 import com.gestudio.crm.prospect.ProspectOperationsService.UpdateProspectCommand;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -63,6 +65,7 @@ class OperationalProspectIntegrationTest {
   @Autowired private ProspectApplicationService prospectApplicationService;
   @Autowired private ProspectOperationsService prospectOperationsService;
   @Autowired private ContactOperationsService contactOperationsService;
+  @Autowired private JdbcTemplate jdbcTemplate;
   @Autowired private ExclusionApplicationService exclusionApplicationService;
   @Autowired private TimelineService timelineService;
 
@@ -268,6 +271,59 @@ class OperationalProspectIntegrationTest {
     var restored = prospectOperationsService.restore(prospectId, archived.version());
     assertThat(restored.archivedAt()).isNull();
     assertThat(restored.status()).isEqualTo(ProspectStatus.CONTACTED);
+  }
+
+  @Test
+  void calculatesTenantWideDashboardMetricsBeyondTheFirstPage() {
+    String suffix = "dashboard-metrics-" + UUID.randomUUID();
+    var before = prospectOperationsService.dashboardMetrics();
+    List<UUID> prospectIds = new ArrayList<>();
+
+    for (int index = 0; index < 105; index++) {
+      prospectIds.add(
+          prospectApplicationService
+              .create(createCommandWithoutChannels(suffix + "-" + index))
+              .id());
+    }
+
+    List<ProspectStatus> interestedStatuses =
+        List.of(
+            ProspectStatus.INTERESTED,
+            ProspectStatus.QUALIFIED,
+            ProspectStatus.TRIAL_ACTIVE,
+            ProspectStatus.QUOTED,
+            ProspectStatus.NEGOTIATION);
+    for (int index = 0; index < interestedStatuses.size(); index++) {
+      jdbcTemplate.update(
+          """
+          UPDATE prospect
+          SET status = ?, updated_at = now()
+          WHERE id = ? AND organization_id = ?
+          """,
+          interestedStatuses.get(index).name(),
+          prospectIds.get(index),
+          principal.organizationId());
+    }
+    for (int index = 0; index < 7; index++) {
+      jdbcTemplate.update(
+          """
+          UPDATE prospect
+          SET contact_eligible = TRUE, eligibility = 'ELIGIBLE', updated_at = now()
+          WHERE id = ? AND organization_id = ?
+          """,
+          prospectIds.get(index),
+          principal.organizationId());
+    }
+
+    var firstPage =
+        prospectOperationsService.search(
+            new SearchFilter(suffix, null, null, false, 0, 100, "createdAt", "desc"));
+    assertThat(firstPage.totalElements()).isEqualTo(105);
+    assertThat(firstPage.content()).hasSize(100);
+
+    var after = prospectOperationsService.dashboardMetrics();
+    assertThat(after.interested() - before.interested()).isEqualTo(5);
+    assertThat(after.blocked() - before.blocked()).isEqualTo(98);
   }
 
   @Test

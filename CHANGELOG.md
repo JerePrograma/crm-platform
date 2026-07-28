@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-07-26 — UX-004 métricas tenant-wide del dashboard
+
+- agrega `ProspectOperationsService.dashboardMetrics()` con una única consulta tenant-scoped;
+- expone `GET /api/v1/prospects/metrics` protegido por `PROSPECT_READ`;
+- conserva la semántica visible de cinco estados de interés y bloqueo por `contact_eligible`;
+- reemplaza el cálculo frontend basado en la página actual;
+- agrega una regresión PostgreSQL con 105 prospectos y página de tamaño 100;
+- valida acceso read-only y aislamiento entre organizaciones;
+- agrega prueba frontend del contrato agregado;
+- ejecuta pruebas focalizadas, Maven Verify completo, typecheck, unit tests y build;
+- mantiene la demo remota, producción no desplegada y envíos reales deshabilitados.
+
 ## 2026-07-26 — UX-003 limpieza de automatización remota obsoleta
 
 - inventaría el trigger, workflow y tres scripts Python de la automatización `remote-ux-overhaul`;

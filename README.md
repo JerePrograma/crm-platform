@@ -252,3 +252,28 @@ Evidencia:
 ```text
 docs/validation/ux-003-remote-automation-cleanup-2026-07-26.md
 ```
+
+## UX-004 — Métricas tenant-wide del dashboard
+
+El resumen principal obtiene ahora los conteos globales desde:
+
+```text
+GET /api/v1/prospects/metrics
+```
+
+La consulta:
+
+- exige `PROSPECT_READ`;
+- filtra por la organización autenticada;
+- excluye prospectos archivados;
+- cuenta como interés `INTERESTED`, `QUALIFIED`, `TRIAL_ACTIVE`, `QUOTED` y `NEGOTIATION`;
+- cuenta como bloqueo `NOT contact_eligible`;
+- no recorre ni concatena páginas de prospectos.
+
+La regresión PostgreSQL crea 105 prospectos con prefijo único, comprueba que la primera página contiene 100 y confirma que la métrica agrega los 105 registros. También se valida acceso de `VIEWER`, aislamiento entre organizaciones y el contrato frontend.
+
+Evidencia:
+
+```text
+docs/validation/ux-004-tenant-wide-dashboard-metrics-2026-07-26.md
+```

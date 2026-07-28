@@ -117,6 +117,24 @@ public class ProspectOperationsService {
     return new PageResult<>(content, count, (int) Math.ceil((double) count / size), page, size);
   }
 
+  @Transactional(readOnly = true)
+  public ProspectDashboardMetrics dashboardMetrics() {
+    Map<String, Object> metrics =
+        jdbcTemplate.queryForMap(
+            """
+            SELECT count(*) FILTER (
+                WHERE status IN ('INTERESTED', 'QUALIFIED', 'TRIAL_ACTIVE', 'QUOTED', 'NEGOTIATION')
+              ) AS interested,
+              count(*) FILTER (WHERE NOT contact_eligible) AS blocked
+            FROM prospect
+            WHERE organization_id = ? AND archived_at IS NULL
+            """,
+            currentActor.organizationId());
+    return new ProspectDashboardMetrics(
+        ((Number) metrics.get("interested")).longValue(),
+        ((Number) metrics.get("blocked")).longValue());
+  }
+
   @Transactional
   public OperationalProspectView update(UUID id, UpdateProspectCommand command) {
     OperationalProspectView before = get(id);
@@ -609,6 +627,8 @@ public class ProspectOperationsService {
   private String csv(String value) {
     return CsvSafety.cell(value);
   }
+
+  public record ProspectDashboardMetrics(long interested, long blocked) {}
 
   public record SearchFilter(
       String query,

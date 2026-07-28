@@ -495,3 +495,24 @@ La eliminación se realizó después de comprobar cero consumidores operativos e
 No se modificó funcionalidad del CRM. No se repitieron backend, frontend, Docker, migraciones ni E2E.
 
 Siguiente iniciativa: `UX-004` — métricas tenant-wide del dashboard.
+
+## Actualización 2026-07-26 — UX-004
+
+El resumen del CRM dejó de calcular interés y bloqueo sobre la página visible.
+
+Se agregó un endpoint agregado tenant-scoped con una sola consulta PostgreSQL y se conectó al frontend. La regresión demuestra 105 registros totales con una página de 100.
+
+Validaciones:
+
+- backend focalizado;
+- Maven Verify completo;
+- acceso `VIEWER`;
+- tenant isolation;
+- frontend API;
+- TypeScript;
+- unit tests;
+- build;
+- repository safety;
+- `git diff --check`.
+
+Siguiente iniciativa: `UX-006`.

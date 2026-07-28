@@ -196,3 +196,25 @@ CI: PENDING_POST_PUSH_VERIFICATION
 No se modificaron backend, frontend, migraciones, dependencias, Dockerfiles, Compose ni políticas de envío.
 
 Evidencia: `docs/validation/ux-003-remote-automation-cleanup-2026-07-26.md`.
+
+## UX-004 — Estado de publicación
+
+```text
+estado: FUNCTIONAL_PASS
+backend focused tests: EXECUTED_PASS
+backend Maven Verify: EXECUTED_PASS
+frontend API test: EXECUTED_PASS
+frontend typecheck: EXECUTED_PASS
+frontend unit: EXECUTED_PASS
+frontend build: EXECUTED_PASS
+tenant isolation: EXECUTED_PASS
+page size 100 / total 105: EXECUTED_PASS
+repository safety: EXECUTED_PASS
+git diff --check: EXECUTED_PASS
+demo preserved: EXECUTED_PASS id=d0420be3a84d
+CI: PENDING_POST_PUSH_VERIFICATION
+```
+
+No se añadieron migraciones, dependencias ni capacidad de envío real.
+
+Evidencia: `docs/validation/ux-004-tenant-wide-dashboard-metrics-2026-07-26.md`.

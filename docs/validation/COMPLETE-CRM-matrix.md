@@ -59,6 +59,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | frontend integral | EXECUTED_PASS | navegación completa, permisos, desktop/mobile y 2/2 Playwright |
 | frontend E2E | EXECUTED_PASS | suite 2/2 en ambas corridas integrales, 18,213 s y 37,590 s de fase |
 | dashboard/reportes | EXECUTED_PASS | agregaciones PostgreSQL tenant/fecha/timezone y monedas separadas |
+| métricas tenant-wide del resumen | EXECUTED_PASS | endpoint prospect metrics, 105 registros con página de 100, VIEWER y aislamiento tenant |
 | búsqueda PostgreSQL | EXECUTED_PASS | institución/contacto/canal/localidad/website/notas/tags, allow-list y tenant test |
 | configuración/etiquetas | EXECUTED_PASS | settings hard-blocked, tags CRUD/bulk/audit/tenant |
 | threat model | EXECUTED_PASS | `docs/security.md`, fronteras/amenazas/mitigaciones/riesgos |

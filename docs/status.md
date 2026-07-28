@@ -192,6 +192,41 @@ Criterios verificados:
 
 Evidencia: `docs/validation/ux-003-remote-automation-cleanup-2026-07-26.md`.
 
+## UX-004 — Métricas tenant-wide del dashboard
+
+Estado: `FUNCTIONAL_PASS`
+
+Implementación:
+
+- `ProspectOperationsService.dashboardMetrics()`;
+- `ProspectController.metrics()`;
+- `GET /api/v1/prospects/metrics`;
+- `getProspectDashboardMetrics()` en frontend;
+- consumo desde `App.refresh()` sin usar la página cargada.
+
+Validación:
+
+```text
+página sintética: 100 de 105
+conteo interesado fuera de página: EXECUTED_PASS
+conteo bloqueado fuera de página: EXECUTED_PASS
+PROSPECT_READ para VIEWER: EXECUTED_PASS
+tenant isolation: EXECUTED_PASS
+backend focused tests: EXECUTED_PASS
+backend Maven Verify: EXECUTED_PASS
+frontend API test: EXECUTED_PASS
+frontend typecheck: EXECUTED_PASS
+frontend unit: EXECUTED_PASS
+frontend build: EXECUTED_PASS
+repository safety: EXECUTED_PASS
+git diff --check: EXECUTED_PASS
+demo preserved: EXECUTED_PASS id=d0420be3a84d
+```
+
+No se añadieron migraciones ni dependencias.
+
+Evidencia: `docs/validation/ux-004-tenant-wide-dashboard-metrics-2026-07-26.md`.
+
 ## Capacidades funcionales publicadas previamente
 
 Permanecen las capacidades SEG-000–SEG-011 y los cierres UX/contactabilidad ya documentados en la historia: identidad, RBAC, tenant isolation, prospectos, contactos, importaciones, duplicados, actividades, tareas, oportunidades, campañas, mensajería simulada, outbox, inbound de prueba, reporting, auditoría, configuración y frontend operativo.
@@ -200,12 +235,14 @@ El nuevo candidato local que añadía métricas tenant-wide, paginación adicion
 
 ## Próximo paso obligatorio
 
-El siguiente cambio independiente es `UX-004` — métricas tenant-wide del dashboard:
+El siguiente cambio independiente es `UX-006` — importaciones de gran volumen:
 
-1. localizar el endpoint o reporte agregado real;
-2. confirmar cómo se calculan actualmente los conteos visibles;
-3. reproducir el defecto con más de una página de prospectos;
-4. implementar agregaciones tenant-scoped sin cargar todas las páginas;
-5. conservar RBAC, tenant isolation, filtros y contratos existentes;
-6. añadir pruebas backend y frontend;
-7. no mezclar paginación de importaciones, outbox/inbound ni refactorización de `App.tsx`.
+1. inspeccionar `getImportRows`, controlador, servicio, repositorios y consumidores;
+2. confirmar el contrato actual de filas de importación;
+3. agregar paginación backend compatible;
+4. agregar filtros por hoja y resultado, más búsqueda;
+5. preservar tenant isolation e idempotencia;
+6. actualizar frontend sin cargar todas las filas;
+7. añadir pruebas con volumen sintético representativo.
+
+No mezclar `OPS-001`, multibrowser ni modularización.

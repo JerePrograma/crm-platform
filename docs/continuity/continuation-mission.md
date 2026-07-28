@@ -4,7 +4,7 @@ Actualizado: 2026-07-24
 
 ## Objetivo inmediato
 
-Ejecutar `UX-004`: corregir las métricas tenant-wide del dashboard sin depender de la página de prospectos cargada.
+Ejecutar `UX-006`: paginar y filtrar resultados de importación sin cargar todas las filas en el frontend.
 
 ## Estado de entrada
 
@@ -12,11 +12,12 @@ Ejecutar `UX-004`: corregir las métricas tenant-wide del dashboard sin depender
 rama: main
 VAL-001: FUNCTIONAL_PASS
 VAL-002: COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
-UX-003: COMPLETE_WITH_FOCUSED_VALIDATION
-remote UX automation: REMOVED
+UX-003: COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
+UX-004: FUNCTIONAL_PASS
+dashboard prospect metrics: TENANT_WIDE
 producción: NOT_DEPLOYED
 envíos reales: DISABLED
-siguiente gate: UX-004
+siguiente gate: UX-006
 ```
 
 ## Lectura obligatoria
@@ -50,38 +51,38 @@ Detenerse ante cambios locales no relacionados, divergencia, remoto inesperado o
 
 ## Validación focalizada
 
-Para `UX-004`:
+Para `UX-006`:
 
-1. localizar el componente real del dashboard;
-2. identificar APIs, reportes y selectores usados por sus métricas;
-3. reproducir el problema con más de una página;
-4. localizar todos los consumidores del contrato que cambie;
-5. preservar RBAC y tenant isolation;
-6. añadir pruebas backend y frontend;
-7. evitar cargar todas las páginas.
+1. localizar `getImportRows` y el endpoint backend real;
+2. inspeccionar tipos, filtros y componentes de importación;
+3. enumerar todos los consumidores;
+4. reproducir el problema con volumen mayor al límite actual;
+5. diseñar paginación compatible y filtros backend;
+6. preservar tenant isolation, idempotencia y evidencia por fila;
+7. añadir pruebas backend y frontend.
 
 ## Validación integral
 
-Ejecutar primero pruebas focalizadas del endpoint/reporte y del consumidor frontend.
+Ejecutar primero pruebas focalizadas del módulo de importaciones y del consumidor frontend.
 
-Después ejecutar las validaciones generales reales del repositorio que correspondan al alcance:
+Después ejecutar:
 
-- formato y tipos;
-- pruebas backend afectadas;
-- pruebas frontend afectadas;
-- build;
+- Maven Verify;
+- frontend typecheck;
+- frontend unit tests;
+- frontend build;
 - repository safety;
 - `git diff --check`.
 
-No mezclar importaciones, outbox/inbound, multibrowser ni modularización.
+No mezclar outbox/inbound, navegadores o modularización.
 
 ## Después de validar
 
-1. revisar el diff completo;
-2. confirmar aislamiento tenant y permisos;
-3. comprobar que las métricas no dependen de la página visible;
-4. actualizar status, backlog, next-step, continuidad, matriz y evidencia;
-5. commit lógico único;
+1. revisar contrato paginado y compatibilidad;
+2. confirmar aislamiento tenant;
+3. confirmar que el frontend no carga todas las filas;
+4. actualizar documentación y matriz;
+5. commit único;
 6. push fast-forward a `main`;
 7. verificar CI del SHA exacto.
 
