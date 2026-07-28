@@ -2,7 +2,8 @@ package com.gestudio.crm.imports;
 
 import com.gestudio.crm.imports.ImportJobLifecycleService.ImportSummary;
 import com.gestudio.crm.imports.ImportOperationsQueryService.DuplicateReviewView;
-import com.gestudio.crm.imports.ImportOperationsQueryService.ImportRowView;
+import com.gestudio.crm.imports.ImportOperationsQueryService.ImportRowPage;
+import com.gestudio.crm.imports.ImportOperationsQueryService.RowSearchFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -65,9 +67,16 @@ public class ProspectImportController {
 
   @GetMapping("/{jobId}/rows")
   @PreAuthorize("hasAnyAuthority('IMPORT_PREVIEW', 'IMPORT_EXECUTE')")
-  @Operation(summary = "List persisted row outcomes for an import job")
-  public List<ImportRowView> rows(@PathVariable UUID jobId) {
-    return operationsQueryService.rows(jobId);
+  @Operation(summary = "Page and filter persisted row outcomes for an import job")
+  public ImportRowPage rows(
+      @PathVariable UUID jobId,
+      @RequestParam(required = false) ImportRow.Status status,
+      @RequestParam(required = false) String sourceSheet,
+      @RequestParam(required = false) String query,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "25") int size) {
+    return operationsQueryService.rows(
+        jobId, new RowSearchFilter(status, sourceSheet, query, page, size));
   }
 
   @GetMapping("/duplicate-reviews/pending")

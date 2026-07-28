@@ -237,6 +237,10 @@ export type ImportRow = {
   prospectId: string | null;
 };
 
+export type ImportRowPage = Page<ImportRow> & {
+  sourceSheets: string[];
+};
+
 export type DuplicateReview = {
   id: string;
   version: number;

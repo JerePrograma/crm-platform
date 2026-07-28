@@ -9,6 +9,7 @@ import type {
   DuplicateReview,
   Exclusion,
   ImportRow,
+  ImportRowPage,
   ImportSummary,
   MessageTemplate,
   Opportunity,
@@ -324,8 +325,32 @@ export function importProspects(file: File, execute: boolean): Promise<ImportSum
   });
 }
 
-export function getImportRows(jobId: string): Promise<ImportRow[]> {
-  return request(`/api/v1/imports/prospects/${jobId}/rows`);
+export function getImportRows(
+  jobId: string,
+  options: {
+    status?: ImportRow["status"];
+    sourceSheet?: string;
+    query?: string;
+    page?: number;
+    size?: number;
+  } = {},
+): Promise<ImportRowPage> {
+  const params = new URLSearchParams({
+    page: String(Math.max(0, options.page ?? 0)),
+    size: String(Math.min(Math.max(options.size ?? 25, 1), 100)),
+  });
+  if (options.status) {
+    params.set("status", options.status);
+  }
+  if (options.sourceSheet?.trim()) {
+    params.set("sourceSheet", options.sourceSheet.trim());
+  }
+  if (options.query?.trim()) {
+    params.set("query", options.query.trim());
+  }
+  return request(
+    `/api/v1/imports/prospects/${encodeURIComponent(jobId)}/rows?${params.toString()}`,
+  );
 }
 
 export function getPendingDuplicateReviews(): Promise<DuplicateReview[]> {

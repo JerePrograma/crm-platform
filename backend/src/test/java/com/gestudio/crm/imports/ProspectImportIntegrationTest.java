@@ -1,25 +1,33 @@
 package com.gestudio.crm.imports;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.gestudio.crm.common.ResourceNotFoundException;
 import com.gestudio.crm.contact.ContactChannelRepository;
 import com.gestudio.crm.contact.ContactChannelType;
 import com.gestudio.crm.contact.ContactRepository;
 import com.gestudio.crm.exclusion.ExclusionApplicationService;
 import com.gestudio.crm.exclusion.ExclusionReason;
 import com.gestudio.crm.exclusion.ExclusionRepository;
+import com.gestudio.crm.identity.CrmPrincipal;
 import com.gestudio.crm.imports.ImportJobLifecycleService.ImportSummary;
+import com.gestudio.crm.imports.ImportOperationsQueryService.RowSearchFilter;
 import com.gestudio.crm.institution.InstitutionRepository;
 import com.gestudio.crm.prospect.ProspectApplicationService;
 import com.gestudio.crm.prospect.ProspectApplicationService.CreateProspectCommand;
 import com.gestudio.crm.prospect.ProspectRepository;
 import com.gestudio.crm.prospect.ProspectStatus;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -41,6 +49,7 @@ class ProspectImportIntegrationTest {
   }
 
   @Autowired private ProspectImportService prospectImportService;
+  @Autowired private ImportOperationsQueryService importOperationsQueryService;
   @Autowired private ProspectApplicationService prospectApplicationService;
   @Autowired private ExclusionApplicationService exclusionApplicationService;
   @Autowired private DuplicateReviewRepository duplicateReviewRepository;
@@ -55,6 +64,7 @@ class ProspectImportIntegrationTest {
 
   @BeforeEach
   void cleanDatabase() {
+    SecurityContextHolder.clearContext();
     jdbcTemplate.update("DELETE FROM audit_event");
     duplicateReviewRepository.deleteAll();
     importRowRepository.deleteAll();
@@ -86,6 +96,98 @@ class ProspectImportIntegrationTest {
     assertThat(exclusionRepository.count()).isEqualTo(16);
     assertThat(importJobRepository.count()).isEqualTo(1);
     assertThat(importRowRepository.count()).isEqualTo(116);
+  }
+
+  @Test
+  void pagesFiltersAndSearchesImportRowsWithinExplicitLimits() {
+    byte[] workbook = TestProspectWorkbookFactory.workbook(105, 16);
+    ImportSummary summary =
+        prospectImportService.importFile("fixture-pagination-preview.xlsx", workbook, true);
+
+    var firstPage =
+        importOperationsQueryService.rows(
+            summary.id(), new RowSearchFilter(null, null, null, 0, 25));
+    assertThat(firstPage.totalElements()).isEqualTo(121);
+    assertThat(firstPage.totalPages()).isEqualTo(5);
+    assertThat(firstPage.number()).isZero();
+    assertThat(firstPage.size()).isEqualTo(25);
+    assertThat(firstPage.first()).isTrue();
+    assertThat(firstPage.last()).isFalse();
+    assertThat(firstPage.content()).hasSize(25);
+    assertThat(firstPage.sourceSheets()).containsExactly("Exclusiones", "Prospectos");
+
+    var secondPage =
+        importOperationsQueryService.rows(
+            summary.id(), new RowSearchFilter(null, null, null, 1, 25));
+    assertThat(secondPage.number()).isEqualTo(1);
+    assertThat(secondPage.content()).hasSize(25);
+    assertThat(secondPage.content()).doesNotContainAnyElementsOf(firstPage.content());
+
+    var exclusions =
+        importOperationsQueryService.rows(
+            summary.id(), new RowSearchFilter(null, "Exclusiones", null, 0, 25));
+    assertThat(exclusions.totalElements()).isEqualTo(16);
+    assertThat(exclusions.content())
+        .allSatisfy(row -> assertThat(row.sourceSheet()).isEqualTo("Exclusiones"));
+
+    var accepted =
+        importOperationsQueryService.rows(
+            summary.id(), new RowSearchFilter(ImportRow.Status.ACCEPTED, null, null, 0, 25));
+    assertThat(accepted.totalElements()).isEqualTo(121);
+
+    var search =
+        importOperationsQueryService.rows(
+            summary.id(), new RowSearchFilter(null, null, "contacto105@example.test", 0, 25));
+    assertThat(search.totalElements()).isEqualTo(1);
+    assertThat(search.content().getFirst().sourceSheet()).isEqualTo("Prospectos");
+    assertThat(search.content().getFirst().rowNumber()).isEqualTo(106);
+
+    var rowNumberSearch =
+        importOperationsQueryService.rows(
+            summary.id(), new RowSearchFilter(null, null, "000106", 0, 25));
+    assertThat(rowNumberSearch.totalElements()).isEqualTo(1);
+    assertThat(rowNumberSearch.content().getFirst().rowNumber()).isEqualTo(106);
+
+    var capped =
+        importOperationsQueryService.rows(
+            summary.id(), new RowSearchFilter(null, null, null, -10, 500));
+    assertThat(capped.number()).isZero();
+    assertThat(capped.size()).isEqualTo(100);
+    assertThat(capped.content()).hasSize(100);
+    assertThat(capped.totalPages()).isEqualTo(2);
+  }
+
+  @Test
+  void importRowPagesAreTenantIsolated() {
+    byte[] workbook = TestProspectWorkbookFactory.workbook(1, 0);
+    ImportSummary summary =
+        prospectImportService.importFile("fixture-tenant-preview.xlsx", workbook, true);
+
+    CrmPrincipal otherTenant =
+        new CrmPrincipal(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "other-tenant",
+            "Other Tenant",
+            "unused",
+            "SALES",
+            Set.of("IMPORT_PREVIEW"),
+            true,
+            null);
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                otherTenant, null, otherTenant.getAuthorities()));
+
+    try {
+      assertThatThrownBy(
+              () ->
+                  importOperationsQueryService.rows(
+                      summary.id(), new RowSearchFilter(null, null, null, 0, 25)))
+          .isInstanceOf(ResourceNotFoundException.class);
+    } finally {
+      SecurityContextHolder.clearContext();
+    }
   }
 
   @Test

@@ -92,6 +92,7 @@ import type {
   DuplicateResolutionAction,
   Exclusion,
   ImportRow,
+  ImportRowPage,
   ImportSummary,
   MessageTemplate,
   ManualMessageLink,
@@ -2144,24 +2145,100 @@ function ImportsPanel({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
-  const [rows, setRows] = useState<ImportRow[]>([]);
+  const [rowResults, setRowResults] = useState<ImportRowPage | null>(null);
   const [busy, setBusy] = useState(false);
+  const [rowsLoading, setRowsLoading] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [rowStatus, setRowStatus] = useState("");
+  const [rowSourceSheet, setRowSourceSheet] = useState("");
+  const [rowQueryInput, setRowQueryInput] = useState("");
   const [rowQuery, setRowQuery] = useState("");
-  const [rowPage, setRowPage] = useState(0);
   const pageSize = 25;
   const previewReady = Boolean(summary?.dryRun && file && summary.fileName === file.name);
-  const filteredRows = rows.filter((row) => {
-    const matchesStatus = !rowStatus || row.status === rowStatus;
-    const query = rowQuery.trim().toLocaleLowerCase("es-AR");
-    const matchesQuery = !query || `${row.sourceSheet} ${row.rowNumber} ${row.normalizedEmail ?? ""} ${row.normalizedPhone ?? ""} ${row.errorMessage ?? ""}`.toLocaleLowerCase("es-AR").includes(query);
-    return matchesStatus && matchesQuery;
-  });
-  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
-  const visibleRows = filteredRows.slice(rowPage * pageSize, (rowPage + 1) * pageSize);
+  const rows = rowResults?.content ?? [];
+  const pageCount = Math.max(1, rowResults?.totalPages ?? 0);
+
+  async function loadRows(
+    jobId: string,
+    page: number,
+    status = rowStatus,
+    sourceSheet = rowSourceSheet,
+    query = rowQuery,
+  ) {
+    setRowsLoading(true);
+    try {
+      setRowResults(
+        await getImportRows(jobId, {
+          status: status ? (status as ImportRow["status"]) : undefined,
+          sourceSheet: sourceSheet || undefined,
+          query: query || undefined,
+          page,
+          size: pageSize,
+        }),
+      );
+    } finally {
+      setRowsLoading(false);
+    }
+  }
+
+  async function changeRowStatus(value: string) {
+    setRowStatus(value);
+    setError(null);
+    if (!summary) return;
+    try {
+      await loadRows(summary.id, 0, value, rowSourceSheet, rowQuery);
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  async function changeRowSourceSheet(value: string) {
+    setRowSourceSheet(value);
+    setError(null);
+    if (!summary) return;
+    try {
+      await loadRows(summary.id, 0, rowStatus, value, rowQuery);
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  async function applyRowSearch(event: FormEvent) {
+    event.preventDefault();
+    const query = rowQueryInput.trim();
+    setRowQuery(query);
+    setError(null);
+    if (!summary) return;
+    try {
+      await loadRows(summary.id, 0, rowStatus, rowSourceSheet, query);
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  async function clearRowSearch() {
+    setRowQueryInput("");
+    setRowQuery("");
+    setError(null);
+    if (!summary) return;
+    try {
+      await loadRows(summary.id, 0, rowStatus, rowSourceSheet, "");
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
+
+  async function changeRowPage(page: number) {
+    if (!summary || !rowResults || page < 0 || page >= rowResults.totalPages) return;
+    setError(null);
+    try {
+      await loadRows(summary.id, page);
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
 
   async function run(execute: boolean) {
     if (!file) {
@@ -2187,8 +2264,11 @@ function ImportsPanel({
     try {
       const result = await importProspects(file, execute);
       setSummary(result);
-      setRows(await getImportRows(result.id));
-      setRowPage(0);
+      setRowStatus("");
+      setRowSourceSheet("");
+      setRowQueryInput("");
+      setRowQuery("");
+      await loadRows(result.id, 0, "", "", "");
       setNotice(execute ? "Importación ejecutada. Revisá el resumen y los casos pendientes." : "Vista previa completada. Revisá los resultados antes de importar.");
       await onChanged();
     } catch (caught) {
@@ -2281,8 +2361,11 @@ function ImportsPanel({
           <label className="file-control">Archivo CSV o XLSX<input type="file" accept=".csv,.xlsx" onChange={(event) => {
             setFile(event.target.files?.[0] ?? null);
             setSummary(null);
-            setRows([]);
-            setRowPage(0);
+            setRowResults(null);
+            setRowStatus("");
+            setRowSourceSheet("");
+            setRowQueryInput("");
+            setRowQuery("");
             setError(null);
             setNotice(null);
           }} /></label>
@@ -2292,19 +2375,86 @@ function ImportsPanel({
         {file && <p className="result-context">Archivo seleccionado: <strong>{file.name}</strong> · {(file.size / 1024).toLocaleString("es-AR", { maximumFractionDigits: 1 })} KB</p>}
         {summary && <ImportSummaryView summary={summary} />}
       </Panel>
-      {rows.length > 0 && (
+      {rowResults && (
         <Panel title="Resultado por fila">
-          <div className="toolbar">
-            <label>Resultado<select value={rowStatus} onChange={(event) => { setRowStatus(event.target.value); setRowPage(0); }}><option value="">Todos</option>{["ACCEPTED", "EXCLUDED", "REJECTED", "DUPLICATE", "REVIEW_REQUIRED", "PENDING"].map((status) => <option key={status} value={status}>{labelFor(status)}</option>)}</select></label>
-            <label className="grow">Buscar dentro de los resultados<input value={rowQuery} onChange={(event) => { setRowQuery(event.target.value); setRowPage(0); }} placeholder="Hoja, fila, correo, teléfono o error" /></label>
-          </div>
-          <p className="result-context" role="status">{filteredRows.length.toLocaleString("es-AR")} de {rows.length.toLocaleString("es-AR")} filas.</p>
-          {visibleRows.length === 0 ? <EmptyState text="No hay filas que coincidan con los filtros actuales." /> : (
+          {rowsLoading && <div className="loading-bar" aria-label="Cargando resultados de importación" />}
+          <form className="toolbar" onSubmit={(event) => void applyRowSearch(event)}>
+            <label>
+              Hoja
+              <select
+                disabled={rowsLoading}
+                value={rowSourceSheet}
+                onChange={(event) => void changeRowSourceSheet(event.target.value)}
+              >
+                <option value="">Todas</option>
+                {rowResults.sourceSheets.map((sourceSheet) => (
+                  <option key={sourceSheet} value={sourceSheet}>{sourceSheet}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Resultado
+              <select
+                disabled={rowsLoading}
+                value={rowStatus}
+                onChange={(event) => void changeRowStatus(event.target.value)}
+              >
+                <option value="">Todos</option>
+                {["ACCEPTED", "EXCLUDED", "REJECTED", "DUPLICATE", "REVIEW_REQUIRED", "PENDING"].map((status) => (
+                  <option key={status} value={status}>{labelFor(status)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grow">
+              Buscar dentro de los resultados
+              <input
+                disabled={rowsLoading}
+                value={rowQueryInput}
+                onChange={(event) => setRowQueryInput(event.target.value)}
+                placeholder="Hoja, fila, correo, teléfono o error"
+              />
+            </label>
+            <button className="secondary-button" type="submit" disabled={rowsLoading}>
+              Buscar
+            </button>
+            {(rowQueryInput || rowQuery) && (
+              <button
+                className="link-button"
+                type="button"
+                disabled={rowsLoading}
+                onClick={() => void clearRowSearch()}
+              >
+                Limpiar búsqueda
+              </button>
+            )}
+          </form>
+          <p className="result-context" role="status">
+            {rowResults.totalElements.toLocaleString("es-AR")} de {(summary?.totalRows ?? rowResults.totalElements).toLocaleString("es-AR")} filas.
+          </p>
+          {rows.length === 0 ? <EmptyState text="No hay filas que coincidan con los filtros actuales." /> : (
             <div className="table-scroll"><table><thead><tr><th>Hoja</th><th>Fila</th><th>Resultado</th><th>Canal detectado</th><th>Detalle</th></tr></thead><tbody>
-              {visibleRows.map((row) => <tr key={row.id}><td>{row.sourceSheet}</td><td>{row.rowNumber}</td><td><Badge value={row.status} /></td><td>{row.normalizedEmail ?? row.normalizedPhone ?? "Sin canal utilizable"}</td><td>{row.errorMessage ? humanizeError(row.errorMessage) : "Sin observaciones"}</td></tr>)}
+              {rows.map((row) => <tr key={row.id}><td>{row.sourceSheet}</td><td>{row.rowNumber}</td><td><Badge value={row.status} /></td><td>{row.normalizedEmail ?? row.normalizedPhone ?? "Sin canal utilizable"}</td><td>{row.errorMessage ? humanizeError(row.errorMessage) : "Sin observaciones"}</td></tr>)}
             </tbody></table></div>
           )}
-          <div className="pagination" aria-label="Paginación de resultados"><button className="secondary-button" disabled={rowPage === 0} onClick={() => setRowPage((page) => page - 1)}>Anterior</button><span>Página {rowPage + 1} de {pageCount}</span><button className="secondary-button" disabled={rowPage + 1 >= pageCount} onClick={() => setRowPage((page) => page + 1)}>Siguiente</button></div>
+          {pageCount > 1 && (
+            <div className="pagination" aria-label="Paginación de resultados">
+              <button
+                className="secondary-button"
+                disabled={rowsLoading || rowResults.first}
+                onClick={() => void changeRowPage(rowResults.number - 1)}
+              >
+                Anterior
+              </button>
+              <span>Página {rowResults.number + 1} de {pageCount}</span>
+              <button
+                className="secondary-button"
+                disabled={rowsLoading || rowResults.last}
+                onClick={() => void changeRowPage(rowResults.number + 1)}
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
         </Panel>
       )}
       <Panel title="Coincidencias que requieren revisión">
