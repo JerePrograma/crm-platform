@@ -85,7 +85,7 @@ docker run --rm \
 phase=migrations
 bash scripts/verify-migrations.sh "$backend_image"
 phase=e2e
-(cd frontend && CRM_E2E_BASE_URL="http://127.0.0.1:$frontend_port" CRM_E2E_USERNAME=complete-admin CRM_E2E_PASSWORD=complete-admin-password CRM_E2E_INBOUND_SECRET=synthetic-complete-crm-inbound-secret npm run test:e2e)
+(cd frontend && CRM_E2E_BASE_URL="http://127.0.0.1:$frontend_port" CRM_E2E_USERNAME=complete-admin CRM_E2E_PASSWORD=complete-admin-password CRM_E2E_INBOUND_SECRET=synthetic-complete-crm-inbound-secret npx playwright test tests/complete-crm.spec.ts tests/gmail-no-oauth.spec.ts)
 phase=zero-sent
 postgres=$(docker compose ps -q postgres)
 database=$(docker exec "$postgres" printenv POSTGRES_DB)

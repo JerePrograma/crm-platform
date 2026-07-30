@@ -36,7 +36,7 @@ $summary = [ordered]@{
   error = $null
 }
 
-$phaseNames = @('trackedTreeClean','tooling','repositorySafety','scriptSyntax','secretScan','backendFormatUnitIntegrationArchitectureSecurity','frontendInstall','frontendTypecheck','frontendUnit','frontendBuild','composeNoCacheHealthSmoke','dependencyScan','migrationFromEmpty','migrationFromV11','outboxWorkersInboundWebhook','frontendE2E','effectiveSendingBlockade','zeroSent','backupRestore','productionProfileSmoke','finalTreeClean')
+$phaseNames = @('trackedTreeClean','tooling','repositorySafety','scriptSyntax','secretScan','backendFormatUnitIntegrationArchitectureSecurity','frontendInstall','frontendTypecheck','frontendUnit','frontendBuild','composeNoCacheHealthSmoke','dependencyScan','migrationFromEmpty','migrationFromV11','outboxWorkersInboundWebhook','frontendE2E','gmailLiveFakeE2E','effectiveSendingBlockade','zeroSent','backupRestore','productionProfileSmoke','finalTreeClean')
 foreach ($name in $phaseNames) { $summary.phases[$name] = [ordered]@{ status = 'NOT_RUN'; durationSeconds = $null } }
 
 function Run-Phase([string]$Name, [scriptblock]$Action) {
@@ -162,7 +162,14 @@ try {
     $env:CRM_E2E_USERNAME = 'complete-admin'
     $env:CRM_E2E_PASSWORD = 'complete-admin-password'
     $env:CRM_E2E_INBOUND_SECRET = 'synthetic-complete-crm-inbound-secret'
-    Invoke-Checked 'npm' @('run','test:e2e') (Join-Path $repoRoot 'frontend')
+    Invoke-Checked 'npx' @(
+      'playwright','test',
+      'tests/complete-crm.spec.ts',
+      'tests/gmail-no-oauth.spec.ts'
+    ) (Join-Path $repoRoot 'frontend')
+  }
+  Run-Phase 'gmailLiveFakeE2E' {
+    & (Join-Path $PSScriptRoot 'validate-gmail-live-fake.ps1')
   }
   Run-Phase 'effectiveSendingBlockade' {
     $environment = & docker inspect $backendContainer --format '{{json .Config.Env}}'
