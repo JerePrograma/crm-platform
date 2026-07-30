@@ -137,6 +137,15 @@ public class OutboxWorkerService {
                             AND s.setting_key = 'outbox-worker-paused'
                             AND lower(s.setting_value) = 'true'
                         )
+                        AND NOT EXISTS (
+                          SELECT 1 FROM message_record m
+                          JOIN campaign c ON c.id = m.campaign_id
+                            AND c.organization_id = m.organization_id
+                          WHERE e.event_type = 'CAMPAIGN_MESSAGE_SEND_V1'
+                            AND m.organization_id = e.organization_id
+                            AND m.id = e.aggregate_id
+                            AND c.status = 'PAUSED'
+                        )
                       ORDER BY e.next_attempt_at, e.created_at, e.id
                       FOR UPDATE SKIP LOCKED
                       LIMIT ?
@@ -192,16 +201,21 @@ public class OutboxWorkerService {
     } else {
       target =
           switch (result.category()) {
+            case DEFERRED -> OutboxStatus.RETRY;
             case RETRYABLE ->
                 event.attemptCount() >= event.maxAttempts()
                     ? OutboxStatus.DEAD
                     : OutboxStatus.RETRY;
-            case POLICY_BLOCK, CONFIGURATION_BLOCK -> OutboxStatus.BLOCKED;
+            case POLICY_BLOCK, CONFIGURATION_BLOCK, AMBIGUOUS -> OutboxStatus.BLOCKED;
             case CANCELLED, DUPLICATE -> OutboxStatus.CANCELLED;
             case NON_RETRYABLE -> OutboxStatus.DEAD;
           };
       if (target == OutboxStatus.RETRY) {
-        next = now.plus(backoff(event.id(), event.attemptCount()));
+        Instant backoffAt = now.plus(backoff(event.id(), event.attemptCount()));
+        next =
+            result.retryAt() == null || result.retryAt().isBefore(backoffAt)
+                ? backoffAt
+                : result.retryAt();
       }
     }
     Instant processedAt =
@@ -210,6 +224,7 @@ public class OutboxWorkerService {
         jdbcTemplate.update(
             """
             UPDATE outbox_event SET status = ?, next_attempt_at = ?, updated_at = ?,
+              attempt_count = CASE WHEN ? THEN GREATEST(attempt_count - 1, 0) ELSE attempt_count END,
               processed_at = ?, locked_at = NULL, lock_expires_at = NULL, locked_by = NULL,
               last_error_code = ?, last_error_summary = ?, result_summary = ?
             WHERE id = ? AND organization_id = ? AND status = 'PROCESSING' AND locked_by = ?
@@ -217,6 +232,7 @@ public class OutboxWorkerService {
             target.name(),
             Timestamp.from(next),
             Timestamp.from(now),
+            result.category() == OutboxErrorCategory.DEFERRED,
             processedAt == null ? null : Timestamp.from(processedAt),
             result.code(),
             safe(result.summary()),

@@ -2,7 +2,9 @@
 
 ## Estado
 
-No existe envío en SEG-001. Este documento establece prerrequisitos para no diseñar el adaptador aislado de reputación y cumplimiento.
+SEG-001 implementa Gmail `users.messages.send` detrás de guardas fail-closed y
+lo valida solo contra un proveedor falso. La conexión real requiere cumplir
+estos prerrequisitos de reputación y cumplimiento.
 
 ## Autenticación de dominio
 
@@ -18,7 +20,7 @@ Antes del piloto:
 
 ## Contenido
 
-Cada correo deberá incluir:
+Cada correo incluye:
 
 - texto plano;
 - HTML sobrio y equivalente;
@@ -39,7 +41,7 @@ No usar:
 
 ## Cabeceras
 
-Futuro:
+Implementadas:
 
 ```text
 List-Unsubscribe: <mailto:...>, <https://...>
@@ -89,7 +91,7 @@ Pausar ante:
 Después de aceptar Gmail el mensaje:
 
 ```text
-Enviado sin rebote registrado hasta el momento
+Aceptado por Gmail
 ```
 
 No afirmar entrega al buzón sin evidencia suficiente.

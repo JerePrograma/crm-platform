@@ -2,7 +2,9 @@
 
 ## Estado
 
-No existen campañas ejecutables ni adaptadores de envío en SEG-001. Este documento define condiciones obligatorias para segmentos posteriores.
+SEG-001 implementa campañas `SIMULATION|LIVE` y Gmail exclusivamente mediante
+el outbox existente. Google real no está conectado y los defaults mantienen
+LIVE bloqueado. Estas condiciones son guardas efectivas, no un diseño futuro.
 
 ## Guardas acumulativas
 
@@ -10,29 +12,29 @@ Un envío solo podrá reservarse cuando todas sean verdaderas:
 
 1. `sending.enabled=true`;
 2. `sending.dry-run=false`;
-3. kill switch ambiental desactivado;
-4. kill switch persistente desactivado;
-5. campaña `APPROVED`;
-6. destinatario aprobado;
-7. canal válido y normalizado;
-8. sin exclusión;
-9. sin contacto previo incompatible;
-10. sin reserva/comunicación equivalente;
-11. plantilla válida y sin tokens pendientes;
-12. adjuntos presentes, MIME/tamaño/hash válidos;
-13. dentro de ventana horaria y día habilitado;
-14. cuota diaria disponible;
-15. reserva idempotente obtenida;
-16. integración saludable;
-17. tasa de rebotes/bajas debajo del umbral.
+3. `MESSAGING_REAL_NETWORK_ALLOWED=true`;
+4. provider Gmail explícito;
+5. kill switch ambiental desactivado;
+6. kill switch persistente desactivado;
+7. campaña LIVE aprobada y audiencia congelada;
+8. sender `CONNECTED`;
+9. actor con `MESSAGE_SEND`;
+10. confirmación `SEND_LIVE_CAMPAIGN`;
+11. destinatario asociado, canal válido, consentimiento no `DENIED`;
+12. sin exclusión, baja ni rebote permanente conocido;
+13. plantilla válida y baja visible;
+14. dentro de ventana horaria y día habilitado;
+15. cuota diaria positiva y disponible, intervalo y concurrencia respetados;
+16. reserva idempotente y lease obtenidos;
+17. integración saludable.
 
 La falla de cualquier condición produce rechazo explícito y auditoría. Nunca una degradación permisiva.
 
-## Configuración inicial futura
+## Configuración inicial
 
 - 10 envíos diarios;
 - concurrencia 1;
-- intervalos variables;
+- intervalo configurable, sin jitter humano;
 - 09:30–17:30;
 - `America/Argentina/Buenos_Aires`;
 - lunes a viernes;
@@ -76,10 +78,10 @@ La exclusión domina campañas, seguimientos y reintentos. Antes de cada intento
 
 ## Estado de entrega
 
-Después de Gmail:
+Después de aceptación por Gmail:
 
 ```text
-Enviado sin rebote registrado hasta el momento
+Aceptado por Gmail
 ```
 
 No usar “entregado” sin evidencia técnica suficiente.

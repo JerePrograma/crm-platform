@@ -66,7 +66,8 @@ public class OrganizationSettingsService {
             UPDATE organization SET name = ?, timezone = ?, currency = ?, locale = ?,
               branding_primary_color = ?, follow_up_days = ?, operating_window_start = ?,
               operating_window_end = ?, business_days = CAST(? AS smallint[]),
-              campaign_daily_limit = 0, version = version + 1, updated_at = now()
+              campaign_daily_limit = COALESCE(?, campaign_daily_limit),
+              version = version + 1, updated_at = now()
             WHERE id = ? AND version = ? AND active = TRUE
             """,
             command.name().trim(),
@@ -78,6 +79,7 @@ public class OrganizationSettingsService {
             LocalTime.parse(command.operatingWindowStart()),
             LocalTime.parse(command.operatingWindowEnd()),
             arrayLiteral(command.businessDays()),
+            command.campaignDailyLimit(),
             currentActor.organizationId(),
             command.version());
     if (updated != 1) {
@@ -93,6 +95,8 @@ public class OrganizationSettingsService {
             "timezone", command.timezone(),
             "currency", command.currency().toUpperCase(Locale.ROOT),
             "locale", command.locale(),
+            "campaignDailyLimit",
+                command.campaignDailyLimit() == null ? 0 : command.campaignDailyLimit(),
             "sendingOverrideRejected", sendingOverrideRejected));
     return withRejected(get(), sendingOverrideRejected);
   }
@@ -193,6 +197,11 @@ public class OrganizationSettingsService {
         || command.businessDays().stream().anyMatch(day -> day < 1 || day > 7)) {
       throw new IllegalArgumentException("Business days must be unique ISO weekdays 1 through 7");
     }
+    if (command.campaignDailyLimit() != null
+        && (command.campaignDailyLimit() < 0 || command.campaignDailyLimit() > 10)) {
+      throw new IllegalArgumentException(
+          "Organization campaign daily limit must be between 0 and 10");
+    }
   }
 
   public record UpdateCommand(
@@ -206,10 +215,44 @@ public class OrganizationSettingsService {
       String operatingWindowStart,
       String operatingWindowEnd,
       List<Integer> businessDays,
+      Integer campaignDailyLimit,
       Boolean sendingEnabled,
       Boolean sendingDryRun,
       Integer sendingDailyLimit,
-      Boolean sendingKillSwitch) {}
+      Boolean sendingKillSwitch) {
+    public UpdateCommand(
+        long version,
+        String name,
+        String timezone,
+        String currency,
+        String locale,
+        String brandingPrimaryColor,
+        int followUpDays,
+        String operatingWindowStart,
+        String operatingWindowEnd,
+        List<Integer> businessDays,
+        Boolean sendingEnabled,
+        Boolean sendingDryRun,
+        Integer sendingDailyLimit,
+        Boolean sendingKillSwitch) {
+      this(
+          version,
+          name,
+          timezone,
+          currency,
+          locale,
+          brandingPrimaryColor,
+          followUpDays,
+          operatingWindowStart,
+          operatingWindowEnd,
+          businessDays,
+          null,
+          sendingEnabled,
+          sendingDryRun,
+          sendingDailyLimit,
+          sendingKillSwitch);
+    }
+  }
 
   public record SettingsView(
       long version,

@@ -1,10 +1,30 @@
 # Backlog ejecutable
 
-Actualizado: 2026-07-24
+Actualizado: 2026-07-30
 
 Rama canónica: `main`.
 
 Un elemento solo puede declararse `COMPLETE` con evidencia ejecutada sobre el contenido remoto exacto. Código versionado, documentación o un tree local no publicado no equivalen a cierre.
+
+## SEG-001-GMAIL — OAuth y campañas LIVE controladas
+
+Estado: `PRE_PUBLICATION_VALIDATION`
+
+- [x] recuperación Git con snapshot externo e integridad 68/68;
+- [x] V14 aditiva y compatibilidad V1/V11/V13;
+- [x] OAuth offline, AES-256-GCM, reconnect, revoke y tenant isolation;
+- [x] Gmail REST/MIME, resultados retry/permanent/ambiguous;
+- [x] campaña LIVE por outbox, límites, ventanas, ledger y kill switch;
+- [x] unsubscribe idempotente y cancelación de pendientes/seguimientos;
+- [x] frontend conjunto y Playwright contra Google falso;
+- [x] manual HTML/PDF/32 PNG/JSON/ZIP sintético;
+- [x] backend 112/112 y frontend 13/13;
+- [x] migraciones, backup/restore, perfil productivo y dependency/secret scans;
+- [ ] dos validaciones integrales limpias sobre el SHA final;
+- [ ] secret scan/diff/stage explícito/commit/push fast-forward.
+
+Google real, credenciales reales, destinatarios reales y producción permanecen
+fuera de esta ejecución.
 
 ## Baseline publicado
 
@@ -182,16 +202,14 @@ CI del commit final: `PENDING_POST_PUSH_VERIFICATION`.
 
 ## UX-006 — Importaciones de gran volumen
 
-Estado: `READY`
+Estado: `COMPLETE_WITH_FUNCTIONAL_VALIDATION`
 
-- [ ] inspeccionar endpoint, servicio, repositorio y consumidores de filas;
-- [ ] paginación backend de resultados;
-- [ ] filtros backend por hoja y resultado;
-- [ ] búsqueda backend;
-- [ ] límites explícitos;
-- [ ] pruebas de aislamiento e idempotencia;
-- [ ] consumidor frontend paginado;
-- [ ] evidencia funcional.
+- [x] paginación backend de resultados;
+- [x] filtros backend por hoja y resultado;
+- [x] búsqueda backend y límites explícitos;
+- [x] aislamiento e idempotencia;
+- [x] consumidor frontend paginado;
+- [x] evidencia versionada en `12421c53375deabebe8f48f17af3ae95af95893b`.
 
 ## OPS-001 — Outbox e inbound paginados
 
@@ -238,7 +256,7 @@ Estado: `BLOCKED_AUTHORIZED_DATASET`
 | EXT-001 | IMPLEMENTED_NOT_RUN | validador integral Unix en host real |
 | EXT-002 | BLOCKED_EXTERNAL_FILE | evaluación autorizada del XLSX real fuera de Git/CI |
 | EXT-003 | NOT_AUTHORIZED | infraestructura y despliegue productivo |
-| EXT-004 | IMPLEMENTED_NOT_CONNECTED | Gmail/SMTP/WhatsApp reales |
+| EXT-004 | IMPLEMENTED_NOT_CONNECTED | Gmail de campañas implementado; Google real, SMTP y WhatsApp reales no conectados |
 
 ## Restricciones permanentes
 

@@ -1,5 +1,6 @@
 package com.gestudio.crm.outbox;
 
+import com.gestudio.crm.campaign.CampaignMessageDeliveryService;
 import com.gestudio.crm.inbound.InboundProcessingService;
 import com.gestudio.crm.settings.SendingProperties;
 import java.util.Map;
@@ -17,16 +18,19 @@ public class OutboxEventProcessor {
   private final JdbcTemplate jdbcTemplate;
   private final ObjectMapper objectMapper;
   private final SendingProperties sendingProperties;
+  private final CampaignMessageDeliveryService campaignMessageDeliveryService;
 
   public OutboxEventProcessor(
       InboundProcessingService inboundProcessingService,
       JdbcTemplate jdbcTemplate,
       ObjectMapper objectMapper,
-      SendingProperties sendingProperties) {
+      SendingProperties sendingProperties,
+      CampaignMessageDeliveryService campaignMessageDeliveryService) {
     this.inboundProcessingService = inboundProcessingService;
     this.jdbcTemplate = jdbcTemplate;
     this.objectMapper = objectMapper;
     this.sendingProperties = sendingProperties;
+    this.campaignMessageDeliveryService = campaignMessageDeliveryService;
   }
 
   public OutboxProcessingResult process(OutboxWorkerService.ClaimedEvent event) {
@@ -35,6 +39,19 @@ public class OutboxEventProcessor {
         inboundProcessingService.process(
             event.organizationId(), requiredUuid(event, "inboundMessageId"), event.correlationId());
         yield OutboxProcessingResult.success("INBOUND_PROCESSED");
+      }
+      case "CAMPAIGN_MESSAGE_SEND_V1" -> {
+        java.util.UUID messageId = requiredUuid(event, "messageId");
+        if (!messageId.equals(event.aggregateId())) {
+          throw new IllegalArgumentException(
+              "Campaign message event aggregate does not match payload");
+        }
+        yield campaignMessageDeliveryService.process(
+            event.organizationId(),
+            messageId,
+            event.attemptCount(),
+            event.maxAttempts(),
+            event.correlationId());
       }
       case "CAMPAIGN_SIMULATED_V1", "MESSAGE_RESULT_CREATED_V1" -> safeMessagingResult(event);
       default ->

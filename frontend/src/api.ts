@@ -3,6 +3,9 @@ import type {
   AudienceRecipient,
   Campaign,
   CampaignChannel,
+  CampaignExecutionMode,
+  CampaignProgress,
+  CampaignRecipientResult,
   CampaignSimulation,
   CampaignSequenceStep,
   DuplicateResolutionAction,
@@ -38,6 +41,9 @@ import type {
   DashboardReport,
   OrganizationSettings,
   CrmTag,
+  GmailOAuthStart,
+  SenderAccount,
+  SenderAccountConfiguration,
 } from "./types";
 
 type Csrf = { token: string; headerName: string };
@@ -446,8 +452,44 @@ export function createCampaign(input: {
   objective?: string;
   channel: CampaignChannel;
   templateVersionId: string;
+  executionMode?: CampaignExecutionMode;
+  senderAccountId?: string;
+  replyTo?: string;
+  timezone?: string;
+  operatingWindowStart?: string;
+  operatingWindowEnd?: string;
+  businessDays?: number[];
+  dailyLimit?: number;
+  minimumIntervalSeconds?: number;
+  maxAttempts?: number;
+  stopConfiguration?: Record<string, unknown>;
 }): Promise<Campaign> {
   return request("/api/v1/campaigns", { method: "POST", body: JSON.stringify(input) });
+}
+
+export type CampaignDeliveryInput = {
+  templateVersionId: string;
+  executionMode: CampaignExecutionMode;
+  senderAccountId?: string;
+  replyTo?: string;
+  timezone: string;
+  operatingWindowStart: string;
+  operatingWindowEnd: string;
+  businessDays: number[];
+  dailyLimit: number;
+  minimumIntervalSeconds: number;
+  maxAttempts: number;
+  stopConfiguration?: Record<string, unknown>;
+};
+
+export function updateCampaignDelivery(
+  campaign: Campaign,
+  input: CampaignDeliveryInput,
+): Promise<Campaign> {
+  return request(`/api/v1/campaigns/${campaign.id}/delivery`, {
+    method: "PUT",
+    body: JSON.stringify({ version: campaign.version, ...input }),
+  });
 }
 
 export function freezeCampaignAudience(
@@ -458,7 +500,6 @@ export function freezeCampaignAudience(
     method: "POST",
     body: JSON.stringify({
       version: campaign.version,
-      eligibility: "ELIGIBLE",
       excludeCustomers: true,
       requireActiveOpportunity: false,
       ...filter,
@@ -482,6 +523,57 @@ export function simulateCampaign(campaign: Campaign): Promise<CampaignSimulation
     method: "POST",
     headers: { "Idempotency-Key": crypto.randomUUID() },
   });
+}
+
+export function scheduleCampaign(
+  campaign: Campaign,
+  scheduledAt: string,
+  confirmation: string,
+): Promise<CampaignProgress> {
+  return request(`/api/v1/campaigns/${campaign.id}/schedule`, {
+    method: "POST",
+    body: JSON.stringify({ version: campaign.version, scheduledAt, confirmation }),
+  });
+}
+
+export function startCampaign(campaign: Campaign, confirmation: string): Promise<CampaignProgress> {
+  return request(`/api/v1/campaigns/${campaign.id}/start`, {
+    method: "POST",
+    body: JSON.stringify({ version: campaign.version, confirmation }),
+  });
+}
+
+export function pauseCampaign(campaign: Campaign): Promise<CampaignProgress> {
+  return request(`/api/v1/campaigns/${campaign.id}/pause`, {
+    method: "POST",
+    body: JSON.stringify({ version: campaign.version }),
+  });
+}
+
+export function resumeCampaign(campaign: Campaign): Promise<CampaignProgress> {
+  return request(`/api/v1/campaigns/${campaign.id}/resume`, {
+    method: "POST",
+    body: JSON.stringify({ version: campaign.version }),
+  });
+}
+
+export function cancelCampaign(campaign: Campaign): Promise<CampaignProgress> {
+  return request(`/api/v1/campaigns/${campaign.id}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ version: campaign.version }),
+  });
+}
+
+export function getCampaignProgress(id: string): Promise<CampaignProgress> {
+  return request(`/api/v1/campaigns/${id}/progress`);
+}
+
+export function getCampaignResults(id: string): Promise<CampaignRecipientResult[]> {
+  return request(`/api/v1/campaigns/${id}/results`);
+}
+
+export function campaignResultsCsvUrl(id: string): string {
+  return `/api/v1/campaigns/${encodeURIComponent(id)}/results.csv`;
 }
 
 export function replaceCampaignSequence(campaign: Campaign): Promise<CampaignSequenceStep[]> {
@@ -524,6 +616,42 @@ export function listAuditEvents(limit = 100): Promise<AuditEvent[]> {
 
 export function getMessagingSafety(): Promise<MessagingSafety> {
   return request("/api/v1/messages/safety");
+}
+
+export function listSenderAccounts(): Promise<SenderAccount[]> {
+  return request("/api/v1/sender-accounts");
+}
+
+export function getSenderAccountConfiguration(): Promise<SenderAccountConfiguration> {
+  return request("/api/v1/sender-accounts/configuration");
+}
+
+export function startGmailOAuth(): Promise<GmailOAuthStart> {
+  return request("/api/v1/sender-accounts/gmail/oauth/start", { method: "POST" });
+}
+
+export function verifySenderAccount(account: SenderAccount): Promise<SenderAccount> {
+  return request(`/api/v1/sender-accounts/${account.id}/verify`, {
+    method: "POST",
+  });
+}
+
+export function setDefaultSenderAccount(account: SenderAccount): Promise<SenderAccount> {
+  return request(`/api/v1/sender-accounts/${account.id}/default`, {
+    method: "POST",
+  });
+}
+
+export function reconnectSenderAccount(account: SenderAccount): Promise<GmailOAuthStart> {
+  return request(`/api/v1/sender-accounts/${account.id}/reconnect`, {
+    method: "POST",
+  });
+}
+
+export function revokeSenderAccount(account: SenderAccount): Promise<SenderAccount> {
+  return request(`/api/v1/sender-accounts/${account.id}/revoke`, {
+    method: "POST",
+  });
 }
 
 export type MessageInput = {
@@ -668,6 +796,7 @@ export function updateOrganizationSettings(
       operatingWindowStart: settings.operatingWindowStart,
       operatingWindowEnd: settings.operatingWindowEnd,
       businessDays: settings.businessDays,
+      campaignDailyLimit: settings.campaignDailyLimit,
       sendingEnabled: false,
       sendingDryRun: true,
       sendingDailyLimit: 0,

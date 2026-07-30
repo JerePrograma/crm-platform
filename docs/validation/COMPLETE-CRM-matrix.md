@@ -1,6 +1,6 @@
 # Matriz de validación integral del CRM
 
-Actualizado: 2026-07-22
+Actualizado: 2026-07-30
 
 Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUTED_PASS`,
 `EXECUTED_FAIL`, `BLOCKED_EXTERNAL`, `NOT_APPLICABLE`.
@@ -44,7 +44,11 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | aprobación/simulación | EXECUTED_PASS | RBAC, idempotencia, fake activity y Playwright |
 | email no-op | EXECUTED_PASS | provider seleccionado, integración y UI |
 | email fake | EXECUTED_PASS | simulación persistida, actividad y recorrido visual |
-| email real adapter | BLOCKED_EXTERNAL | draft-only implementado/contract test; OAuth no conectado |
+| Gmail OAuth/cuentas remitentes | EXECUTED_PASS | Authorization Code offline, AES-GCM, tenant/RBAC y ciclo reconnect/revoke contra fake |
+| Gmail campaña LIVE adapter | EXECUTED_PASS | `users.messages.send`, MIME, errores y aceptación individual contra Google falso |
+| Google real conectado | BLOCKED_EXTERNAL | implementación disponible; sin credenciales, tráfico ni destinatarios reales |
+| unsubscribe one-click | EXECUTED_PASS | token hash, GET/POST, rate limit, exclusión y cancelación de pendientes/seguimientos |
+| campaña LIVE/outbox | EXECUTED_PASS | aprobación, confirmación, límites, lease, retry/dead/ambiguous y Playwright fake |
 | WhatsApp no-op | EXECUTED_PASS | NOOP seleccionado por DEEPLINK_ONLY |
 | WhatsApp fake | EXECUTED_PASS | contract/integration fake sin red |
 | WhatsApp real adapter | BLOCKED_EXTERNAL | contrato implementado; Meta/credenciales no conectados |
@@ -57,7 +61,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | idempotencia asíncrona | EXECUTED_PASS | scope tenant, request hash, repetición y colisión 409 |
 | inbound/webhook fake | EXECUTED_PASS | HMAC/replay/quarantine/asociación/dominio y E2E |
 | frontend integral | EXECUTED_PASS | navegación completa, permisos, desktop/mobile y 2/2 Playwright |
-| frontend E2E | EXECUTED_PASS | suite 2/2 en ambas corridas integrales, 18,213 s y 37,590 s de fase |
+| frontend E2E | EXECUTED_PASS | suite CRM 2/2 histórica y suite Gmail LIVE sintética 1/1 |
 | dashboard/reportes | EXECUTED_PASS | agregaciones PostgreSQL tenant/fecha/timezone y monedas separadas |
 | métricas tenant-wide del resumen | EXECUTED_PASS | endpoint prospect metrics, 105 registros con página de 100, VIEWER y aislamiento tenant |
 | búsqueda PostgreSQL | EXECUTED_PASS | institución/contacto/canal/localidad/website/notas/tags, allow-list y tenant test |
@@ -74,7 +78,9 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | automatización UX remota histórica | EXECUTED_PASS | trigger, workflow y tres scripts eliminados tras comprobar cero consumidores operativos |
 | dependency scan | EXECUTED_PASS | npm audit High y Grype High/Critical; imagen final sin hallazgos |
 | CI integral | EXECUTED_PASS | run `29951586239`, commit `b904ff3`, push a `main`, 22/22 jobs success |
-| validador completo Windows | EXECUTED_PASS | `986523a`, 21 fases verdes, 713,870 s |
+| validador Gmail fake Windows | EXECUTED_PASS | `gmail-live-fake-20260730-070501.json`, 10 fases verdes, sin Google real |
+| validador completo Windows | EXECUTED_PASS | cierre histórico `986523a`; nueva doble corrida pendiente antes de publicar SEG-001 Gmail |
+| validación integral SEG-001 Gmail Windows | IMPLEMENTED_NOT_RUN | dos corridas limpias pendientes sobre el SHA definitivo |
 | validador completo Unix | IMPLEMENTED_NOT_RUN | sintaxis y preflight WSL PASS; recorrido integral no ejecutado |
 | repetición limpia | EXECUTED_PASS | mismo commit, 21 fases verdes, 734,162 s, sin flakiness |
 | despliegue producción | NOT_APPLICABLE | no autorizado |

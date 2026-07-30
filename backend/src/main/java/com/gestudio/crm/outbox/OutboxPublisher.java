@@ -63,6 +63,7 @@ public class OutboxPublisher {
                 + payload);
     UUID id = UUID.randomUUID();
     Instant now = clock.instant();
+    Instant availableAt = command.availableAt() == null ? now : command.availableAt();
     int inserted =
         jdbcTemplate.update(
             """
@@ -82,7 +83,7 @@ public class OutboxPublisher {
             payload,
             requestHash,
             command.maxAttempts() == null ? properties.defaultMaxAttempts() : command.maxAttempts(),
-            Timestamp.from(now),
+            Timestamp.from(availableAt),
             Timestamp.from(now),
             Timestamp.from(now),
             command.idempotencyKey(),
@@ -188,7 +189,33 @@ public class OutboxPublisher {
       String idempotencyKey,
       String correlationId,
       UUID createdBy,
-      Integer maxAttempts) {}
+      Integer maxAttempts,
+      Instant availableAt) {
+    public PublishCommand(
+        UUID organizationId,
+        String eventType,
+        int eventVersion,
+        String aggregateType,
+        UUID aggregateId,
+        Map<String, ?> payload,
+        String idempotencyKey,
+        String correlationId,
+        UUID createdBy,
+        Integer maxAttempts) {
+      this(
+          organizationId,
+          eventType,
+          eventVersion,
+          aggregateType,
+          aggregateId,
+          payload,
+          idempotencyKey,
+          correlationId,
+          createdBy,
+          maxAttempts,
+          null);
+    }
+  }
 
   public record PublishedEvent(UUID id, OutboxStatus status, boolean created, String requestHash) {}
 }

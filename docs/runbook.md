@@ -9,18 +9,19 @@
 
 ## P0 — Envío no autorizado
 
-Estado actual: técnicamente imposible porque no existe adaptador.
+Estado actual: el adaptador Gmail existe, pero los defaults versionados lo
+bloquean y Google real no está conectado.
 
-Cuando exista:
-
-1. activar kill switch ambiental y persistente;
-2. pausar campañas y colas;
-3. revocar credenciales Gmail si es necesario;
-4. preservar logs/auditoría;
-5. identificar comunicaciones afectadas;
-6. bloquear deploys;
-7. iniciar incidente de seguridad;
-8. no reanudar sin aprobación formal.
+1. establecer `SENDING_KILL_SWITCH=true`;
+2. establecer `SENDING_ENABLED=false`,
+   `MESSAGING_REAL_NETWORK_ALLOWED=false` y `EMAIL_PROVIDER_MODE=NOOP`;
+3. activar el kill switch persistente;
+4. pausar campañas y worker;
+5. revocar localmente las cuentas y ejecutar revocación remota best-effort;
+6. preservar logs/auditoría sin copiar tokens, MIME ni destinatarios;
+7. identificar comunicaciones afectadas por correlation/provider ID;
+8. bloquear despliegues e iniciar incidente de seguridad;
+9. no reanudar sin causa raíz, regresión y aprobación formal.
 
 ## P0 — Exposición de datos
 

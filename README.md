@@ -7,16 +7,20 @@ CRM comercial para importar, revisar y administrar prospectos de Gestudio con Po
 `main` es la única fuente canónica.
 
 ```text
-commit funcional validado: 0448c0e060311c284f4e4be4612982818a8480c4
-parser exacto de .Config.Env: FUNCTIONAL_PASS
-corridas integrales consecutivas: 2/2 FUNCTIONAL_PASS
-CI del SHA validado: NO_CHECKS_REPORTED
-candidato histórico 9e058d...: NOT_AVAILABLE_REMOTELY / NOT_INTEGRATED
+base sincronizada para SEG-001 Gmail: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
+OAuth/Gmail/campaña LIVE contra proveedor falso: EXECUTED_PASS
+backend clean verify: EXECUTED_PASS, 112/112
+frontend install/typecheck/unit/build: EXECUTED_PASS, 13/13
+publicación SEG-001 Gmail: PENDING_FINAL_VALIDATION
 producción: NOT_DEPLOYED
-comunicaciones reales: DISABLED_BY_POLICY
+Google real: IMPLEMENTED_NOT_CONNECTED
+comunicaciones reales por defecto: DISABLED_BY_POLICY
 ```
 
-El CRM conserva el cierre funcional para demostración, evaluación interna y operación comercial segura sin envíos reales. No está autorizado para producción ni para conectar proveedores externos.
+La extensión SEG-001 incorpora cuentas Gmail OAuth, ejecución LIVE controlada
+por campaña/outbox, baja one-click y observabilidad individual. Se validó
+exclusivamente contra Google falso y datos sintéticos. No está desplegada ni
+conectada a Google real; todos los defaults continúan fail-closed.
 
 ## Consolidación remota del 24 de julio de 2026
 
@@ -72,6 +76,12 @@ Las capacidades descritas solo en ese candidato permanecen en backlog hasta que 
 - duplicados exactos/ambiguos y resolución transaccional;
 - oportunidades, pipeline, forecast y aging;
 - campañas, plantillas, audiencias congeladas y simulación;
+- cuentas remitentes Gmail tenant-scoped con OAuth offline y refresh token
+  AES-256-GCM;
+- campañas `SIMULATION|LIVE`, aprobación, confirmación reforzada, programación,
+  pausa/reanudación/cancelación y resultados por destinatario;
+- Gmail `users.messages.send` exclusivamente por outbox, MIME
+  `multipart/alternative` y baja visible/one-click;
 - borradores y enlaces manuales;
 - outbox PostgreSQL, retry, dead-letter y requeue;
 - inbound fake firmado, replay protection y cuarentena;
@@ -92,7 +102,11 @@ EMAIL_PROVIDER_MODE=NOOP
 WHATSAPP_PROVIDER_MODE=DEEPLINK_ONLY
 ```
 
-Los adaptadores Gmail/SMTP/WhatsApp permanecen desconectados. La operación autorizada se limita a simulaciones, borradores y enlaces manuales.
+El adaptador Gmail de campañas está implementado pero no conectado a Google
+real. No existe un endpoint de envío directo: LIVE requiere campaña aprobada,
+audiencia congelada, cuenta conectada, `MESSAGE_SEND`, confirmación
+`SEND_LIVE_CAMPAIGN`, límites positivos y todas las guardas. Los valores
+versionados bloquean esa combinación.
 
 ## Arquitectura
 
@@ -102,7 +116,7 @@ Los adaptadores Gmail/SMTP/WhatsApp permanecen desconectados. La operación auto
 - Spring Boot 4.1;
 - Spring Security;
 - PostgreSQL 17;
-- Flyway V1–V13;
+- Flyway V1–V14;
 - Hibernate validate;
 - OpenAPI y Problem Details;
 - Maven Wrapper;

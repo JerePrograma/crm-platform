@@ -1,5 +1,19 @@
 # Continuidad canónica del proyecto
 
+## Extensión SEG-001 Gmail — 2026-07-30
+
+La misión activa recuperó de forma verificable 68 archivos parciales, retiró
+solo la referencia interna rota informada y avanzó `main` por fast-forward de
+`12421c5` a `9995b3e`. La implementación OAuth/Gmail/campaña LIVE pasa backend,
+frontend y E2E contra Google falso. Hasta completar dos validaciones integrales
+limpias, commit y push, su estado es `PRE_PUBLICATION_VALIDATION`.
+
+Fuente primaria:
+`docs/implementation/SEG-001-gmail-campaign-delivery.md`.
+
+Google real continúa `IMPLEMENTED_NOT_CONNECTED`; producción `NOT_DEPLOYED` y
+los defaults de red/envío permanecen bloqueados.
+
 Actualizado: 2026-07-24
 
 Este directorio permite retomar `JerePrograma/crm-platform` sin depender de chats, archivos temporales ni afirmaciones no verificadas.
@@ -129,4 +143,6 @@ status: FUNCTIONAL_PASS
 
 La regresión usa 105 prospectos y una página de 100.
 
-Siguiente gate: `UX-006`.
+`UX-006` fue publicado en `12421c53375deabebe8f48f17af3ae95af95893b`.
+El gate activo es el cierre validado y publicación fast-forward de la extensión
+SEG-001 Gmail.

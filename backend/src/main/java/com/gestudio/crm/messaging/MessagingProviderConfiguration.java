@@ -1,5 +1,7 @@
 package com.gestudio.crm.messaging;
 
+import com.gestudio.crm.gmail.CampaignOnlyGmailEmailProvider;
+import com.gestudio.crm.gmail.GmailDeliveryProperties;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.util.Arrays;
@@ -19,7 +21,23 @@ public class MessagingProviderConfiguration {
 
   @Bean
   EmailProvider emailProvider(
+      MessagingProperties properties,
+      HttpClient httpClient,
+      ObjectMapper objectMapper,
+      GmailDeliveryProperties gmailDeliveryProperties) {
+    return buildEmailProvider(properties, httpClient, objectMapper, gmailDeliveryProperties);
+  }
+
+  EmailProvider emailProvider(
       MessagingProperties properties, HttpClient httpClient, ObjectMapper objectMapper) {
+    return buildEmailProvider(properties, httpClient, objectMapper, null);
+  }
+
+  private EmailProvider buildEmailProvider(
+      MessagingProperties properties,
+      HttpClient httpClient,
+      ObjectMapper objectMapper,
+      GmailDeliveryProperties gmailDeliveryProperties) {
     return switch (properties.emailMode().toUpperCase(java.util.Locale.ROOT)) {
       case "NOOP" -> new NoopEmailProvider();
       case "FAKE" -> new FakeEmailProvider();
@@ -34,6 +52,14 @@ public class MessagingProviderConfiguration {
             scopes(gmail.scopes()),
             properties.timeout(),
             false);
+      }
+      case "GMAIL_LIVE" -> {
+        requireRealNetwork(properties, "Gmail");
+        if (gmailDeliveryProperties == null) {
+          throw new IllegalStateException("Gmail live configuration is unavailable");
+        }
+        gmailDeliveryProperties.requireLiveConfigured();
+        yield new CampaignOnlyGmailEmailProvider();
       }
       default -> throw new IllegalStateException("Unsupported email provider mode");
     };

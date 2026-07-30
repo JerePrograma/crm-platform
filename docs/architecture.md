@@ -1,6 +1,6 @@
 # Arquitectura
 
-Actualizado: 2026-07-22
+Actualizado: 2026-07-30
 
 ## Unidad de despliegue
 
@@ -17,21 +17,24 @@ Browser
   -> Spring Boot modular monolith no-root
        identity/security/settings
        prospect/contact/exclusion/import/deduplication
-       activity/sales/campaign/messaging
+       activity/sales/campaign/messaging/gmail
        outbox/inbound/reporting/audit
   -> PostgreSQL 17
 ```
 
-Gmail y WhatsApp están detrás de puertos internos. Sus adaptadores existen y
-tienen contract tests locales, pero no se conectan ni se inicializan en los
-perfiles ejecutables de esta misión. `NOOP`, `FAKE` y `FAKE_INBOUND` son las
-únicas fronteras ejecutadas.
+Gmail y WhatsApp están detrás de fronteras internas. Gmail dispone de OAuth,
+cuentas remitentes y un provider exclusivo para campañas/outbox; se validó
+contra un Google falso loopback. Ningún perfil canónico conecta Google real:
+`NOOP`, `FAKE`, `FAKE_INBOUND` y el fake aislado son las únicas fronteras
+ejecutadas.
 
 ## Persistencia y migraciones
 
-- Flyway V1–V13 es forward-only; V1–V11 permanecen inmutables.
+- Flyway V1–V14 es forward-only; V1–V13 permanecen inmutables.
 - V12 agrega outbox e inbound durable; V13 agrega configuración operativa,
   etiquetas e índices de reporting/búsqueda.
+- V14 agrega cuentas Gmail, state OAuth, campañas LIVE, mensajes individuales,
+  unsubscribe, ledger y supresión sin cambios destructivos.
 - Hibernate usa `ddl-auto=validate`.
 - UUID, `organization_id`, optimistic version y timestamps UTC forman parte del
   contrato persistente.
@@ -46,8 +49,8 @@ perfiles ejecutables de esta misión. `NOOP`, `FAKE` y `FAKE_INBOUND` son las
   elegibilidad, datos operativos e importación segura.
 - `activity`: notas, actividades, tareas y timeline.
 - `sales`: oportunidades, pipeline, aging y cierres.
-- `campaign` y `messaging`: audiencia congelada, plantillas, simulación y policy
-  fail-closed.
+- `campaign`, `messaging` y `gmail`: audiencia congelada, plantillas,
+  `SIMULATION|LIVE`, OAuth/cifrado, MIME y policy fail-closed.
 - `outbox`: publicación transaccional, claim, lease, retry, dead-letter y
   administración.
 - `inbound`: HMAC, replay, normalización, asociación, quarantine y efectos de
@@ -103,7 +106,7 @@ Documentación operativa: `docs/production/` y `docs/runbooks/`.
 
 - proveedor/entorno de despliegue y dominio TLS;
 - secretos y base productiva;
-- OAuth Gmail y cuenta verificada de WhatsApp Cloud;
+- credenciales/verificación OAuth Gmail y cuenta verificada de WhatsApp Cloud;
 - política legal de retención por jurisdicción.
 
 Ninguna de esas decisiones es necesaria para ejecutar localmente el CRM con

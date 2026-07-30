@@ -22,16 +22,28 @@ El recorrido recomendado incluye:
 
 ## Seguridad
 
-No existe adaptador Gmail, SMTP o de correo.
+Existe un adaptador Gmail exclusivo para campañas/outbox, pero Google real no
+está conectado y todos los defaults bloquean red y envío:
 
 ```text
 SENDING_ENABLED=false
 SENDING_DRY_RUN=true
 SENDING_DAILY_LIMIT=0
 SENDING_KILL_SWITCH=true
+MESSAGING_REAL_NETWORK_ALLOWED=false
+EMAIL_PROVIDER_MODE=NOOP
 ```
 
 No modificar estos valores.
+
+El recorrido sintético Gmail usa un proveedor loopback aislado y recursos
+Compose propios:
+
+```powershell
+.\scripts\validate-gmail-live-fake.ps1
+```
+
+No requiere ni acepta credenciales Google reales.
 
 ## 1. Obtener el repositorio
 

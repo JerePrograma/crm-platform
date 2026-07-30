@@ -8,10 +8,12 @@ network="crm-migration-$suffix"
 postgres="crm-migration-postgres-$suffix"
 upgrade11="crm-migration-v11-$suffix"
 upgrade_latest="crm-migration-latest-$suffix"
+previous13="crm-migration-v13-$suffix"
+previous_latest="crm-migration-v14-$suffix"
 empty_latest="crm-migration-empty-$suffix"
 password=synthetic-migration-password
 cleanup() {
-  for name in "$empty_latest" "$upgrade_latest" "$upgrade11" "$postgres"; do docker rm -f "$name" >/dev/null 2>&1 || true; done
+  for name in "$empty_latest" "$previous_latest" "$previous13" "$upgrade_latest" "$upgrade11" "$postgres"; do docker rm -f "$name" >/dev/null 2>&1 || true; done
   docker network rm "$network" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -43,11 +45,17 @@ docker network create "$network" >/dev/null
 docker run -d --name "$postgres" --network "$network" --env POSTGRES_DB=upgrade --env POSTGRES_USER=gestudio --env "POSTGRES_PASSWORD=$password" --health-cmd='pg_isready -U gestudio -d upgrade' --health-interval=2s --health-timeout=2s --health-retries=30 postgres:17-alpine >/dev/null
 wait_container "$postgres"
 docker exec "$postgres" createdb -h 127.0.0.1 -U gestudio empty
+docker exec "$postgres" createdb -h 127.0.0.1 -U gestudio previous
 start_backend "$upgrade11" upgrade 11
 [ "$(docker exec "$postgres" psql -h 127.0.0.1 -U gestudio -d upgrade -At -c 'SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;')" = 11 ]
 docker rm -f "$upgrade11" >/dev/null
 start_backend "$upgrade_latest" upgrade
-[ "$(docker exec "$postgres" psql -h 127.0.0.1 -U gestudio -d upgrade -At -c "SELECT string_agg(version, ',' ORDER BY installed_rank) FROM flyway_schema_history WHERE success AND installed_rank > 11;")" = '12,13' ]
+[ "$(docker exec "$postgres" psql -h 127.0.0.1 -U gestudio -d upgrade -At -c "SELECT string_agg(version, ',' ORDER BY installed_rank) FROM flyway_schema_history WHERE success AND installed_rank > 11;")" = '12,13,14' ]
+start_backend "$previous13" previous 13
+[ "$(docker exec "$postgres" psql -h 127.0.0.1 -U gestudio -d previous -At -c 'SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;')" = 13 ]
+docker rm -f "$previous13" >/dev/null
+start_backend "$previous_latest" previous
+[ "$(docker exec "$postgres" psql -h 127.0.0.1 -U gestudio -d previous -At -c "SELECT string_agg(version, ',' ORDER BY installed_rank) FROM flyway_schema_history WHERE success AND installed_rank > 13;")" = 14 ]
 start_backend "$empty_latest" empty
-[ "$(docker exec "$postgres" psql -h 127.0.0.1 -U gestudio -d empty -At -c 'SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;')" = 13 ]
-printf 'Migration verification passed: empty -> V13, V11 -> V12 -> V13, Hibernate validate on both latest schemas.\n'
+[ "$(docker exec "$postgres" psql -h 127.0.0.1 -U gestudio -d empty -At -c 'SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;')" = 14 ]
+printf 'Migration verification passed: empty -> V14, V11 -> V12 -> V13 -> V14, V13 -> V14, Hibernate validate on all latest schemas.\n'

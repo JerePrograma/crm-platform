@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-07-30 — SEG-001 Gmail OAuth y campañas LIVE controladas
+
+- recupera el working tree parcial mediante snapshot externo verificable y
+  retira exclusivamente una referencia interna Codex inválida;
+- sincroniza `main` por fast-forward de `12421c5` a `9995b3e` sin alterar los
+  68 archivos preservados;
+- agrega V14 aditiva para cuentas remitentes, state OAuth, campañas LIVE,
+  mensajes individuales, intentos, tokens de baja, ledger y supresión;
+- implementa Authorization Code offline, AES-256-GCM, refresh/reconnect/revoke,
+  Gmail REST/MIME y clasificación de errores sin SDK nuevo;
+- reutiliza el outbox PostgreSQL para un destinatario por evento, revalidación
+  pre-send, límites, ventanas, pausa, retry, dead-letter y ambiguos;
+- incorpora baja visible/one-click, exclusión inmediata y cancelación de
+  pendientes/seguimientos;
+- completa UI de cuentas, campañas LIVE, progreso/resultados y operación
+  fail-closed sin botón de envío directo;
+- agrega Google falso aislado, Playwright, pruebas de seguridad y generador
+  reproducible de manual HTML/PDF/32 PNG/JSON/ZIP;
+- mantiene Google real desconectado, producción no desplegada y todos los
+  envíos reales deshabilitados por defecto.
+
 ## 2026-07-26 — UX-004 métricas tenant-wide del dashboard
 
 - agrega `ProspectOperationsService.dashboardMetrics()` con una única consulta tenant-scoped;

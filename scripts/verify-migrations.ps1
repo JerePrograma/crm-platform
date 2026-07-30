@@ -6,6 +6,8 @@ $network = "crm-migration-$suffix"
 $postgres = "crm-migration-postgres-$suffix"
 $upgrade11 = "crm-migration-v11-$suffix"
 $upgradeLatest = "crm-migration-latest-$suffix"
+$previous13 = "crm-migration-v13-$suffix"
+$previousLatest = "crm-migration-v14-$suffix"
 $emptyLatest = "crm-migration-empty-$suffix"
 $password = 'synthetic-migration-password'
 if ([string]::IsNullOrWhiteSpace($BackendImage)) {
@@ -44,6 +46,8 @@ try {
   Wait-Container $postgres
   & docker exec $postgres createdb -h 127.0.0.1 -U gestudio empty
   if ($LASTEXITCODE -ne 0) { throw 'Unable to create empty migration database.' }
+  & docker exec $postgres createdb -h 127.0.0.1 -U gestudio previous
+  if ($LASTEXITCODE -ne 0) { throw 'Unable to create previous-version migration database.' }
 
   Start-Backend $upgrade11 'upgrade' '11'
   $v11 = (& docker exec $postgres psql -h 127.0.0.1 -U gestudio -d upgrade -At -c 'SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;').Trim()
@@ -52,16 +56,25 @@ try {
 
   Start-Backend $upgradeLatest 'upgrade' ''
   $upgraded = (& docker exec $postgres psql -h 127.0.0.1 -U gestudio -d upgrade -At -c 'SELECT string_agg(version, '','' ORDER BY installed_rank) FROM flyway_schema_history WHERE success AND installed_rank > 11;').Trim()
-  if ($upgraded -ne '12,13') { throw "Expected V11 to V13 upgrade, found $upgraded" }
+  if ($upgraded -ne '12,13,14') { throw "Expected V11 to V14 upgrade, found $upgraded" }
+
+  Start-Backend $previous13 'previous' '13'
+  $v13 = (& docker exec $postgres psql -h 127.0.0.1 -U gestudio -d previous -At -c 'SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;').Trim()
+  if ($v13 -ne '13') { throw "Expected V13 deployed baseline, found V$v13" }
+  & docker rm -f $previous13 | Out-Null
+
+  Start-Backend $previousLatest 'previous' ''
+  $fromPrevious = (& docker exec $postgres psql -h 127.0.0.1 -U gestudio -d previous -At -c 'SELECT string_agg(version, '','' ORDER BY installed_rank) FROM flyway_schema_history WHERE success AND installed_rank > 13;').Trim()
+  if ($fromPrevious -ne '14') { throw "Expected V13 to V14 upgrade, found $fromPrevious" }
 
   Start-Backend $emptyLatest 'empty' ''
   $emptyVersion = (& docker exec $postgres psql -h 127.0.0.1 -U gestudio -d empty -At -c 'SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;').Trim()
-  if ($emptyVersion -ne '13') { throw "Expected empty migration to V13, found V$emptyVersion" }
-  Write-Host 'Migration verification passed: empty -> V13, V11 -> V12 -> V13, Hibernate validate on both latest schemas.'
+  if ($emptyVersion -ne '14') { throw "Expected empty migration to V14, found V$emptyVersion" }
+  Write-Host 'Migration verification passed: empty -> V14, V11 -> V12 -> V13 -> V14, V13 -> V14, Hibernate validate on all latest schemas.'
 } finally {
   $cleanupPreference = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
-  foreach ($name in @($emptyLatest,$upgradeLatest,$upgrade11,$postgres)) {
+  foreach ($name in @($emptyLatest,$previousLatest,$previous13,$upgradeLatest,$upgrade11,$postgres)) {
     foreach ($id in @(& docker ps -aq --filter "name=$name")) { & docker rm -f $id | Out-Null }
   }
   foreach ($id in @(& docker network ls -q --filter "name=$network")) { & docker network rm $id | Out-Null }

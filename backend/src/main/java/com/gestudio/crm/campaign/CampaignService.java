@@ -13,10 +13,14 @@ import com.gestudio.crm.settings.SendingProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -138,14 +142,74 @@ public class CampaignService {
     if (template.channel() != command.channel()) {
       throw new UnprocessableEntityException("Campaign and template channels must match");
     }
+    CampaignExecutionMode executionMode =
+        command.executionMode() == null
+            ? CampaignExecutionMode.SIMULATION
+            : command.executionMode();
+    if (executionMode == CampaignExecutionMode.LIVE && command.channel() != CampaignChannel.EMAIL) {
+      throw new UnprocessableEntityException(
+          "Live execution is available only for email campaigns");
+    }
+    OrganizationDeliveryDefaults defaults = organizationDeliveryDefaults();
+    String timezone =
+        required(command.timezone() == null ? defaults.timezone() : command.timezone(), "Timezone");
+    ZoneId.of(timezone);
+    LocalTime windowStart =
+        LocalTime.parse(
+            command.operatingWindowStart() == null
+                ? defaults.operatingWindowStart()
+                : command.operatingWindowStart());
+    LocalTime windowEnd =
+        LocalTime.parse(
+            command.operatingWindowEnd() == null
+                ? defaults.operatingWindowEnd()
+                : command.operatingWindowEnd());
+    if (!windowStart.isBefore(windowEnd)) {
+      throw new IllegalArgumentException("Operating window start must be before end");
+    }
+    List<Integer> businessDays =
+        command.businessDays() == null ? defaults.businessDays() : command.businessDays();
+    validateBusinessDays(businessDays);
+    int dailyLimit =
+        command.dailyLimit() == null
+            ? executionMode == CampaignExecutionMode.LIVE ? 10 : 0
+            : command.dailyLimit();
+    int minimumIntervalSeconds =
+        command.minimumIntervalSeconds() == null ? 60 : command.minimumIntervalSeconds();
+    int maxAttempts = command.maxAttempts() == null ? 3 : command.maxAttempts();
+    if (dailyLimit < 0 || dailyLimit > 10) {
+      throw new IllegalArgumentException("Campaign daily limit must be between 0 and 10");
+    }
+    if (minimumIntervalSeconds < 1 || minimumIntervalSeconds > 86_400) {
+      throw new IllegalArgumentException("Minimum interval must be between 1 and 86400 seconds");
+    }
+    if (maxAttempts < 1 || maxAttempts > 20) {
+      throw new IllegalArgumentException("Maximum attempts must be between 1 and 20");
+    }
+    UUID senderAccountId = command.senderAccountId();
+    if (executionMode == CampaignExecutionMode.LIVE) {
+      requireSenderAccount(senderAccountId);
+    }
+    String replyTo = validateReplyTo(command.replyTo());
+    Map<String, Object> stopConfiguration =
+        command.stopConfiguration() == null
+            ? Map.of(
+                "pauseOnAmbiguous", true,
+                "pauseOnReauth", true,
+                "maxPermanentFailures", 1)
+            : command.stopConfiguration();
     UUID id = UUID.randomUUID();
     jdbcTemplate.update(
         """
         INSERT INTO campaign (
           id, version, organization_id, name, description, objective, channel,
           owner_user_id, status, dry_run, daily_limit, approved, template_version_id,
+          execution_mode, sender_account_id, reply_to, timezone,
+          operating_window_start, operating_window_end, business_days,
+          minimum_interval_seconds, max_attempts, stop_configuration,
           created_at, updated_at
-        ) VALUES (?, 0, ?, ?, ?, ?, ?, ?, 'DRAFT', TRUE, 0, FALSE, ?, now(), now())
+        ) VALUES (?, 0, ?, ?, ?, ?, ?, ?, 'DRAFT', ?, ?, FALSE, ?, ?, ?, ?, ?, ?, ?,
+          CAST(? AS smallint[]), ?, ?, CAST(? AS jsonb), now(), now())
         """,
         id,
         currentActor.organizationId(),
@@ -154,10 +218,113 @@ public class CampaignService {
         trim(command.objective()),
         command.channel().name(),
         currentActor.userIdOrNull(),
-        command.templateVersionId());
+        executionMode == CampaignExecutionMode.SIMULATION,
+        dailyLimit,
+        command.templateVersionId(),
+        executionMode.name(),
+        senderAccountId,
+        replyTo,
+        timezone,
+        windowStart,
+        windowEnd,
+        arrayLiteral(businessDays),
+        minimumIntervalSeconds,
+        maxAttempts,
+        json(stopConfiguration));
     auditEventWriter.record(
-        "CAMPAIGN_CREATED", "CAMPAIGN", id, Map.of("channel", command.channel()));
+        "CAMPAIGN_CREATED",
+        "CAMPAIGN",
+        id,
+        Map.of("channel", command.channel(), "executionMode", executionMode));
     return campaign(id);
+  }
+
+  @Transactional
+  public CampaignView updateDelivery(UUID campaignId, UpdateDeliveryCommand command) {
+    CampaignView before = campaign(campaignId);
+    if (before.version() != command.version()) {
+      throw new OptimisticConflictException("Campaign was modified by another user");
+    }
+    if (!Set.of(
+            CampaignState.DRAFT,
+            CampaignState.READY_FOR_REVIEW,
+            CampaignState.APPROVED,
+            CampaignState.SIMULATED)
+        .contains(before.status())) {
+      throw new UnprocessableEntityException("Active or closed campaigns cannot be reconfigured");
+    }
+    TemplateView template = templateByVersion(command.templateVersionId());
+    if (template.channel() != before.channel()) {
+      throw new UnprocessableEntityException("Campaign and template channels must match");
+    }
+    CampaignExecutionMode mode =
+        command.executionMode() == null ? before.executionMode() : command.executionMode();
+    if (mode == CampaignExecutionMode.LIVE && before.channel() != CampaignChannel.EMAIL) {
+      throw new UnprocessableEntityException(
+          "Live execution is available only for email campaigns");
+    }
+    UUID senderAccountId = command.senderAccountId();
+    if (mode == CampaignExecutionMode.LIVE) {
+      requireSenderAccount(senderAccountId);
+    }
+    String timezone = required(command.timezone(), "Timezone");
+    ZoneId.of(timezone);
+    LocalTime windowStart = LocalTime.parse(command.operatingWindowStart());
+    LocalTime windowEnd = LocalTime.parse(command.operatingWindowEnd());
+    if (!windowStart.isBefore(windowEnd)) {
+      throw new IllegalArgumentException("Operating window start must be before end");
+    }
+    validateBusinessDays(command.businessDays());
+    if (command.dailyLimit() < 0 || command.dailyLimit() > 10) {
+      throw new IllegalArgumentException("Campaign daily limit must be between 0 and 10");
+    }
+    if (command.minimumIntervalSeconds() < 1 || command.minimumIntervalSeconds() > 86_400) {
+      throw new IllegalArgumentException("Minimum interval must be between 1 and 86400 seconds");
+    }
+    if (command.maxAttempts() < 1 || command.maxAttempts() > 20) {
+      throw new IllegalArgumentException("Maximum attempts must be between 1 and 20");
+    }
+    Map<String, Object> stopConfiguration =
+        command.stopConfiguration() == null ? Map.of() : command.stopConfiguration();
+    CampaignState nextState =
+        before.frozenAt() == null ? CampaignState.DRAFT : CampaignState.READY_FOR_REVIEW;
+    int updated =
+        jdbcTemplate.update(
+            """
+            UPDATE campaign SET template_version_id = ?, execution_mode = ?, dry_run = ?,
+              sender_account_id = ?, reply_to = ?, timezone = ?, operating_window_start = ?,
+              operating_window_end = ?, business_days = CAST(? AS smallint[]), daily_limit = ?,
+              minimum_interval_seconds = ?, max_attempts = ?, stop_configuration = CAST(? AS jsonb),
+              status = ?, approved = FALSE, approved_by = NULL, approved_at = NULL,
+              approval_fingerprint = NULL, simulated_at = NULL, version = version + 1, updated_at = now()
+            WHERE id = ? AND organization_id = ? AND version = ?
+            """,
+            command.templateVersionId(),
+            mode.name(),
+            mode == CampaignExecutionMode.SIMULATION,
+            mode == CampaignExecutionMode.LIVE ? senderAccountId : null,
+            validateReplyTo(command.replyTo()),
+            timezone,
+            windowStart,
+            windowEnd,
+            arrayLiteral(command.businessDays()),
+            command.dailyLimit(),
+            command.minimumIntervalSeconds(),
+            command.maxAttempts(),
+            json(stopConfiguration),
+            nextState.name(),
+            campaignId,
+            currentActor.organizationId(),
+            command.version());
+    if (updated != 1) {
+      throw new OptimisticConflictException("Campaign was modified by another user");
+    }
+    auditEventWriter.record(
+        "CAMPAIGN_DELIVERY_CONFIGURATION_CHANGED",
+        "CAMPAIGN",
+        campaignId,
+        Map.of("executionMode", mode, "approvalInvalidated", before.approved()));
+    return campaign(campaignId);
   }
 
   @Transactional
@@ -211,7 +378,8 @@ public class CampaignService {
             """
             UPDATE campaign SET audience_filter = CAST(? AS jsonb), status = 'READY_FOR_REVIEW',
               frozen_at = now(), recipient_count = ?, excluded_count = ?, approved = FALSE,
-              approved_by = NULL, approved_at = NULL, updated_at = now(), version = version + 1
+              approved_by = NULL, approved_at = NULL, approval_fingerprint = NULL,
+              updated_at = now(), version = version + 1
             WHERE id = ? AND organization_id = ? AND version = ?
             """,
             json(filter),
@@ -263,14 +431,25 @@ public class CampaignService {
     if (before.recipientCount() <= 0) {
       throw new UnprocessableEntityException("Campaign has no valid recipients");
     }
+    if (before.frozenAt() == null) {
+      throw new UnprocessableEntityException("Campaign audience is not frozen");
+    }
+    if (before.executionMode() == CampaignExecutionMode.LIVE) {
+      requireSenderAccount(before.senderAccountId());
+      if (before.dailyLimit() <= 0) {
+        throw new UnprocessableEntityException("Live campaign daily limit must be positive");
+      }
+    }
+    String fingerprint = approvalFingerprint(before);
     int updated =
         jdbcTemplate.update(
             """
             UPDATE campaign SET status = 'APPROVED', approved = TRUE, approved_by = ?,
-              approved_at = now(), updated_at = now(), version = version + 1
+              approved_at = now(), approval_fingerprint = ?, updated_at = now(), version = version + 1
             WHERE id = ? AND organization_id = ? AND version = ?
             """,
             currentActor.userIdOrNull(),
+            fingerprint,
             campaignId,
             currentActor.organizationId(),
             version);
@@ -278,7 +457,12 @@ public class CampaignService {
       throw new OptimisticConflictException("Campaign was modified by another user");
     }
     auditEventWriter.record(
-        "CAMPAIGN_APPROVED", "CAMPAIGN", campaignId, Map.of("recipients", before.recipientCount()));
+        before.executionMode() == CampaignExecutionMode.LIVE
+            ? "CAMPAIGN_APPROVED_FOR_LIVE"
+            : "CAMPAIGN_APPROVED",
+        "CAMPAIGN",
+        campaignId,
+        Map.of("recipients", before.recipientCount(), "executionMode", before.executionMode()));
     return campaign(campaignId);
   }
 
@@ -293,6 +477,9 @@ public class CampaignService {
       return existing;
     }
     CampaignView campaign = campaign(campaignId);
+    if (campaign.executionMode() != CampaignExecutionMode.SIMULATION) {
+      throw new UnprocessableEntityException("Live campaigns cannot use the simulation action");
+    }
     if (!Set.of(CampaignState.APPROVED, CampaignState.SIMULATED).contains(campaign.status())) {
       throw new UnprocessableEntityException("Campaign must be approved before simulation");
     }
@@ -497,6 +684,9 @@ public class CampaignService {
   }
 
   private AudienceDecision decide(AudienceCandidate candidate) {
+    if (candidate.excluded()) {
+      return new AudienceDecision(false, "Channel is present in exclusion registry", "EXCLUDED");
+    }
     if (!candidate.contactEligible()
         || !"ELIGIBLE".equals(candidate.eligibility())
         || "CUSTOMER".equals(candidate.status())) {
@@ -504,9 +694,6 @@ public class CampaignService {
     }
     if (candidate.channelId() == null) {
       return new AudienceDecision(false, "No valid consented channel", "MISSING_CHANNEL");
-    }
-    if (candidate.excluded()) {
-      return new AudienceDecision(false, "Channel is present in exclusion registry", "EXCLUDED");
     }
     return new AudienceDecision(true, null, "VALID");
   }
@@ -750,10 +937,19 @@ public class CampaignService {
         SELECT c.id, c.version, c.name, c.description, c.objective, c.channel,
           c.status, c.dry_run, c.daily_limit, c.approved, c.template_version_id,
           t.name AS template_name, c.recipient_count, c.excluded_count, c.frozen_at,
-          c.approved_at, c.simulated_at, c.created_at, c.updated_at
+          c.approved_at, c.simulated_at, c.created_at, c.updated_at,
+          c.execution_mode, c.sender_account_id, sender.email_address AS sender_email,
+          sender.display_name AS sender_display_name, sender.status AS sender_status,
+          c.reply_to, c.timezone, c.operating_window_start, c.operating_window_end,
+          c.business_days, c.minimum_interval_seconds, c.max_attempts,
+          c.stop_configuration::text AS stop_configuration, c.scheduled_at,
+          c.started_at, c.paused_at, c.completed_at, c.cancelled_at,
+          c.approval_fingerprint
         FROM campaign c
         LEFT JOIN template_version tv ON tv.id = c.template_version_id AND tv.organization_id = c.organization_id
         LEFT JOIN email_template t ON t.id = tv.template_id AND t.organization_id = c.organization_id
+        LEFT JOIN integration_connection sender ON sender.id = c.sender_account_id
+          AND sender.organization_id = c.organization_id AND sender.provider = 'GMAIL'
         """;
   }
 
@@ -777,7 +973,26 @@ public class CampaignService {
         instant(rs, "approved_at"),
         instant(rs, "simulated_at"),
         instant(rs, "created_at"),
-        instant(rs, "updated_at"));
+        instant(rs, "updated_at"),
+        CampaignExecutionMode.valueOf(rs.getString("execution_mode")),
+        rs.getObject("sender_account_id", UUID.class),
+        rs.getString("sender_email"),
+        rs.getString("sender_display_name"),
+        rs.getString("sender_status"),
+        rs.getString("reply_to"),
+        rs.getString("timezone"),
+        rs.getTime("operating_window_start").toLocalTime().toString(),
+        rs.getTime("operating_window_end").toLocalTime().toString(),
+        days(rs.getArray("business_days")),
+        rs.getInt("minimum_interval_seconds"),
+        rs.getInt("max_attempts"),
+        map(rs.getString("stop_configuration")),
+        instant(rs, "scheduled_at"),
+        instant(rs, "started_at"),
+        instant(rs, "paused_at"),
+        instant(rs, "completed_at"),
+        instant(rs, "cancelled_at"),
+        rs.getString("approval_fingerprint"));
   }
 
   private TemplateView templateView(ResultSet rs, int rowNum) throws SQLException {
@@ -870,6 +1085,103 @@ public class CampaignService {
     }
   }
 
+  private OrganizationDeliveryDefaults organizationDeliveryDefaults() {
+    return jdbcTemplate.queryForObject(
+        """
+        SELECT timezone, operating_window_start, operating_window_end, business_days
+        FROM organization WHERE id = ? AND active = TRUE
+        """,
+        (rs, rowNum) ->
+            new OrganizationDeliveryDefaults(
+                rs.getString("timezone"),
+                rs.getTime("operating_window_start").toLocalTime().toString(),
+                rs.getTime("operating_window_end").toLocalTime().toString(),
+                days(rs.getArray("business_days"))),
+        currentActor.organizationId());
+  }
+
+  private void requireSenderAccount(UUID senderAccountId) {
+    if (senderAccountId == null) {
+      throw new UnprocessableEntityException("Live campaign requires an explicit sender account");
+    }
+    boolean exists =
+        Boolean.TRUE.equals(
+            jdbcTemplate.query(
+                """
+                SELECT EXISTS (
+                  SELECT 1 FROM integration_connection
+                  WHERE id = ? AND organization_id = ? AND provider = 'GMAIL'
+                )
+                """,
+                rs -> rs.next() && rs.getBoolean(1),
+                senderAccountId,
+                currentActor.organizationId()));
+    if (!exists) {
+      throw new ResourceNotFoundException("Sender account not found: " + senderAccountId);
+    }
+  }
+
+  private String validateReplyTo(String value) {
+    String replyTo = trim(value);
+    if (replyTo == null) {
+      return null;
+    }
+    if (replyTo.length() > 320
+        || replyTo.contains("\r")
+        || replyTo.contains("\n")
+        || !replyTo.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+      throw new IllegalArgumentException("Reply-To must be a valid email address");
+    }
+    return replyTo;
+  }
+
+  private void validateBusinessDays(List<Integer> businessDays) {
+    if (businessDays == null
+        || businessDays.isEmpty()
+        || businessDays.stream().distinct().count() != businessDays.size()
+        || businessDays.stream().anyMatch(day -> day == null || day < 1 || day > 7)) {
+      throw new IllegalArgumentException("Business days must be unique ISO weekdays 1 through 7");
+    }
+  }
+
+  private List<Integer> days(Array array) throws SQLException {
+    Number[] values = (Number[]) array.getArray();
+    return Arrays.stream(values).map(Number::intValue).toList();
+  }
+
+  private String arrayLiteral(List<Integer> values) {
+    return "{" + String.join(",", values.stream().map(String::valueOf).toList()) + "}";
+  }
+
+  private String approvalFingerprint(CampaignView campaign) {
+    return sha256(
+        campaign.templateVersionId()
+            + "\n"
+            + campaign.frozenAt()
+            + "\n"
+            + campaign.executionMode()
+            + "\n"
+            + campaign.senderAccountId()
+            + "\n"
+            + campaign.replyTo()
+            + "\n"
+            + campaign.timezone()
+            + "\n"
+            + campaign.operatingWindowStart()
+            + "\n"
+            + campaign.operatingWindowEnd()
+            + "\n"
+            + campaign.businessDays()
+            + "\n"
+            + campaign.dailyLimit()
+            + "\n"
+            + campaign.minimumIntervalSeconds()
+            + "\n"
+            + campaign.maxAttempts()
+            + "\n"
+            + json(campaign.stopConfiguration()));
+  }
+
   private String sha256(String value) {
     try {
       return HexFormat.of()
@@ -890,6 +1202,12 @@ public class CampaignService {
       boolean excluded) {}
 
   private record AudienceDecision(boolean included, String reason, String status) {}
+
+  private record OrganizationDeliveryDefaults(
+      String timezone,
+      String operatingWindowStart,
+      String operatingWindowEnd,
+      List<Integer> businessDays) {}
 
   private record SimulationCandidate(
       UUID prospectId,
@@ -935,7 +1253,43 @@ public class CampaignService {
       String description,
       String objective,
       CampaignChannel channel,
-      UUID templateVersionId) {}
+      UUID templateVersionId,
+      CampaignExecutionMode executionMode,
+      UUID senderAccountId,
+      String replyTo,
+      String timezone,
+      String operatingWindowStart,
+      String operatingWindowEnd,
+      List<Integer> businessDays,
+      Integer dailyLimit,
+      Integer minimumIntervalSeconds,
+      Integer maxAttempts,
+      Map<String, Object> stopConfiguration) {
+    public CreateCampaignCommand(
+        String name,
+        String description,
+        String objective,
+        CampaignChannel channel,
+        UUID templateVersionId) {
+      this(
+          name,
+          description,
+          objective,
+          channel,
+          templateVersionId,
+          CampaignExecutionMode.SIMULATION,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          0,
+          60,
+          3,
+          null);
+    }
+  }
 
   public record AudienceFilter(
       String status,
@@ -946,6 +1300,21 @@ public class CampaignService {
       UUID ownerId,
       boolean excludeCustomers,
       boolean requireActiveOpportunity) {}
+
+  public record UpdateDeliveryCommand(
+      long version,
+      UUID templateVersionId,
+      CampaignExecutionMode executionMode,
+      UUID senderAccountId,
+      String replyTo,
+      String timezone,
+      String operatingWindowStart,
+      String operatingWindowEnd,
+      List<Integer> businessDays,
+      int dailyLimit,
+      int minimumIntervalSeconds,
+      int maxAttempts,
+      Map<String, Object> stopConfiguration) {}
 
   public record CampaignView(
       UUID id,
@@ -966,7 +1335,26 @@ public class CampaignService {
       Instant approvedAt,
       Instant simulatedAt,
       Instant createdAt,
-      Instant updatedAt) {}
+      Instant updatedAt,
+      CampaignExecutionMode executionMode,
+      UUID senderAccountId,
+      String senderEmail,
+      String senderDisplayName,
+      String senderStatus,
+      String replyTo,
+      String timezone,
+      String operatingWindowStart,
+      String operatingWindowEnd,
+      List<Integer> businessDays,
+      int minimumIntervalSeconds,
+      int maxAttempts,
+      Map<String, Object> stopConfiguration,
+      Instant scheduledAt,
+      Instant startedAt,
+      Instant pausedAt,
+      Instant completedAt,
+      Instant cancelledAt,
+      String approvalFingerprint) {}
 
   public record AudienceRecipientView(
       UUID prospectId,

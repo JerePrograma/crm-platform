@@ -91,6 +91,8 @@ const labels: Record<string, string> = {
   DISCARDED: "Descartado",
   DRAFT: "Borrador",
   SIMULATED: "Simulada",
+  SIMULATION: "Simulación",
+  LIVE: "Envío real",
   SCHEDULED: "Programada",
   PAUSED: "Pausada",
   VALID: "Válido",
@@ -131,6 +133,12 @@ const labels: Record<string, string> = {
   NOOP: "Sin conexión externa",
   DEEPLINK_ONLY: "Enlace manual únicamente",
   IMPLEMENTED_NOT_CONNECTED: "Disponible, sin conexión externa",
+  GMAIL: "Gmail",
+  GMAIL_LIVE: "Gmail real controlado",
+  CONNECTED: "Conectada",
+  REAUTH_REQUIRED: "Reautenticación requerida",
+  REVOKED: "Revocada",
+  ERROR: "Error",
   FAKE: "Simulación segura",
   FAKE_INBOUND: "Recepción de prueba",
   DRAFT_CREATED: "Borrador creado",
@@ -139,6 +147,13 @@ const labels: Record<string, string> = {
   BLOCKED_BY_CONFIGURATION: "Bloqueado por la configuración",
   BLOCKED_BY_EXCLUSION: "Bloqueado por una exclusión",
   BLOCKED_BY_POLICY: "Bloqueado por la política de seguridad",
+  SKIPPED_EXCLUSION: "Omitido por exclusión",
+  SKIPPED: "Omitido al revalidar",
+  ACCEPTED_BY_GMAIL: "Aceptado por Gmail",
+  RETRYABLE: "Pendiente de reintento",
+  FAILED_PERMANENTLY: "Fallido permanentemente",
+  FAILED_PERMANENT: "Fallido permanentemente",
+  RESULT_AMBIGUOUS: "Resultado ambiguo",
   STOP: "Finalizar secuencia",
   WAIT: "Esperar",
   CONDITION: "Evaluar condición",
@@ -165,9 +180,10 @@ const labels: Record<string, string> = {
   Opportunity: "Oportunidad",
   ImportJob: "Importación",
   ImportRow: "Fila importada",
+  SenderAccount: "Cuenta remitente",
 };
 
-const sensitiveKey = /(password|secret|token|cookie|authorization|credential|api[-_]?key)/i;
+const sensitiveKey = /(password|secret|token|cookie|authorization|credential|api[-_]?key|refresh|unsubscribe|oauth.*state|oauth.*code|^(raw|mime|body|textBody|htmlBody|emailAddress|recipientAddress)$)/i;
 
 export function labelFor(value: string | null | undefined): string {
   if (!value) return "Sin definir";
@@ -205,6 +221,11 @@ export function humanizeError(raw: string): string {
     [/HTTP 404/i, "No se encontró la información solicitada."],
     [/HTTP 409/i, "La información cambió mientras trabajabas. Actualizá la pantalla y revisá el estado actual."],
     [/HTTP 422/i, "No se pudo completar la acción porque faltan datos válidos o existe una restricción operativa."],
+    [/OAuth.*not configured|OAUTH_NOT_CONFIGURED/i, "OAuth de Google no está configurado en el servidor."],
+    [/reauth|invalid_grant/i, "La cuenta Gmail requiere una nueva autorización."],
+    [/kill.?switch/i, "La protección de emergencia mantiene bloqueada la ejecución real."],
+    [/outside.*window|operating window/i, "La campaña está fuera de la ventana operativa configurada."],
+    [/daily limit|limit exceeded/i, "Se alcanzó el límite diario aplicable."],
     [/Failed to fetch|NetworkError/i, "No se pudo conectar con el servidor. Revisá la conexión e intentá nuevamente."],
   ];
   for (const [pattern, replacement] of mappings) {
@@ -234,7 +255,7 @@ export function safeTechnicalJson(value: string): string {
   try {
     return JSON.stringify(sanitize(JSON.parse(value)), null, 2);
   } catch {
-    return value.length > 4_000 ? `${value.slice(0, 4_000)}…` : value;
+    return "Datos técnicos no disponibles en formato seguro.";
   }
 }
 

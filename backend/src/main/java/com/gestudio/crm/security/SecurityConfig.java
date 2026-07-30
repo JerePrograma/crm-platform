@@ -59,7 +59,8 @@ public class SecurityConfig {
             configuration ->
                 configuration
                     .csrfTokenRepository(csrf)
-                    .ignoringRequestMatchers("/api/v1/webhooks/fake-inbound"))
+                    .ignoringRequestMatchers(
+                        "/api/v1/webhooks/fake-inbound", "/api/v1/unsubscribe/**"))
         .sessionManagement(
             session ->
                 session
@@ -77,6 +78,8 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login")
                     .permitAll()
                     .requestMatchers("/api/v1/webhooks/fake-inbound")
+                    .permitAll()
+                    .requestMatchers("/api/v1/unsubscribe/**")
                     .permitAll()
                     .requestMatchers("/api/**", "/swagger-ui/**", "/v3/api-docs/**")
                     .authenticated()

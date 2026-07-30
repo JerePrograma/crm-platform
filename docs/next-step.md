@@ -1,6 +1,6 @@
 # Continuidad y próximos pasos
 
-Actualizado: 2026-07-24
+Actualizado: 2026-07-30
 
 ## Estado remoto consolidado
 
@@ -10,55 +10,52 @@ VAL_001 FUNCTIONAL_PASS
 VAL_002 COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
 UX_003 COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
 UX_004 FUNCTIONAL_PASS
-DASHBOARD_PROSPECT_METRICS TENANT_WIDE
+UX_006 COMPLETE_WITH_FUNCTIONAL_VALIDATION
+SEG001_GMAIL PRE_PUBLICATION_VALIDATION
+BASE 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
+FAKE_GOOGLE_E2E EXECUTED_PASS
+REAL_GOOGLE IMPLEMENTED_NOT_CONNECTED
 PRODUCTION NOT_DEPLOYED
 REAL_COMMUNICATIONS DISABLED_BY_POLICY
-NEXT UX_006
+NEXT FINAL_VALIDATE_COMMIT_PUSH_SEG001_GMAIL
 ```
 
 ## Qué quedó resuelto
 
-- `VAL-001`, `VAL-002` y `UX-003` permanecen cerrados;
-- los conteos “Prospectos con interés” y “Contacto bloqueado” ya no dependen de `prospects`;
-- el backend agrega directamente en PostgreSQL con `organization_id`;
-- la consulta excluye archivados y no carga páginas;
-- la semántica de estados visible se conserva;
-- `VIEWER` puede leer el endpoint;
-- un segundo tenant recibe sus propios conteos;
-- las pruebas con 105 registros demuestran independencia de la primera página;
-- backend completo y frontend validaron correctamente.
+- `VAL-001`, `VAL-002`, `UX-003`, `UX-004` y `UX-006` permanecen cerrados;
+- se creó y verificó el snapshot externo de los 68 archivos parciales;
+- se retiró solo la referencia Codex rota y `git fsck` no mostró corrupción
+  alcanzable;
+- `main` avanzó por fast-forward de `12421c5` a `9995b3e` y los 68 hashes
+  permanecieron idénticos;
+- V14, OAuth/cifrado, Gmail REST, campaña/outbox, unsubscribe y UI quedaron
+  integrados;
+- backend, frontend y Google falso/Playwright pasaron con datos sintéticos;
+- el manual HTML/PDF/32 PNG/JSON/ZIP fue generado y revisado.
 
 ## Qué no quedó resuelto
 
-El tree histórico `9e058d7044415b80af554ab8ae4fe3170585b1c9` no existe en GitHub como commit o rama accesible. Por tanto, no se integraron de manera ficticia:
-
-- métricas tenant-wide del dashboard;
-- eliminación de automatización UX remota;
-- paginación backend adicional de importaciones;
-- paginación de outbox/inbound;
-- modularización adicional;
-- drawer móvil;
-- Playwright multibrowser;
-- correcciones históricas de foco no publicadas.
-
-Esas capacidades deben tratarse como backlog o recuperarse desde patches verificados fuera de GitHub.
+- faltan dos corridas integrales limpias sobre el contenido definitivo;
+- faltan secret scan final, revisión del diff, stage explícito, commit y push;
+- Google real, credenciales reales, correo real y producción siguen fuera de
+  alcance;
+- Gmail aceptar un mensaje no prueba entrega al buzón;
+- continúan en backlog `OPS-001`, `UX-007`, `TECH-001` y `PERF-001`.
 
 ## Próximo paso obligatorio
 
-Implementar `UX-006` como cambio independiente:
+Cerrar SEG-001 Gmail sin saltar gates:
 
-1. localizar endpoint, servicio y repositorio real de filas de importación;
-2. inventariar todos sus consumidores;
-3. definir paginación compatible con el frontend;
-4. añadir filtros backend por hoja y estado;
-5. añadir búsqueda y límites explícitos;
-6. preservar tenant isolation e idempotencia;
-7. añadir pruebas backend y frontend;
-8. actualizar evidencia y fuentes canónicas.
+1. ejecutar validación precommit y scans completos;
+2. revisar diff y secretos;
+3. stage explícito y commit candidato;
+4. ejecutar dos validadores integrales limpios sobre el mismo SHA;
+5. actualizar evidencia documental si corresponde y repetir el cierre afectado;
+6. fetch final, confirmar `0` commits remotos exclusivos y push fast-forward.
 
 ## Después del gate
 
-Después de `UX-006`, continuar en este orden:
+Después de publicar SEG-001 Gmail, continuar en este orden:
 
 1. `OPS-001` — outbox e inbound paginados;
 2. `UX-007` — navegadores, foco y móvil;
@@ -67,19 +64,11 @@ Después de `UX-006`, continuar en este orden:
 
 No reconstruir el candidato histórico `9e058d...` por descripción.
 
-## Backlog inmediato alternativo
+## Fuera de esta misión
 
-Si el candidato histórico no puede recuperarse, el siguiente orden seguro es:
-
-1. eliminar automatización UX remota obsoleta después de confirmar que no participa en CI;
-2. corregir métricas tenant-wide del dashboard;
-3. paginar importaciones en backend;
-4. paginar outbox e inbound;
-5. validar Firefox/WebKit;
-6. corregir defectos observados de foco;
-7. evaluar drawer móvil y modularización incremental.
-
-Cada punto requiere su propia evidencia y no debe marcarse completo por referencia al candidato local ausente.
+No se conecta Google real, no se habilitan flags de red/envío, no se despliega,
+no se incorpora el XLSX real y no se reconstruye el candidato histórico
+`9e058d...`.
 
 ## Restricciones
 

@@ -13,6 +13,8 @@ describe("etiquetas visibles para el operador", () => {
     expect(labelFor("READY_TO_CONTACT")).toBe("Listo para contactar");
     expect(labelFor("REVIEW_REQUIRED")).toBe("Requiere revisión");
     expect(labelFor("DEAD")).toBe("Agotó los reintentos");
+    expect(labelFor("ACCEPTED_BY_GMAIL")).toBe("Aceptado por Gmail");
+    expect(labelFor("REAUTH_REQUIRED")).toBe("Reautenticación requerida");
   });
 
   it("convierte conflictos técnicos en una acción comprensible", () => {
@@ -32,6 +34,8 @@ describe("etiquetas visibles para el operador", () => {
   it("oculta claves sensibles en el detalle técnico", () => {
     const technical = safeTechnicalJson(JSON.stringify({ token: "secret", status: "PENDING" }));
     expect(technical).not.toContain("secret");
+    expect(safeTechnicalJson(JSON.stringify({ htmlBody: "<p>privado</p>", recipientAddress: "persona@example.test" }))).not.toContain("persona@example.test");
+    expect(safeTechnicalJson("refresh-token-visible")).not.toContain("refresh-token-visible");
     expect(auditSummary(JSON.stringify({ status: "PENDING" }))).toContain("Pendiente");
   });
 });

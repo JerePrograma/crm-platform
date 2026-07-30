@@ -1,5 +1,26 @@
 # Progreso de ejecución integral del CRM
 
+## CHECKPOINT_13_SEG001_GMAIL_PRE_PUBLICATION
+
+```text
+DATE=2026-07-30
+BASE=9995b3e71278d069e3d17afb1c36cdfc995a0bf2
+GIT_RECOVERY=EXECUTED_PASS
+WORKTREE_INTEGRITY=68_OF_68
+BACKEND_CLEAN_VERIFY=EXECUTED_PASS_112_OF_112
+FRONTEND=EXECUTED_PASS_13_OF_13
+FAKE_GOOGLE_E2E=EXECUTED_PASS
+REAL_GOOGLE=IMPLEMENTED_NOT_CONNECTED
+COMPLETE_VALIDATOR_RUN_1=NOT_RUN
+COMPLETE_VALIDATOR_RUN_2=NOT_RUN
+COMMIT=NOT_CREATED
+PUSH=NOT_RUN
+```
+
+La extensión reutiliza V10–V12, agrega V14, no crea otra cola y conserva los
+defaults fail-closed. El cierre remoto se registra solo después de las dos
+corridas limpias y el push fast-forward.
+
 Actualizado: 2026-07-22
 
 ## Reanudación 2026-07-22

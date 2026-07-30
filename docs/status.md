@@ -1,6 +1,28 @@
 # Estado actual
 
-Actualizado: 2026-07-24
+Actualizado: 2026-07-30
+
+## SEG-001 Gmail — cierre previo a publicación
+
+```text
+base local/remota sincronizada: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
+recuperación Git y fast-forward: EXECUTED_PASS
+integridad del working tree preservado: 68/68
+backend clean verify: EXECUTED_PASS, 112/112
+frontend ci/typecheck/unit/build: EXECUTED_PASS, 13/13
+OAuth/Gmail/LIVE E2E con Google falso: EXECUTED_PASS
+manual HTML/PDF/32 PNG/JSON/ZIP: EXECUTED_PASS
+backup/restore/profile/dependency/secret scans: EXECUTED_PASS
+validadores integrales limpios: NOT_RUN
+commit/push: NOT_RUN
+Google real: IMPLEMENTED_NOT_CONNECTED
+producción: NOT_DEPLOYED
+```
+
+El estado `EXECUTED_PASS` anterior se limita a pruebas locales sintéticas. No
+implica conexión a Google, correo real, despliegue ni publicación Git. El
+registro detallado está en
+`docs/implementation/SEG-001-gmail-campaign-delivery.md`.
 
 ## Repositorio canónico
 
@@ -235,14 +257,6 @@ El nuevo candidato local que añadía métricas tenant-wide, paginación adicion
 
 ## Próximo paso obligatorio
 
-El siguiente cambio independiente es `UX-006` — importaciones de gran volumen:
-
-1. inspeccionar `getImportRows`, controlador, servicio, repositorios y consumidores;
-2. confirmar el contrato actual de filas de importación;
-3. agregar paginación backend compatible;
-4. agregar filtros por hoja y resultado, más búsqueda;
-5. preservar tenant isolation e idempotencia;
-6. actualizar frontend sin cargar todas las filas;
-7. añadir pruebas con volumen sintético representativo.
-
-No mezclar `OPS-001`, multibrowser ni modularización.
+Cerrar SEG-001 Gmail: validación integral y scans, revisión final, stage
+explícito, commit, dos corridas limpias sobre el SHA definitivo, fetch final y
+push fast-forward. No conectar Google real ni habilitar flags de envío/red.

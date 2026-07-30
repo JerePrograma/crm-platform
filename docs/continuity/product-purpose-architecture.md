@@ -1,6 +1,6 @@
 # Propósito, producto y arquitectura
 
-Actualizado: 2026-07-24
+Actualizado: 2026-07-30
 
 ## Distinción esencial
 
@@ -19,11 +19,13 @@ Este repositorio implementa el CRM de ventas y operaciones comerciales para vend
 - deduplicación y exclusiones;
 - oportunidades, pipeline y forecast;
 - campañas, audiencias y simulación;
+- cuentas Gmail OAuth y campañas LIVE controladas exclusivamente por outbox;
 - borradores y enlaces manuales;
 - outbox e inbound de prueba;
 - reportes, auditoría, usuarios, roles, settings y etiquetas.
 
-No debe confundirse una capacidad comercial simulada con un mecanismo de envío real.
+La capacidad LIVE existe pero permanece fail-closed y sin Google real. No debe
+confundirse una ejecución contra el proveedor falso con correo real.
 
 ## Usuarios previstos
 
@@ -45,7 +47,7 @@ Centralizar el ciclo comercial de Gestudio con trazabilidad, aislamiento por org
 - Java 21;
 - Spring Boot 4.1;
 - PostgreSQL 17;
-- Flyway V1–V13;
+- Flyway V1–V14;
 - Spring Security, sesión HttpOnly same-origin y CSRF;
 - RBAC y tenant isolation;
 - REST, OpenAPI y Problem Details;
@@ -94,6 +96,6 @@ Centralizar el ciclo comercial de Gestudio con trazabilidad, aislamiento por org
 - infraestructura cloud elegida;
 - dominio y TLS productivos;
 - uso del XLSX real dentro de Git, CI, imágenes o fixtures;
-- campañas con envío automático;
+- habilitación automática de campañas LIVE o envío fuera del outbox;
 - migraciones destructivas;
 - refactorización amplia de arquitectura.

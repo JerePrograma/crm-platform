@@ -8,6 +8,8 @@ import {
 } from "react";
 import {
   approveCampaign,
+  campaignResultsCsvUrl,
+  cancelCampaign,
   changePassword,
   changeTaskStatus,
   createActivity,
@@ -25,6 +27,8 @@ import {
   getImportRows,
   getMessagingSafety,
   getCampaignAudience,
+  getCampaignProgress,
+  getCampaignResults,
   getCampaignSequence,
   getPendingDuplicateReviews,
   getPipelineMetrics,
@@ -40,6 +44,7 @@ import {
   listOpportunities,
   listTemplates,
   listProspects,
+  listSenderAccounts,
   listContacts,
   listTasks,
   listUsers,
@@ -48,9 +53,13 @@ import {
   resolveDuplicateReview,
   replaceCampaignSequence,
   previewTemplate,
+  pauseCampaign,
+  resumeCampaign,
+  scheduleCampaign,
   setUserActive,
   simulateCampaign,
   simulateMessage,
+  startCampaign,
   transitionProspect,
   transitionOpportunity,
   freezeCampaignAudience,
@@ -79,12 +88,16 @@ import {
   listTags,
   unassignTag,
   updateOrganizationSettings,
+  updateCampaignDelivery,
 } from "./api";
 import type {
   AuditEvent,
   AudienceRecipient,
   Campaign,
   CampaignChannel,
+  CampaignExecutionMode,
+  CampaignProgress,
+  CampaignRecipientResult,
   CampaignSimulation,
   CampaignSequenceStep,
   Contact,
@@ -118,8 +131,17 @@ import type {
   CrmTag,
   DashboardReport,
   OrganizationSettings,
+  SenderAccount,
 } from "./types";
 import { openDecisionDialog } from "./decisionDialog";
+import { GmailSenderAccountsPanel } from "./GmailSenderAccountsPanel";
+import {
+  campaignProgress,
+  gmailCallbackNotice,
+  urlWithoutGmailCallback,
+  zonedLocalDateTimeToIso,
+  type GmailCallbackNotice,
+} from "./gmailCampaignUi";
 import {
   auditSummary,
   channelLabel,
@@ -190,8 +212,10 @@ const prospectStatuses: ProspectStatus[] = [
 ];
 
 export function App() {
+  const initialParameters = new URLSearchParams(window.location.search);
+  const [gmailNotice] = useState(() => gmailCallbackNotice(window.location.search));
   const [session, setSession] = useState<SessionUser | null | undefined>(undefined);
-  const [tab, setTab] = useState<Tab>("dashboard");
+  const [tab, setTab] = useState<Tab>(gmailNotice ? "settings" : "dashboard");
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -200,8 +224,8 @@ export function App() {
   const [pipelineMetrics, setPipelineMetrics] = useState<PipelineMetrics | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [messagingSafety, setMessagingSafety] = useState<MessagingSafety | null>(null);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
-  const initialParameters = new URLSearchParams(window.location.search);
   const initialQuery = initialParameters.get("q") ?? "";
   const requestedStatus = initialParameters.get("status") as ProspectStatus | null;
   const initialStatus =
@@ -241,6 +265,7 @@ export function App() {
           metrics,
           campaignList,
           templateList,
+          safety,
         ] =
           await Promise.all([
           listProspects(filter || undefined, query || undefined, page),
@@ -260,6 +285,9 @@ export function App() {
           session?.permissions.includes("CAMPAIGN_READ")
             ? listTemplates()
             : Promise.resolve([]),
+          session?.permissions.includes("CAMPAIGN_READ")
+            ? getMessagingSafety()
+            : Promise.resolve(null),
         ]);
         setProspects(prospectPage.content);
         setProspectDashboardMetrics(prospectMetrics);
@@ -279,6 +307,7 @@ export function App() {
         setPipelineMetrics(metrics);
         setCampaigns(campaignList);
         setTemplates(templateList);
+        setMessagingSafety(safety);
       } catch (caught) {
         setError(message(caught));
       } finally {
@@ -295,10 +324,22 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (!gmailNotice) return;
+    window.history.replaceState(null, "", urlWithoutGmailCallback(window.location.href));
+  }, [gmailNotice]);
+
+  useEffect(() => {
     if (session) {
       void refresh();
     }
   }, [session, refresh]);
+
+  useEffect(() => {
+    if (tab !== "campaigns" || !session?.permissions.includes("CAMPAIGN_READ")) return;
+    void listCampaigns()
+      .then(setCampaigns)
+      .catch((caught) => setError(message(caught)));
+  }, [tab, session]);
 
 
   if (session === undefined) {
@@ -355,6 +396,13 @@ export function App() {
       setSelectedProspect(await getProspect(selectedProspect.id));
     }
   }
+
+  async function refreshMessagingSafety() {
+    if (!session?.permissions.includes("CAMPAIGN_READ")) return;
+    setMessagingSafety(await getMessagingSafety());
+  }
+
+  const liveCampaignAvailable = messagingSafety?.campaignExecutionAvailable === true;
 
   return (
     <div className="app-shell">
@@ -429,10 +477,10 @@ export function App() {
           </NavButton>
         </nav>
         <div className="safety-panel" aria-label="Protecciones de envío activas">
-          <strong>Los envíos reales están bloqueados</strong>
-          <span>Modo de simulación activo</span>
-          <span>Límite diario: 0</span>
-          <span>Protección de emergencia activa</span>
+          <strong>{liveCampaignAvailable ? "Envío real solo mediante campañas aprobadas" : "Los envíos reales están bloqueados"}</strong>
+          <span>{messagingSafety?.dryRun === false ? "Modo real habilitado" : "Modo de simulación activo"}</span>
+          <span>Límite diario: {messagingSafety?.hardDailyLimit ?? 0}</span>
+          <span>Protección de emergencia {messagingSafety?.killSwitch === false ? "inactiva" : "activa"}</span>
         </div>
         <button
           className="secondary-button"
@@ -446,7 +494,9 @@ export function App() {
         <header className="topbar">
           <div>
             <h1>{title(tab)}</h1>
-            <p>Consultá el estado operativo y continuá con la siguiente acción segura. Ningún envío real está disponible.</p>
+            <p>{liveCampaignAvailable
+              ? "Los envíos reales solo se ejecutan desde campañas aprobadas, individualizadas y controladas por el outbox."
+              : "Consultá el estado operativo y continuá con la siguiente acción segura. Ningún envío real está disponible."}</p>
           </div>
           <button
             className="secondary-button"
@@ -645,12 +695,13 @@ export function App() {
             campaigns={campaigns}
             templates={templates}
             session={session}
-            onChanged={() => refresh()}
+            safety={messagingSafety}
+            onChanged={refresh}
           />
         )}
 
         {tab === "messages" && (
-          <MessagesPanel prospects={prospects} session={session} />
+          <MessagesPanel prospects={prospects} session={session} safety={messagingSafety} />
         )}
 
         {tab === "outbox" && <OutboxPanel session={session} />}
@@ -684,7 +735,13 @@ export function App() {
         {tab === "reports" && <ReportsPanel />}
 
         {tab === "settings" && (
-          <SettingsPanel session={session} selectedProspect={selectedProspect} />
+          <SettingsPanel
+            session={session}
+            selectedProspect={selectedProspect}
+            safety={messagingSafety}
+            gmailNotice={gmailNotice}
+            onSafetyChanged={refreshMessagingSafety}
+          />
         )}
 
         {tab === "users" && <UsersPanel currentUser={session} />}
@@ -779,7 +836,19 @@ function ReportMap({ title: heading, values }: { title: string; values: Record<s
   );
 }
 
-function SettingsPanel({ session, selectedProspect }: { session: SessionUser; selectedProspect: Prospect | null }) {
+function SettingsPanel({
+  session,
+  selectedProspect,
+  safety,
+  gmailNotice,
+  onSafetyChanged,
+}: {
+  session: SessionUser;
+  selectedProspect: Prospect | null;
+  safety: MessagingSafety | null;
+  gmailNotice: GmailCallbackNotice | null;
+  onSafetyChanged: () => Promise<void>;
+}) {
   const [settings, setSettings] = useState<OrganizationSettings | null>(null);
   const [tags, setTags] = useState<CrmTag[]>([]);
   const [prospectTags, setProspectTags] = useState<CrmTag[]>([]);
@@ -816,15 +885,20 @@ function SettingsPanel({ session, selectedProspect }: { session: SessionUser; se
 
   return (
     <section className="stack">
-      <div className="alert safety">Los bloqueos de seguridad tienen prioridad. Ningún usuario puede habilitar envíos reales desde esta pantalla ni desde otras funciones del sistema.</div>
+      <div className="alert safety">
+        {safety?.campaignExecutionAvailable
+          ? "Los envíos reales solo pueden ejecutarse desde una campaña aprobada y continúan sujetos a límites, exclusiones y protección de emergencia."
+          : "Los bloqueos de seguridad tienen prioridad. Ningún usuario puede habilitar envíos reales desde esta pantalla ni desde otras funciones del sistema. Los flags de entorno y la protección de emergencia no pueden alterarse desde la interfaz; el límite de la organización nunca los anula."}
+      </div>
       {error && <div className="alert error" role="alert">{error}</div>}
       {notice && <div className="alert success" role="status">{notice}</div>}
       {settings ? <>
         <div className="metric-grid">
-          <Metric label="Envíos reales" value={settings.sending.environmentEnabled ? "Habilitados" : "Bloqueados"} />
-          <Metric label="Modo de simulación" value={settings.sending.environmentDryRun ? "Activo" : "Inactivo"} />
-          <Metric label="Límite diario" value={settings.sending.environmentDailyLimit.toLocaleString("es-AR")} />
-          <Metric label="Protección de emergencia" value={settings.sending.environmentKillSwitch ? "Activa" : "Inactiva"} />
+          <Metric label="Envíos reales" value={(safety?.sendingEnabled ?? settings.sending.environmentEnabled) ? "Habilitados" : "Bloqueados"} />
+          <Metric label="Modo de simulación" value={(safety?.dryRun ?? settings.sending.environmentDryRun) ? "Activo" : "Inactivo"} />
+          <Metric label="Límite diario" value={(safety?.hardDailyLimit ?? settings.sending.environmentDailyLimit).toLocaleString("es-AR")} />
+          <Metric label="Límite de la organización" value={settings.campaignDailyLimit.toLocaleString("es-AR")} />
+          <Metric label="Protección de emergencia" value={(safety?.killSwitch ?? settings.sending.environmentKillSwitch) ? "Activa" : "Inactiva"} />
         </div>
         <Panel title="Organización">
           <form className="form-grid" onSubmit={(event) => { event.preventDefault(); if (settings) void run(() => updateOrganizationSettings(settings), "Configuración actualizada; bloqueos de envío preservados."); }}>
@@ -834,6 +908,7 @@ function SettingsPanel({ session, selectedProspect }: { session: SessionUser; se
             <label>Idioma<select disabled={!canManage} value={settings.locale} onChange={(event) => setSettings({ ...settings, locale: event.target.value })}><option value="es-AR">Español Argentina</option><option value="es">Español</option><option value="en-US">Inglés (Estados Unidos)</option><option value="en">Inglés</option></select></label>
             <label>Color principal<input disabled={!canManage} type="color" value={settings.brandingPrimaryColor} onChange={(event) => setSettings({ ...settings, brandingPrimaryColor: event.target.value })} /></label>
             <label>Seguimiento (días)<input disabled={!canManage} type="number" min="1" max="365" value={settings.followUpDays} onChange={(event) => setSettings({ ...settings, followUpDays: Number(event.target.value) })} /></label>
+            <label>Límite diario de campañas<input disabled={!canManage} type="number" min="0" max="10" value={settings.campaignDailyLimit} onChange={(event) => setSettings({ ...settings, campaignDailyLimit: Number(event.target.value) })} /></label>
             <label>Inicio operativo<input disabled={!canManage} type="time" value={settings.operatingWindowStart} onChange={(event) => setSettings({ ...settings, operatingWindowStart: event.target.value })} /></label>
             <label>Fin operativo<input disabled={!canManage} type="time" value={settings.operatingWindowEnd} onChange={(event) => setSettings({ ...settings, operatingWindowEnd: event.target.value })} /></label>
             {canManage && <button className="primary-button" type="submit">Guardar configuración</button>}
@@ -863,7 +938,13 @@ function SettingsPanel({ session, selectedProspect }: { session: SessionUser; se
           </> : <EmptyState text="Seleccioná un prospecto en la ficha y volvé a Configuración para asignar etiquetas." />}
         </Panel>
       </section>
-      <Panel title="Integraciones"><div className="control-grid"><Control label="Gmail" value="Disponible, sin conexión externa" /><Control label="WhatsApp" value="Disponible, sin conexión externa" /><Control label="Recepción de prueba" value="Solo entorno sintético firmado" /></div></Panel>
+      <GmailSenderAccountsPanel
+        session={session}
+        safety={safety}
+        callbackNotice={gmailNotice}
+        onChanged={onSafetyChanged}
+      />
+      <Panel title="Integraciones"><div className="control-grid"><Control label="Gmail" value={safety?.gmailConnected ? safety.selectedSenderEmail ?? "Conectado" : "Disponible, sin conexión externa"} /><Control label="WhatsApp" value="Disponible, sin conexión externa" /><Control label="Recepción de prueba" value="Solo entorno sintético firmado" /></div></Panel>
     </section>
   );
 }
@@ -1467,11 +1548,12 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: SessionUser) =>
 function MessagesPanel({
   prospects,
   session,
+  safety,
 }: {
   prospects: Prospect[];
   session: SessionUser;
+  safety: MessagingSafety | null;
 }) {
-  const [safety, setSafety] = useState<MessagingSafety | null>(null);
   const [prospectId, setProspectId] = useState(prospects[0]?.id ?? "");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contactId, setContactId] = useState("");
@@ -1492,10 +1574,6 @@ function MessagesPanel({
       ),
     [channel, contacts],
   );
-
-  useEffect(() => {
-    void getMessagingSafety().then(setSafety).catch((caught) => setError(message(caught)));
-  }, []);
 
   useEffect(() => {
     if (!prospectId && prospects[0]) {
@@ -1557,8 +1635,9 @@ function MessagesPanel({
   return (
     <section className="stack">
       <div className="alert safety" role="status">
-        Los envíos reales están bloqueados. Esta pantalla solo permite preparar borradores,
-        simular resultados o abrir una aplicación externa de forma manual.
+        {safety?.campaignExecutionAvailable
+          ? "El envío real está disponible únicamente desde campañas aprobadas y procesadas por el outbox. Esta pantalla conserva borradores, simulación y enlace manual."
+          : "Los envíos reales están bloqueados. Esta pantalla solo permite preparar borradores, simular resultados o abrir una aplicación externa de forma manual."}
       </div>
       {error && <div className="alert error" role="alert">{error}</div>}
       <div className="control-grid">
@@ -1572,6 +1651,17 @@ function MessagesPanel({
           label="Endpoint de envío"
           value={safety?.sendEndpointAvailable ? "Disponible" : "No existe"}
         />
+        <Control
+          label="Ejecución interna de campañas"
+          value={safety?.campaignExecutionAvailable ? "Disponible" : "Bloqueada"}
+        />
+        <Control label="Endpoint interno" value="Campañas aprobadas → outbox" />
+        <Control label="Cuenta seleccionada" value={safety?.selectedSenderEmail ?? "Sin cuenta"} />
+        <Control label="Protección de emergencia" value={safety?.killSwitch === false ? "Inactiva" : "Activa"} />
+        <Control label="Límite diario" value={String(safety?.hardDailyLimit ?? 0)} />
+        <Control label="Mensajes de hoy" value={String(safety?.sentToday ?? 0)} />
+        <Control label="Cuota interna restante" value={String(safety?.remainingToday ?? 0)} />
+        <Control label="Reautenticación" value={safety?.gmailReauthRequired ? "Requerida" : "No requerida"} />
       </div>
       {(canDraft || canSimulate) && (
         <Panel title="Borrador seguro o simulación">
@@ -1677,7 +1767,7 @@ function MessagesPanel({
       )}
       <Panel title="Integraciones externas">
         <div className="control-grid">
-          <Control label="Gmail" value="Disponible, sin conexión externa" />
+          <Control label="Gmail" value={safety?.gmailConnected ? "Conectado" : "Disponible, sin conexión externa"} />
           <Control label="WhatsApp" value="Disponible, sin conexión externa" />
           <Control label="Modo de correo" value={labelFor(safety?.emailMode ?? "NOOP")} />
           <Control label="Modo de WhatsApp" value={labelFor(safety?.whatsAppMode ?? "DEEPLINK_ONLY")} />
@@ -1691,11 +1781,13 @@ function CampaignsPanel({
   campaigns,
   templates,
   session,
+  safety,
   onChanged,
 }: {
   campaigns: Campaign[];
   templates: MessageTemplate[];
   session: SessionUser;
+  safety: MessagingSafety | null;
   onChanged: () => Promise<void>;
 }) {
   const [templateName, setTemplateName] = useState("");
@@ -1708,17 +1800,73 @@ function CampaignsPanel({
     "<p>Hola <strong>{{contact.firstName}}</strong>, te contactamos por {{campaign.name}}.</p>",
   );
   const [campaignName, setCampaignName] = useState("");
+  const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   const [templateVersionId, setTemplateVersionId] = useState("");
+  const [executionMode, setExecutionMode] = useState<CampaignExecutionMode>("SIMULATION");
+  const [senderAccounts, setSenderAccounts] = useState<SenderAccount[]>([]);
+  const [senderAccountId, setSenderAccountId] = useState("");
+  const [replyTo, setReplyTo] = useState("");
+  const [timezone, setTimezone] = useState("America/Argentina/Buenos_Aires");
+  const [scheduleTimes, setScheduleTimes] = useState<Record<string, string>>({});
+  const [operatingWindowStart, setOperatingWindowStart] = useState("09:30");
+  const [operatingWindowEnd, setOperatingWindowEnd] = useState("17:30");
+  const [businessDays, setBusinessDays] = useState([1, 2, 3, 4, 5]);
+  const [dailyLimit, setDailyLimit] = useState(10);
+  const [minimumIntervalSeconds, setMinimumIntervalSeconds] = useState(60);
+  const [maxAttempts, setMaxAttempts] = useState(3);
   const [province, setProvince] = useState("");
   const [scoreAtLeast, setScoreAtLeast] = useState("");
   const [audience, setAudience] = useState<AudienceRecipient[]>([]);
   const [preview, setPreview] = useState<RenderedTemplate | null>(null);
   const [simulation, setSimulation] = useState<CampaignSimulation | null>(null);
   const [sequence, setSequence] = useState<CampaignSequenceStep[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [deliveryProgress, setDeliveryProgress] = useState<CampaignProgress | null>(null);
+  const [results, setResults] = useState<CampaignRecipientResult[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const writable = session.permissions.includes("CAMPAIGN_WRITE");
+  const canExecute = session.permissions.includes("MESSAGE_SEND");
+  const connectedSenders = senderAccounts.filter((account) => account.status === "CONNECTED");
+  const selectedCampaign = campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
+  const editingCampaign = campaigns.find((campaign) => campaign.id === editingCampaignId) ?? null;
+  const selectableTemplates = templates.filter((template) =>
+    editingCampaign
+      ? template.channel === editingCampaign.channel
+      : executionMode === "SIMULATION" || template.channel === "EMAIL",
+  );
+
+  useEffect(() => {
+    void listSenderAccounts()
+      .then((accounts) => {
+        setSenderAccounts(accounts);
+        setSenderAccountId((current) => current || accounts.find((account) => account.defaultAccount && account.status === "CONNECTED")?.id || "");
+      })
+      .catch((caught) => setError(message(caught)));
+  }, []);
+
+  const loadResults = useCallback(async (campaignId: string) => {
+    const [progress, recipientResults] = await Promise.all([
+      getCampaignProgress(campaignId),
+      getCampaignResults(campaignId),
+    ]);
+    setDeliveryProgress(progress);
+    setResults(recipientResults);
+    return progress;
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCampaign || !["SCHEDULED", "RUNNING", "PAUSED", "COMPLETED", "FAILED", "CANCELLED"].includes(selectedCampaign.status)) return;
+    void loadResults(selectedCampaign.id).catch((caught) => setError(message(caught)));
+    if (selectedCampaign.status !== "RUNNING") return;
+    const interval = window.setInterval(() => {
+      void loadResults(selectedCampaign.id)
+        .then((progress) => progress.status !== selectedCampaign.status ? onChanged() : undefined)
+        .catch((caught) => setError(message(caught)));
+    }, 5_000);
+    return () => window.clearInterval(interval);
+  }, [selectedCampaign?.id, selectedCampaign?.status, loadResults, onChanged]);
 
   async function run(action: () => Promise<void>) {
     setError(null);
@@ -1754,17 +1902,73 @@ function CampaignsPanel({
       setError("Seleccioná una plantilla.");
       return;
     }
+    if (executionMode === "LIVE" && !senderAccountId) {
+      setError("Seleccioná una cuenta remitente conectada para la campaña real.");
+      return;
+    }
+    if (executionMode === "LIVE" && selected.channel !== "EMAIL") {
+      setError("La ejecución real requiere una plantilla de correo electrónico.");
+      return;
+    }
+    if (editingCampaign && selected.channel !== editingCampaign.channel) {
+      setError("La plantilla debe conservar el canal original de la campaña.");
+      return;
+    }
     await run(async () => {
-      const created = await createCampaign({
-        name: campaignName,
-        objective: "Prospección comercial simulada",
-        channel: selected.channel,
+      const delivery = {
         templateVersionId: selected.versionId,
-      });
+        executionMode,
+        senderAccountId: executionMode === "LIVE" ? senderAccountId : undefined,
+        replyTo: executionMode === "LIVE" ? replyTo || undefined : undefined,
+        timezone,
+        operatingWindowStart,
+        operatingWindowEnd,
+        businessDays,
+        dailyLimit: executionMode === "LIVE" ? dailyLimit : 0,
+        minimumIntervalSeconds,
+        maxAttempts,
+        stopConfiguration: editingCampaign?.stopConfiguration,
+      };
+      const saved = editingCampaign
+        ? await updateCampaignDelivery(editingCampaign, delivery)
+        : await createCampaign({
+            name: campaignName,
+            objective: executionMode === "LIVE" ? "Campaña comercial real controlada" : "Prospección comercial simulada",
+            channel: selected.channel,
+            ...delivery,
+          });
+      setNotice(editingCampaign
+        ? `Configuración de ${saved.name} actualizada; la aprobación anterior quedó invalidada.`
+        : `Campaña ${saved.name} creada en borrador.`);
+      setSelectedCampaignId(saved.id);
+      setEditingCampaignId(null);
       setCampaignName("");
-      setNotice(`Campaña ${created.name} creada en borrador.`);
       await onChanged();
     });
+  }
+
+  function editCampaign(campaign: Campaign) {
+    setEditingCampaignId(campaign.id);
+    setCampaignName(campaign.name);
+    setTemplateVersionId(campaign.templateVersionId);
+    setExecutionMode(campaign.executionMode ?? "SIMULATION");
+    setSenderAccountId(campaign.senderAccountId ?? "");
+    setReplyTo(campaign.replyTo ?? "");
+    setTimezone(campaign.timezone || "America/Argentina/Buenos_Aires");
+    setOperatingWindowStart(campaign.operatingWindowStart || "09:30");
+    setOperatingWindowEnd(campaign.operatingWindowEnd || "17:30");
+    setBusinessDays(campaign.businessDays?.length ? campaign.businessDays : [1, 2, 3, 4, 5]);
+    setDailyLimit(campaign.dailyLimit);
+    setMinimumIntervalSeconds(campaign.minimumIntervalSeconds || 60);
+    setMaxAttempts(campaign.maxAttempts || 3);
+  }
+
+  function cancelEditing() {
+    setEditingCampaignId(null);
+    setCampaignName("");
+    setTemplateVersionId("");
+    setExecutionMode("SIMULATION");
+    setSenderAccountId(connectedSenders.find((account) => account.defaultAccount)?.id ?? "");
   }
 
   async function showPreview(template: MessageTemplate) {
@@ -1804,15 +2008,20 @@ function CampaignsPanel({
   }
 
   async function approve(campaign: Campaign) {
+    const live = campaign.executionMode === "LIVE";
     const answer = await openDecisionDialog({
-      title: "Aprobar para simulación",
-      description: "La campaña quedará habilitada únicamente para generar una simulación. Esto no habilita envíos reales.",
-      confirmLabel: "Aprobar simulación",
+      title: live ? "Aprobar para envío real" : "Aprobar para simulación",
+      description: live
+        ? `Se aprobarán ${campaign.recipientCount} destinatarios para envío real desde ${campaign.senderEmail ?? "la cuenta seleccionada"}. Todo cambio material invalidará esta aprobación.`
+        : "La campaña quedará habilitada únicamente para generar una simulación. Esto no habilita envíos reales.",
+      confirmLabel: live ? "Aprobar campaña real" : "Aprobar simulación",
     });
     if (!answer) return;
     await run(async () => {
       const approved = await approveCampaign(campaign);
-      setNotice(`Campaña ${approved.name} aprobada solo para simulación.`);
+      setNotice(live
+        ? `Campaña ${approved.name} aprobada para ejecución real controlada.`
+        : `Campaña ${approved.name} aprobada solo para simulación.`);
       await onChanged();
     });
   }
@@ -1836,11 +2045,92 @@ function CampaignsPanel({
     });
   }
 
+  async function liveConfirmation(
+    campaign: Campaign,
+    action: "start" | "schedule",
+  ): Promise<string | null> {
+    const answer = await openDecisionDialog({
+      title: action === "start" ? "Confirmar ejecución real" : "Confirmar programación real",
+      description: `${campaign.name} · ${campaign.senderEmail ?? "Sin remitente"} · ${campaign.recipientCount} destinatarios · ${campaign.excludedCount} excluidos · límite ${campaign.dailyLimit}/día · ${campaign.operatingWindowStart}–${campaign.operatingWindowEnd}.`,
+      confirmLabel: action === "start" ? "Iniciar campaña real" : "Programar campaña real",
+      danger: true,
+      input: {
+        label: "Escribí SEND_LIVE_CAMPAIGN para confirmar",
+        placeholder: "SEND_LIVE_CAMPAIGN",
+      },
+    });
+    if (answer && answer !== "SEND_LIVE_CAMPAIGN") {
+      setError("La frase de confirmación no coincide.");
+      return null;
+    }
+    return answer;
+  }
+
+  async function startLive(campaign: Campaign) {
+    const confirmation = await liveConfirmation(campaign, "start");
+    if (!confirmation) return;
+    await run(async () => {
+      const progress = await startCampaign(campaign, confirmation);
+      setSelectedCampaignId(progress.campaignId);
+      setNotice(`Campaña ${campaign.name} iniciada. El outbox procesará un destinatario por mensaje.`);
+      await onChanged();
+      await loadResults(progress.campaignId);
+    });
+  }
+
+  async function scheduleLive(campaign: Campaign) {
+    const selectedSchedule = scheduleTimes[campaign.id];
+    const target = campaign.scheduledAt ?? (selectedSchedule
+      ? zonedLocalDateTimeToIso(selectedSchedule, campaign.timezone)
+      : null);
+    if (!target) {
+      setError("Definí una fecha y hora antes de programar la campaña.");
+      return;
+    }
+    const confirmation = await liveConfirmation(campaign, "schedule");
+    if (!confirmation) return;
+    await run(async () => {
+      const progress = await scheduleCampaign(campaign, target, confirmation);
+      setSelectedCampaignId(progress.campaignId);
+      setNotice(`Campaña ${campaign.name} programada.`);
+      await onChanged();
+      await loadResults(progress.campaignId);
+    });
+  }
+
+  async function changeCampaignState(
+    action: () => Promise<CampaignProgress>,
+    success: string,
+    confirmation?: { title: string; description: string; danger?: boolean },
+  ) {
+    if (confirmation) {
+      const answer = await openDecisionDialog({
+        ...confirmation,
+        confirmLabel: confirmation.title,
+      });
+      if (!answer) return;
+    }
+    await run(async () => {
+      const progress = await action();
+      setSelectedCampaignId(progress.campaignId);
+      setNotice(success);
+      await onChanged();
+      await loadResults(progress.campaignId);
+    });
+  }
+
+  function toggleBusinessDay(day: number) {
+    setBusinessDays((current) => current.includes(day)
+      ? current.filter((value) => value !== day)
+      : [...current, day].sort());
+  }
+
   return (
     <section className="stack">
       <div className="alert safety">
-        Esta sección solo crea borradores y simulaciones. Los cuatro controles de envío
-        permanecen bloqueados y no existe una acción “Enviar”.
+        {safety?.campaignExecutionAvailable
+          ? "La ejecución real está disponible únicamente para campañas aprobadas, con cuenta conectada y confirmación reforzada. No existe un envío directo genérico."
+          : "La ejecución real está bloqueada. Podés preparar campañas y simulaciones, pero los controles operativos tienen prioridad y no existe una acción genérica “Enviar”."}
       </div>
       {error && <div className="alert error" role="alert">{error}</div>}
       {notice && <div className="alert success" role="status">{notice}</div>}
@@ -1874,23 +2164,58 @@ function CampaignsPanel({
               <button className="primary-button" type="submit">Crear versión 1</button>
             </form>
           </Panel>
-          <Panel title="Nueva campaña">
+          <Panel title={editingCampaign ? "Editar configuración de campaña" : "Nueva campaña"}>
             <form className="form-grid" onSubmit={(event) => void submitCampaign(event)}>
               <label className="full-width">
                 Nombre
-                <input required value={campaignName} onChange={(event) => setCampaignName(event.target.value)} />
+                <input required disabled={editingCampaign !== null} value={campaignName} onChange={(event) => setCampaignName(event.target.value)} />
               </label>
+              <fieldset className="mode-selector full-width">
+                <legend>Modo de ejecución</legend>
+                <label>
+                  <input type="radio" name="execution-mode" value="SIMULATION" checked={executionMode === "SIMULATION"} onChange={() => setExecutionMode("SIMULATION")} />
+                  <span><strong>Simulación</strong><small>No realiza conexiones externas.</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="execution-mode" value="LIVE" disabled={editingCampaign?.channel === "WHATSAPP"} checked={executionMode === "LIVE"} onChange={() => setExecutionMode("LIVE")} />
+                  <span><strong>Envío real</strong><small>Requiere Gmail, aprobación y permiso específico.</small></span>
+                </label>
+              </fieldset>
               <label className="full-width">
                 Plantilla
                 <select required value={templateVersionId} onChange={(event) => setTemplateVersionId(event.target.value)}>
                   <option value="">Seleccionar…</option>
-                  {templates.map((template) => (
+                  {selectableTemplates.map((template) => (
                     <option key={template.versionId} value={template.versionId}>
                       {template.name} · v{template.versionNumber} · {channelLabel(template.channel)}
                     </option>
                   ))}
                 </select>
               </label>
+              {executionMode === "LIVE" && (
+                <>
+                  <label className="full-width">
+                    Cuenta remitente
+                    <select required value={senderAccountId} onChange={(event) => setSenderAccountId(event.target.value)}>
+                      <option value="">Seleccionar…</option>
+                      {connectedSenders.map((account) => <option key={account.id} value={account.id}>{account.emailAddress}{account.defaultAccount ? " · predeterminada" : ""}</option>)}
+                    </select>
+                  </label>
+                  {connectedSenders.length === 0 && <div className="alert safety full-width" role="status">Conectá una cuenta Gmail en Configuración antes de crear una campaña real.</div>}
+                  {!canExecute && <div className="alert safety full-width" role="status">Tu rol puede preparar la campaña, pero no programar ni iniciar una ejecución real.</div>}
+                  <label className="full-width">Reply-To<input type="email" value={replyTo} maxLength={254} onChange={(event) => setReplyTo(event.target.value)} placeholder="respuesta@example.test" /></label>
+                  <label>Zona horaria<input required value={timezone} onChange={(event) => setTimezone(event.target.value)} /></label>
+                  <label>Inicio de ventana<input type="time" required value={operatingWindowStart} onChange={(event) => setOperatingWindowStart(event.target.value)} /></label>
+                  <label>Fin de ventana<input type="time" required value={operatingWindowEnd} onChange={(event) => setOperatingWindowEnd(event.target.value)} /></label>
+                  <fieldset className="business-days full-width">
+                    <legend>Días habilitados</legend>
+                    {[{ day: 1, label: "Lunes" }, { day: 2, label: "Martes" }, { day: 3, label: "Miércoles" }, { day: 4, label: "Jueves" }, { day: 5, label: "Viernes" }, { day: 6, label: "Sábado" }, { day: 7, label: "Domingo" }].map(({ day, label }) => <label key={day}><input type="checkbox" checked={businessDays.includes(day)} onChange={() => toggleBusinessDay(day)} />{label}</label>)}
+                  </fieldset>
+                  <label>Límite diario<input type="number" min="1" max="10" value={dailyLimit} onChange={(event) => setDailyLimit(Number(event.target.value))} /></label>
+                  <label>Intervalo mínimo (segundos)<input type="number" min="1" max="86400" value={minimumIntervalSeconds} onChange={(event) => setMinimumIntervalSeconds(Number(event.target.value))} /></label>
+                  <label>Máximo de intentos<input type="number" min="1" max="20" value={maxAttempts} onChange={(event) => setMaxAttempts(Number(event.target.value))} /></label>
+                </>
+              )}
               <label>
                 Provincia (opcional)
                 <input value={province} onChange={(event) => setProvince(event.target.value)} />
@@ -1899,7 +2224,12 @@ function CampaignsPanel({
                 Puntuación mínima
                 <input type="number" min="0" max="100" value={scoreAtLeast} onChange={(event) => setScoreAtLeast(event.target.value)} />
               </label>
-              <button className="primary-button" type="submit">Crear borrador</button>
+              <div className="action-row full-width">
+                <button className="primary-button" type="submit" disabled={executionMode === "LIVE" && (!senderAccountId || businessDays.length === 0)}>
+                  {editingCampaign ? "Guardar configuración" : executionMode === "LIVE" ? "Crear borrador real" : "Crear borrador"}
+                </button>
+                {editingCampaign && <button className="secondary-button" type="button" onClick={cancelEditing}>Cancelar edición</button>}
+              </div>
             </form>
           </Panel>
         </div>
@@ -1926,11 +2256,15 @@ function CampaignsPanel({
       <Panel title="Campañas y audiencias">
         <div className="card-grid">
           {campaigns.map((campaign) => (
-            <article className="entity-card" key={campaign.id}>
-              <div><strong>{campaign.name}</strong><Badge value={campaign.status} /></div>
+            <article className={selectedCampaignId === campaign.id ? "entity-card selected-card" : "entity-card"} key={campaign.id}>
+              <div><strong>{campaign.name}</strong><span className="badge-row"><Badge value={campaign.executionMode ?? (campaign.dryRun ? "SIMULATION" : "LIVE")} /><Badge value={campaign.status} /></span></div>
               <p>{channelLabel(campaign.channel)} · {campaign.templateName}</p>
-              <small>{campaign.recipientCount} incluidos · {campaign.excludedCount} excluidos · modo de simulación</small>
+              <small>{campaign.recipientCount} incluidos · {campaign.excludedCount} excluidos · {campaign.executionMode === "LIVE" ? `remitente ${campaign.senderEmail ?? "sin seleccionar"}` : "modo de simulación"}</small>
+              {campaign.scheduledAt && <small>Programada para {dateTime(campaign.scheduledAt)} · {campaign.timezone}</small>}
               <div className="action-row">
+                {writable && ["DRAFT", "READY_FOR_REVIEW", "APPROVED", "SIMULATED"].includes(campaign.status) && (
+                  <button className="secondary-button" type="button" onClick={() => editCampaign(campaign)}>Editar configuración</button>
+                )}
                 {writable && ["DRAFT", "READY_FOR_REVIEW"].includes(campaign.status) && (
                   <button className="secondary-button" type="button" onClick={() => void freeze(campaign)}>Congelar audiencia</button>
                 )}
@@ -1942,15 +2276,66 @@ function CampaignsPanel({
                 {campaign.status === "READY_FOR_REVIEW" && session.permissions.includes("CAMPAIGN_APPROVE") && (
                   <button className="primary-button" type="button" onClick={() => void approve(campaign)}>Aprobar</button>
                 )}
-                {["APPROVED", "SIMULATED"].includes(campaign.status) && session.permissions.includes("MESSAGE_SIMULATE") && (
+                {(campaign.executionMode ?? "SIMULATION") === "SIMULATION" && ["APPROVED", "SIMULATED"].includes(campaign.status) && session.permissions.includes("MESSAGE_SIMULATE") && (
                   <button className="primary-button" type="button" onClick={() => void simulate(campaign)}>Simular</button>
                 )}
+                {campaign.executionMode === "LIVE" && campaign.status === "APPROVED" && canExecute && (
+                  <>
+                    <label className="compact-action-field">
+                      Fecha y hora para programar
+                      <input aria-label={`Fecha y hora para ${campaign.name}`} type="datetime-local" value={scheduleTimes[campaign.id] ?? ""} onChange={(event) => setScheduleTimes((current) => ({ ...current, [campaign.id]: event.target.value }))} />
+                    </label>
+                    <button className="secondary-button" type="button" disabled={safety?.campaignExecutionAvailable === false} onClick={() => void scheduleLive(campaign)}>Programar campaña real</button>
+                    <button className="danger-button" type="button" disabled={safety?.campaignExecutionAvailable === false} onClick={() => void startLive(campaign)}>Iniciar campaña real</button>
+                  </>
+                )}
+                {campaign.executionMode === "LIVE" && ["SCHEDULED", "RUNNING"].includes(campaign.status) && canExecute && (
+                  <button className="secondary-button" type="button" onClick={() => void changeCampaignState(() => pauseCampaign(campaign), "Campaña pausada.")}>Pausar</button>
+                )}
+                {campaign.executionMode === "LIVE" && campaign.status === "PAUSED" && canExecute && (
+                  <button className="primary-button" type="button" onClick={() => void changeCampaignState(() => resumeCampaign(campaign), "Campaña reanudada.")}>Reanudar</button>
+                )}
+                {campaign.executionMode === "LIVE" && ["APPROVED", "SCHEDULED", "RUNNING", "PAUSED"].includes(campaign.status) && canExecute && (
+                  <button className="secondary-button" type="button" onClick={() => void changeCampaignState(() => cancelCampaign(campaign), "Campaña cancelada; los mensajes pendientes conservarán trazabilidad.", { title: "Cancelar campaña", description: "Se cancelarán los mensajes pendientes. Los resultados ya aceptados por Gmail no pueden retirarse.", danger: true })}>Cancelar campaña</button>
+                )}
+                {campaign.executionMode === "LIVE" && ["SCHEDULED", "RUNNING", "PAUSED", "COMPLETED", "FAILED", "CANCELLED"].includes(campaign.status) && (
+                  <button className="secondary-button" type="button" onClick={() => void run(async () => { setSelectedCampaignId(campaign.id); await loadResults(campaign.id); })}>Ver resultados</button>
+                )}
               </div>
+              {campaign.executionMode === "LIVE" && !safety?.campaignExecutionAvailable && ["APPROVED", "SCHEDULED"].includes(campaign.status) && <small className="inline-error">La configuración operativa mantiene bloqueada la ejecución real.</small>}
             </article>
           ))}
           {campaigns.length === 0 && <EmptyState text="No hay campañas." />}
         </div>
       </Panel>
+      {selectedCampaign && deliveryProgress && (
+        <Panel title="Resultados de la campaña">
+          <div className="campaign-progress" aria-live="polite">
+            <div><strong>{selectedCampaign.name}</strong><span>{campaignProgress(deliveryProgress)}%</span></div>
+            <progress aria-label="Progreso de la campaña" max="100" value={campaignProgress(deliveryProgress)} />
+            <p>Enviado y aceptado por Gmail: {deliveryProgress.acceptedByGmail}. No existe evidencia de entrega al buzón.</p>
+          </div>
+          <div className="control-grid">
+            <Control label="Pendientes o reintentables" value={String(deliveryProgress.pending)} />
+            <Control label="En procesamiento" value={String(results.filter((result) => result.status === "PROCESSING").length)} />
+            <Control label="Aceptados por Gmail" value={String(deliveryProgress.acceptedByGmail)} />
+            <Control label="Excluidos en audiencia" value={String(deliveryProgress.excluded)} />
+            <Control label="Omitidos al revalidar" value={String(deliveryProgress.skipped)} />
+            <Control label="Reintentos" value={String(results.filter((result) => result.status === "RETRYABLE").length)} />
+            <Control label="Resultado ambiguo" value={String(deliveryProgress.ambiguous)} />
+            <Control label="Errores permanentes" value={String(deliveryProgress.failed)} />
+            <Control label="Cancelados" value={String(deliveryProgress.cancelled)} />
+          </div>
+          <div className="toolbar">
+            {session.permissions.includes("REPORT_READ") && <a className="secondary-button" href={campaignResultsCsvUrl(selectedCampaign.id)}>Exportar resultados seguros</a>}
+            <button className="secondary-button" type="button" onClick={() => void loadResults(selectedCampaign.id)}>Actualizar resultados</button>
+          </div>
+          <div className="table-scroll"><table><thead><tr><th>Prospecto</th><th>Destinatario</th><th>Estado</th><th>Intentos</th><th>Próximo intento</th><th>Aceptación</th><th>ID Gmail</th><th>HTTP</th><th>Resultado</th></tr></thead><tbody>
+            {results.map((result) => <tr key={result.messageId}><td>#{result.prospectId.slice(0, 8)}</td><td>{result.maskedRecipient}</td><td><Badge value={result.status === "AMBIGUOUS" ? "RESULT_AMBIGUOUS" : result.status} /></td><td>{result.attempts}</td><td>{result.nextAttemptAt ? dateTime(result.nextAttemptAt) : "—"}</td><td>{result.acceptedAt ? dateTime(result.acceptedAt) : "—"}</td><td>{result.providerMessageId ?? "—"}</td><td>{result.httpStatus ?? "—"}</td><td>{result.error ?? result.acceptanceDisclaimer ?? (result.resultCategory ? labelFor(result.resultCategory) : "—")}</td></tr>)}
+          </tbody></table></div>
+          {results.length === 0 && <EmptyState text="Todavía no hay resultados para esta campaña." />}
+        </Panel>
+      )}
       {audience.length > 0 && (
         <Panel title="Audiencia congelada">
           <div className="table-scroll"><table><thead><tr><th>Prospecto</th><th>Contacto</th><th>Decisión</th><th>Motivo</th></tr></thead><tbody>

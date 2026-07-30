@@ -4,10 +4,12 @@ import com.gestudio.crm.audit.AuditEventWriter;
 import com.gestudio.crm.common.CorrelationIds;
 import com.gestudio.crm.common.OptimisticConflictException;
 import com.gestudio.crm.common.ResourceNotFoundException;
+import com.gestudio.crm.gmail.GmailDeliveryProperties;
 import com.gestudio.crm.messaging.MessagePolicy.PolicyDecision;
 import com.gestudio.crm.outbox.OutboxPublisher;
 import com.gestudio.crm.outbox.OutboxPublisher.PublishCommand;
 import com.gestudio.crm.security.CurrentActor;
+import com.gestudio.crm.settings.SendingProperties;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
@@ -31,6 +33,8 @@ public class MessageDispatcherService implements MessageDispatcher {
   private final WhatsAppProvider whatsAppProvider;
   private final MessagingProperties properties;
   private final OutboxPublisher outboxPublisher;
+  private final SendingProperties sendingProperties;
+  private final GmailDeliveryProperties gmailDeliveryProperties;
 
   public MessageDispatcherService(
       JdbcTemplate jdbcTemplate,
@@ -41,7 +45,9 @@ public class MessageDispatcherService implements MessageDispatcher {
       EmailProvider emailProvider,
       WhatsAppProvider whatsAppProvider,
       MessagingProperties properties,
-      OutboxPublisher outboxPublisher) {
+      OutboxPublisher outboxPublisher,
+      SendingProperties sendingProperties,
+      GmailDeliveryProperties gmailDeliveryProperties) {
     this.jdbcTemplate = jdbcTemplate;
     this.currentActor = currentActor;
     this.auditEventWriter = auditEventWriter;
@@ -51,6 +57,8 @@ public class MessageDispatcherService implements MessageDispatcher {
     this.whatsAppProvider = whatsAppProvider;
     this.properties = properties;
     this.outboxPublisher = outboxPublisher;
+    this.sendingProperties = sendingProperties;
+    this.gmailDeliveryProperties = gmailDeliveryProperties;
   }
 
   @Override
@@ -135,13 +143,93 @@ public class MessageDispatcherService implements MessageDispatcher {
 
   @Transactional(readOnly = true)
   public SafetyView safety() {
+    SafetySnapshot snapshot =
+        jdbcTemplate.queryForObject(
+            """
+            SELECT o.campaign_daily_limit,
+              COALESCE(max(CASE WHEN s.setting_key = 'sending.enabled' THEN s.setting_value END), 'false') AS enabled,
+              COALESCE(max(CASE WHEN s.setting_key = 'sending.dry-run' THEN s.setting_value END), 'true') AS dry_run,
+              COALESCE(max(CASE WHEN s.setting_key = 'sending.daily-limit' THEN s.setting_value END), '0') AS daily_limit,
+              COALESCE(max(CASE WHEN s.setting_key = 'sending.kill-switch' THEN s.setting_value END), 'true') AS kill_switch,
+              (SELECT count(*) FROM message_record m
+                WHERE m.organization_id = o.id AND m.status = 'ACCEPTED_BY_GMAIL'
+                  AND (m.accepted_at AT TIME ZONE o.timezone)::date = (now() AT TIME ZONE o.timezone)::date
+              ) AS sent_today
+            FROM organization o LEFT JOIN system_setting s ON s.organization_id = o.id
+            WHERE o.id = ? GROUP BY o.id, o.campaign_daily_limit
+            """,
+            (rs, ignored) ->
+                new SafetySnapshot(
+                    rs.getInt("campaign_daily_limit"),
+                    Boolean.parseBoolean(rs.getString("enabled")),
+                    Boolean.parseBoolean(rs.getString("dry_run")),
+                    Integer.parseInt(rs.getString("daily_limit")),
+                    Boolean.parseBoolean(rs.getString("kill_switch")),
+                    rs.getInt("sent_today")),
+            currentActor.organizationId());
+    SenderSafety sender =
+        jdbcTemplate
+            .query(
+                """
+                SELECT id, email_address, status, daily_limit FROM integration_connection
+                WHERE organization_id = ? AND provider = 'GMAIL' AND normalized_email IS NOT NULL
+                ORDER BY (status = 'CONNECTED') DESC, is_default DESC, updated_at DESC LIMIT 1
+                """,
+                (rs, ignored) ->
+                    new SenderSafety(
+                        rs.getObject("id", UUID.class),
+                        rs.getString("email_address"),
+                        rs.getString("status"),
+                        rs.getInt("daily_limit")),
+                currentActor.organizationId())
+            .stream()
+            .findFirst()
+            .orElse(null);
+    boolean gmailConnected = sender != null && "CONNECTED".equals(sender.status());
+    boolean gmailReauthRequired = sender != null && "REAUTH_REQUIRED".equals(sender.status());
+    boolean environmentOpen =
+        sendingProperties.enabled()
+            && !sendingProperties.dryRun()
+            && sendingProperties.dailyLimit() > 0
+            && !sendingProperties.environmentKillSwitch()
+            && properties.realNetworkAllowed()
+            && "GMAIL_LIVE".equalsIgnoreCase(properties.emailMode());
+    boolean databaseOpen =
+        snapshot.databaseEnabled()
+            && !snapshot.databaseDryRun()
+            && snapshot.databaseDailyLimit() > 0
+            && !snapshot.databaseKillSwitch()
+            && snapshot.organizationDailyLimit() > 0;
+    int effectiveLimit =
+        !environmentOpen || !databaseOpen || sender == null
+            ? 0
+            : Math.min(
+                Math.min(
+                    Math.min(
+                        sendingProperties.dailyLimit(), gmailDeliveryProperties.hardDailyLimit()),
+                    snapshot.databaseDailyLimit()),
+                Math.min(snapshot.organizationDailyLimit(), sender.dailyLimit()));
     return new SafetyView(
         properties.emailMode(),
         properties.whatsappMode(),
         properties.realNetworkAllowed(),
         emailProvider.name(),
         whatsAppProvider.name(),
-        false);
+        false,
+        environmentOpen
+            && databaseOpen
+            && gmailConnected
+            && gmailDeliveryProperties.oauthConfigured(),
+        sendingProperties.enabled() && snapshot.databaseEnabled(),
+        sendingProperties.dryRun() || snapshot.databaseDryRun(),
+        sendingProperties.environmentKillSwitch() || snapshot.databaseKillSwitch(),
+        gmailDeliveryProperties.hardDailyLimit(),
+        snapshot.sentToday(),
+        Math.max(0, effectiveLimit - snapshot.sentToday()),
+        gmailConnected,
+        sender == null ? null : sender.id(),
+        sender == null ? null : sender.email(),
+        gmailReauthRequired);
   }
 
   private Prepared prepare(CreateMessageCommand command, String requestHash) {
@@ -387,5 +475,26 @@ public class MessageDispatcherService implements MessageDispatcher {
       boolean realNetworkAllowed,
       String selectedEmailProvider,
       String selectedWhatsAppProvider,
-      boolean sendEndpointAvailable) {}
+      boolean sendEndpointAvailable,
+      boolean campaignExecutionAvailable,
+      boolean sendingEnabled,
+      boolean dryRun,
+      boolean killSwitch,
+      int hardDailyLimit,
+      int sentToday,
+      int remainingToday,
+      boolean gmailConnected,
+      UUID selectedSenderAccountId,
+      String selectedSenderEmail,
+      boolean gmailReauthRequired) {}
+
+  private record SafetySnapshot(
+      int organizationDailyLimit,
+      boolean databaseEnabled,
+      boolean databaseDryRun,
+      int databaseDailyLimit,
+      boolean databaseKillSwitch,
+      int sentToday) {}
+
+  private record SenderSafety(UUID id, String email, String status, int dailyLimit) {}
 }

@@ -1,6 +1,13 @@
 # Estado integral y roadmap de Gestudio CRM
 
-Actualizado: 2026-07-23
+Actualizado: 2026-07-30
+
+## Actualización SEG-001 Gmail
+
+La extensión Gmail/OAuth/campañas LIVE está en
+`PRE_PUBLICATION_VALIDATION`: backend, frontend y E2E con Google falso pasaron;
+Google real sigue desconectado y producción no desplegada. La evidencia primaria
+está en `docs/implementation/SEG-001-gmail-campaign-delivery.md`.
 
 Este documento es la fuente canónica para comprender qué está implementado, qué fue validado, qué permanece deliberadamente bloqueado y qué trabajo falta. Los documentos de `docs/validation/` conservan la evidencia detallada de cada cierre y no deben sustituirse por afirmaciones sin salida de comandos.
 
@@ -47,7 +54,7 @@ No se creó una rama funcional paralela ni un pull request para esta etapa. Los 
 - Spring Boot 4.1.
 - Spring Security con sesión cookie HttpOnly same-origin y CSRF.
 - PostgreSQL 17 como fuente de verdad.
-- Flyway V1–V13.
+- Flyway V1–V14.
 - Hibernate con validación del esquema.
 - API REST con OpenAPI y errores RFC 7807.
 - Auditoría JSONB.
@@ -289,7 +296,7 @@ Además:
 
 - GitHub Actions run `29951586239` sobre `b904ff37e506f058dab351c2b941e13ee4ed9981`.
 - Resultado: 22/22 jobs exitosos.
-- Flyway V1–V13.
+- Flyway V1–V14.
 - Maven Verify y pruebas integrales.
 - frontend typecheck, unit, build y E2E.
 - migraciones desde vacío y V11.

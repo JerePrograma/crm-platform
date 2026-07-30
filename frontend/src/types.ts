@@ -352,6 +352,8 @@ export type PipelineMetrics = {
 
 export type CampaignChannel = "EMAIL" | "WHATSAPP";
 
+export type CampaignExecutionMode = "SIMULATION" | "LIVE";
+
 export type CampaignState =
   | "DRAFT"
   | "READY_FOR_REVIEW"
@@ -385,8 +387,22 @@ export type Campaign = {
   objective: string | null;
   channel: CampaignChannel;
   status: CampaignState;
+  executionMode: CampaignExecutionMode;
   dryRun: boolean;
   dailyLimit: number;
+  senderAccountId: string | null;
+  senderEmail: string | null;
+  senderDisplayName: string | null;
+  senderStatus: SenderAccountStatus | null;
+  replyTo: string | null;
+  timezone: string;
+  scheduledAt: string | null;
+  operatingWindowStart: string;
+  operatingWindowEnd: string;
+  businessDays: number[];
+  minimumIntervalSeconds: number;
+  maxAttempts: number;
+  stopConfiguration: Record<string, unknown>;
   approved: boolean;
   templateVersionId: string;
   templateName: string;
@@ -395,6 +411,11 @@ export type Campaign = {
   frozenAt: string | null;
   approvedAt: string | null;
   simulatedAt: string | null;
+  startedAt: string | null;
+  pausedAt: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  approvalFingerprint: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -441,6 +462,90 @@ export type MessagingSafety = {
   selectedEmailProvider: string;
   selectedWhatsAppProvider: string;
   sendEndpointAvailable: boolean;
+  campaignExecutionAvailable: boolean;
+  sendingEnabled: boolean;
+  dryRun: boolean;
+  killSwitch: boolean;
+  hardDailyLimit: number;
+  sentToday: number;
+  remainingToday: number;
+  gmailConnected: boolean;
+  selectedSenderAccountId: string | null;
+  selectedSenderEmail: string | null;
+  gmailReauthRequired: boolean;
+};
+
+export type SenderAccountStatus = "CONNECTED" | "REAUTH_REQUIRED" | "REVOKED" | "ERROR";
+
+export type SenderAccount = {
+  id: string;
+  version: number;
+  provider: "GMAIL";
+  emailAddress: string;
+  displayName: string | null;
+  status: SenderAccountStatus;
+  defaultAccount: boolean;
+  grantedScopes: string[];
+  connectedAt: string | null;
+  verifiedAt: string | null;
+  revokedAt: string | null;
+  lastErrorSummary: string | null;
+  dailyLimit: number;
+  minIntervalSeconds: number;
+  nextSendAt: string | null;
+};
+
+export type SenderAccountConfiguration = {
+  oauthConfigured: boolean;
+  providerMode: string;
+  realNetworkAllowed: boolean;
+  requiredScope: string;
+};
+
+export type GmailOAuthStart = {
+  authorizationUrl: string;
+  expiresAt: string;
+};
+
+export type CampaignRecipientStatus =
+  | "PENDING"
+  | "SCHEDULED"
+  | "PROCESSING"
+  | "ACCEPTED_BY_GMAIL"
+  | "RETRYABLE"
+  | "AMBIGUOUS"
+  | "FAILED_PERMANENT"
+  | "CANCELLED"
+  | "SKIPPED";
+
+export type CampaignProgress = {
+  campaignId: string;
+  status: CampaignState;
+  version: number;
+  recipients: number;
+  excluded: number;
+  acceptedByGmail: number;
+  pending: number;
+  skipped: number;
+  failed: number;
+  ambiguous: number;
+  cancelled: number;
+  acceptanceDisclaimer: string;
+};
+
+export type CampaignRecipientResult = {
+  messageId: string;
+  prospectId: string;
+  maskedRecipient: string;
+  status: CampaignRecipientStatus;
+  resultCategory: string | null;
+  attempts: number;
+  nextAttemptAt: string | null;
+  acceptedAt: string | null;
+  providerMessageId: string | null;
+  httpStatus: number | null;
+  error: string | null;
+  acceptanceDisclaimer: string | null;
 };
 
 export type MessageRecord = {

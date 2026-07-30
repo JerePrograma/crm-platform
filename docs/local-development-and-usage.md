@@ -4,7 +4,9 @@
 
 Describe cómo levantar Gestudio CRM desde `main` con procesos separados, comprobar cada componente y utilizar el vertical slice disponible.
 
-El sistema administra prospectos, exclusiones, importaciones y auditoría. No existe adaptador de envío.
+El sistema administra prospectos, exclusiones, importaciones, campañas,
+auditoría y una integración Gmail de campañas. Google real permanece
+desconectado y el perfil local predeterminado no puede enviar.
 
 ## Arquitectura local
 
@@ -477,9 +479,11 @@ El archivo supera 10 MB. Dividir el lote.
 
 ## Seguridad y límites
 
-- no existe una ruta de envío real;
+- no existe una ruta de envío directo;
 - campañas, NOOP/FAKE, outbox e inbound fake están operativos;
+- Gmail LIVE solo se alcanza por campaña aprobada/confirmada y outbox;
 - Gmail y WhatsApp reales están implementados pero no conectados;
+- usar `scripts/validate-gmail-live-fake.ps1` para el recorrido sin Internet;
 - sesión cookie/CSRF y RBAC persistente están activos;
 - no usar datos reales en pruebas o CI;
 - no exponer servicios fuera de localhost;

@@ -170,6 +170,18 @@ class SecurityAuthorizationIntegrationTest {
     mockMvc.perform(get("/api/v1/inbound").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/reports/dashboard").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/settings").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/sender-accounts").session(session)).andExpect(status().isOk());
+    mockMvc
+        .perform(post("/api/v1/sender-accounts/gmail/oauth/start").session(session).with(csrf()))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            post("/api/v1/campaigns/00000000-0000-0000-0000-000000000001/start")
+                .session(session)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"version\":0,\"confirmation\":\"SEND_LIVE_CAMPAIGN\"}"))
+        .andExpect(status().isForbidden());
     mockMvc
         .perform(
             post("/api/v1/prospects")
@@ -251,6 +263,22 @@ class SecurityAuthorizationIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
         .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void gmailMutationsRequireCsrfWhileOpaqueUnsubscribeIsPublicAndIdempotent() throws Exception {
+    MockHttpSession session = session(login("test-owner", "test-password").andReturn());
+    mockMvc
+        .perform(post("/api/v1/sender-accounts/gmail/oauth/start").session(session))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(get("/api/v1/unsubscribe/not-a-valid-token"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Cache-Control", "no-store"));
+    mockMvc
+        .perform(post("/api/v1/unsubscribe/not-a-valid-token"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Cache-Control", "no-store"));
   }
 
   @Test

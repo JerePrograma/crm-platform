@@ -1,0 +1,60 @@
+services:
+  fake-google:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.fake-google
+    environment:
+      FAKE_GOOGLE_HOST: 0.0.0.0
+      FAKE_GOOGLE_PORT: 19090
+      FAKE_GOOGLE_CLIENT_ID: synthetic-client.apps.test
+      FAKE_GOOGLE_CLIENT_SECRET: synthetic-client-secret-not-for-production
+      FAKE_GOOGLE_ALLOWED_REDIRECT_URI: http://127.0.0.1:${FRONTEND_HOST_PORT:-5173}/api/v1/sender-accounts/gmail/oauth/callback
+      FAKE_GOOGLE_ACCOUNT_EMAIL: campaigns@gestudio.test
+      FAKE_GOOGLE_ACCOUNT_NAME: Gestudio Sintético
+      FAKE_GOOGLE_CONTROL_KEY: synthetic-local-control
+      FAKE_GOOGLE_TIMEOUT_DELAY_MS: 15000
+      FAKE_GOOGLE_OMIT_REFRESH_ON_RECONNECT: "true"
+    ports:
+      - "127.0.0.1:${FAKE_GOOGLE_HOST_PORT:-19090}:19090"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:19090/__fake-google__/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 2s
+    restart: "no"
+
+  backend:
+    environment:
+      EMAIL_PROVIDER_MODE: GMAIL_LIVE
+      MESSAGING_REAL_NETWORK_ALLOWED: "true"
+      SENDING_ENABLED: "true"
+      SENDING_DRY_RUN: "false"
+      SENDING_DAILY_LIMIT: "10"
+      SENDING_KILL_SWITCH: "false"
+      OUTBOX_WORKER_ENABLED: "false"
+      OUTBOX_WORKER_BATCH_SIZE: "1"
+      OUTBOX_WORKER_BASE_BACKOFF: "1s"
+      OUTBOX_WORKER_MAX_BACKOFF: "3s"
+      GMAIL_OAUTH_CLIENT_ID: synthetic-client.apps.test
+      GMAIL_OAUTH_CLIENT_SECRET: synthetic-client-secret-not-for-production
+      GMAIL_OAUTH_REDIRECT_URI: http://127.0.0.1:${FRONTEND_HOST_PORT:-5173}/api/v1/sender-accounts/gmail/oauth/callback
+      GMAIL_FRONTEND_RETURN_URI: http://127.0.0.1:${FRONTEND_HOST_PORT:-5173}/
+      GMAIL_OAUTH_AUTHORIZATION_URL: http://127.0.0.1:${FAKE_GOOGLE_HOST_PORT:-19090}/o/oauth2/v2/auth
+      GMAIL_OAUTH_TOKEN_URL: http://fake-google:19090/token
+      GMAIL_OAUTH_USERINFO_URL: http://fake-google:19090/oauth2/v3/userinfo
+      GMAIL_OAUTH_REVOCATION_URL: http://fake-google:19090/revoke
+      GMAIL_API_BASE_URL: http://fake-google:19090
+      GMAIL_OAUTH_SCOPES: openid email https://www.googleapis.com/auth/gmail.send
+      GMAIL_TOKEN_ENCRYPTION_KEYS: v1:c3ludGhldGljLWdtYWlsLWtleS0zMi1ieXRlcyEhISE=
+      GMAIL_TOKEN_ENCRYPTION_ACTIVE_KEY_ID: v1
+      GMAIL_UNSUBSCRIBE_PUBLIC_BASE_URL: http://127.0.0.1:${BACKEND_HOST_PORT:-8080}/api/v1/unsubscribe
+      GMAIL_UNSUBSCRIBE_SIGNING_KEY: c3ludGhldGljLXVuc3Vic2NyaWJlLWtleS0zMiEhISE=
+      GMAIL_UNSUBSCRIBE_SIGNING_KEY_ID: synthetic-v1
+      GMAIL_ALLOW_TEST_ENDPOINTS: "true"
+      GMAIL_HTTP_TIMEOUT: 2s
+      GMAIL_HARD_DAILY_LIMIT: "10"
+      GMAIL_MAX_CONCURRENCY: "1"
+    depends_on:
+      fake-google:
+        condition: service_healthy
