@@ -11,8 +11,9 @@ base sincronizada para SEG-001 Gmail: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
 OAuth/Gmail/campaña LIVE contra proveedor falso: EXECUTED_PASS
 backend clean verify: EXECUTED_PASS, 112/112
 frontend install/typecheck/unit/build: EXECUTED_PASS, 13/13
-validación integral local: 2/2 FUNCTIONAL_PASS, commit 651ab65
-publicación SEG-001 Gmail: PUBLISHED_FAST_FORWARD, origin/main 651ab65
+validación integral local: 2/2 FUNCTIONAL_PASS, commit d6bfe642
+publicación SEG-001 Gmail: PUBLISHED_FAST_FORWARD, origin/main d6bfe642
+CI del commit publicado: EXECUTED_PASS, run 30530515993, 22/22
 producción: NOT_DEPLOYED
 Google real: IMPLEMENTED_NOT_CONNECTED
 comunicaciones reales por defecto: DISABLED_BY_POLICY

@@ -498,14 +498,16 @@ la anterior después de verificar. Rollback sin pérdida: flags + imagen anterio
 | manual/screenshot/PDF visual | EXECUTED_PASS | 32 PNG, PDF 34 páginas revisado |
 | backup/restore/profile smoke | EXECUTED_PASS | V14/probe; perfil non-root/read-only/zero SENT |
 | npm audit/Grype/secret scan | EXECUTED_PASS | 0 vulnerabilidades; sin secretos ni artefactos prohibidos |
-| validador integral corrida 1 | EXECUTED_PASS | `complete-crm-20260730-080522.json`, `651ab65`, 637,901 s, SHA-256 `11927f42ccc6ed5a831bfee447e37f9c4e3a09873f84278637a49f673f1fc69c` |
-| validador integral corrida 2 | EXECUTED_PASS | `complete-crm-20260730-081617.json`, `651ab65`, 627,613 s, SHA-256 `cfe2d61c96dfa484685535ea44e16abc9689428560e210d772b897b5c46b99d3` |
+| validador integral corrida 1 | EXECUTED_PASS | `complete-crm-20260730-090155.json`, `d6bfe642`, 620,955 s, SHA-256 `5a8c1e6e28bcfdc2c5721fab9a87b47b001e44ec2d78435a323cb91d646e52c7` |
+| validador integral corrida 2 | EXECUTED_PASS | `complete-crm-20260730-091224.json`, `d6bfe642`, 640,545 s, SHA-256 `0f789a354f64d95dfc75c85b79d1b1184d8bd2528f563effb3cf7ac092cbba16` |
 
 La primera CI remota posterior, run `30528538137` sobre `61885e2`, terminó
 21/22: `frontend-e2e` descubría el spec Gmail LIVE dentro del stack general y
 abortaba antes de tocar datos porque faltaba `CRM_E2E_COMPOSE_PROJECT`. Se
 alineó el workflow con el validador canónico: 3 escenarios general/NOOP y el
 escenario Gmail LIVE en su stack `crm-gmail-fake-*`, sin omitir pruebas.
+El run definitivo `30530515993` sobre `d6bfe642` terminó 22/22 verde, incluido
+el paso Gmail LIVE contra el proveedor falso aislado.
 
 ### Referencias oficiales verificadas
 
@@ -561,10 +563,10 @@ Evidencia definitiva del 2026-07-30:
 
 | Artefacto | Bytes | SHA-256 |
 |---|---:|---|
-| HTML | 21025 | `4bb5eca4d547973c70f5e671e68ed343ed76933c3eaf6a7cdf70c4f7a0f393aa` |
-| PDF | 3893553 | `574e1bfba7c69937c97991dd97d9362a4000c2b01b3080c281ac106b98813dcf` |
-| index.json | 11647 | `0f7b833adfa03998a6ae5e9bc1ab485fcbe8e7289f9845103aaf2d1cf74767fd` |
-| ZIP | 9105711 | `be29e2c08c6b80ab07257e3466fb22b15aadf1d4d7ec5fc9d5070ea676185347` |
+| HTML | 21025 | `ad78cc4f6964db629b4038fa527e842b6ecb168a13b75fab06714bea801ca472` |
+| PDF | 3865910 | `646c346b939afae0c6a4a0361ce0a38d2073b60a2eabbda7b8e7b01b4b3cf1dc` |
+| index.json | 11647 | `bac71398ecd40598fa8eaafe7f537b47b2e59b40ea0757bf482c30920c7a483e` |
+| ZIP | 9038006 | `c50e78481edfa46c9f7860a8fc62eec1d4bcca822f55807a2b4553e1df313289` |
 
 El PDF tiene 34 páginas (portada, guía y 32 pantallas). Se renderizaron las 34
 páginas y se inspeccionaron el contacto completo y páginas representativas,
@@ -598,7 +600,7 @@ generador.
 - [x] ninguna prueba llama a Google ni envía correo real;
 - [x] defaults y perfil productivo siguen fail-closed;
 - [x] documentación canónica reconciliada;
-- [x] dos validaciones integrales limpias sobre `651ab65`;
+- [x] dos validaciones integrales limpias sobre `d6bfe642`;
 - [x] diff precommit relacionado, sin secretos ni artefactos prohibidos;
 - [x] commits funcional y de integración del validador creados;
 - [x] push fast-forward a `origin/main` confirmado.
@@ -610,9 +612,10 @@ estado: FUNCTIONAL_PASS_PUBLISHED
 base sincronizada: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
 commit implementación: df2c79a77e27203f7eb63325f3e526cf38d1820a
 commit integración del validador: d724b80a2d1eecbe2f4994366571ecd009342343
-commit validado/publicado: 651ab65c60a58fb0a24436e5d340aafe35646826
-push: EXECUTED_PASS 9995b3e..651ab65
+commit validado/publicado: d6bfe64283cd3bab8dce441e4b01e348f9a55d5e
+push: EXECUTED_PASS 9995b3e..d6bfe64
 verificación remota: HEAD=origin/main=ls-remote, conteo 0 0
+CI del SHA publicado: EXECUTED_PASS, run 30530515993, 22/22
 producción: NOT_DEPLOYED
 Google real smoke: OUT_OF_SCOPE_MANUAL_POSTERIOR
 ```

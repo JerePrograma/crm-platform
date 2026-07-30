@@ -57,8 +57,8 @@ dangling no alcanzable.
 | `scripts/check-repository-safety.ps1` | `EXECUTED_PASS` |
 | sintaxis PowerShell/Bash | `EXECUTED_PASS` |
 | `git diff --check` | `EXECUTED_PASS`; solo avisos EOL informativos |
-| `scripts/validate-complete-crm.ps1` corrida 1 | `FUNCTIONAL_PASS`, 22 fases, 637,901 s, `651ab65` |
-| `scripts/validate-complete-crm.ps1` corrida 2 | `FUNCTIONAL_PASS`, 22 fases, 627,613 s, `651ab65` |
+| `scripts/validate-complete-crm.ps1` corrida 1 | `FUNCTIONAL_PASS`, 22 fases, 620,955 s, `d6bfe642` |
+| `scripts/validate-complete-crm.ps1` corrida 2 | `FUNCTIONAL_PASS`, 22 fases, 640,545 s, `d6bfe642` |
 
 El primer intento del build final usó un `JAVA_HOME` inexistente y falló antes
 de Maven. Se corrigió al JDK instalado `C:\Program Files\Java\corretto-21.0.7`;
@@ -66,8 +66,8 @@ el comando soportado posterior terminó `BUILD SUCCESS`.
 
 ## Evidencia fake
 
-`validation-output/gmail-live-fake-20260730-081340.json` y
-`validation-output/gmail-live-fake-20260730-082423.json`:
+`validation-output/gmail-live-fake-20260730-090951.json` y
+`validation-output/gmail-live-fake-20260730-092044.json`:
 
 - 10/10 fases `FUNCTIONAL_PASS`;
 - NOOP arrancó sin secretos Google;
@@ -81,10 +81,10 @@ el comando soportado posterior terminó `BUILD SUCCESS`.
 
 | Artefacto | Bytes | SHA-256 |
 |---|---:|---|
-| HTML | 21025 | `4bb5eca4d547973c70f5e671e68ed343ed76933c3eaf6a7cdf70c4f7a0f393aa` |
-| PDF | 3893553 | `574e1bfba7c69937c97991dd97d9362a4000c2b01b3080c281ac106b98813dcf` |
-| index.json | 11647 | `0f7b833adfa03998a6ae5e9bc1ab485fcbe8e7289f9845103aaf2d1cf74767fd` |
-| ZIP | 9105711 | `be29e2c08c6b80ab07257e3466fb22b15aadf1d4d7ec5fc9d5070ea676185347` |
+| HTML | 21025 | `ad78cc4f6964db629b4038fa527e842b6ecb168a13b75fab06714bea801ca472` |
+| PDF | 3865910 | `646c346b939afae0c6a4a0361ce0a38d2073b60a2eabbda7b8e7b01b4b3cf1dc` |
+| index.json | 11647 | `bac71398ecd40598fa8eaafe7f537b47b2e59b40ea0757bf482c30920c7a483e` |
+| ZIP | 9038006 | `c50e78481edfa46c9f7860a8fc62eec1d4bcca822f55807a2b4553e1df313289` |
 
 Se generaron 32 PNG sintéticos. El PDF tiene 34 páginas; todas fueron
 renderizadas y se inspeccionaron el contacto completo y páginas
@@ -92,13 +92,13 @@ representativas sin overflow ni recorte. `validation-output/` no se versiona.
 
 ## Doble validación integral
 
-Ambas corridas usaron `651ab65c60a58fb0a24436e5d340aafe35646826`,
+Ambas corridas usaron `d6bfe64283cd3bab8dce441e4b01e348f9a55d5e`,
 árbol limpio y proyectos Compose/puertos independientes:
 
 | Evidencia | Estado | Duración | SHA-256 |
 |---|---|---:|---|
-| `complete-crm-20260730-080522.json` | `FUNCTIONAL_PASS` | 637,901 s | `11927f42ccc6ed5a831bfee447e37f9c4e3a09873f84278637a49f673f1fc69c` |
-| `complete-crm-20260730-081617.json` | `FUNCTIONAL_PASS` | 627,613 s | `cfe2d61c96dfa484685535ea44e16abc9689428560e210d772b897b5c46b99d3` |
+| `complete-crm-20260730-090155.json` | `FUNCTIONAL_PASS` | 620,955 s | `5a8c1e6e28bcfdc2c5721fab9a87b47b001e44ec2d78435a323cb91d646e52c7` |
+| `complete-crm-20260730-091224.json` | `FUNCTIONAL_PASS` | 640,545 s | `0f789a354f64d95dfc75c85b79d1b1184d8bd2528f563effb3cf7ac092cbba16` |
 
 El primer intento integral, sobre `df2c79a`, falló en `frontendE2E`: el runner
 general descubría el spec Gmail LIVE sin el identificador de su stack falso.
@@ -123,11 +123,15 @@ Gmail LIVE dentro del stack general y la guarda
 La validación focal local posterior volvió a pasar 10/10 fases, incluida
 NOOP 1/1 y Gmail LIVE 1/1 contra Google falso.
 
+El run definitivo `30530515993` sobre `d6bfe642` terminó 22/22 verde. El job
+`frontend-e2e` pasó los tres escenarios general/NOOP y después el escenario
+Gmail LIVE en el stack fake aislado.
+
 ## Publicación
 
 - fetch final: `origin/main=9995b3e`, sin commits remotos exclusivos;
-- push: `EXECUTED_PASS`, fast-forward `9995b3e..651ab65`;
-- verificación posterior: `HEAD=origin/main=ls-remote=651ab65`, conteo `0 0`;
+- push: `EXECUTED_PASS`, fast-forward `9995b3e..d6bfe64`;
+- verificación posterior: `HEAD=origin/main=ls-remote=d6bfe642`, conteo `0 0`;
 - árbol final limpio y `git diff --check` sin hallazgos.
 
 Google real, credenciales reales, destinatarios reales y despliegue productivo

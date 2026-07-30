@@ -18,13 +18,14 @@
   fail-closed sin botón de envío directo;
 - agrega Google falso aislado, Playwright, pruebas de seguridad y generador
   reproducible de manual HTML/PDF/32 PNG/JSON/ZIP;
-- valida `651ab65c60a58fb0a24436e5d340aafe35646826` dos veces de forma limpia:
-  `complete-crm-20260730-080522.json` y
-  `complete-crm-20260730-081617.json`, ambas `FUNCTIONAL_PASS`;
-- publica por fast-forward `9995b3e..651ab65` y verifica que `HEAD`,
+- valida `d6bfe64283cd3bab8dce441e4b01e348f9a55d5e` dos veces de forma limpia:
+  `complete-crm-20260730-090155.json` y
+  `complete-crm-20260730-091224.json`, ambas `FUNCTIONAL_PASS`;
+- publica por fast-forward `9995b3e..d6bfe64` y verifica que `HEAD`,
   `origin/main` y `ls-remote` coincidan, con conteo final `0 0`;
 - alinea la CI para ejecutar E2E general/NOOP y Gmail LIVE en stacks separados,
   preservando los cuatro escenarios y el proveedor Google falso aislado;
+- verifica la CI del SHA publicado en el run `30530515993`, 22/22 jobs verdes;
 - mantiene Google real desconectado, producción no desplegada y todos los
   envíos reales deshabilitados por defecto.
 

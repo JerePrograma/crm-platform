@@ -5,9 +5,10 @@
 La misión activa recuperó de forma verificable 68 archivos parciales, retiró
 solo la referencia interna rota informada y avanzó `main` por fast-forward de
 `12421c5` a `9995b3e`. La implementación OAuth/Gmail/campaña LIVE pasa backend,
-frontend y E2E contra Google falso. El commit `651ab65` pasó dos validaciones
-integrales limpias consecutivas y fue publicado por fast-forward
-`9995b3e..651ab65`; `HEAD`, `origin/main` y `ls-remote` quedaron coincidentes.
+frontend y E2E contra Google falso. El commit `d6bfe642` pasó dos validaciones
+integrales limpias consecutivas, fue publicado por fast-forward
+`9995b3e..d6bfe64` y obtuvo 22/22 jobs verdes en la CI `30530515993`;
+`HEAD`, `origin/main` y `ls-remote` quedaron coincidentes.
 
 Fuente primaria:
 `docs/implementation/SEG-001-gmail-campaign-delivery.md`.

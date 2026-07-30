@@ -20,11 +20,12 @@ Estado: `COMPLETE_PUBLISHED`
 - [x] manual HTML/PDF/32 PNG/JSON/ZIP sintético;
 - [x] backend 112/112 y frontend 13/13;
 - [x] migraciones, backup/restore, perfil productivo y dependency/secret scans;
-- [x] dos validaciones integrales limpias sobre `651ab65`;
+- [x] dos validaciones integrales limpias sobre `d6bfe642`;
 - [x] secret scan, diff, stage explícito y commits locales revisados;
-- [x] gate repetido sobre el commit documental `651ab65`;
-- [x] fetch final y push fast-forward `9995b3e..651ab65`;
-- [x] remoto verificado con `HEAD`, `origin/main` y `ls-remote` coincidentes.
+- [x] gate repetido sobre el commit de CI `d6bfe642`;
+- [x] fetch final y push fast-forward `9995b3e..d6bfe64`;
+- [x] remoto verificado con `HEAD`, `origin/main` y `ls-remote` coincidentes;
+- [x] CI del SHA publicado: run `30530515993`, 22/22 jobs verdes.
 
 Google real, credenciales reales, destinatarios reales y producción permanecen
 fuera de esta ejecución.
