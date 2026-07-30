@@ -115,7 +115,7 @@ jobs:
           FAKE_INBOUND_ENABLED: "true"
           FAKE_INBOUND_WEBHOOK_SECRET: synthetic-complete-crm-inbound-secret
         run: docker compose --profile app up -d --build --wait
-      - run: npm run test:e2e
+      - run: npx playwright test tests/complete-crm.spec.ts tests/gmail-no-oauth.spec.ts
         working-directory: frontend
         env:
           CRM_E2E_BASE_URL: http://127.0.0.1:5173
@@ -125,6 +125,9 @@ jobs:
           CRM_E2E_INBOUND_SECRET: synthetic-complete-crm-inbound-secret
       - if: always()
         run: docker compose --profile app down -v --remove-orphans
+      - name: Run Gmail live E2E against isolated fake Google
+        shell: pwsh
+        run: ./scripts/validate-gmail-live-fake.ps1
 
   migration-from-empty:
     runs-on: ubuntu-latest

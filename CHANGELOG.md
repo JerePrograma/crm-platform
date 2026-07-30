@@ -23,6 +23,8 @@
   `complete-crm-20260730-081617.json`, ambas `FUNCTIONAL_PASS`;
 - publica por fast-forward `9995b3e..651ab65` y verifica que `HEAD`,
   `origin/main` y `ls-remote` coincidan, con conteo final `0 0`;
+- alinea la CI para ejecutar E2E general/NOOP y Gmail LIVE en stacks separados,
+  preservando los cuatro escenarios y el proveedor Google falso aislado;
 - mantiene Google real desconectado, producción no desplegada y todos los
   envíos reales deshabilitados por defecto.
 

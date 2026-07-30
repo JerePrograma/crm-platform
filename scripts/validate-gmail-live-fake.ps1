@@ -198,7 +198,11 @@ Start-Transcript -Path $transcriptPath -Force | Out-Null
 try {
   $summary.commit = (& git rev-parse HEAD).Trim()
   $summary.branch = (& git branch --show-current).Trim()
-  if ($summary.branch -ne 'main') {
+  $detachedCiHead = $env:GITHUB_ACTIONS -eq 'true' `
+    -and -not $summary.branch `
+    -and $env:GITHUB_SHA `
+    -and $summary.commit -eq $env:GITHUB_SHA
+  if ($summary.branch -ne 'main' -and -not $detachedCiHead) {
     throw "Expected main, found $($summary.branch)"
   }
 

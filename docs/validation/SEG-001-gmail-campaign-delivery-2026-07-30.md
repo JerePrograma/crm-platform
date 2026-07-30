@@ -107,6 +107,22 @@ escenarios y Gmail LIVE se valida en una fase separada con
 `validate-gmail-live-fake.ps1`. No se omitió ningún escenario; la repetición
 quedó `3/3` general y `1/1` Gmail LIVE en cada corrida.
 
+## Corrección de CI remota
+
+El run `30528538137` sobre `61885e2` terminó 21/22. El único fallo fue
+`frontend-e2e`: el workflow aún usaba `npm run test:e2e`, por lo que descubría
+Gmail LIVE dentro del stack general y la guarda
+`CRM_E2E_COMPOSE_PROJECT` abortaba correctamente. Se cambió el job para:
+
+- ejecutar explícitamente los tres escenarios general/NOOP;
+- desmontar su stack aislado;
+- ejecutar `validate-gmail-live-fake.ps1` en un stack `crm-gmail-fake-*`;
+- admitir HEAD detached solo dentro de GitHub Actions y únicamente cuando
+  `GITHUB_SHA` coincide exactamente con `git rev-parse HEAD`.
+
+La validación focal local posterior volvió a pasar 10/10 fases, incluida
+NOOP 1/1 y Gmail LIVE 1/1 contra Google falso.
+
 ## Publicación
 
 - fetch final: `origin/main=9995b3e`, sin commits remotos exclusivos;

@@ -501,6 +501,12 @@ la anterior después de verificar. Rollback sin pérdida: flags + imagen anterio
 | validador integral corrida 1 | EXECUTED_PASS | `complete-crm-20260730-080522.json`, `651ab65`, 637,901 s, SHA-256 `11927f42ccc6ed5a831bfee447e37f9c4e3a09873f84278637a49f673f1fc69c` |
 | validador integral corrida 2 | EXECUTED_PASS | `complete-crm-20260730-081617.json`, `651ab65`, 627,613 s, SHA-256 `cfe2d61c96dfa484685535ea44e16abc9689428560e210d772b897b5c46b99d3` |
 
+La primera CI remota posterior, run `30528538137` sobre `61885e2`, terminó
+21/22: `frontend-e2e` descubría el spec Gmail LIVE dentro del stack general y
+abortaba antes de tocar datos porque faltaba `CRM_E2E_COMPOSE_PROJECT`. Se
+alineó el workflow con el validador canónico: 3 escenarios general/NOOP y el
+escenario Gmail LIVE en su stack `crm-gmail-fake-*`, sin omitir pruebas.
+
 ### Referencias oficiales verificadas
 
 Consulta: 2026-07-28.
