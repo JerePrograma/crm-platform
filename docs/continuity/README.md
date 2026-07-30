@@ -5,8 +5,10 @@
 La misión activa recuperó de forma verificable 68 archivos parciales, retiró
 solo la referencia interna rota informada y avanzó `main` por fast-forward de
 `12421c5` a `9995b3e`. La implementación OAuth/Gmail/campaña LIVE pasa backend,
-frontend y E2E contra Google falso. Hasta completar dos validaciones integrales
-limpias, commit y push, su estado es `PRE_PUBLICATION_VALIDATION`.
+frontend y E2E contra Google falso. Los commits locales `df2c79a` y `d724b80`
+pasaron dos validaciones integrales limpias consecutivas; el estado es
+`LOCAL_FUNCTIONAL_PASS_PENDING_PUSH` hasta confirmar el remoto y publicar por
+fast-forward.
 
 Fuente primaria:
 `docs/implementation/SEG-001-gmail-campaign-delivery.md`.

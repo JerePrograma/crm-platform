@@ -2,7 +2,7 @@
 
 Actualizado: 2026-07-30
 
-## SEG-001 Gmail — cierre previo a publicación
+## SEG-001 Gmail — validación local cerrada
 
 ```text
 base local/remota sincronizada: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
@@ -13,8 +13,10 @@ frontend ci/typecheck/unit/build: EXECUTED_PASS, 13/13
 OAuth/Gmail/LIVE E2E con Google falso: EXECUTED_PASS
 manual HTML/PDF/32 PNG/JSON/ZIP: EXECUTED_PASS
 backup/restore/profile/dependency/secret scans: EXECUTED_PASS
-validadores integrales limpios: NOT_RUN
-commit/push: NOT_RUN
+validadores integrales limpios: 2/2 FUNCTIONAL_PASS
+commit implementación: df2c79a77e27203f7eb63325f3e526cf38d1820a
+commit integración del validador: d724b80a2d1eecbe2f4994366571ecd009342343
+push: NOT_RUN al cerrar esta evidencia documental
 Google real: IMPLEMENTED_NOT_CONNECTED
 producción: NOT_DEPLOYED
 ```
@@ -257,6 +259,7 @@ El nuevo candidato local que añadía métricas tenant-wide, paginación adicion
 
 ## Próximo paso obligatorio
 
-Cerrar SEG-001 Gmail: validación integral y scans, revisión final, stage
-explícito, commit, dos corridas limpias sobre el SHA definitivo, fetch final y
-push fast-forward. No conectar Google real ni habilitar flags de envío/red.
+Crear el commit documental de cierre, repetir las dos corridas integrales sobre
+ese SHA definitivo, ejecutar el fetch final y publicar por fast-forward solo si
+`origin/main` continúa sin commits exclusivos. No conectar Google real ni
+habilitar flags de envío/red.

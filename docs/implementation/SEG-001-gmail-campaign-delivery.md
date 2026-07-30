@@ -498,8 +498,8 @@ la anterior después de verificar. Rollback sin pérdida: flags + imagen anterio
 | manual/screenshot/PDF visual | EXECUTED_PASS | 32 PNG, PDF 34 páginas revisado |
 | backup/restore/profile smoke | EXECUTED_PASS | V14/probe; perfil non-root/read-only/zero SENT |
 | npm audit/Grype/secret scan | EXECUTED_PASS | 0 vulnerabilidades; sin secretos ni artefactos prohibidos |
-| validador integral corrida 1 | NOT_RUN | pendiente |
-| validador integral corrida 2 | NOT_RUN | pendiente |
+| validador integral corrida 1 | EXECUTED_PASS | `complete-crm-20260730-073756.json`, `d724b80`, 677,778 s, SHA-256 `5e6d9aaf02a7943cd5c6108c81702137058d7afb347b78c7aeabaaa53873c730` |
+| validador integral corrida 2 | EXECUTED_PASS | `complete-crm-20260730-074930.json`, `d724b80`, 651,939 s, SHA-256 `70c6847a7e52c7207f9256bebbdaab6e5cdfe91e0e166dfff71c3d268f921327` |
 
 ### Referencias oficiales verificadas
 
@@ -524,7 +524,7 @@ estricto que los límites Gmail publicados.
 - [x] matriz Gmail automatizada implementada sin Internet;
 - [x] tests negativos de seguridad ejecutados;
 - [x] scans precommit ejecutados;
-- [ ] dos validadores integrales limpios ejecutados;
+- [x] dos validadores integrales limpios ejecutados;
 - [x] comandos, tiempos y resultados Gmail factuales incorporados.
 
 ## Parte 11 — Manual de usuario y screenshots
@@ -555,10 +555,10 @@ Evidencia definitiva del 2026-07-30:
 
 | Artefacto | Bytes | SHA-256 |
 |---|---:|---|
-| HTML | 21025 | `6b66f50e8109642901b0b02771495d5892e44ec5a9b080ff62c6d4521724daeb` |
-| PDF | 3820732 | `25f51cac0c4d55f86cff354dd4be23d0c117731e64b12eaece71a40c439a7aee` |
-| index.json | 11646 | `c8911249ad12b0ff4e20cfd5b3addf549ab2e516c8ef777a106f93b5fe76bda8` |
-| ZIP | 8921266 | `6e2d50aa78a791fe1ec413e5c3e15d5e51f799ec030c85b6a5b0d150fec713ec` |
+| HTML | 21025 | `fde5250c4d18a07189487746aedb9d9eb173f421131e3325644c04d2d439f8c7` |
+| PDF | 3891245 | `64164868479fb600e5d6371920f684fe2e9c614241fce8a61b9ff2da4e6f910f` |
+| index.json | 11647 | `dc4926aa00ebdeed1e953fe209c9d9a58b5e048258941600b9988a6a495825cd` |
+| ZIP | 9107922 | `3317a4bab9a3a458bcc3bfff023bc6eafeab158c0542af642747118cf532a669` |
 
 El PDF tiene 34 páginas (portada, guía y 32 pantallas). Se renderizaron las 34
 páginas y se inspeccionaron el contacto completo y páginas representativas,
@@ -592,17 +592,18 @@ generador.
 - [x] ninguna prueba llama a Google ni envía correo real;
 - [x] defaults y perfil productivo siguen fail-closed;
 - [x] documentación canónica reconciliada;
-- [ ] dos validaciones integrales limpias sobre el mismo contenido;
+- [x] dos validaciones integrales limpias sobre `d724b80`;
 - [x] diff precommit relacionado, sin secretos ni artefactos prohibidos;
-- [ ] commit creado;
+- [x] commits funcional y de integración del validador creados;
 - [ ] push fast-forward a `origin/main` confirmado.
 
 ### Resultados finales
 
 ```text
-estado: PRE_PUBLICATION_VALIDATION
+estado: LOCAL_FUNCTIONAL_PASS_PENDING_PUSH
 base sincronizada: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
-commit final: NOT_CREATED
+commit implementación: df2c79a77e27203f7eb63325f3e526cf38d1820a
+commit validado: d724b80a2d1eecbe2f4994366571ecd009342343
 push: NOT_RUN
 producción: NOT_DEPLOYED
 Google real smoke: OUT_OF_SCOPE_MANUAL_POSTERIOR
@@ -626,6 +627,7 @@ frontend; fake Google/E2E/manual; validadores y documentación.
 ### Checklist
 
 - [x] checklist de aceptación reconciliada con evidencia real disponible;
-- [ ] comandos integrales y resultados finales registrados;
-- [ ] commit/hash/push registrados;
-- [ ] riesgos residuales y desviaciones declarados.
+- [x] comandos integrales y resultados finales registrados;
+- [x] commit y hashes locales registrados;
+- [ ] push registrado en el informe final tras verificar `origin/main`;
+- [x] riesgos residuales y desviaciones declarados.

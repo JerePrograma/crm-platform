@@ -11,13 +11,16 @@ VAL_002 COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
 UX_003 COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
 UX_004 FUNCTIONAL_PASS
 UX_006 COMPLETE_WITH_FUNCTIONAL_VALIDATION
-SEG001_GMAIL PRE_PUBLICATION_VALIDATION
+SEG001_GMAIL LOCAL_FUNCTIONAL_PASS
 BASE 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
+IMPLEMENTATION_COMMIT df2c79a77e27203f7eb63325f3e526cf38d1820a
+VALIDATED_COMMIT d724b80a2d1eecbe2f4994366571ecd009342343
+COMPLETE_VALIDATOR 2_OF_2_FUNCTIONAL_PASS
 FAKE_GOOGLE_E2E EXECUTED_PASS
 REAL_GOOGLE IMPLEMENTED_NOT_CONNECTED
 PRODUCTION NOT_DEPLOYED
 REAL_COMMUNICATIONS DISABLED_BY_POLICY
-NEXT FINAL_VALIDATE_COMMIT_PUSH_SEG001_GMAIL
+NEXT COMMIT_DOCS_REVALIDATE_FETCH_PUSH_SEG001_GMAIL
 ```
 
 ## Qué quedó resuelto
@@ -35,8 +38,9 @@ NEXT FINAL_VALIDATE_COMMIT_PUSH_SEG001_GMAIL
 
 ## Qué no quedó resuelto
 
-- faltan dos corridas integrales limpias sobre el contenido definitivo;
-- faltan secret scan final, revisión del diff, stage explícito, commit y push;
+- falta versionar este cierre documental y repetir las dos corridas integrales
+  sobre ese SHA definitivo;
+- falta el fetch final y el push fast-forward;
 - Google real, credenciales reales, correo real y producción siguen fuera de
   alcance;
 - Gmail aceptar un mensaje no prueba entrega al buzón;
@@ -46,12 +50,10 @@ NEXT FINAL_VALIDATE_COMMIT_PUSH_SEG001_GMAIL
 
 Cerrar SEG-001 Gmail sin saltar gates:
 
-1. ejecutar validación precommit y scans completos;
-2. revisar diff y secretos;
-3. stage explícito y commit candidato;
-4. ejecutar dos validadores integrales limpios sobre el mismo SHA;
-5. actualizar evidencia documental si corresponde y repetir el cierre afectado;
-6. fetch final, confirmar `0` commits remotos exclusivos y push fast-forward.
+1. revisar y versionar únicamente la documentación de cierre;
+2. ejecutar dos validadores integrales limpios sobre ese mismo SHA;
+3. confirmar nuevamente secrets, diff y árbol limpio;
+4. fetch final, confirmar `0` commits remotos exclusivos y push fast-forward.
 
 ## Después del gate
 
