@@ -498,8 +498,8 @@ la anterior después de verificar. Rollback sin pérdida: flags + imagen anterio
 | manual/screenshot/PDF visual | EXECUTED_PASS | 32 PNG, PDF 34 páginas revisado |
 | backup/restore/profile smoke | EXECUTED_PASS | V14/probe; perfil non-root/read-only/zero SENT |
 | npm audit/Grype/secret scan | EXECUTED_PASS | 0 vulnerabilidades; sin secretos ni artefactos prohibidos |
-| validador integral corrida 1 | EXECUTED_PASS | `complete-crm-20260730-073756.json`, `d724b80`, 677,778 s, SHA-256 `5e6d9aaf02a7943cd5c6108c81702137058d7afb347b78c7aeabaaa53873c730` |
-| validador integral corrida 2 | EXECUTED_PASS | `complete-crm-20260730-074930.json`, `d724b80`, 651,939 s, SHA-256 `70c6847a7e52c7207f9256bebbdaab6e5cdfe91e0e166dfff71c3d268f921327` |
+| validador integral corrida 1 | EXECUTED_PASS | `complete-crm-20260730-080522.json`, `651ab65`, 637,901 s, SHA-256 `11927f42ccc6ed5a831bfee447e37f9c4e3a09873f84278637a49f673f1fc69c` |
+| validador integral corrida 2 | EXECUTED_PASS | `complete-crm-20260730-081617.json`, `651ab65`, 627,613 s, SHA-256 `cfe2d61c96dfa484685535ea44e16abc9689428560e210d772b897b5c46b99d3` |
 
 ### Referencias oficiales verificadas
 
@@ -555,10 +555,10 @@ Evidencia definitiva del 2026-07-30:
 
 | Artefacto | Bytes | SHA-256 |
 |---|---:|---|
-| HTML | 21025 | `fde5250c4d18a07189487746aedb9d9eb173f421131e3325644c04d2d439f8c7` |
-| PDF | 3891245 | `64164868479fb600e5d6371920f684fe2e9c614241fce8a61b9ff2da4e6f910f` |
-| index.json | 11647 | `dc4926aa00ebdeed1e953fe209c9d9a58b5e048258941600b9988a6a495825cd` |
-| ZIP | 9107922 | `3317a4bab9a3a458bcc3bfff023bc6eafeab158c0542af642747118cf532a669` |
+| HTML | 21025 | `4bb5eca4d547973c70f5e671e68ed343ed76933c3eaf6a7cdf70c4f7a0f393aa` |
+| PDF | 3893553 | `574e1bfba7c69937c97991dd97d9362a4000c2b01b3080c281ac106b98813dcf` |
+| index.json | 11647 | `0f7b833adfa03998a6ae5e9bc1ab485fcbe8e7289f9845103aaf2d1cf74767fd` |
+| ZIP | 9105711 | `be29e2c08c6b80ab07257e3466fb22b15aadf1d4d7ec5fc9d5070ea676185347` |
 
 El PDF tiene 34 páginas (portada, guía y 32 pantallas). Se renderizaron las 34
 páginas y se inspeccionaron el contacto completo y páginas representativas,
@@ -592,19 +592,21 @@ generador.
 - [x] ninguna prueba llama a Google ni envía correo real;
 - [x] defaults y perfil productivo siguen fail-closed;
 - [x] documentación canónica reconciliada;
-- [x] dos validaciones integrales limpias sobre `d724b80`;
+- [x] dos validaciones integrales limpias sobre `651ab65`;
 - [x] diff precommit relacionado, sin secretos ni artefactos prohibidos;
 - [x] commits funcional y de integración del validador creados;
-- [ ] push fast-forward a `origin/main` confirmado.
+- [x] push fast-forward a `origin/main` confirmado.
 
 ### Resultados finales
 
 ```text
-estado: LOCAL_FUNCTIONAL_PASS_PENDING_PUSH
+estado: FUNCTIONAL_PASS_PUBLISHED
 base sincronizada: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
 commit implementación: df2c79a77e27203f7eb63325f3e526cf38d1820a
-commit validado: d724b80a2d1eecbe2f4994366571ecd009342343
-push: NOT_RUN
+commit integración del validador: d724b80a2d1eecbe2f4994366571ecd009342343
+commit validado/publicado: 651ab65c60a58fb0a24436e5d340aafe35646826
+push: EXECUTED_PASS 9995b3e..651ab65
+verificación remota: HEAD=origin/main=ls-remote, conteo 0 0
 producción: NOT_DEPLOYED
 Google real smoke: OUT_OF_SCOPE_MANUAL_POSTERIOR
 ```
@@ -629,5 +631,5 @@ frontend; fake Google/E2E/manual; validadores y documentación.
 - [x] checklist de aceptación reconciliada con evidencia real disponible;
 - [x] comandos integrales y resultados finales registrados;
 - [x] commit y hashes locales registrados;
-- [ ] push registrado en el informe final tras verificar `origin/main`;
+- [x] push registrado tras verificar `origin/main`;
 - [x] riesgos residuales y desviaciones declarados.

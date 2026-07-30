@@ -1,6 +1,6 @@
 # Validación SEG-001 Gmail y campañas LIVE — 2026-07-30
 
-Estado: `LOCAL_FUNCTIONAL_PASS_PENDING_PUSH`
+Estado: `FUNCTIONAL_PASS_PUBLISHED`
 
 ## Recuperación Git
 
@@ -57,8 +57,8 @@ dangling no alcanzable.
 | `scripts/check-repository-safety.ps1` | `EXECUTED_PASS` |
 | sintaxis PowerShell/Bash | `EXECUTED_PASS` |
 | `git diff --check` | `EXECUTED_PASS`; solo avisos EOL informativos |
-| `scripts/validate-complete-crm.ps1` corrida 1 | `FUNCTIONAL_PASS`, 22 fases, 677,778 s, `d724b80` |
-| `scripts/validate-complete-crm.ps1` corrida 2 | `FUNCTIONAL_PASS`, 22 fases, 651,939 s, `d724b80` |
+| `scripts/validate-complete-crm.ps1` corrida 1 | `FUNCTIONAL_PASS`, 22 fases, 637,901 s, `651ab65` |
+| `scripts/validate-complete-crm.ps1` corrida 2 | `FUNCTIONAL_PASS`, 22 fases, 627,613 s, `651ab65` |
 
 El primer intento del build final usó un `JAVA_HOME` inexistente y falló antes
 de Maven. Se corrigió al JDK instalado `C:\Program Files\Java\corretto-21.0.7`;
@@ -66,8 +66,8 @@ el comando soportado posterior terminó `BUILD SUCCESS`.
 
 ## Evidencia fake
 
-`validation-output/gmail-live-fake-20260730-074652.json` y
-`validation-output/gmail-live-fake-20260730-075753.json`:
+`validation-output/gmail-live-fake-20260730-081340.json` y
+`validation-output/gmail-live-fake-20260730-082423.json`:
 
 - 10/10 fases `FUNCTIONAL_PASS`;
 - NOOP arrancó sin secretos Google;
@@ -81,10 +81,10 @@ el comando soportado posterior terminó `BUILD SUCCESS`.
 
 | Artefacto | Bytes | SHA-256 |
 |---|---:|---|
-| HTML | 21025 | `fde5250c4d18a07189487746aedb9d9eb173f421131e3325644c04d2d439f8c7` |
-| PDF | 3891245 | `64164868479fb600e5d6371920f684fe2e9c614241fce8a61b9ff2da4e6f910f` |
-| index.json | 11647 | `dc4926aa00ebdeed1e953fe209c9d9a58b5e048258941600b9988a6a495825cd` |
-| ZIP | 9107922 | `3317a4bab9a3a458bcc3bfff023bc6eafeab158c0542af642747118cf532a669` |
+| HTML | 21025 | `4bb5eca4d547973c70f5e671e68ed343ed76933c3eaf6a7cdf70c4f7a0f393aa` |
+| PDF | 3893553 | `574e1bfba7c69937c97991dd97d9362a4000c2b01b3080c281ac106b98813dcf` |
+| index.json | 11647 | `0f7b833adfa03998a6ae5e9bc1ab485fcbe8e7289f9845103aaf2d1cf74767fd` |
+| ZIP | 9105711 | `be29e2c08c6b80ab07257e3466fb22b15aadf1d4d7ec5fc9d5070ea676185347` |
 
 Se generaron 32 PNG sintéticos. El PDF tiene 34 páginas; todas fueron
 renderizadas y se inspeccionaron el contacto completo y páginas
@@ -92,13 +92,13 @@ representativas sin overflow ni recorte. `validation-output/` no se versiona.
 
 ## Doble validación integral
 
-Ambas corridas usaron `d724b80a2d1eecbe2f4994366571ecd009342343`,
+Ambas corridas usaron `651ab65c60a58fb0a24436e5d340aafe35646826`,
 árbol limpio y proyectos Compose/puertos independientes:
 
 | Evidencia | Estado | Duración | SHA-256 |
 |---|---|---:|---|
-| `complete-crm-20260730-073756.json` | `FUNCTIONAL_PASS` | 677,778 s | `5e6d9aaf02a7943cd5c6108c81702137058d7afb347b78c7aeabaaa53873c730` |
-| `complete-crm-20260730-074930.json` | `FUNCTIONAL_PASS` | 651,939 s | `70c6847a7e52c7207f9256bebbdaab6e5cdfe91e0e166dfff71c3d268f921327` |
+| `complete-crm-20260730-080522.json` | `FUNCTIONAL_PASS` | 637,901 s | `11927f42ccc6ed5a831bfee447e37f9c4e3a09873f84278637a49f673f1fc69c` |
+| `complete-crm-20260730-081617.json` | `FUNCTIONAL_PASS` | 627,613 s | `cfe2d61c96dfa484685535ea44e16abc9689428560e210d772b897b5c46b99d3` |
 
 El primer intento integral, sobre `df2c79a`, falló en `frontendE2E`: el runner
 general descubría el spec Gmail LIVE sin el identificador de su stack falso.
@@ -107,10 +107,12 @@ escenarios y Gmail LIVE se valida en una fase separada con
 `validate-gmail-live-fake.ps1`. No se omitió ningún escenario; la repetición
 quedó `3/3` general y `1/1` Gmail LIVE en cada corrida.
 
-## Pendiente para publicación
+## Publicación
 
-- crear y revalidar el commit documental de cierre;
-- fetch final, confirmar ancestría y push fast-forward.
+- fetch final: `origin/main=9995b3e`, sin commits remotos exclusivos;
+- push: `EXECUTED_PASS`, fast-forward `9995b3e..651ab65`;
+- verificación posterior: `HEAD=origin/main=ls-remote=651ab65`, conteo `0 0`;
+- árbol final limpio y `git diff --check` sin hallazgos.
 
 Google real, credenciales reales, destinatarios reales y despliegue productivo
 permanecen fuera de alcance.

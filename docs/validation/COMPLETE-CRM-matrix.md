@@ -78,9 +78,9 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 | automatización UX remota histórica | EXECUTED_PASS | trigger, workflow y tres scripts eliminados tras comprobar cero consumidores operativos |
 | dependency scan | EXECUTED_PASS | npm audit High y Grype High/Critical; imagen final sin hallazgos |
 | CI integral | EXECUTED_PASS | run `29951586239`, commit `b904ff3`, push a `main`, 22/22 jobs success |
-| validador Gmail fake Windows | EXECUTED_PASS | integrado al gate: `gmail-live-fake-20260730-074652.json` y `...-075753.json`, 10 fases verdes cada uno, sin Google real |
-| validador completo Windows | EXECUTED_PASS | cierre histórico `986523a` y nueva doble corrida sobre `d724b80` |
-| validación integral SEG-001 Gmail Windows | EXECUTED_PASS | `complete-crm-20260730-073756.json` 677,778 s y `...-074930.json` 651,939 s; 22 fases verdes |
+| validador Gmail fake Windows | EXECUTED_PASS | integrado al gate: `gmail-live-fake-20260730-081340.json` y `...-082423.json`, 10 fases verdes cada uno, sin Google real |
+| validador completo Windows | EXECUTED_PASS | cierre histórico `986523a` y doble corrida final sobre `651ab65` |
+| validación integral SEG-001 Gmail Windows | EXECUTED_PASS | `complete-crm-20260730-080522.json` 637,901 s y `...-081617.json` 627,613 s; 22 fases verdes |
 | validador completo Unix | IMPLEMENTED_NOT_RUN | sintaxis y preflight WSL PASS; recorrido integral no ejecutado |
 | repetición limpia | EXECUTED_PASS | mismo commit, 21 fases verdes, 734,162 s, sin flakiness |
 | despliegue producción | NOT_APPLICABLE | no autorizado |

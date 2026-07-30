@@ -8,7 +8,7 @@ Un elemento solo puede declararse `COMPLETE` con evidencia ejecutada sobre el co
 
 ## SEG-001-GMAIL — OAuth y campañas LIVE controladas
 
-Estado: `LOCAL_FUNCTIONAL_PASS_PENDING_PUSH`
+Estado: `COMPLETE_PUBLISHED`
 
 - [x] recuperación Git con snapshot externo e integridad 68/68;
 - [x] V14 aditiva y compatibilidad V1/V11/V13;
@@ -20,10 +20,11 @@ Estado: `LOCAL_FUNCTIONAL_PASS_PENDING_PUSH`
 - [x] manual HTML/PDF/32 PNG/JSON/ZIP sintético;
 - [x] backend 112/112 y frontend 13/13;
 - [x] migraciones, backup/restore, perfil productivo y dependency/secret scans;
-- [x] dos validaciones integrales limpias sobre `d724b80`;
+- [x] dos validaciones integrales limpias sobre `651ab65`;
 - [x] secret scan, diff, stage explícito y commits locales revisados;
-- [ ] repetir el gate sobre el commit documental definitivo;
-- [ ] fetch final y push fast-forward.
+- [x] gate repetido sobre el commit documental `651ab65`;
+- [x] fetch final y push fast-forward `9995b3e..651ab65`;
+- [x] remoto verificado con `HEAD`, `origin/main` y `ls-remote` coincidentes.
 
 Google real, credenciales reales, destinatarios reales y producción permanecen
 fuera de esta ejecución.

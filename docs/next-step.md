@@ -11,16 +11,17 @@ VAL_002 COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
 UX_003 COMPLETE_WITH_FOCUSED_VALIDATION_AND_CI_NO_CHECKS_REPORTED
 UX_004 FUNCTIONAL_PASS
 UX_006 COMPLETE_WITH_FUNCTIONAL_VALIDATION
-SEG001_GMAIL LOCAL_FUNCTIONAL_PASS
+SEG001_GMAIL COMPLETE_PUBLISHED
 BASE 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
 IMPLEMENTATION_COMMIT df2c79a77e27203f7eb63325f3e526cf38d1820a
-VALIDATED_COMMIT d724b80a2d1eecbe2f4994366571ecd009342343
+VALIDATED_COMMIT 651ab65c60a58fb0a24436e5d340aafe35646826
+PUBLISHED_COMMIT 651ab65c60a58fb0a24436e5d340aafe35646826
 COMPLETE_VALIDATOR 2_OF_2_FUNCTIONAL_PASS
 FAKE_GOOGLE_E2E EXECUTED_PASS
 REAL_GOOGLE IMPLEMENTED_NOT_CONNECTED
 PRODUCTION NOT_DEPLOYED
 REAL_COMMUNICATIONS DISABLED_BY_POLICY
-NEXT COMMIT_DOCS_REVALIDATE_FETCH_PUSH_SEG001_GMAIL
+NEXT OPS-001
 ```
 
 ## Qué quedó resuelto
@@ -36,28 +37,16 @@ NEXT COMMIT_DOCS_REVALIDATE_FETCH_PUSH_SEG001_GMAIL
 - backend, frontend y Google falso/Playwright pasaron con datos sintéticos;
 - el manual HTML/PDF/32 PNG/JSON/ZIP fue generado y revisado.
 
-## Qué no quedó resuelto
+## Qué permanece fuera de alcance
 
-- falta versionar este cierre documental y repetir las dos corridas integrales
-  sobre ese SHA definitivo;
-- falta el fetch final y el push fast-forward;
 - Google real, credenciales reales, correo real y producción siguen fuera de
   alcance;
 - Gmail aceptar un mensaje no prueba entrega al buzón;
 - continúan en backlog `OPS-001`, `UX-007`, `TECH-001` y `PERF-001`.
 
-## Próximo paso obligatorio
+## Próximo paso
 
-Cerrar SEG-001 Gmail sin saltar gates:
-
-1. revisar y versionar únicamente la documentación de cierre;
-2. ejecutar dos validadores integrales limpios sobre ese mismo SHA;
-3. confirmar nuevamente secrets, diff y árbol limpio;
-4. fetch final, confirmar `0` commits remotos exclusivos y push fast-forward.
-
-## Después del gate
-
-Después de publicar SEG-001 Gmail, continuar en este orden:
+SEG-001 Gmail quedó publicado. Continuar en este orden:
 
 1. `OPS-001` — outbox e inbound paginados;
 2. `UX-007` — navegadores, foco y móvil;

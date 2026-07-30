@@ -2,10 +2,10 @@
 
 Actualizado: 2026-07-30
 
-## SEG-001 Gmail — validación local cerrada
+## SEG-001 Gmail — validado y publicado
 
 ```text
-base local/remota sincronizada: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
+base de publicación: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
 recuperación Git y fast-forward: EXECUTED_PASS
 integridad del working tree preservado: 68/68
 backend clean verify: EXECUTED_PASS, 112/112
@@ -16,14 +16,16 @@ backup/restore/profile/dependency/secret scans: EXECUTED_PASS
 validadores integrales limpios: 2/2 FUNCTIONAL_PASS
 commit implementación: df2c79a77e27203f7eb63325f3e526cf38d1820a
 commit integración del validador: d724b80a2d1eecbe2f4994366571ecd009342343
-push: NOT_RUN al cerrar esta evidencia documental
+commit funcional validado y publicado: 651ab65c60a58fb0a24436e5d340aafe35646826
+push: EXECUTED_PASS, fast-forward 9995b3e..651ab65
+verificación remota: HEAD=origin/main=ls-remote, conteo 0 0
 Google real: IMPLEMENTED_NOT_CONNECTED
 producción: NOT_DEPLOYED
 ```
 
 El estado `EXECUTED_PASS` anterior se limita a pruebas locales sintéticas. No
-implica conexión a Google, correo real, despliegue ni publicación Git. El
-registro detallado está en
+implica conexión a Google, correo real ni despliegue; la publicación Git sí fue
+verificada. El registro detallado está en
 `docs/implementation/SEG-001-gmail-campaign-delivery.md`.
 
 ## Repositorio canónico

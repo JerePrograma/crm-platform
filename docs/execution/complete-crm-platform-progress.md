@@ -1,6 +1,6 @@
 # Progreso de ejecución integral del CRM
 
-## CHECKPOINT_14_SEG001_GMAIL_LOCAL_FUNCTIONAL_PASS
+## CHECKPOINT_14_SEG001_GMAIL_PUBLISHED
 
 ```text
 DATE=2026-07-30
@@ -11,17 +11,17 @@ BACKEND_CLEAN_VERIFY=EXECUTED_PASS_112_OF_112
 FRONTEND=EXECUTED_PASS_13_OF_13
 FAKE_GOOGLE_E2E=EXECUTED_PASS
 REAL_GOOGLE=IMPLEMENTED_NOT_CONNECTED
-COMPLETE_VALIDATOR_RUN_1=FUNCTIONAL_PASS complete-crm-20260730-073756.json 677.778s
-COMPLETE_VALIDATOR_RUN_2=FUNCTIONAL_PASS complete-crm-20260730-074930.json 651.939s
+COMPLETE_VALIDATOR_RUN_1=FUNCTIONAL_PASS complete-crm-20260730-080522.json 637.901s
+COMPLETE_VALIDATOR_RUN_2=FUNCTIONAL_PASS complete-crm-20260730-081617.json 627.613s
 IMPLEMENTATION_COMMIT=df2c79a77e27203f7eb63325f3e526cf38d1820a
-VALIDATED_COMMIT=d724b80a2d1eecbe2f4994366571ecd009342343
-PUSH=NOT_RUN
+VALIDATED_COMMIT=651ab65c60a58fb0a24436e5d340aafe35646826
+PUSH=EXECUTED_PASS 9995b3e..651ab65
+REMOTE_VERIFICATION=HEAD_ORIGIN_MAIN_LS_REMOTE_EQUAL LEFT_RIGHT_0_0
 ```
 
 La extensión reutiliza V10–V12, agrega V14, no crea otra cola y conserva los
-defaults fail-closed. Las dos corridas limpias pasaron; el cierre remoto se
-registra solo después de revalidar el commit documental y del push
-fast-forward.
+defaults fail-closed. Las dos corridas limpias pasaron y el cierre remoto fue
+verificado después del push fast-forward.
 
 Actualizado: 2026-07-22
 

@@ -18,9 +18,11 @@
   fail-closed sin botón de envío directo;
 - agrega Google falso aislado, Playwright, pruebas de seguridad y generador
   reproducible de manual HTML/PDF/32 PNG/JSON/ZIP;
-- valida `d724b80a2d1eecbe2f4994366571ecd009342343` dos veces de forma limpia:
-  `complete-crm-20260730-073756.json` y
-  `complete-crm-20260730-074930.json`, ambas `FUNCTIONAL_PASS`;
+- valida `651ab65c60a58fb0a24436e5d340aafe35646826` dos veces de forma limpia:
+  `complete-crm-20260730-080522.json` y
+  `complete-crm-20260730-081617.json`, ambas `FUNCTIONAL_PASS`;
+- publica por fast-forward `9995b3e..651ab65` y verifica que `HEAD`,
+  `origin/main` y `ls-remote` coincidan, con conteo final `0 0`;
 - mantiene Google real desconectado, producción no desplegada y todos los
   envíos reales deshabilitados por defecto.
 
