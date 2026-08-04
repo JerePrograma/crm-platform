@@ -1,0 +1,140 @@
+# Registro diario de prospección comercial
+
+> Las métricas acumuladas comienzan con la creación de este registro el 2026-08-04. El historial anterior de Gmail todavía no fue migrado de forma completa; no debe interpretarse este archivo como un conteo histórico exhaustivo previo a esa fecha.
+
+## Configuración
+
+- Producto: BLOQUEADO — la instrucción operativa denomina al producto «CRM Platform», pero la documentación canónica define a CRM Platform como el CRM interno utilizado para vender Gestudio y a Gestudio como el producto comercializado.
+- Perfil objetivo: academias, estudios, escuelas e instituciones con alumnos y clases recurrentes, sujeto a resolver la inconsistencia de producto.
+- Regiones: NO_CONFIGURADO.
+- Sectores: academias, estudios, escuelas e instituciones educativas o artísticas con alumnos y clases recurrentes.
+- Límite diario: entre 10 y 20 propuestas, sin reducir el umbral de calidad.
+- Período de enfriamiento: NO_CONFIGURADO.
+- Canales permitidos: correo comercial público, formulario oficial y canal de mensajería comercial público.
+- Modo de envío: BLOCKED / NOOP.
+- Última actualización: 2026-08-04 08:39 ART.
+
+## Resumen acumulado
+
+| Métrica | Total |
+|---|---:|
+| Prospectos investigados | 0 |
+| Prospectos seleccionados | 0 |
+| Propuestas preparadas | 0 |
+| Propuestas enviadas | 0 |
+| Dry-runs | 0 |
+| Respuestas recibidas | 3 |
+| Interesados | 3 |
+| Demos solicitadas | 2 |
+| Propuestas solicitadas | 0 |
+| No interesados | 0 |
+| Bajas | 2 |
+| Rebotes definitivos | 0 |
+| Errores | 0 |
+
+## Exclusiones permanentes
+
+| Fecha | Organización | Identificador | Motivo | Fuente |
+|---|---|---|---|---|
+| 2026-07-17 | Centro de Arte Contemporáneo C.A.C | Gmail thread `19f6cdf283677810` | Respuesta inequívoca «NO» al mecanismo de baja; estado `DO_NOT_CONTACT`. | Gmail message `19f70ad82869bce4` |
+| 2026-07-16 | Centro de Estudios Sociales y Culturales La Locomotora | Gmail thread `19f6cdf01b57146e` | Respuesta inequívoca «NO» al mecanismo de baja; estado `DO_NOT_CONTACT`. | Gmail message `19f6ce20b74a57dd` |
+
+## Seguimientos pendientes
+
+| Fecha prevista | Organización | Contacto | Estado | Próxima acción | Referencia |
+|---|---|---|---|---|---|
+| BLOQUEADO | LAEM La Escuela de la Música | William, dirección | `DEMO_REQUESTED` / `FOLLOW_UP` | Verificar de forma independiente que la demo y sus credenciales funcionen; recién después responder por el thread existente o el canal comercial facilitado. | Gmail thread `19f71d1f30eeb740` |
+| BLOQUEADO | Surdanza | Equipo administrativo | `DEMO_REQUESTED` / `FOLLOW_UP` | Verificar de forma independiente que la demo y sus credenciales funcionen; recién después responder por el thread existente. | Gmail thread `19f6bb18870c58db` |
+| BLOQUEADO | Estudio de Danzas Soledad Casas | Soledad Casas | `INTERESTED` / `FOLLOW_UP` | Retomar por el thread existente o canal comercial autorizado cuando se resuelva el bloqueo global; respetar su preferencia histórica de miércoles o jueves después de las 10:00. | Gmail thread `19f3755cd45bc8b3` |
+
+## Jornadas
+
+## 2026-08-04
+
+### Resumen
+
+- Hora de inicio: 08:38 ART.
+- Hora de finalización: 08:39 ART.
+- Prospectos encontrados: 0.
+- Prospectos investigados: 0.
+- Prospectos descartados: 0 nuevos; 2 exclusiones históricas incorporadas al registro.
+- Prospectos seleccionados: 0.
+- Propuestas preparadas: 0.
+- Propuestas enviadas: 0.
+- Propuestas en dry-run: 0.
+- Respuestas procesadas: 3 conversaciones abiertas y 2 bajas históricas inequívocas.
+- Seguimientos creados: 3.
+- Errores: 0.
+- Modo de envío: `BLOCKED` / `NOOP`.
+- Veredicto diario: `BLOCKED`. No se buscaron nuevos prospectos ni se enviaron propuestas porque la configuración canónica prohíbe comunicaciones reales, el proveedor real no está conectado, existe una inconsistencia sobre el producto comercializado y faltan región y período de enfriamiento configurados.
+
+### Fuentes consultadas
+
+| Fuente | Tipo | Consulta o criterio | Resultado | Fecha de acceso |
+|---|---|---|---|---|
+| `README.md` | Documentación canónica | Estado de producción, Gmail real y guardas de envío | Producción `NOT_DEPLOYED`; Google real `IMPLEMENTED_NOT_CONNECTED`; envío real bloqueado. | 2026-08-04 |
+| `docs/status.md` | Estado canónico | Flags efectivos y autorización operativa | `SENDING_ENABLED=false`, `SENDING_DAILY_LIMIT=0`, `SENDING_KILL_SWITCH=true`, `MESSAGING_REAL_NETWORK_ALLOWED=false`, `EMAIL_PROVIDER_MODE=NOOP`; comunicaciones reales `DISABLED_BY_POLICY`. | 2026-08-04 |
+| `docs/continuity/product-purpose-architecture.md` | Documentación de producto | Identidad del producto y propósito del repositorio | Gestudio es el producto comercializado; CRM Platform es la aplicación interna para venderlo. | 2026-08-04 |
+| Gmail | Historial y respuestas | Threads comerciales con respuestas recientes y bajas explícitas | 3 conversaciones abiertas clasificadas y 2 exclusiones permanentes registradas. | 2026-08-04 |
+| GitHub `main` | Estado del repositorio | Último commit remoto antes de crear el registro | `099699f5ea973b02c75c696aee08be4cd18cb839`. | 2026-08-04 |
+
+### Candidatos evaluados
+
+| ID | Organización | Dominio | Sector | Localidad | Puntaje | Decisión | Motivo |
+|---|---|---|---|---|---:|---|---|
+
+No se evaluaron candidatos nuevos. La ejecución se detuvo antes de la búsqueda por condiciones de parada canónicas.
+
+### Propuestas
+
+No se prepararon ni enviaron propuestas.
+
+### Descartados
+
+| Organización | Motivo | Puntaje | Fuente | Puede reconsiderarse |
+|---|---|---:|---|---|
+
+No se descartaron candidatos nuevos.
+
+### Respuestas procesadas
+
+| Organización | Clasificación | Resumen | Acción realizada | Próxima acción |
+|---|---|---|---|---|
+| LAEM La Escuela de la Música | `DEMO_REQUESTED` / `FOLLOW_UP` | Existe interés explícito, pero la demo falló reiteradamente; el contacto facilitó un canal comercial alternativo y espera respuesta. | Se clasificó la conversación; no se respondió porque no existe evidencia actual de que la demo esté operativa. | Verificar demo y credenciales sin exponer secretos; después retomar el thread existente. |
+| Surdanza | `DEMO_REQUESTED` / `FOLLOW_UP` | Existe interés explícito en probar el producto, pero el acceso y las credenciales informadas no funcionaron. | Se clasificó la conversación; no se respondió porque no existe evidencia actual de que la demo esté operativa. | Verificar demo y credenciales; después responder en el thread existente. |
+| Estudio de Danzas Soledad Casas | `INTERESTED` / `FOLLOW_UP` | Manifestó interés y disponibilidad horaria; un seguimiento posterior tuvo rebote temporal por casilla sin espacio y se intentó una dirección alternativa. | Se clasificó la conversación; no se efectuó un nuevo contacto por el bloqueo global y el enfriamiento no configurado. | Resolver guardas y política de seguimiento antes de retomar. |
+| Centro de Arte Contemporáneo C.A.C | `DO_NOT_CONTACT` | Respuesta inequívoca «NO» al mecanismo de baja. | Incorporado a exclusiones permanentes. | Ninguna. |
+| Centro de Estudios Sociales y Culturales La Locomotora | `DO_NOT_CONTACT` | Respuesta inequívoca «NO» al mecanismo de baja. | Incorporado a exclusiones permanentes. | Ninguna. |
+
+### Errores y bloqueos
+
+| Hora | Operación | Error | Impacto | Acción segura |
+|---|---|---|---|---|
+| 08:38 ART | Carga de producto | `BLOQUEO_PRODUCTO_CANONICO_INCONSISTENTE`: la tarea intenta comercializar CRM Platform, mientras la documentación canónica establece que el producto comercializado es Gestudio. | No es posible redactar propuestas verificables sin decidir qué producto se ofrece. | Confirmar que la campaña vende Gestudio o aportar documentación comercial canónica que defina CRM Platform como producto vendible. |
+| 08:38 ART | Preflight de envío | `BLOQUEO_PROVEEDOR_DESHABILITADO`: Google real no está conectado y producción no está desplegada. | No existe canal técnico autorizado desde CRM Platform para envío real. | Desplegar y conectar el proveedor solo mediante un cambio autorizado, validado y con secretos fuera del repositorio. |
+| 08:38 ART | Guardas de envío | `BLOQUEO_KILL_SWITCH`: `SENDING_ENABLED=false`, `SENDING_DAILY_LIMIT=0`, `SENDING_KILL_SWITCH=true`, `MESSAGING_REAL_NETWORK_ALLOWED=false`, `EMAIL_PROVIDER_MODE=NOOP`. | Todos los envíos reales deben permanecer bloqueados. | No modificar guardas desde esta tarea. Requiere autorización expresa y validación independiente. |
+| 08:38 ART | Carga de perfil | `BLOQUEO_PERFIL_COMERCIAL_INCOMPLETO`: regiones y período de enfriamiento no están configurados. | No se puede seleccionar mercado ni deduplicar contactos recientes con un intervalo verificable. | Definir regiones permitidas y período de enfriamiento canónico. |
+| 08:38 ART | Registro documental | El archivo canónico no existía. | No había fuente documental única para esta automatización. | Se creó este archivo sin reescribir documentación histórica. |
+
+### Seguimientos programados
+
+| Fecha | Organización | Motivo | Acción prevista | Estado |
+|---|---|---|---|---|
+| BLOQUEADO | LAEM La Escuela de la Música | Demo solicitada, acceso fallido y respuesta pendiente. | Verificar la demo; retomar únicamente con evidencia de acceso funcional. | `FOLLOW_UP` |
+| BLOQUEADO | Surdanza | Interés explícito, acceso fallido y respuesta pendiente. | Verificar la demo; retomar únicamente con evidencia de acceso funcional. | `FOLLOW_UP` |
+| BLOQUEADO | Estudio de Danzas Soledad Casas | Interés explícito y contacto pendiente. | Definir política de enfriamiento y confirmar canal antes de retomar. | `FOLLOW_UP` |
+
+### Evidencia
+
+- Repositorio: `JerePrograma/crm-platform`.
+- Rama consultada: `main`.
+- HEAD observado antes de crear el registro: `099699f5ea973b02c75c696aee08be4cd18cb839`.
+- Documentación consultada: `README.md`, `docs/status.md`, `docs/continuity/README.md`, `docs/continuity/product-purpose-architecture.md`.
+- Registro creado: `docs/commercial/daily-prospecting-log.md`.
+- Gmail threads revisados: `19f71d1f30eeb740`, `19f6bb18870c58db`, `19f3755cd45bc8b3`.
+- Bajas verificadas: messages `19f70ad82869bce4` y `19f6ce20b74a57dd`.
+- Modo efectivo de envío: `BLOCKED` / `NOOP`.
+- Estado del proveedor real: `IMPLEMENTED_NOT_CONNECTED`.
+- Propuestas enviadas: 0.
+- Message IDs nuevos de envío: ninguno.
+- No se registraron contraseñas, tokens, cookies, secretos OAuth ni credenciales de demo.
