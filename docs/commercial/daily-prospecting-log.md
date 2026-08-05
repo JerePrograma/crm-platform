@@ -12,7 +12,7 @@
 - Período de enfriamiento: NO_CONFIGURADO.
 - Canales permitidos: correo comercial público, formulario oficial y canal de mensajería comercial público.
 - Modo de envío: BLOCKED / NOOP.
-- Última actualización: 2026-08-04 08:39 ART.
+- Última actualización: 2026-08-05 09:02 ART.
 
 ## Resumen acumulado
 
@@ -138,3 +138,88 @@ No se descartaron candidatos nuevos.
 - Propuestas enviadas: 0.
 - Message IDs nuevos de envío: ninguno.
 - No se registraron contraseñas, tokens, cookies, secretos OAuth ni credenciales de demo.
+
+## 2026-08-05
+
+### Resumen
+
+- Hora de inicio: 09:01 ART.
+- Hora de finalización: 09:02 ART.
+- Prospectos encontrados: 0.
+- Prospectos investigados: 0.
+- Prospectos descartados: 0.
+- Prospectos seleccionados: 0.
+- Propuestas preparadas: 0.
+- Propuestas enviadas: 0.
+- Propuestas en dry-run: 0.
+- Respuestas procesadas: 0 nuevas.
+- Seguimientos creados: 0; permanecen 3 seguimientos bloqueados de jornadas anteriores.
+- Errores: 0.
+- Modo de envío: `BLOCKED` / `NOOP`.
+- Veredicto diario: `BLOCKED`. La ejecución se detuvo antes de buscar candidatos: no hubo ningún cambio canónico que resolviera la identidad del producto, las regiones, el período de enfriamiento, la conexión real con Google, el despliegue productivo ni las guardas de envío.
+
+### Fuentes consultadas
+
+| Fuente | Tipo | Consulta o criterio | Resultado | Fecha de acceso |
+|---|---|---|---|---|
+| `README.md` | Documentación canónica | Estado operativo y autorización de comunicaciones | Producción `NOT_DEPLOYED`; Google real `IMPLEMENTED_NOT_CONNECTED`; comunicaciones reales deshabilitadas. | 2026-08-05 |
+| `docs/status.md` | Estado canónico | Guardas efectivas y cambios de autorización | Persisten `SENDING_ENABLED=false`, `SENDING_DAILY_LIMIT=0`, `SENDING_KILL_SWITCH=true`, `MESSAGING_REAL_NETWORK_ALLOWED=false` y `EMAIL_PROVIDER_MODE=NOOP`. | 2026-08-05 |
+| `docs/continuity/product-purpose-architecture.md` | Documentación de producto | Distinción entre producto vendido y aplicación interna | Gestudio continúa definido como producto comercializado; CRM Platform es el CRM interno para venderlo. | 2026-08-05 |
+| `docs/commercial/daily-prospecting-log.md` | Registro canónico | Configuración, exclusiones, historial y seguimientos | Registro íntegro; no existía una sección previa para `2026-08-05`; región y enfriamiento siguen sin configurar. | 2026-08-05 |
+| Gmail | Respuestas y seguimientos | Búsqueda desde 2026-08-04 para LAEM, Surdanza, Soledad Casas y términos comerciales de Gestudio | 0 respuestas comerciales nuevas pertinentes. | 2026-08-05 |
+| GitHub `main` | Estado del repositorio | Commits posteriores al último registro | Ningún cambio posterior a `ddd429637156ab00d32b53b75530a1a5f33f1a62` antes de esta actualización. | 2026-08-05 |
+
+### Candidatos evaluados
+
+| ID | Organización | Dominio | Sector | Localidad | Puntaje | Decisión | Motivo |
+|---|---|---|---|---|---:|---|---|
+
+No se evaluaron candidatos nuevos. Las condiciones de parada prevalecieron antes de la fase de descubrimiento.
+
+### Propuestas
+
+No se prepararon, simularon ni enviaron propuestas.
+
+### Descartados
+
+| Organización | Motivo | Puntaje | Fuente | Puede reconsiderarse |
+|---|---|---:|---|---|
+
+No se descartaron candidatos nuevos.
+
+### Respuestas procesadas
+
+| Organización | Clasificación | Resumen | Acción realizada | Próxima acción |
+|---|---|---|---|---|
+
+No se encontraron respuestas comerciales nuevas desde la ejecución anterior.
+
+### Errores y bloqueos
+
+| Hora | Operación | Error | Impacto | Acción segura |
+|---|---|---|---|---|
+| 09:01 ART | Carga de producto | `BLOQUEO_PRODUCTO_CANONICO_INCONSISTENTE`: la instrucción solicita vender CRM Platform, pero la documentación vigente establece que el producto comercializado es Gestudio. | No puede redactarse una oferta comercial verificable sin resolver la identidad del producto. | Confirmar explícitamente que la campaña vende Gestudio o publicar documentación canónica de CRM Platform como producto comercializable. |
+| 09:01 ART | Carga de perfil | `BLOQUEO_PERFIL_COMERCIAL_INCOMPLETO`: regiones y período de enfriamiento continúan `NO_CONFIGURADO`. | No puede definirse el mercado permitido ni deduplicarse con un intervalo verificable. | Configurar regiones autorizadas y período de enfriamiento en la fuente canónica. |
+| 09:01 ART | Preflight de proveedor | `BLOQUEO_PROVEEDOR_DESHABILITADO`: producción no está desplegada y Google real permanece sin conexión. | CRM Platform no dispone de un proveedor real autorizado. | Completar despliegue y conexión mediante un procedimiento separado, autorizado y validado. |
+| 09:01 ART | Guardas de envío | `BLOQUEO_KILL_SWITCH`: las guardas versionadas impiden cualquier comunicación real. | Deben permanecer en cero los mensajes `SENT`. | No modificar ni eludir guardas desde la automatización de prospección. |
+
+### Seguimientos programados
+
+| Fecha | Organización | Motivo | Acción prevista | Estado |
+|---|---|---|---|---|
+| BLOQUEADO | LAEM La Escuela de la Música | Demo solicitada y acceso previamente fallido; no hubo respuesta nueva. | Verificar la demo y credenciales antes de retomar el thread. | `FOLLOW_UP` |
+| BLOQUEADO | Surdanza | Interés explícito y acceso previamente fallido; no hubo respuesta nueva. | Verificar la demo y credenciales antes de retomar el thread. | `FOLLOW_UP` |
+| BLOQUEADO | Estudio de Danzas Soledad Casas | Interés explícito; no hubo respuesta nueva. | Resolver perfil, enfriamiento y guardas antes de retomar. | `FOLLOW_UP` |
+
+### Evidencia
+
+- Repositorio: `JerePrograma/crm-platform`.
+- Rama consultada y actualizada: `main`.
+- HEAD observado antes de esta actualización: `ddd429637156ab00d32b53b75530a1a5f33f1a62`.
+- Documentación consultada: `README.md`, `docs/status.md`, `docs/continuity/product-purpose-architecture.md` y `docs/commercial/daily-prospecting-log.md`.
+- Búsqueda dirigida en Gmail: 0 respuestas nuevas de LAEM, Surdanza o Estudio de Danzas Soledad Casas desde 2026-08-04.
+- Modo efectivo de envío: `BLOCKED` / `NOOP`.
+- Propuestas preparadas: 0.
+- Propuestas enviadas: 0.
+- Message IDs nuevos de envío: ninguno.
+- No se registraron secretos, tokens, cookies, credenciales ni datos privados innecesarios.
