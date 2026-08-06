@@ -12,7 +12,7 @@
 - Período de enfriamiento: NO_CONFIGURADO.
 - Canales permitidos: correo comercial público, formulario oficial y canal de mensajería comercial público.
 - Modo de envío: BLOCKED / NOOP.
-- Última actualización: 2026-08-05 09:02 ART.
+- Última actualización: 2026-08-06 08:46 ART.
 
 ## Resumen acumulado
 
@@ -223,3 +223,92 @@ No se encontraron respuestas comerciales nuevas desde la ejecución anterior.
 - Propuestas enviadas: 0.
 - Message IDs nuevos de envío: ninguno.
 - No se registraron secretos, tokens, cookies, credenciales ni datos privados innecesarios.
+
+## 2026-08-06
+
+### Resumen
+
+- Hora de inicio: 08:39 ART.
+- Hora de finalización: 08:46 ART.
+- Prospectos encontrados: 0.
+- Prospectos investigados: 0.
+- Prospectos descartados: 0.
+- Prospectos seleccionados: 0.
+- Propuestas preparadas: 0.
+- Propuestas enviadas: 0.
+- Propuestas en dry-run: 0.
+- Respuestas procesadas: 0 nuevas; 3 conversaciones abiertas verificadas.
+- Seguimientos creados: 0; permanecen 3 seguimientos bloqueados.
+- Errores: 0.
+- Modo de envío: `BLOCKED` / `NOOP`.
+- Veredicto diario: `BLOCKED`. La ejecución se detuvo antes del descubrimiento: la documentación continúa definiendo a Gestudio como producto comercializado, regiones y enfriamiento siguen sin configurar, las comunicaciones reales permanecen deshabilitadas y no existe evidencia verificable de que la demo solicitada por los prospectos esté operativa.
+
+### Fuentes consultadas
+
+| Fuente | Tipo | Consulta o criterio | Resultado | Fecha de acceso |
+|---|---|---|---|---|
+| `README.md` de CRM Platform | Documentación canónica | Estado operativo y autorización de comunicaciones | Producción `NOT_DEPLOYED`; Google real `IMPLEMENTED_NOT_CONNECTED`; comunicaciones reales `DISABLED_BY_POLICY`. | 2026-08-06 |
+| `docs/status.md` | Estado canónico | Guardas efectivas | Persisten `SENDING_ENABLED=false`, `SENDING_DAILY_LIMIT=0`, `SENDING_KILL_SWITCH=true`, `MESSAGING_REAL_NETWORK_ALLOWED=false` y `EMAIL_PROVIDER_MODE=NOOP`. | 2026-08-06 |
+| `docs/continuity/product-purpose-architecture.md` | Documentación de producto | Identidad del producto y del CRM | Gestudio sigue definido como producto comercializado; CRM Platform es la aplicación interna de ventas. | 2026-08-06 |
+| `docs/commercial/daily-prospecting-log.md` | Registro canónico | Historial, exclusiones y seguimientos | Registro íntegro; no existía sección para `2026-08-06`; configuración bloqueada sin cambios. | 2026-08-06 |
+| Gmail | Respuestas y seguimientos | Búsqueda posterior a 2026-08-05 y lectura de los threads abiertos | 0 respuestas comerciales nuevas; LAEM, Surdanza y Soledad Casas continúan pendientes. | 2026-08-06 |
+| GitHub `JerePrograma/crm-platform` | Estado del repositorio | HEAD remoto antes de actualizar el registro | `cf117e7bcb9356a16c786a024205ec391835dc8f`; ningún cambio funcional posterior al registro anterior. | 2026-08-06 |
+| GitHub `JerePrograma/Gestudio` | Estado técnico de la demo | Último commit remoto relacionado con runtime de demo | `53547baac50063de85fb694124241d9f58e256a1` ajusta el contrato de credenciales de base de datos runtime; no acredita despliegue ni acceso funcional externo. | 2026-08-06 |
+
+### Candidatos evaluados
+
+| ID | Organización | Dominio | Sector | Localidad | Puntaje | Decisión | Motivo |
+|---|---|---|---|---|---:|---|---|
+
+No se evaluaron candidatos nuevos. Las condiciones de parada prevalecieron antes de la búsqueda y puntuación.
+
+### Propuestas
+
+No se prepararon, simularon ni enviaron propuestas.
+
+### Descartados
+
+| Organización | Motivo | Puntaje | Fuente | Puede reconsiderarse |
+|---|---|---:|---|---|
+
+No se descartaron candidatos nuevos.
+
+### Respuestas procesadas
+
+| Organización | Clasificación | Resumen | Acción realizada | Próxima acción |
+|---|---|---|---|---|
+
+No se encontraron respuestas comerciales nuevas desde la ejecución anterior. Se verificaron nuevamente los threads abiertos sin ejecutar respuestas automáticas.
+
+### Errores y bloqueos
+
+| Hora | Operación | Error | Impacto | Acción segura |
+|---|---|---|---|---|
+| 08:39 ART | Carga de producto | `BLOQUEO_PRODUCTO_CANONICO_INCONSISTENTE`: la tarea solicita vender CRM Platform, pero la documentación canónica establece que el producto comercializado es Gestudio. | No puede redactarse una oferta verificable sin resolver la identidad del producto. | Confirmar que la campaña vende Gestudio o publicar documentación comercial canónica de CRM Platform como producto vendible. |
+| 08:39 ART | Carga de perfil | `BLOQUEO_PERFIL_COMERCIAL_INCOMPLETO`: regiones y período de enfriamiento permanecen `NO_CONFIGURADO`. | No puede definirse el mercado autorizado ni deduplicarse con un intervalo objetivo. | Configurar regiones y período de enfriamiento en la fuente canónica. |
+| 08:39 ART | Preflight de proveedor | `BLOQUEO_PROVEEDOR_DESHABILITADO`: producción no está desplegada y Google real continúa sin conexión. | CRM Platform no dispone de un proveedor real autorizado para campañas. | Completar despliegue y conexión mediante un cambio separado, autorizado y validado. |
+| 08:39 ART | Guardas de envío | `BLOQUEO_KILL_SWITCH`: las guardas versionadas mantienen todas las comunicaciones reales deshabilitadas. | Deben permanecer en cero los mensajes `SENT`. | No modificar ni eludir guardas desde esta automatización. |
+| 08:40 ART | Seguimientos abiertos | `BLOQUEO_DEMO_NO_VERIFICADA`: el cambio técnico más reciente sólo ajusta el contrato runtime; no demuestra que el acceso externo y las credenciales funcionen. | Responder a LAEM o Surdanza afirmando que la demo está disponible repetiría una afirmación no verificada. | Validar el acceso de punta a punta con datos sintéticos y recién después retomar los threads existentes. |
+
+### Seguimientos programados
+
+| Fecha | Organización | Motivo | Acción prevista | Estado |
+|---|---|---|---|---|
+| BLOQUEADO | LAEM La Escuela de la Música | Demo solicitada, fallos reiterados y canal alternativo facilitado. | Verificar acceso de punta a punta; después responder en el thread existente o canal comercial autorizado. | `FOLLOW_UP` |
+| BLOQUEADO | Surdanza | Interés explícito en probar el producto y acceso fallido. | Verificar acceso de punta a punta; después responder en el thread existente. | `FOLLOW_UP` |
+| BLOQUEADO | Estudio de Danzas Soledad Casas | Interés explícito y seguimiento pendiente. | Resolver identidad del producto, región, enfriamiento y guardas antes de retomar. | `FOLLOW_UP` |
+
+### Evidencia
+
+- Repositorio canónico: `JerePrograma/crm-platform`.
+- Rama consultada y actualizada: `main`.
+- HEAD observado antes de esta actualización: `cf117e7bcb9356a16c786a024205ec391835dc8f`.
+- Documentación consultada: `README.md`, `docs/status.md`, `docs/continuity/product-purpose-architecture.md` y `docs/commercial/daily-prospecting-log.md`.
+- Repositorio técnico adicional consultado: `JerePrograma/Gestudio`, commit `53547baac50063de85fb694124241d9f58e256a1`.
+- Gmail threads verificados: `19f71d1f30eeb740`, `19f6bb18870c58db`, `19f3755cd45bc8b3`.
+- Respuestas comerciales nuevas desde 2026-08-05: 0.
+- Modo efectivo de envío: `BLOCKED` / `NOOP`.
+- Propuestas preparadas: 0.
+- Propuestas enviadas: 0.
+- Message IDs nuevos de envío: ninguno.
+- No se registraron contraseñas, tokens, cookies, secretos OAuth, credenciales de demo ni datos privados innecesarios.
