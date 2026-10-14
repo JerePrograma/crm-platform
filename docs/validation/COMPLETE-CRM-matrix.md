@@ -7,7 +7,7 @@ Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUT
 
 ## SCALARIS-001 — evidencia de la edición local de octubre
 
-La publicación GitHub actual está `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_POST_PUSH`: add, revisión de diff, commit y push autorizados explícitamente. Su autoridad es [publicación GitHub Scalaris](scalaris-github-publication-2026-10-14.md), sin afirmar aún éxito remoto. Esta tabla describe solamente la edición Scalaris; los PASS históricos del baseline de julio no cubren los nuevos archivos ni el runtime portable.
+La implementación quedó `PUBLISHED_FAST_FORWARD` en `331b3e7be5ad52b93b285a0ff9654abedce79b7d`, con HEAD/origin/main/ls-remote coincidentes y divergencia `0 0`. CI `FAILED_DEPENDENCY_SCAN`, Grype high/critical real; [run 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532), resultado final 21/22 jobs success; solo dependency-scan failure. Este cierre registra el resultado en [publicación GitHub Scalaris](scalaris-github-publication-2026-10-14.md). ZIP/instalación previos conservan su frontend/servidor y evidencia; la fuente publicada agrega ajustes rol/proxy comprobados con navegador 5/5 y Node 2/2. Los PASS de julio no cubren estos cambios.
 
 | Capacidad | Estado | Evidencia actual y límites |
 |---|---|---|
@@ -29,8 +29,10 @@ La publicación GitHub actual está `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_PO
 | ZIP final, manifiesto y checksum | EXECUTED_PASS | Manifiesto/checksum coincidentes, 2.243 entradas y cero archivos privados; evidencia `scalaris-release-latest.json` |
 | Instalación preparada para uso | EXECUTED_PASS | Loopback 8787, perfil/rol correctos, 0 prospectos, 18 etiquetas y 7 plantillas; evidencia `scalaris-installed-local.json`; QA detenido |
 | Validador integral repetido de esta edición | BLOCKED_EXTERNAL | Docker no instalado; sin dos corridas limpias sobre el contenido final Scalaris |
-| Publicación GitHub de esta edición | IN_PROGRESS | `AUTHORIZED_IN_PROGRESS`; verificar commit/push y coincidencia local/remota |
-| CI de esta edición | IN_PROGRESS | `PENDING_POST_PUSH`; verificar CI sobre el SHA efectivamente publicado |
+| Publicación GitHub de esta edición | EXECUTED_PASS | `PUBLISHED_FAST_FORWARD`, SHA `331b3e7`, 64 archivos +4.126/-252, HEAD/origin/main/ls-remote iguales y divergencia `0 0` |
+| CI de esta edición | EXECUTED_FAIL | `FAILED_DEPENDENCY_SCAN`; Grype exit 2 high/critical Java/runtime, npm audit cero y build Docker PASS; resultado final 21/22 jobs success; solo dependency-scan failure |
+| Remediación de dependencias/imagen | NOT_STARTED | Spring Web MVC, Tomcat, Jackson y runtime Chainguard pendientes en backlog; POM/runtime sin cambios |
+| Agenda con muchas tareas cerradas | NOT_STARTED | Límite 200 aplicado antes del filtro de pendientes; `SCALARIS-AGENDA-001`, sin corrección |
 | Contactos reales y comunicaciones reales | NOT_APPLICABLE | No importados ni enviados en esta misión; guardas cerradas |
 | Producción de esta edición | NOT_APPLICABLE | No desplegada |
 

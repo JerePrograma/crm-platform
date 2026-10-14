@@ -13,8 +13,16 @@ repositorio: https://github.com/JerePrograma/crm-platform
 rama: main
 base local y remota al iniciar: 75f37a023a0e69d991fe7640f6ed24df98d6ca18
 divergencia inicial HEAD...origin/main: 0 0
-publicación: AUTHORIZED_IN_PROGRESS
-CI del nuevo contenido: PENDING_POST_PUSH
+publicación: PUBLISHED_FAST_FORWARD
+commit de implementación: 331b3e7be5ad52b93b285a0ff9654abedce79b7d
+diff de implementación: 64 archivos, 4126 inserciones, 252 eliminaciones
+HEAD = origin/main = ls-remote refs/heads/main: 331b3e7be5ad52b93b285a0ff9654abedce79b7d
+divergencia después del push: 0 0
+working tree después del push, antes del cierre documental: CLEAN
+CI del commit de implementación: FAILED_DEPENDENCY_SCAN
+CI run: 38600419532
+resultado CI final: completed/failure, 21/22 jobs success, solo dependency-scan failure
+documentación: POST_PUSH_RESULTS_RECORDED
 ```
 
 ## Contenido revisado
@@ -60,4 +68,12 @@ No se realiza force push, reset, clean ni eliminación de datos. La falta de Doc
 
 ## Resultado
 
-Commit, push, identidad remota y CI pendientes de ejecución y registro. El estado anterior de documentos que limitaba la misión a cambios locales corresponde a la fase de preparación; esta publicación está autorizada por la solicitud humana posterior.
+La implementación se publicó por fast-forward en [331b3e7](https://github.com/JerePrograma/crm-platform/commit/331b3e7be5ad52b93b285a0ff9654abedce79b7d): 64 archivos, 4.126 inserciones y 252 eliminaciones. HEAD, `origin/main` y la referencia real `refs/heads/main` consultada con `ls-remote` coincidieron; divergencia `0 0`. El working tree estaba limpio al terminar esa verificación, antes de este cierre documental.
+
+La [CI 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532) inició queued y después detectó un fallo real en [dependency-scan 115977926787](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532/job/115977926787). Grype terminó con exit 2 por vulnerabilidades high/critical en dependencias Java y la imagen runtime. npm audit terminó sin vulnerabilidades y el build Docker pasó; esos resultados no convierten el scan fallido en PASS. Resultado final: run completed/failure, 21/22 jobs success y solo dependency-scan failure. frontend-e2e y Gmail fake Google terminaron SUCCESS. Estado `FAILED_DEPENDENCY_SCAN`, sin afirmar PASS integral ni tratarlo como bloqueo externo.
+
+El log señala Spring Web MVC 7.0.8 → 7.0.9, Tomcat 11.0.22 → 11.0.25, Jackson databind/core 2.21.5 y 3.1.5 → 2.21.7 y 3.1.7, y hallazgos en libcrypto/glibc/zlib de la base Chainguard. POM y Dockerfile son idénticos a la base `75f37a023a0e69d991fe7640f6ed24df98d6ca18`: los hallazgos son heredados y siguen sin remediar. La reparación queda en `SCALARIS-SEC-001`; no se cambiaron POM ni runtime durante esta publicación.
+
+También queda `SCALARIS-AGENDA-001`: el límite inicial de 200 tareas se aplica antes del filtro de pendientes de Marketing y puede omitir seguimientos con muchas tareas cerradas. Se registró sin corregir el producto en este cierre.
+
+Este cierre documental registra la publicación de la implementación y sus resultados post-push. Su propio commit se consulta en Git, sin autorreferencia de SHA. La publicación Git no equivale a producción ni a CI verde; las diferencias del ZIP/instalación anteriores y los límites de comunicaciones/datos permanecen vigentes.

@@ -2,7 +2,7 @@
 
 ## 2026-10-14 — SCALARIS-001 Marketing y operación local Windows
 
-Estado: `LOCAL_OPERATIONAL_PASS`; publicación GitHub `AUTHORIZED_IN_PROGRESS`, CI `PENDING_POST_PUSH`, ZIP de entrega local revisado e instalación de uso preparada.
+Estado: `LOCAL_OPERATIONAL_PASS`; implementación `PUBLISHED_FAST_FORWARD` en `331b3e7be5ad52b93b285a0ff9654abedce79b7d`, CI `FAILED_DEPENDENCY_SCAN`; ZIP de entrega local anterior revisado e instalación de uso preparada.
 
 - agrega perfil y organización Scalaris, conservando compatibilidad `LEGACY` y los contratos históricos;
 - prepara cuenta Marketing con permisos comerciales, separada de administración y sin envío real;
@@ -20,7 +20,11 @@ Estado: `LOCAL_OPERATIONAL_PASS`; publicación GitHub `AUTHORIZED_IN_PROGRESS`, 
 - fija como siguiente paso uso/piloto local, sin volver a empaquetar ni importar contactos reales automáticamente;
 - registra Docker real como bloqueado por ausencia de Docker; no atribuye PASS a Compose, health ni restauración Docker;
 - conserva la historia exacta del baseline `d6bfe642` sin trasladar su doble validación/CI a la nueva edición;
-- registra autorización explícita de add, revisión de diff, commit y push a GitHub, con publicación en curso y CI pendiente tras el push; no afirma éxito remoto hasta verificarlo;
+- publica 64 archivos (+4.126/-252) por fast-forward en `331b3e7`, con HEAD/origin/main/ls-remote coincidentes y divergencia `0 0`;
+- registra [CI 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532), con fallo real Grype high/critical y resultado final 21/22 jobs success; solo dependency-scan failure; npm audit cero y Docker build PASS no sustituyen el gate;
+- conserva ZIP/instalación anteriores sin atribuirles los ajustes rol/proxy publicados después, comprobados con 5/5 navegador y 2/2 Node;
+- registra remediación Java/imagen y limitación agenda 200 sin corregir; no cambia POM/runtime en esta publicación;
+- este cierre documental registra los resultados post-push y mantiene CI fallida, sin heredar las pruebas/CI históricas;
 - conserva [publicación GitHub Scalaris](docs/validation/scalaris-github-publication-2026-10-14.md) como autoridad de esa fase;
 - mantiene PR, producción, conexiones de proveedores y comunicaciones reales fuera de alcance.
 

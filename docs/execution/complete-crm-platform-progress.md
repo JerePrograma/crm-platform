@@ -8,13 +8,14 @@ Actualizado: 2026-10-14
 DATE=2026-10-14
 ACTIVE_SEGMENT=SCALARIS-001
 BUSINESS=SCALARIS_TECHNICAL_SERVICE_DEVELOPMENT_ORDERED_SALES
-SOURCE_STATE=AUTHORIZED_GITHUB_PUBLICATION_IN_PROGRESS
+SOURCE_STATE=PUBLISHED_FAST_FORWARD
+IMPLEMENTATION_COMMIT=331b3e7be5ad52b93b285a0ff9654abedce79b7d
 SCALARIS_STATE=LOCAL_OPERATIONAL_PASS
 SCALARIS_PROFILE=IMPLEMENTED
 MARKETING_ROLE=IMPLEMENTED_WITHOUT_USER_ADMIN_OR_REAL_SEND
 FRONTEND_MARKETING=EXECUTED_PASS_16_UNIT_TYPECHECK_BUILD_AUDIT_ZERO
 FRONTEND_E2E=EXECUTED_PASS_4_OF_4_ZERO_SKIPPED_UNEXPECTED_FLAKY
-SOURCE_FOR_DELIVERY=REVIEWED_LOCAL_SOURCE_PUBLICATION_IN_PROGRESS
+SOURCE_FOR_DELIVERY=PUBLISHED_IMPLEMENTATION_DISTINCT_FROM_PRIOR_ZIP
 BACKEND_UNIT_JAVA21=EXECUTED_PASS_62
 BACKEND_FOCUSED_INTEGRATION=EXECUTED_PASS_6
 DOCKER_LAUNCHER_PS51=EXECUTED_PASS_55_ASSERTIONS
@@ -23,8 +24,12 @@ DOCKER_REAL=BLOCKED_EXTERNAL_NOT_INSTALLED
 PORTABLE_WINDOWS=EXECUTED_PASS_18_ASSERTIONS_PS51
 PORTABLE_RUNTIME=JAVA_21_POSTGRESQL_18_NODE_24
 CURRENT_COMPLETE_VALIDATOR=BLOCKED_EXTERNAL_DOCKER_NOT_INSTALLED
-CURRENT_REMOTE_PUBLICATION=AUTHORIZED_IN_PROGRESS
-CURRENT_CI=PENDING_POST_PUSH
+CURRENT_REMOTE_PUBLICATION=PUBLISHED_FAST_FORWARD
+CURRENT_REMOTE_VERIFICATION=HEAD_ORIGIN_MAIN_LS_REMOTE_EQUAL_DIVERGENCE_0_0
+CURRENT_CI=FAILED_DEPENDENCY_SCAN
+CURRENT_CI_RUN=38600419532
+CURRENT_CI_FINAL=21_SUCCESS_1_FAILURE_FINAL
+DOCUMENTATION=POST_PUSH_RESULTS_RECORDED
 REAL_CONTACTS=NOT_IMPORTED
 REAL_COMMUNICATIONS=DISABLED_BY_POLICY
 PRODUCTION=NOT_DEPLOYED
@@ -36,7 +41,7 @@ QA_PROCESSES=STOPPED
 NEXT=SCALARIS_LOCAL_USE_PILOT
 ```
 
-El usuario autorizó explícitamente add, revisión de diff, commit y push a GitHub. La fase se encuentra `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_POST_PUSH`; se registra en [publicación GitHub Scalaris](../validation/scalaris-github-publication-2026-10-14.md). Todavía no se afirma éxito del push ni coincidencia local/remota. PR, producción y comunicaciones reales continúan fuera de alcance.
+El push autorizado terminó por fast-forward en `331b3e7`: 64 archivos, +4.126/-252; HEAD/origin/main/ls-remote coincidentes, divergencia `0 0` y working tree limpio antes de este cierre documental. [CI 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532) tiene fallo real dependency-scan (Grype exit 2 high/critical), resultado final 21/22 jobs success; solo dependency-scan failure; no se afirma PASS integral. La fuente publicada incorpora ajustes rol/proxy comprobados con 5/5 navegador y 2/2 Node; el ZIP/instalación previos conservan su evidencia. Este cierre registra el resultado en [publicación GitHub Scalaris](../validation/scalaris-github-publication-2026-10-14.md). POM/runtime no cambiaron; remediación Java/imagen y agenda 200 siguen pendientes. PR, producción y comunicaciones reales quedan fuera de alcance.
 
 La cuenta Marketing, referencias del negocio, etiquetas/plantillas y experiencia diaria se implementan sobre contratos existentes. La operación local ofrece Compose propio y paquete Windows con runtimes incluidos, datos privados separados y guardas cerradas. Las credenciales de las dos modalidades se generan fuera del proyecto.
 

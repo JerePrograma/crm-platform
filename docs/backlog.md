@@ -8,7 +8,7 @@ Un elemento solo puede declararse `COMPLETE` con evidencia ejecutada sobre el co
 
 ## SCALARIS-001 — Marketing Scalaris y entrega local Windows
 
-Estado: `LOCAL_OPERATIONAL_PASS`; publicación GitHub `AUTHORIZED_IN_PROGRESS` y CI `PENDING_POST_PUSH`. Paquete definitivo revisado e instalación de uso preparada.
+Estado: `LOCAL_OPERATIONAL_PASS`; implementación `PUBLISHED_FAST_FORWARD` en `331b3e7be5ad52b93b285a0ff9654abedce79b7d`, CI `FAILED_DEPENDENCY_SCAN`. Paquete local previo revisado e instalación de uso preparada; no actualizados automáticamente al nuevo SHA.
 
 - [x] Perfil y organización Scalaris separados de la compatibilidad Gestudio.
 - [x] Cuenta Marketing con permisos comerciales y administración separada.
@@ -27,12 +27,37 @@ Estado: `LOCAL_OPERATIONAL_PASS`; publicación GitHub `AUTHORIZED_IN_PROGRESS` y
 - [x] Validación y límites de la entrega local reconciliados.
 - [x] Instalación de uso activa en loopback 8787, cero prospectos y catálogo Scalaris; QA detenido.
 - [x] Add, revisión de diff, commit y push autorizados explícitamente por el usuario.
-- [ ] Verificar commit/push y coincidencia local/remota; publicación `AUTHORIZED_IN_PROGRESS`.
-- [ ] Verificar CI del SHA publicado; estado `PENDING_POST_PUSH`.
+- [x] Verificar commit/push y coincidencia HEAD/origin/main/ls-remote; `331b3e7`, divergencia `0 0`.
+- [x] Registrar fallo real de [dependency-scan](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532/job/115977926787): Grype exit 2, high/critical Java/runtime.
+- [x] Registrar resultado final de [CI 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532); snapshot 21/22 jobs success; solo dependency-scan failure, sin PASS integral.
+- [x] Registrar resultados post-push en este cierre documental.
 - [ ] Ejecutar Docker/Compose/health/respaldo reales cuando haya Docker disponible (`BLOCKED_EXTERNAL` en este host).
 - [ ] Ejecutar cierre integral repetido sobre un commit definitivo si se autoriza esa misión; no realizado en esta edición.
 
-El siguiente paso de negocio es uso/piloto local. La fase Git actual autoriza add, revisión de diff, commit y push; su resultado debe verificarse antes de marcar publicación. La autoridad es [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md). Carga de contactos reales, conexiones, PR y producción permanecen fuera de alcance. La guía es `docs/scalaris-marketing-local.md` y el segmento es `docs/segments/SCALARIS-001.md`.
+El siguiente paso de negocio es uso/piloto local, con publicación y resultado final de CI registrados. La publicación de implementación ya está confirmada; la autoridad es [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md). Carga de contactos reales, conexiones, PR y producción permanecen fuera de alcance. La guía es `docs/scalaris-marketing-local.md` y el segmento es `docs/segments/SCALARIS-001.md`.
+
+## SCALARIS-SEC-001 — gate Grype de Java e imagen runtime
+
+Estado: `EXECUTED_FAIL_REMEDIATION_PENDING`. Fallo real de [dependency-scan 115977926787](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532/job/115977926787), sobre `331b3e7`: Grype exit 2 por hallazgos high/critical. npm audit cero y build Docker PASS no reemplazan ese gate.
+
+- [ ] Revisar Spring Web MVC 7.0.8 → 7.0.9 y Tomcat 11.0.22 → 11.0.25 según los hallazgos del job, conservando coherencia con el BOM de Spring Boot.
+- [ ] Revisar Jackson databind/core 2.21.5 y 3.1.5 → 2.21.7 y 3.1.7 conforme al scan y los contratos actuales.
+- [ ] Actualizar y revisar el digest runtime Chainguard por hallazgos en libcrypto, glibc y zlib.
+- [ ] Ejecutar pruebas pertinentes, construir la imagen corregida y repetir Grype con evidencia nueva del SHA/digest; conservar el fallo original.
+
+POM y Dockerfile son idénticos a la base `75f37a023a0e69d991fe7640f6ed24df98d6ca18`; los hallazgos son heredados y siguen sin remediar. Este elemento registra una reparación pendiente; no declara PASS ni bloqueo externo del scanner.
+
+## SCALARIS-AGENDA-001 — pendientes fuera de las primeras 200 tareas
+
+Estado: `KNOWN_LIMITATION_NOT_FIXED`; observación registrada durante la publicación, sin cambio de producto.
+
+La pantalla carga `listTasks()` sin filtro de estado. `GET /api/v1/tasks` aplica por defecto `limit=200`, ordenado por vencimiento, y después `MarketingAgenda` filtra `OPEN`/`IN_PROGRESS` con `pendingTasks()`. Muchas tareas cerradas dentro de esas primeras 200 pueden desplazar seguimientos pendientes del lote cargado y mostrar una agenda incompleta o vacía aunque existan pendientes.
+
+- [ ] Aplicar filtros de pendientes y responsable antes del límite en backend, con paginación o un contrato equivalente completo.
+- [ ] Agregar regresión con más de 200 tareas y mayoría cerradas, comprobando que los pendientes sigan visibles.
+- [ ] Reconciliar conteos y estados vacíos de la agenda con el resultado completo.
+
+No se corrigió en `331b3e7`; esta observación no autoriza una modificación automática del producto. Referencias: `TimelineController.listTasks`, `TimelineService.listTasks`, `App.refresh`, `MarketingAgenda` y `pendingTasks`.
 
 ## Historial publicado — hasta 2026-07-30
 

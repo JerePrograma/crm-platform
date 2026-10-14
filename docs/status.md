@@ -10,7 +10,8 @@ Se implementaron localmente el perfil y la organización Scalaris, cuenta de Mar
 
 ```text
 SCALARIS_STATE=LOCAL_OPERATIONAL_PASS
-SOURCE_STATE=AUTHORIZED_GITHUB_PUBLICATION_IN_PROGRESS
+SOURCE_STATE=PUBLISHED_FAST_FORWARD
+IMPLEMENTATION_COMMIT=331b3e7be5ad52b93b285a0ff9654abedce79b7d
 BACKEND_UNIT=EXECUTED_PASS_62
 BACKEND_FOCUSED_INTEGRATION=EXECUTED_PASS_6
 BACKEND_TOTAL=EXECUTED_PASS_68
@@ -21,15 +22,19 @@ PORTABLE_RUNTIMES=JAVA_21_POSTGRESQL_18_NODE_24
 FRONTEND_UNIT_TYPECHECK_BUILD=EXECUTED_PASS_16_UNIT
 FRONTEND_AUDIT=EXECUTED_PASS_ZERO_VULNERABILITIES
 FRONTEND_E2E=EXECUTED_PASS_4_OF_4_ZERO_SKIPPED_UNEXPECTED_FLAKY
-SOURCE_FOR_DELIVERY=REVIEWED_LOCAL_SOURCE_PUBLICATION_IN_PROGRESS
+SOURCE_FOR_DELIVERY=PUBLISHED_IMPLEMENTATION_DISTINCT_FROM_PRIOR_ZIP
 FINAL_ZIP=EXECUTED_PASS_MANIFEST_CHECKSUM_PRIVATE_FILES_ZERO
 USE_INSTALLATION=EXECUTED_PASS_LOOPBACK_8787_PROSPECTS_ZERO
 USE_CATALOG=TAGS_18_TEMPLATES_7
 QA_PROCESSES=STOPPED
 MANUAL_VISUAL_QA=EXECUTED_PASS_1440_390_320_PX
 CURRENT_COMPLETE_VALIDATOR=BLOCKED_EXTERNAL_DOCKER_NOT_INSTALLED
-CURRENT_CI=PENDING_POST_PUSH
-CURRENT_PUBLICATION=AUTHORIZED_IN_PROGRESS
+CURRENT_CI=FAILED_DEPENDENCY_SCAN
+CURRENT_CI_RUN=38600419532
+CURRENT_CI_FINAL=21_SUCCESS_1_FAILURE_FINAL
+CURRENT_PUBLICATION=PUBLISHED_FAST_FORWARD
+CURRENT_REMOTE_VERIFICATION=HEAD_ORIGIN_MAIN_LS_REMOTE_EQUAL_DIVERGENCE_0_0
+DOCUMENTATION=POST_PUSH_RESULTS_RECORDED
 REAL_CONTACTS=NOT_IMPORTED
 REAL_COMMUNICATIONS=DISABLED_BY_POLICY
 PRODUCTION=NOT_DEPLOYED
@@ -43,7 +48,9 @@ Los 55 controles del launcher Docker incluyen ACL y puertos reales, con Docker s
 
 El ZIP definitivo y su manifiesto/checksum están revisados, con 2.243 entradas y cero archivos privados. La instalación de uso está activa en `http://127.0.0.1:8787`, con perfil Scalaris y rol Marketing correctos, cero prospectos, 18 etiquetas y 7 plantillas, todos los servicios en loopback. Los entornos QA quedaron detenidos. La ruta y el checksum concretos se registran en la validación específica; evidencia local: `validation-output/scalaris-release-latest.json` y `validation-output/scalaris-installed-local.json`.
 
-Los cambios de octubre no heredan la doble validación ni la CI del SHA publicado en julio. El usuario autorizó explícitamente add, revisión de diff, commit y push a GitHub: publicación `AUTHORIZED_IN_PROGRESS` y CI `PENDING_POST_PUSH`. La autoridad de esta fase es [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md); no se afirma push exitoso hasta verificarlo. No se conectaron proveedores, enviaron mensajes ni importaron contactos reales.
+Los cambios de octubre no heredan la doble validación ni la CI de julio. La implementación [331b3e7](https://github.com/JerePrograma/crm-platform/commit/331b3e7be5ad52b93b285a0ff9654abedce79b7d) quedó `PUBLISHED_FAST_FORWARD`: 64 archivos, +4.126/-252; HEAD, `origin/main` y `ls-remote` coincidieron, divergencia `0 0`, y el working tree estaba limpio después del push antes de este cierre documental. La [CI 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532) avanzó de queued a un fallo real `FAILED_DEPENDENCY_SCAN`: [dependency-scan](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532/job/115977926787) terminó con Grype exit 2 por vulnerabilidades high/critical en librerías Java e imagen runtime. npm audit dio cero vulnerabilidades y Docker build pasó; no sustituyen el gate Grype. Resultado final: 21/22 jobs success; solo dependency-scan failure; frontend-e2e y Gmail fake Google SUCCESS. No se afirma PASS integral. Este cierre documental registra el resultado; autoridad: [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md).
+
+La fuente publicada incorpora las correcciones finales de rol predeterminado y proxy, verificadas con 5/5 recorridos de navegador y 2/2 pruebas Node. El ZIP y la instalación anteriores mantienen su frontend/servidor, checksum y evidencia originales; no se atribuyen automáticamente al commit publicado. Agenda mantiene una limitación conocida: se cargan hasta 200 tareas antes de filtrar las pendientes, lo que puede ocultar seguimientos cuando hay muchas tareas cerradas; permanece sin corrección en el backlog.
 
 ## Historial: SEG-001 Gmail — validado y publicado el 2026-07-30
 
@@ -305,4 +312,4 @@ El nuevo candidato local que añadía métricas tenant-wide, paginación adicion
 
 ## Próximo paso obligatorio
 
-Completar la publicación GitHub autorizada y verificar el remoto y su CI según `docs/next-step.md`. El uso/piloto local puede continuar con la instalación preparada. No importar contactos reales automáticamente. Docker real y el validador integral histórico permanecen bloqueados mientras no esté disponible Docker; producción no está autorizada.
+Este cierre documental registra la publicación y CI; continuar la remediación según `docs/next-step.md`. El gate real de dependencias falló; reparar dependencias Java e imagen en una misión posterior y repetir el scan, conservando este fallo como evidencia. No se cambiaron POM/runtime durante esta publicación. El uso/piloto local no autoriza importar contactos, comunicaciones reales ni producción. Docker local y el validador integral histórico permanecen bloqueados.

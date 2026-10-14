@@ -4,7 +4,7 @@ Actualizado: 2026-10-14
 
 ## Uso local de Scalaris para Marketing
 
-La publicación GitHub actual está `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_POST_PUSH`: el usuario autorizó add, revisión de diff, commit y push. La autoridad de esa fase es [publicación GitHub Scalaris](../validation/scalaris-github-publication-2026-10-14.md). Esta autorización no habilita PR, producción ni comunicaciones reales; el resultado remoto todavía debe verificarse.
+La implementación quedó `PUBLISHED_FAST_FORWARD` en `331b3e7be5ad52b93b285a0ff9654abedce79b7d`: HEAD/origin/main/ls-remote coincidentes, divergencia `0 0`. CI `FAILED_DEPENDENCY_SCAN`, fallo real de Grype high/critical; [run 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532), resultado final 21/22 jobs success; solo dependency-scan failure. Este cierre documental registra el resultado; autoridad: [publicación GitHub Scalaris](../validation/scalaris-github-publication-2026-10-14.md). ZIP/instalación anteriores no incorporan automáticamente los ajustes rol/proxy publicados después. PR, producción y comunicaciones reales permanecen fuera de alcance.
 
 La guía vigente es [Scalaris CRM para Marketing](../scalaris-marketing-local.md). Distingue dos modalidades:
 

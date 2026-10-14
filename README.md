@@ -19,7 +19,7 @@ El paquete Windows se genera desde los binarios compilados mediante `scripts/pac
 
 ## Estado de la edición Scalaris — 2026-10-14
 
-`main` sigue siendo la rama canónica. **SCALARIS-001 tiene validación funcional local aprobada** para el paquete Windows. La publicación GitHub fue autorizada explícitamente y está en curso (`AUTHORIZED_IN_PROGRESS`); CI queda `PENDING_POST_PUSH`. El registro de esta fase es [publicación GitHub Scalaris](docs/validation/scalaris-github-publication-2026-10-14.md). Todavía no se afirma push exitoso ni cierre integral remoto.
+`main` sigue siendo la rama canónica. **SCALARIS-001 tiene validación funcional local aprobada** y su implementación se publicó por fast-forward en [331b3e7](https://github.com/JerePrograma/crm-platform/commit/331b3e7be5ad52b93b285a0ff9654abedce79b7d). HEAD, `origin/main` y `ls-remote` coincidieron, con divergencia `0 0`. La [CI 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532) tiene un fallo real `FAILED_DEPENDENCY_SCAN`: Grype detectó vulnerabilidades high/critical en dependencias Java y la imagen runtime. Resultado final: 21/22 jobs success y solo dependency-scan failure; no hay PASS integral. El registro es [publicación GitHub Scalaris](docs/validation/scalaris-github-publication-2026-10-14.md); este cierre documental registra los resultados post-push.
 
 | Control de la edición Scalaris | Estado |
 |---|---|
@@ -32,8 +32,8 @@ El paquete Windows se genera desde los binarios compilados mediante `scripts/pac
 | ZIP de entrega definitivo | `EXECUTED_PASS`: manifiesto/checksum revisados, 2.243 entradas y ningún archivo privado |
 | Instalación de uso | Activa en `http://127.0.0.1:8787`, perfil/rol correctos, 0 prospectos, 18 etiquetas y 7 plantillas |
 | Dos validaciones integrales limpias de esta edición | `BLOCKED_EXTERNAL`: requieren Docker; el resultado histórico no cubre estos cambios |
-| Publicación GitHub de esta edición | `AUTHORIZED_IN_PROGRESS`: add, revisión de diff, commit y push autorizados |
-| CI de esta edición | `PENDING_POST_PUSH` |
+| Publicación GitHub de esta edición | `PUBLISHED_FAST_FORWARD`, implementación `331b3e7`; 64 archivos, +4.126/-252 |
+| CI de esta edición | `FAILED_DEPENDENCY_SCAN`; Grype exit 2, snapshot 21/22 jobs success; solo dependency-scan failure |
 | Producción de esta edición | No desplegada; permanece fuera de autorización |
 | Comunicaciones reales y datos de contactos reales | Deshabilitadas; no cargados en esta misión |
 
@@ -64,13 +64,13 @@ Los respaldos y sus checksums contienen información privada y quedan fuera de G
 
 El recorrido portable real comprobó primera apertura, claves/permisos privados, rol Marketing, servicios en loopback, 18 etiquetas y 7 plantillas, un prospecto ficticio que persistió al reabrir, checksum, recuperación en una base nueva y conservación de la anterior. El conteo de mensajes `SENT`, `DELIVERED` o `READ` permaneció en cero. La evidencia local se guarda fuera de Git en `validation-output/scalaris-portable-latest.json`.
 
-El ZIP definitivo quedó revisado y la instalación de uso inicia sin prospectos de prueba. Los entornos QA están detenidos. La validación específica conserva la ruta/checksum del artefacto; la evidencia técnica local está en `validation-output/scalaris-release-latest.json` y `validation-output/scalaris-installed-local.json`. El siguiente paso es comenzar un piloto de uso local siguiendo la guía, sin regenerar el paquete ni importar contactos reales automáticamente.
+El ZIP definitivo quedó revisado y la instalación de uso inicia sin prospectos de prueba. Los entornos QA están detenidos. La validación específica conserva la ruta/checksum del artefacto; la evidencia técnica local está en `validation-output/scalaris-release-latest.json` y `validation-output/scalaris-installed-local.json`. El ZIP y la instalación corresponden a la validación local anterior: la fuente publicada incorpora después la corrección del rol predeterminado y del proxy ante respuestas interrumpidas, comprobadas con 5/5 recorridos de navegador y 2/2 pruebas Node. Esas copias no se actualizaron automáticamente ni heredan el nuevo SHA. El siguiente paso de negocio es piloto local, sin importar contactos reales automáticamente.
 
 ## Configuración y continuidad
 
 El perfil `CRM_BUSINESS_PROFILE=SCALARIS` selecciona el negocio local. El comportamiento anterior se conserva como perfil `LEGACY` para compatibilidad. Backend Java 21/Spring Boot 4.1 y Flyway V1–V14 permanecen; Docker utiliza PostgreSQL 17 y el paquete Windows se prepara con PostgreSQL 18 y Node 24.
 
-Leer [AGENTS.md](AGENTS.md), el [índice de continuidad](docs/continuity/README.md), [estado](docs/status.md), [próximo paso](docs/next-step.md) y [backlog](docs/backlog.md) antes de modificar o actualizar el proyecto. La fase Git actual autoriza add, revisión de diff, commit y push a GitHub, con resultado pendiente de verificar. Producción, PR y comunicaciones reales permanecen fuera de alcance.
+Leer [AGENTS.md](AGENTS.md), el [índice de continuidad](docs/continuity/README.md), [estado](docs/status.md), [próximo paso](docs/next-step.md) y [backlog](docs/backlog.md) antes de modificar o actualizar el proyecto. La implementación está publicada; este cierre registra la publicación y CI; resta reparar el gate de dependencias en una misión posterior. Producción, PR y comunicaciones reales permanecen fuera de alcance. La agenda con muchas tareas cerradas y las actualizaciones Java/imagen pendientes se conservan en el backlog; no se modificaron POM/runtime para ocultar el fallo.
 
 Las guardas de envío real permanecen cerradas. Los caminos locales fijan `SENDING_ENABLED=false`, `SENDING_DRY_RUN=true`, límite cero, kill switch activo, red real bloqueada, email `NOOP`, WhatsApp `DEEPLINK_ONLY` y workers deshabilitados. Preparar o simular un mensaje no lo envía. No se conectaron proveedores reales ni se cargaron contactos operativos en esta misión.
 

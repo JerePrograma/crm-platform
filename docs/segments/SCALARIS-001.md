@@ -2,7 +2,7 @@
 
 Actualizado: 2026-10-14
 
-Estado: `LOCAL_OPERATIONAL_PASS`; publicación GitHub `AUTHORIZED_IN_PROGRESS`, CI `PENDING_POST_PUSH`, paquete definitivo revisado e instalación de uso preparada.
+Estado: `LOCAL_OPERATIONAL_PASS`; implementación `PUBLISHED_FAST_FORWARD` en `331b3e7be5ad52b93b285a0ff9654abedce79b7d`, CI `FAILED_DEPENDENCY_SCAN`; paquete local anterior revisado e instalación de uso preparada.
 
 ## Objetivo
 
@@ -36,8 +36,8 @@ El bootstrap prepara cuentas, etiquetas y plantillas; no agrega contactos reales
 | ZIP definitivo | `EXECUTED_PASS` | Manifiesto/checksum coincidentes; 2.243 entradas y cero archivos privados |
 | Instalación de uso | `EXECUTED_PASS` | Loopback 8787, perfil/rol correctos, cero prospectos, 18 etiquetas y 7 plantillas; QA detenido |
 | Validador integral repetido | `BLOCKED_EXTERNAL` | Docker no instalado; sin dos corridas limpias de SCALARIS-001 |
-| Publicación GitHub | `IN_PROGRESS` | Add/diff/commit/push autorizados; estado `AUTHORIZED_IN_PROGRESS`, sin afirmar éxito |
-| CI del SHA publicado | `IN_PROGRESS` | `PENDING_POST_PUSH`; verificar después de publicar |
+| Publicación GitHub | `EXECUTED_PASS` | `PUBLISHED_FAST_FORWARD`, SHA `331b3e7`, HEAD/origin/main/ls-remote coincidentes, divergencia `0 0` |
+| CI del SHA publicado | `EXECUTED_FAIL` | `FAILED_DEPENDENCY_SCAN`, Grype exit 2 high/critical; [run 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532) observado con 21/22 jobs success; solo dependency-scan failure |
 | Producción/proveedores/comunicaciones reales | `NOT_APPLICABLE` | No desplegados ni habilitados |
 
 La validación específica de esta edición es la autoridad para nuevos resultados. Una lectura de código, un `.dump` legible o la existencia del ZIP no sustituyen su comprobación funcional.
@@ -67,8 +67,8 @@ Las guardas `SENDING_*`, red real y providers permanecen cerradas. No conectar G
 
 ## Baseline y autorización
 
-La referencia publicada anterior es `d6bfe64283cd3bab8dce441e4b01e348f9a55d5e`, con doble validación y CI `30530515993`, 22/22, del 2026-07-30. Los cambios de octubre permanecen locales y no heredan ese cierre.
+La referencia histórica es `d6bfe64283cd3bab8dce441e4b01e348f9a55d5e`, con doble validación y CI `30530515993`, 22/22, del 2026-07-30. La implementación de octubre se publicó en `331b3e7be5ad52b93b285a0ff9654abedce79b7d` y no hereda ese cierre.
 
-El usuario autorizó explícitamente add, revisión de diff, commit y push a GitHub. La [validación de publicación GitHub](../validation/scalaris-github-publication-2026-10-14.md) es la autoridad para esa fase: `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_POST_PUSH`. No se afirma publicación exitosa hasta verificarla. PR, producción y comunicaciones reales permanecen fuera de alcance.
+El push autorizado quedó confirmado por fast-forward: 64 archivos, +4.126/-252; HEAD, origin/main y ls-remote coincidentes, divergencia `0 0`. La [validación de publicación GitHub](../validation/scalaris-github-publication-2026-10-14.md) registra el fallo real `FAILED_DEPENDENCY_SCAN` y la diferencia del ZIP/instalación anteriores frente a la fuente publicada (ajustes de rol/proxy, 5/5 navegador y 2/2 Node). Este cierre documental registra esos resultados; PR, producción y comunicaciones reales permanecen fuera de alcance.
 
 La operación portable, E2E conjunto y ZIP definitivo están aprobados; la instalación de uso está activa sin prospectos de prueba. El siguiente paso de negocio es uso/piloto local siguiendo la guía, sin cargar contactos reales automáticamente. La validación específica conserva la ruta/checksum del ZIP; evidencias locales adicionales: `validation-output/scalaris-release-latest.json` y `validation-output/scalaris-installed-local.json`.

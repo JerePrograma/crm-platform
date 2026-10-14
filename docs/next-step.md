@@ -4,11 +4,12 @@ Actualizado: 2026-10-14
 
 ## Misión activa: SCALARIS-001
 
-La edición Windows local de Marketing Scalaris está entregada y comprobada: apertura, cuentas/roles, persistencia, parada, respaldo, recuperación y ZIP definitivo. La fase actual es publicar en GitHub con autorización explícita del usuario; después continúa uso/piloto local siguiendo la [guía operativa](scalaris-marketing-local.md) y [SCALARIS-001](segments/SCALARIS-001.md).
+La edición Windows local de Marketing Scalaris está entregada y comprobada. La implementación se publicó por fast-forward en `331b3e7be5ad52b93b285a0ff9654abedce79b7d`; HEAD, `origin/main` y `ls-remote` coincidentes y divergencia `0 0`. Este cierre documental registra la publicación y el resultado CI; continúa uso/piloto local siguiendo la [guía operativa](scalaris-marketing-local.md) y [SCALARIS-001](segments/SCALARIS-001.md).
 
 ```text
 ACTIVE_SEGMENT SCALARIS-001
-SCALARIS_IMPLEMENTATION AUTHORIZED_GITHUB_PUBLICATION_IN_PROGRESS
+SCALARIS_IMPLEMENTATION PUBLISHED_FAST_FORWARD
+IMPLEMENTATION_COMMIT 331b3e7be5ad52b93b285a0ff9654abedce79b7d
 SCALARIS_STATE LOCAL_OPERATIONAL_PASS
 BACKEND_UNIT EXECUTED_PASS_62
 BACKEND_FOCUSED_INTEGRATION EXECUTED_PASS_6
@@ -18,18 +19,22 @@ PORTABLE_WINDOWS EXECUTED_PASS_18_ASSERTIONS_PS51
 FRONTEND_UNIT_TYPECHECK_BUILD EXECUTED_PASS_16_UNIT
 FRONTEND_AUDIT EXECUTED_PASS_ZERO_VULNERABILITIES
 FRONTEND_E2E EXECUTED_PASS_4_OF_4_ZERO_SKIPPED_UNEXPECTED_FLAKY
-SOURCE_FOR_DELIVERY REVIEWED_LOCAL_SOURCE_PUBLICATION_IN_PROGRESS
+SOURCE_FOR_DELIVERY PUBLISHED_IMPLEMENTATION_DISTINCT_FROM_PRIOR_ZIP
 FINAL_ZIP EXECUTED_PASS_MANIFEST_CHECKSUM_PRIVATE_FILES_ZERO
 USE_INSTALLATION EXECUTED_PASS_LOOPBACK_8787_PROSPECTS_ZERO
 USE_CATALOG TAGS_18_TEMPLATES_7
 QA_PROCESSES STOPPED
 CURRENT_EDITION_COMPLETE_VALIDATOR BLOCKED_EXTERNAL_DOCKER_NOT_INSTALLED
-CURRENT_EDITION_REMOTE_PUBLICATION AUTHORIZED_IN_PROGRESS
-CURRENT_EDITION_CI PENDING_POST_PUSH
+CURRENT_EDITION_REMOTE_PUBLICATION PUBLISHED_FAST_FORWARD
+CURRENT_EDITION_CI FAILED_DEPENDENCY_SCAN
+CURRENT_CI_RUN 38600419532
+CURRENT_CI_FINAL 21_SUCCESS_1_FAILURE_FINAL
+CURRENT_REMOTE_VERIFICATION HEAD_ORIGIN_MAIN_LS_REMOTE_EQUAL_DIVERGENCE_0_0
+DOCUMENTATION POST_PUSH_RESULTS_RECORDED
 REAL_COMMUNICATIONS DISABLED_BY_POLICY
 REAL_CONTACTS NOT_IMPORTED
 PRODUCTION NOT_DEPLOYED
-NEXT SCALARIS_AUTHORIZED_GITHUB_PUBLICATION_THEN_LOCAL_PILOT
+NEXT SCALARIS_LOCAL_PILOT_SECURITY_REMEDIATION_PENDING
 ```
 
 ## Verificación funcional local completada
@@ -38,7 +43,7 @@ Backend: 62 pruebas unitarias y 6 de integración focalizada. Frontend: 16 unita
 
 ## Próximo paso: uso/piloto local
 
-Antes de cerrar la fase Git, revisar el diff y los archivos incluidos, ejecutar los controles pertinentes, crear el commit autorizado y publicar a GitHub, preservando el estado remoto. Registrar commit, resultado del push y coincidencia local/remota; verificar después la CI de ese SHA. La autoridad es [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md). Publicación `AUTHORIZED_IN_PROGRESS`; CI `PENDING_POST_PUSH`. No afirmar éxito antes de comprobarlo.
+El push de implementación ya está confirmado. Este cierre documental registra el resultado final de [CI 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532). El [gate dependency-scan](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532/job/115977926787) falló realmente con Grype exit 2 por vulnerabilidades high/critical de Java/runtime; snapshot 21/22 jobs success; solo dependency-scan failure. npm audit cero y Docker build PASS no convierten ese resultado en PASS integral. Autoridad: [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md). Publicación `PUBLISHED_FAST_FORWARD`; CI `FAILED_DEPENDENCY_SCAN`. Mantener la diferencia entre la fuente publicada y el ZIP previo al ajuste de rol/proxy.
 
 El ZIP definitivo quedó revisado: manifiesto/checksum coincidentes, 2.243 entradas y cero archivos privados. La instalación de uso está activa en `http://127.0.0.1:8787` con cero prospectos, 18 etiquetas y 7 plantillas; perfil/rol correctos y todos los servicios en loopback. Los entornos QA quedaron detenidos.
 
@@ -48,7 +53,7 @@ El ZIP definitivo quedó revisado: manifiesto/checksum coincidentes, 2.243 entra
 
 No regenerar el paquete, importar contactos reales, conectar proveedores ni enviar automáticamente como continuación. La carga de datos operativos y nuevas capacidades requieren un alcance explícito. Docker real y la suite integral histórica permanecen bloqueados mientras no esté disponible Docker.
 
-No trasladar el PASS de julio a los cambios actuales ni afirmar cierre integral remoto. El commit y push actuales sí están autorizados explícitamente; producción, PR y comunicaciones reales permanecen fuera de alcance.
+No trasladar el PASS de julio a los cambios actuales ni afirmar cierre integral remoto. La publicación está confirmada y el gate de seguridad de dependencias falló, con el run completed/failure y los otros 21 jobs aprobados. Registrar la reparación pendiente de Java/imagen en backlog; no modificar POM/runtime dentro de este cierre. Producción, PR y comunicaciones reales permanecen fuera de alcance. La agenda con más de 200 tareas cargadas antes del filtro de pendientes sigue sin corrección en backlog.
 
 ## Historial remoto consolidado — 2026-07-30
 
