@@ -1,8 +1,20 @@
 # Continuidad canónica del proyecto
 
+Actualizado: 2026-10-14
+
+## Misión activa: SCALARIS-001
+
+La edición actual prepara el CRM para Marketing de Scalaris: servicio técnico, desarrollo y venta a pedido. Incluye perfil/organización propios, cuenta Marketing, agenda, referencias comerciales, etiquetas/plantillas y apertura local Windows mediante paquete portable o Docker. Los datos y claves de la instalación quedan fuera de Git.
+
+La operación de octubre está aprobada localmente y la publicación GitHub se encuentra `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_POST_PUSH`. El usuario autorizó add, revisión de diff, commit y push; la autoridad es [publicación GitHub Scalaris](../validation/scalaris-github-publication-2026-10-14.md), sin afirmar aún éxito remoto. La operación portable está aprobada con Java 21/PostgreSQL 18/Node 24: 18 comprobaciones reales PowerShell 5.1, incluida persistencia, checksum y recuperación en base nueva conservando la anterior. Backend aprobó 62 unitarias y 6 de integración focalizada; frontend, 16 unitarias, typecheck/build/audit sin vulnerabilidades y E2E conjunto 4/4 sin omitidos, inesperados ni flaky. El ZIP de la entrega local está revisado: manifiesto/checksum coincidentes, 2.243 entradas y cero archivos privados.
+
+El launcher Docker PowerShell 5.1 aprobó 55 aserciones, con respaldo simulado. Docker real y la suite integral histórica están bloqueados por ausencia de Docker. El manual se revisó visualmente a 1440/390/320 px y quedó sin desborde horizontal. No declarar cierre integral, CI ni publicación de esta edición por los resultados de julio.
+
+La instalación de uso está activa en `http://127.0.0.1:8787`, con cero prospectos, 18 etiquetas y 7 plantillas; perfil/rol correctos y todos los servicios en loopback. QA quedó detenido. Leer primero `docs/segments/SCALARIS-001.md`, `docs/scalaris-marketing-local.md`, `docs/status.md` y `docs/next-step.md`, junto con la lectura obligatoria siguiente. Completar la fase Git autorizada y después uso/piloto local; no cargar contactos reales, conectar proveedores ni desplegar producción automáticamente.
+
 ## Extensión SEG-001 Gmail — 2026-07-30
 
-La misión activa recuperó de forma verificable 68 archivos parciales, retiró
+La misión histórica del 2026-07-30 recuperó de forma verificable 68 archivos parciales, retiró
 solo la referencia interna rota informada y avanzó `main` por fast-forward de
 `12421c5` a `9995b3e`. La implementación OAuth/Gmail/campaña LIVE pasa backend,
 frontend y E2E contra Google falso. El commit `d6bfe642` pasó dos validaciones
@@ -16,13 +28,13 @@ Fuente primaria:
 Google real continúa `IMPLEMENTED_NOT_CONNECTED`; producción `NOT_DEPLOYED` y
 los defaults de red/envío permanecen bloqueados.
 
-Actualizado: 2026-07-24
+El índice original de continuidad fue actualizado el 2026-07-24; sus evidencias de julio se conservan como historial.
 
 Este directorio permite retomar `JerePrograma/crm-platform` sin depender de chats, archivos temporales ni afirmaciones no verificadas.
 
 ## Qué representa el repositorio
 
-Este repositorio implementa el CRM comercial utilizado para vender Gestudio. No es la aplicación operativa de academias que administra alumnos, cuotas y asistencia.
+Este repositorio implementa el CRM comercial de Scalaris para Marketing. Conserva el perfil `LEGACY` y los contratos históricos del CRM que se utilizó para vender Gestudio. No es la aplicación operativa de academias que administra alumnos, cuotas y asistencia.
 
 ## Lectura obligatoria
 
@@ -48,7 +60,7 @@ Este repositorio implementa el CRM comercial utilizado para vender Gestudio. No 
 
 Un script implementado no equivale a un script ejecutado. `IMPLEMENTED_NOT_RUN`, `BLOCKED_EXTERNAL` y `EXECUTED_PASS` no son intercambiables.
 
-## Estado remoto consolidado
+## Historial de estado remoto consolidado — julio de 2026
 
 ```text
 baseline funcional publicado: 83e181ce614f145bbfe141cc7603c3042569be51
@@ -146,5 +158,4 @@ status: FUNCTIONAL_PASS
 La regresión usa 105 prospectos y una página de 100.
 
 `UX-006` fue publicado en `12421c53375deabebe8f48f17af3ae95af95893b`.
-El gate activo es el cierre validado y publicación fast-forward de la extensión
-SEG-001 Gmail.
+La operación local, E2E conjunto y ZIP de SCALARIS-001 están aprobados, con instalación de uso sin fixtures. La fase Git de octubre está autorizada explícitamente y en curso; después continúa uso/piloto local. La publicación fast-forward de SEG-001 Gmail corresponde al historial del 2026-07-30 y no prueba el resultado de la nueva publicación.

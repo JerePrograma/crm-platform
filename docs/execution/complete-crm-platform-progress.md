@@ -1,5 +1,53 @@
 # Progreso de ejecución integral del CRM
 
+Actualizado: 2026-10-14
+
+## CHECKPOINT_15_SCALARIS_LOCAL_OPERATIONAL_PASS
+
+```text
+DATE=2026-10-14
+ACTIVE_SEGMENT=SCALARIS-001
+BUSINESS=SCALARIS_TECHNICAL_SERVICE_DEVELOPMENT_ORDERED_SALES
+SOURCE_STATE=AUTHORIZED_GITHUB_PUBLICATION_IN_PROGRESS
+SCALARIS_STATE=LOCAL_OPERATIONAL_PASS
+SCALARIS_PROFILE=IMPLEMENTED
+MARKETING_ROLE=IMPLEMENTED_WITHOUT_USER_ADMIN_OR_REAL_SEND
+FRONTEND_MARKETING=EXECUTED_PASS_16_UNIT_TYPECHECK_BUILD_AUDIT_ZERO
+FRONTEND_E2E=EXECUTED_PASS_4_OF_4_ZERO_SKIPPED_UNEXPECTED_FLAKY
+SOURCE_FOR_DELIVERY=REVIEWED_LOCAL_SOURCE_PUBLICATION_IN_PROGRESS
+BACKEND_UNIT_JAVA21=EXECUTED_PASS_62
+BACKEND_FOCUSED_INTEGRATION=EXECUTED_PASS_6
+DOCKER_LAUNCHER_PS51=EXECUTED_PASS_55_ASSERTIONS
+DOCKER_BACKUP_TEST=SIMULATED_ORCHESTRATION_ONLY
+DOCKER_REAL=BLOCKED_EXTERNAL_NOT_INSTALLED
+PORTABLE_WINDOWS=EXECUTED_PASS_18_ASSERTIONS_PS51
+PORTABLE_RUNTIME=JAVA_21_POSTGRESQL_18_NODE_24
+CURRENT_COMPLETE_VALIDATOR=BLOCKED_EXTERNAL_DOCKER_NOT_INSTALLED
+CURRENT_REMOTE_PUBLICATION=AUTHORIZED_IN_PROGRESS
+CURRENT_CI=PENDING_POST_PUSH
+REAL_CONTACTS=NOT_IMPORTED
+REAL_COMMUNICATIONS=DISABLED_BY_POLICY
+PRODUCTION=NOT_DEPLOYED
+MANUAL_VISUAL_QA=EXECUTED_PASS_1440_390_320_PX
+FINAL_ZIP=EXECUTED_PASS_MANIFEST_CHECKSUM_PRIVATE_FILES_ZERO
+USE_INSTALLATION=EXECUTED_PASS_LOOPBACK_8787_PROSPECTS_ZERO
+USE_CATALOG=TAGS_18_TEMPLATES_7
+QA_PROCESSES=STOPPED
+NEXT=SCALARIS_LOCAL_USE_PILOT
+```
+
+El usuario autorizó explícitamente add, revisión de diff, commit y push a GitHub. La fase se encuentra `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_POST_PUSH`; se registra en [publicación GitHub Scalaris](../validation/scalaris-github-publication-2026-10-14.md). Todavía no se afirma éxito del push ni coincidencia local/remota. PR, producción y comunicaciones reales continúan fuera de alcance.
+
+La cuenta Marketing, referencias del negocio, etiquetas/plantillas y experiencia diaria se implementan sobre contratos existentes. La operación local ofrece Compose propio y paquete Windows con runtimes incluidos, datos privados separados y guardas cerradas. Las credenciales de las dos modalidades se generan fuera del proyecto.
+
+La regresión launcher valida permisos reales de Windows, claves persistentes, rechazo de datos sin claves, configuración/puertos y respaldo simulado; no afirma arranque ni restauración Docker reales. El portable real aprobó 18 comprobaciones PowerShell 5.1, incluido respaldo/checksum y recuperación en una base nueva con el prospecto sintético y la base anterior conservados; estados de mensaje `SENT|DELIVERED|READ=0`. Evidencia: `validation-output/scalaris-portable-latest.json`.
+
+La corrida E2E conjunta final aprobó 4/4 casos, sin omitidos, inesperados ni flaky, el 2026-10-14 a las 13:03:29 Argentina, en aproximadamente 24 segundos. La fuente local quedó congelada y el ZIP definitivo fue generado/revisado: manifiesto/checksum coincidentes, 2.243 entradas y cero archivos privados. El manual fue renderizado e inspeccionado individualmente en desktop y móviles, y se corrigió un desborde en 320 px. No se declara `COMPLETE_PUBLISHED` ni se trasladan resultados históricos al contenido local actual.
+
+La instalación de uso quedó activa en `http://127.0.0.1:8787`, con perfil/rol correctos, cero prospectos, 18 etiquetas y 7 plantillas, todos los servicios en loopback. Los entornos QA quedaron detenidos. La validación específica conserva la ruta/checksum del ZIP; evidencia local en `validation-output/scalaris-release-latest.json` y `validation-output/scalaris-installed-local.json`. El próximo paso es uso/piloto local, sin regeneración automática ni importación de contactos reales.
+
+Los checkpoints siguientes se conservan como historial de los commits originales.
+
 ## CHECKPOINT_14_SEG001_GMAIL_PUBLISHED
 
 ```text

@@ -11,6 +11,7 @@ export default defineConfig({
   outputDir: path.resolve("../validation-output/playwright"),
   use: {
     baseURL: process.env.CRM_E2E_BASE_URL ?? "http://127.0.0.1:5173",
+    timezoneId: "America/Argentina/Buenos_Aires",
     ...(process.env.CRM_E2E_BROWSER_CHANNEL === "bundled"
       ? {}
       : { channel: process.env.CRM_E2E_BROWSER_CHANNEL ?? "chrome" }),

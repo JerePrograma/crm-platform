@@ -1,8 +1,56 @@
 # Continuidad y próximos pasos
 
-Actualizado: 2026-07-30
+Actualizado: 2026-10-14
 
-## Estado remoto consolidado
+## Misión activa: SCALARIS-001
+
+La edición Windows local de Marketing Scalaris está entregada y comprobada: apertura, cuentas/roles, persistencia, parada, respaldo, recuperación y ZIP definitivo. La fase actual es publicar en GitHub con autorización explícita del usuario; después continúa uso/piloto local siguiendo la [guía operativa](scalaris-marketing-local.md) y [SCALARIS-001](segments/SCALARIS-001.md).
+
+```text
+ACTIVE_SEGMENT SCALARIS-001
+SCALARIS_IMPLEMENTATION AUTHORIZED_GITHUB_PUBLICATION_IN_PROGRESS
+SCALARIS_STATE LOCAL_OPERATIONAL_PASS
+BACKEND_UNIT EXECUTED_PASS_62
+BACKEND_FOCUSED_INTEGRATION EXECUTED_PASS_6
+DOCKER_LAUNCHER_FOCUSED EXECUTED_PASS_55_ASSERTIONS
+DOCKER_REAL BLOCKED_EXTERNAL_NOT_INSTALLED
+PORTABLE_WINDOWS EXECUTED_PASS_18_ASSERTIONS_PS51
+FRONTEND_UNIT_TYPECHECK_BUILD EXECUTED_PASS_16_UNIT
+FRONTEND_AUDIT EXECUTED_PASS_ZERO_VULNERABILITIES
+FRONTEND_E2E EXECUTED_PASS_4_OF_4_ZERO_SKIPPED_UNEXPECTED_FLAKY
+SOURCE_FOR_DELIVERY REVIEWED_LOCAL_SOURCE_PUBLICATION_IN_PROGRESS
+FINAL_ZIP EXECUTED_PASS_MANIFEST_CHECKSUM_PRIVATE_FILES_ZERO
+USE_INSTALLATION EXECUTED_PASS_LOOPBACK_8787_PROSPECTS_ZERO
+USE_CATALOG TAGS_18_TEMPLATES_7
+QA_PROCESSES STOPPED
+CURRENT_EDITION_COMPLETE_VALIDATOR BLOCKED_EXTERNAL_DOCKER_NOT_INSTALLED
+CURRENT_EDITION_REMOTE_PUBLICATION AUTHORIZED_IN_PROGRESS
+CURRENT_EDITION_CI PENDING_POST_PUSH
+REAL_COMMUNICATIONS DISABLED_BY_POLICY
+REAL_CONTACTS NOT_IMPORTED
+PRODUCTION NOT_DEPLOYED
+NEXT SCALARIS_AUTHORIZED_GITHUB_PUBLICATION_THEN_LOCAL_PILOT
+```
+
+## Verificación funcional local completada
+
+Backend: 62 pruebas unitarias y 6 de integración focalizada. Frontend: 16 unitarias, typecheck, build, audit sin vulnerabilidades y corrida E2E conjunta 4/4 aprobada, sin omitidos, inesperados ni flaky. El portable real aprobó 18 comprobaciones PowerShell 5.1, incluida persistencia y recuperación en base nueva con la anterior conservada. Manual revisado visualmente en desktop/móvil, sin overflow a 1440/390/320 px. Fuente local congelada para la entrega.
+
+## Próximo paso: uso/piloto local
+
+Antes de cerrar la fase Git, revisar el diff y los archivos incluidos, ejecutar los controles pertinentes, crear el commit autorizado y publicar a GitHub, preservando el estado remoto. Registrar commit, resultado del push y coincidencia local/remota; verificar después la CI de ese SHA. La autoridad es [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md). Publicación `AUTHORIZED_IN_PROGRESS`; CI `PENDING_POST_PUSH`. No afirmar éxito antes de comprobarlo.
+
+El ZIP definitivo quedó revisado: manifiesto/checksum coincidentes, 2.243 entradas y cero archivos privados. La instalación de uso está activa en `http://127.0.0.1:8787` con cero prospectos, 18 etiquetas y 7 plantillas; perfil/rol correctos y todos los servicios en loopback. Los entornos QA quedaron detenidos.
+
+1. Ingresar con Marketing, cambiar la clave inicial y seguir la guía para organizar la jornada.
+2. Revisar consultas y seguimientos con la persona que usará el CRM; registrar dificultades de uso para una misión posterior.
+3. Crear respaldos antes de actualizar y conservar copia privada/configuración según la guía.
+
+No regenerar el paquete, importar contactos reales, conectar proveedores ni enviar automáticamente como continuación. La carga de datos operativos y nuevas capacidades requieren un alcance explícito. Docker real y la suite integral histórica permanecen bloqueados mientras no esté disponible Docker.
+
+No trasladar el PASS de julio a los cambios actuales ni afirmar cierre integral remoto. El commit y push actuales sí están autorizados explícitamente; producción, PR y comunicaciones reales permanecen fuera de alcance.
+
+## Historial remoto consolidado — 2026-07-30
 
 ```text
 BRANCH main
@@ -22,7 +70,7 @@ FAKE_GOOGLE_E2E EXECUTED_PASS
 REAL_GOOGLE IMPLEMENTED_NOT_CONNECTED
 PRODUCTION NOT_DEPLOYED
 REAL_COMMUNICATIONS DISABLED_BY_POLICY
-NEXT OPS-001
+NEXT_AT_HISTORICAL_CHECKPOINT OPS-001
 ```
 
 ## Qué quedó resuelto
@@ -45,9 +93,9 @@ NEXT OPS-001
 - Gmail aceptar un mensaje no prueba entrega al buzón;
 - continúan en backlog `OPS-001`, `UX-007`, `TECH-001` y `PERF-001`.
 
-## Próximo paso
+## Backlog posterior al cierre Scalaris
 
-SEG-001 Gmail quedó publicado. Continuar en este orden:
+SEG-001 Gmail quedó publicado. Los siguientes trabajos históricos permanecen en backlog; revisar su prioridad después del cierre local de SCALARIS-001:
 
 1. `OPS-001` — outbox e inbound paginados;
 2. `UX-007` — navegadores, foco y móvil;

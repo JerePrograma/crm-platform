@@ -125,14 +125,16 @@ public class ProspectOperationsService {
             SELECT count(*) FILTER (
                 WHERE status IN ('INTERESTED', 'QUALIFIED', 'TRIAL_ACTIVE', 'QUOTED', 'NEGOTIATION')
               ) AS interested,
-              count(*) FILTER (WHERE NOT contact_eligible) AS blocked
+              count(*) FILTER (WHERE NOT contact_eligible) AS blocked,
+              count(*) AS total
             FROM prospect
             WHERE organization_id = ? AND archived_at IS NULL
             """,
             currentActor.organizationId());
     return new ProspectDashboardMetrics(
         ((Number) metrics.get("interested")).longValue(),
-        ((Number) metrics.get("blocked")).longValue());
+        ((Number) metrics.get("blocked")).longValue(),
+        ((Number) metrics.get("total")).longValue());
   }
 
   @Transactional
@@ -628,7 +630,7 @@ public class ProspectOperationsService {
     return CsvSafety.cell(value);
   }
 
-  public record ProspectDashboardMetrics(long interested, long blocked) {}
+  public record ProspectDashboardMetrics(long interested, long blocked, long total) {}
 
   public record SearchFilter(
       String query,

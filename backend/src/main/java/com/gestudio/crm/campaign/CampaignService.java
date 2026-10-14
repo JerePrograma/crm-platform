@@ -336,6 +336,20 @@ public class CampaignService {
     if (!Set.of(CampaignState.DRAFT, CampaignState.READY_FOR_REVIEW).contains(campaign.status())) {
       throw new UnprocessableEntityException("Only draft campaigns can freeze an audience");
     }
+    if (filter.tagId() != null) {
+      boolean activeTag =
+          !jdbcTemplate
+              .query(
+                  "SELECT id FROM crm_tag WHERE id = ? AND organization_id = ? AND active = TRUE FOR SHARE",
+                  (rs, row) -> rs.getObject(1, UUID.class),
+                  filter.tagId(),
+                  currentActor.organizationId())
+              .isEmpty();
+      if (!activeTag) {
+        throw new ResourceNotFoundException(
+            "Active audience tag was not found in this organization");
+      }
+    }
     jdbcTemplate.update(
         "DELETE FROM campaign_audience_recipient WHERE organization_id = ? AND campaign_id = ?",
         currentActor.organizationId(),
@@ -643,6 +657,11 @@ public class CampaignService {
     if (filter.ownerId() != null) {
       where.append(" AND p.owner_user_id = ?");
       parameters.add(filter.ownerId());
+    }
+    if (filter.tagId() != null) {
+      where.append(
+          " AND EXISTS (SELECT 1 FROM prospect_tag pt JOIN crm_tag t ON t.id = pt.tag_id AND t.organization_id = pt.organization_id WHERE pt.organization_id = p.organization_id AND pt.prospect_id = p.id AND pt.tag_id = ? AND t.active = TRUE)");
+      parameters.add(filter.tagId());
     }
     if (filter.excludeCustomers()) {
       where.append(" AND p.status <> 'CUSTOMER'");
@@ -1299,7 +1318,29 @@ public class CampaignService {
       String province,
       UUID ownerId,
       boolean excludeCustomers,
-      boolean requireActiveOpportunity) {}
+      boolean requireActiveOpportunity,
+      UUID tagId) {
+    public AudienceFilter(
+        String status,
+        String eligibility,
+        Integer priorityAtLeast,
+        Integer scoreAtLeast,
+        String province,
+        UUID ownerId,
+        boolean excludeCustomers,
+        boolean requireActiveOpportunity) {
+      this(
+          status,
+          eligibility,
+          priorityAtLeast,
+          scoreAtLeast,
+          province,
+          ownerId,
+          excludeCustomers,
+          requireActiveOpportunity,
+          null);
+    }
+  }
 
   public record UpdateDeliveryCommand(
       long version,

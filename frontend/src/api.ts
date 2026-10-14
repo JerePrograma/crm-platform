@@ -1,4 +1,5 @@
 import type {
+  BusinessProfile,
   AuditEvent,
   AudienceRecipient,
   Campaign,
@@ -176,6 +177,10 @@ export function getProspectDashboardMetrics(): Promise<ProspectDashboardMetrics>
   return request("/api/v1/prospects/metrics");
 }
 
+export function getBusinessProfile(): Promise<BusinessProfile> {
+  return request("/api/v1/business-profile");
+}
+
 export function createProspect(input: {
   institutionName: string;
   locality?: string;
@@ -191,16 +196,17 @@ export function updateProspect(id: string, input: Partial<Prospect> & { version:
   return request(`/api/v1/prospects/${id}`, { method: "PUT", body: JSON.stringify(input) });
 }
 
-export function transitionProspect(id: string, version: number, status: ProspectStatus): Promise<Prospect> {
+export function transitionProspect(id: string, version: number, status: ProspectStatus, details: { reason?: string; comment?: string; scheduledAt?: string; proposalException?: boolean } = {}): Promise<Prospect> {
   return request(`/api/v1/prospects/${id}/transitions`, {
     method: "POST",
     body: JSON.stringify({
       version,
       status,
       reason: status === "LOST" ? "OTHER" : null,
-      comment: status === "PROPOSAL" ? "Excepción manual documentada desde CRM" : "Cambio manual desde CRM",
-      scheduledAt: status === "DEMO_SCHEDULED" ? new Date().toISOString() : null,
-      proposalException: status === "PROPOSAL",
+      comment: details.comment ?? "Cambio manual desde CRM",
+      scheduledAt: details.scheduledAt ?? null,
+      proposalException: details.proposalException ?? false,
+      ...(details.reason ? { reason: details.reason } : {}),
     }),
   });
 }
@@ -494,7 +500,7 @@ export function updateCampaignDelivery(
 
 export function freezeCampaignAudience(
   campaign: Campaign,
-  filter: { province?: string; scoreAtLeast?: number },
+  filter: { province?: string; scoreAtLeast?: number; status?: ProspectStatus; tagId?: string },
 ): Promise<Campaign> {
   return request(`/api/v1/campaigns/${campaign.id}/audience/freeze`, {
     method: "POST",

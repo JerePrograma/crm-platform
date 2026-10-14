@@ -12,6 +12,7 @@ export type DecisionDialogOptions = {
   danger?: boolean;
   input?: {
     label: string;
+    type?: "text" | "datetime-local";
     initialValue?: string;
     placeholder?: string;
     required?: boolean;
@@ -52,6 +53,7 @@ export function openDecisionDialog(options: DecisionDialogOptions): Promise<stri
       const label = document.createElement("label");
       label.textContent = options.input.label;
       const input = document.createElement("input");
+      input.type = options.input.type ?? "text";
       input.value = options.input.initialValue ?? "";
       input.placeholder = options.input.placeholder ?? "";
       input.required = options.input.required ?? true;

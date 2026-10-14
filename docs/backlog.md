@@ -1,10 +1,42 @@
 # Backlog ejecutable
 
-Actualizado: 2026-07-30
+Actualizado: 2026-10-14
 
 Rama canónica: `main`.
 
 Un elemento solo puede declararse `COMPLETE` con evidencia ejecutada sobre el contenido remoto exacto. Código versionado, documentación o un tree local no publicado no equivalen a cierre.
+
+## SCALARIS-001 — Marketing Scalaris y entrega local Windows
+
+Estado: `LOCAL_OPERATIONAL_PASS`; publicación GitHub `AUTHORIZED_IN_PROGRESS` y CI `PENDING_POST_PUSH`. Paquete definitivo revisado e instalación de uso preparada.
+
+- [x] Perfil y organización Scalaris separados de la compatibilidad Gestudio.
+- [x] Cuenta Marketing con permisos comerciales y administración separada.
+- [x] Referencias comerciales, etiquetas y plantillas para servicio técnico, desarrollo y venta a pedido.
+- [x] Agenda, lenguaje de personas/negocios y ayuda para Marketing implementados.
+- [x] Iniciadores Docker por doble clic, configuración privada, datos persistentes y respaldo implementados.
+- [x] Regresión launcher PowerShell 5.1: 55 aserciones; respaldo con Docker simulado.
+- [x] Pruebas unitarias backend con Java 21: 62 aprobadas.
+- [x] Iniciador y empaquetador portable Windows implementados con Java 21/PostgreSQL 18/Node 24.
+- [x] Backend: 62 unitarias y 6 de integración focalizada; frontend: 16 unitarias, typecheck/build/audit sin vulnerabilidades.
+- [x] Corrida E2E conjunta 4/4 aprobada, sin omitidos, inesperados ni flaky; fuente local congelada.
+- [x] Apertura, roles, loopback, etiquetas/plantillas y persistencia portable real: 18 comprobaciones PowerShell 5.1.
+- [x] Respaldo con checksum y recuperación en base nueva, con la anterior conservada y cero estados enviados.
+- [x] Manual revisado visualmente a 1440/390/320 px, sin desborde tras corregir nombres de archivos en móvil estrecho.
+- [x] ZIP final, manifiesto y checksum revisados: 2.243 entradas, cero archivos privados.
+- [x] Validación y límites de la entrega local reconciliados.
+- [x] Instalación de uso activa en loopback 8787, cero prospectos y catálogo Scalaris; QA detenido.
+- [x] Add, revisión de diff, commit y push autorizados explícitamente por el usuario.
+- [ ] Verificar commit/push y coincidencia local/remota; publicación `AUTHORIZED_IN_PROGRESS`.
+- [ ] Verificar CI del SHA publicado; estado `PENDING_POST_PUSH`.
+- [ ] Ejecutar Docker/Compose/health/respaldo reales cuando haya Docker disponible (`BLOCKED_EXTERNAL` en este host).
+- [ ] Ejecutar cierre integral repetido sobre un commit definitivo si se autoriza esa misión; no realizado en esta edición.
+
+El siguiente paso de negocio es uso/piloto local. La fase Git actual autoriza add, revisión de diff, commit y push; su resultado debe verificarse antes de marcar publicación. La autoridad es [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md). Carga de contactos reales, conexiones, PR y producción permanecen fuera de alcance. La guía es `docs/scalaris-marketing-local.md` y el segmento es `docs/segments/SCALARIS-001.md`.
+
+## Historial publicado — hasta 2026-07-30
+
+Los cierres siguientes conservan su evidencia sobre los commits originales. No cubren los cambios Scalaris locales de octubre; la referencia histórica final es `d6bfe64283cd3bab8dce441e4b01e348f9a55d5e`, doble validación y CI `30530515993`, 22/22.
 
 ## SEG-001-GMAIL — OAuth y campañas LIVE controladas
 

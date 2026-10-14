@@ -100,6 +100,7 @@ const labels: Record<string, string> = {
   INELIGIBLE: "No elegible",
   ADMIN: "Administrador",
   MANAGER: "Responsable comercial",
+  MARKETING: "Marketing",
   SALES: "Operador comercial",
   VIEWER: "Solo lectura",
   UNKNOWN: "Sin definir",
@@ -129,7 +130,13 @@ const labels: Record<string, string> = {
   NEGATIVE_REPLY: "Indicó que no está interesado",
   PERMANENT_BOUNCE: "El correo fue rechazado de forma permanente",
   INVALID_CONTACT: "El dato de contacto no es válido",
-  IRRELEVANT_INSTITUTION: "La institución no corresponde al público objetivo",
+  IRRELEVANT_INSTITUTION: "No corresponde al público objetivo",
+  INSTAGRAM: "Instagram",
+  FACEBOOK: "Facebook",
+  REFERRAL: "Recomendación",
+  B2B_PROSPECTING: "Prospección de empresas",
+  UNSPECIFIED: "Sin definir",
+  UNASSIGNED: "Sin responsable",
   NOOP: "Sin conexión externa",
   DEEPLINK_ONLY: "Enlace manual únicamente",
   IMPLEMENTED_NOT_CONNECTED: "Disponible, sin conexión externa",
@@ -290,7 +297,7 @@ export function duplicateSourceData(value: string): Record<string, string> {
 export function duplicateSourceSummary(value: string): Array<[string, string]> {
   const source = duplicateSourceData(value);
   const fields: Array<[string, string[]]> = [
-    ["Institución", ["institucion"]],
+    ["Persona o negocio", ["persona o negocio", "empresa o persona", "empresa", "negocio", "institucion"]],
     ["Correo", ["correo publicado", "correo", "email"]],
     ["Teléfono o WhatsApp", ["telefono whatsapp", "telefono o whatsapp", "telefono", "whatsapp"]],
     ["Localidad", ["localidad"]],
@@ -306,7 +313,8 @@ export function duplicateSourceSummary(value: string): Array<[string, string]> {
 }
 
 export function suggestedDuplicateName(value: string, fallback = "Nuevo prospecto"): string {
-  return duplicateSourceData(value).institucion || fallback;
+  const source = duplicateSourceData(value);
+  return source["persona o negocio"] || source["empresa o persona"] || source.empresa || source.negocio || source.institucion || fallback;
 }
 
 export function formatConfiguration(configuration: Record<string, unknown>): string {

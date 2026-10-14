@@ -34,6 +34,7 @@ import {
   getPipelineMetrics,
   getProspect,
   getProspectDashboardMetrics,
+  getBusinessProfile,
   getTimeline,
   getSession,
   importProspects,
@@ -132,9 +133,13 @@ import type {
   DashboardReport,
   OrganizationSettings,
   SenderAccount,
+  BusinessProfile,
 } from "./types";
 import { openDecisionDialog } from "./decisionDialog";
 import { GmailSenderAccountsPanel } from "./GmailSenderAccountsPanel";
+import { MarketingAgenda, MarketingHelp, MarketingOverview, ScalarisBusinessCard } from "./MarketingPanels";
+import { ProspectTagsPanel } from "./ProspectTagsPanel";
+import { prospectSources } from "./marketingWork";
 import {
   campaignProgress,
   gmailCallbackNotice,
@@ -157,6 +162,8 @@ import {
 
 type Tab =
   | "dashboard"
+  | "agenda"
+  | "help"
   | "prospects"
   | "pipeline"
   | "campaigns"
@@ -197,7 +204,6 @@ const prospectStatuses: ProspectStatus[] = [
   "REPLIED",
   "INTERESTED",
   "QUALIFIED",
-  "TRIAL_ACTIVE",
   "QUOTED",
   "NEGOTIATION",
   "WON",
@@ -216,6 +222,11 @@ export function App() {
   const [gmailNotice] = useState(() => gmailCallbackNotice(window.location.search));
   const [session, setSession] = useState<SessionUser | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>(gmailNotice ? "settings" : "dashboard");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
+  const [dashboardReport, setDashboardReport] = useState<DashboardReport | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -266,6 +277,9 @@ export function App() {
           campaignList,
           templateList,
           safety,
+          business,
+          report,
+          taskList,
         ] =
           await Promise.all([
           listProspects(filter || undefined, query || undefined, page),
@@ -288,6 +302,9 @@ export function App() {
           session?.permissions.includes("CAMPAIGN_READ")
             ? getMessagingSafety()
             : Promise.resolve(null),
+          getBusinessProfile(),
+          session?.permissions.includes("REPORT_READ") ? getDashboardReport() : Promise.resolve(null),
+          listTasks(),
         ]);
         setProspects(prospectPage.content);
         setProspectDashboardMetrics(prospectMetrics);
@@ -308,6 +325,9 @@ export function App() {
         setCampaigns(campaignList);
         setTemplates(templateList);
         setMessagingSafety(safety);
+        setBusinessProfile(business);
+        setDashboardReport(report);
+        setTasks(taskList);
       } catch (caught) {
         setError(message(caught));
       } finally {
@@ -340,6 +360,20 @@ export function App() {
       .then(setCampaigns)
       .catch((caught) => setError(message(caught)));
   }, [tab, session]);
+
+  useEffect(() => { headingRef.current?.focus(); }, [tab, session]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        document.querySelector<HTMLButtonElement>(".mobile-menu-button")?.focus();
+      }
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
 
 
   if (session === undefined) {
@@ -402,77 +436,94 @@ export function App() {
     setMessagingSafety(await getMessagingSafety());
   }
 
+  function navigateTab(destination: Tab) {
+    setTab(destination);
+    setMenuOpen(false);
+  }
+
+  async function openProspectFromAgenda(id: string) {
+    await selectProspect(id);
+    navigateTab("prospects");
+  }
+
   const liveCampaignAvailable = messagingSafety?.campaignExecutionAvailable === true;
+  const technicalAccess = ["ADMIN", "MANAGER"].includes(session.role);
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside className={menuOpen ? "sidebar navigation-expanded" : "sidebar"}>
         <div className="brand">
-          <span className="brand-mark">G</span>
           <div>
-            <strong>Gestudio CRM</strong>
-            <small>Operación comercial segura</small>
+            <img className="scalaris-logo" src="/scalaris-logo-dark.svg" alt="SCALARIS" />
+            <small>CRM de Marketing</small>
           </div>
         </div>
-        <nav aria-label="Navegación principal">
-          <NavButton active={tab === "dashboard"} onClick={() => setTab("dashboard")}>
+        <button className="mobile-menu-button secondary-button" aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? "Cerrar menú" : "Abrir menú"}</button>
+        <nav id="main-navigation" aria-label="Navegación principal">
+          <NavButton active={tab === "dashboard"} onClick={() => navigateTab("dashboard")}>
             Resumen
           </NavButton>
-          <NavButton active={tab === "prospects"} onClick={() => setTab("prospects")}>
+          <NavButton active={tab === "agenda"} onClick={() => navigateTab("agenda")}>
+            Agenda
+          </NavButton>
+          <NavButton active={tab === "prospects"} onClick={() => navigateTab("prospects")}>
             Prospectos
           </NavButton>
-          <NavButton active={tab === "pipeline"} onClick={() => setTab("pipeline")}>
+          <NavButton active={tab === "pipeline"} onClick={() => navigateTab("pipeline")}>
             Oportunidades
           </NavButton>
           {session.permissions.includes("CAMPAIGN_READ") && (
-            <NavButton active={tab === "campaigns"} onClick={() => setTab("campaigns")}>
+            <NavButton active={tab === "campaigns"} onClick={() => navigateTab("campaigns")}>
               Campañas
             </NavButton>
           )}
           {session.permissions.includes("REPORT_READ") && (
-            <NavButton active={tab === "reports"} onClick={() => setTab("reports")}>
+            <NavButton active={tab === "reports"} onClick={() => navigateTab("reports")}>
               Reportes
             </NavButton>
           )}
-          {session.permissions.includes("REPORT_READ") && (
-            <NavButton active={tab === "outbox"} onClick={() => setTab("outbox")}>
+          {technicalAccess && session.permissions.includes("REPORT_READ") && (
+            <NavButton active={tab === "outbox"} onClick={() => navigateTab("outbox")}>
               Bandeja de salida
             </NavButton>
           )}
-          {session.permissions.includes("REPORT_READ") && (
-            <NavButton active={tab === "inbound"} onClick={() => setTab("inbound")}>
+          {technicalAccess && session.permissions.includes("REPORT_READ") && (
+            <NavButton active={tab === "inbound"} onClick={() => navigateTab("inbound")}>
               Mensajes recibidos
             </NavButton>
           )}
           {session.permissions.includes("CAMPAIGN_READ") && (
-            <NavButton active={tab === "messages"} onClick={() => setTab("messages")}>
-              Mensajes e integraciones
+            <NavButton active={tab === "messages"} onClick={() => navigateTab("messages")}>
+              Borradores y contacto manual
             </NavButton>
           )}
           {session.permissions.includes("IMPORT_PREVIEW") && (
-            <NavButton active={tab === "imports"} onClick={() => setTab("imports")}>
+            <NavButton active={tab === "imports"} onClick={() => navigateTab("imports")}>
               Importaciones
             </NavButton>
           )}
-          <NavButton active={tab === "exclusions"} onClick={() => setTab("exclusions")}>
+          <NavButton active={tab === "exclusions"} onClick={() => navigateTab("exclusions")}>
             Exclusiones
           </NavButton>
           {session.permissions.includes("AUDIT_READ") && (
-            <NavButton active={tab === "audit"} onClick={() => setTab("audit")}>
+            <NavButton active={tab === "audit"} onClick={() => navigateTab("audit")}>
               Auditoría
             </NavButton>
           )}
           {session.permissions.includes("USER_MANAGE") && (
-            <NavButton active={tab === "users"} onClick={() => setTab("users")}>
+            <NavButton active={tab === "users"} onClick={() => navigateTab("users")}>
               Usuarios
             </NavButton>
           )}
-          {session.permissions.includes("REPORT_READ") && (
-            <NavButton active={tab === "settings"} onClick={() => setTab("settings")}>
+          {session.role !== "MARKETING" && session.permissions.includes("REPORT_READ") && (
+            <NavButton active={tab === "settings"} onClick={() => navigateTab("settings")}>
               Configuración
             </NavButton>
           )}
-          <NavButton active={tab === "account"} onClick={() => setTab("account")}>
+          <NavButton active={tab === "help"} onClick={() => navigateTab("help")}>
+            Guía de Marketing
+          </NavButton>
+          <NavButton active={tab === "account"} onClick={() => navigateTab("account")}>
             Mi cuenta
           </NavButton>
         </nav>
@@ -493,10 +544,8 @@ export function App() {
       <main className="main-content">
         <header className="topbar">
           <div>
-            <h1>{title(tab)}</h1>
-            <p>{liveCampaignAvailable
-              ? "Los envíos reales solo se ejecutan desde campañas aprobadas, individualizadas y controladas por el outbox."
-              : "Consultá el estado operativo y continuá con la siguiente acción segura. Ningún envío real está disponible."}</p>
+            <h1 ref={headingRef} tabIndex={-1}>{title(tab)}</h1>
+            <p>{subtitle(tab)}</p>
           </div>
           <button
             className="secondary-button"
@@ -511,8 +560,10 @@ export function App() {
 
         {tab === "dashboard" && (
           <section className="stack">
+            <ScalarisBusinessCard profile={businessProfile} />
+            <MarketingOverview session={session} report={dashboardReport} onNavigate={navigateTab} />
             <div className="metric-grid">
-              <Metric label="Prospectos registrados" value={prospectTotal} />
+              <Metric label="Prospectos activos" value={dashboardReport ? Object.values(dashboardReport.prospectsByStatus).reduce((total, count) => total + count, 0) : prospectDashboardMetrics?.total ?? "—"} />
               <Metric
                 label="Prospectos con interés"
                 value={prospectDashboardMetrics?.interested ?? 0}
@@ -521,27 +572,11 @@ export function App() {
                 label="Contacto bloqueado"
                 value={prospectDashboardMetrics?.blocked ?? 0}
               />
-              <Metric label="Exclusiones" value={exclusions.length} />
-              <Metric label="Revisiones pendientes" value={duplicateReviews.length} />
-              <Metric label="Oportunidades activas" value={pipelineMetrics?.activeCount ?? 0} />
-              <Metric label="Estancadas" value={pipelineMetrics?.stalledCount ?? 0} />
-              <Metric
-                label="Campañas en borrador"
-                value={campaigns.filter((campaign) => campaign.status === "DRAFT").length}
-              />
-              <Metric
-                label="Mensajes bloqueados"
-                value={campaigns.reduce((total, campaign) => total + campaign.recipientCount, 0)}
-              />
+              {dashboardReport && <Metric label="Tareas vencidas" value={dashboardReport.tasks.overdue ?? 0} />}
+              {pipelineMetrics && <Metric label="Oportunidades activas" value={pipelineMetrics.activeCount} />}
+              {dashboardReport && <Metric label="Campañas en borrador" value={dashboardReport.campaigns.draft ?? 0} />}
             </div>
-            <Panel title="Controles activos">
-              <div className="control-grid">
-                <Control label="Aprobación de campañas" value="Obligatoria" />
-                <Control label="Importación" value="Vista previa y confirmación" />
-                <Control label="Duplicados ambiguos" value="Revisión humana" />
-                <Control label="Sesión" value="Protegida y aislada por organización" />
-              </div>
-            </Panel>
+            <MarketingAgenda compact tasks={tasks} session={session} onChanged={refreshView} onOpenProspect={openProspectFromAgenda} />
             {session.permissions.includes("AUDIT_READ") && (
               <Panel title="Actividad reciente">
                 <AuditTable events={auditEvents.slice(0, 8)} />
@@ -550,11 +585,15 @@ export function App() {
           </section>
         )}
 
+        {tab === "agenda" && <MarketingAgenda tasks={tasks} session={session} onChanged={refreshView} onOpenProspect={openProspectFromAgenda} />}
+        {tab === "help" && <MarketingHelp profile={businessProfile} session={session} onNavigate={navigateTab} />}
+
         {tab === "prospects" && (
-          <section className="two-column">
+          <section className="two-column prospects-workspace">
             <Panel title="Prospectos">
               {session.permissions.includes("PROSPECT_WRITE") && (
                 <CreateProspectForm
+                  serviceLines={businessProfile?.serviceLines ?? []}
                   onCreated={async (created) => {
                     prospectPageRef.current = 0;
                     updateProspectUrl(searchQuery, statusFilter, 0);
@@ -571,7 +610,7 @@ export function App() {
                       aria-label="Buscar prospectos"
                       value={searchInput}
                       onChange={(event) => setSearchInput(event.target.value)}
-                      placeholder="Institución, contacto, correo, teléfono, localidad o etiqueta"
+                      placeholder="Persona o negocio, contacto, correo, localidad o etiqueta"
                     />
                   </label>
                   <button className="secondary-button" type="submit">Buscar</button>
@@ -609,7 +648,7 @@ export function App() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Institución</th>
+                      <th>Persona o negocio</th>
                       <th>Localidad</th>
                       <th>Estado</th>
                       <th>Elegible</th>
@@ -666,6 +705,7 @@ export function App() {
             <Panel title="Ficha integral">
               {selectedProspect ? (
                 <ProspectDetail
+                  key={selectedProspect.id}
                   prospect={selectedProspect}
                   session={session}
                   onChanged={async () => {
@@ -674,7 +714,7 @@ export function App() {
                   }}
                 />
               ) : (
-                <EmptyState text="Seleccioná un prospecto para ver su ficha." />
+                <EmptyState text="Seleccioná una persona o negocio para revisar su necesidad, agregar un contacto y programar el seguimiento." />
               )}
             </Panel>
           </section>
@@ -701,7 +741,7 @@ export function App() {
         )}
 
         {tab === "messages" && (
-          <MessagesPanel prospects={prospects} session={session} safety={messagingSafety} />
+          <MessagesPanel prospects={selectedProspect ? [selectedProspect, ...prospects.filter((prospect) => prospect.id !== selectedProspect.id)] : prospects} session={session} safety={messagingSafety} />
         )}
 
         {tab === "outbox" && <OutboxPanel session={session} />}
@@ -744,7 +784,7 @@ export function App() {
           />
         )}
 
-        {tab === "users" && <UsersPanel currentUser={session} />}
+        {tab === "users" && <UsersPanel currentUser={session} profile={businessProfile} />}
         {tab === "account" && (
           <AccountPanel session={session} onPasswordChanged={() => setSession(null)} />
         )}
@@ -1296,12 +1336,14 @@ function InboundPanel({ session, prospects }: { session: SessionUser; prospects:
   );
 }
 
-function UsersPanel({ currentUser }: { currentUser: SessionUser }) {
+function UsersPanel({ currentUser, profile }: { currentUser: SessionUser; profile: BusinessProfile | null }) {
   const [users, setUsers] = useState<User[]>([]);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<User["role"]>("SALES");
+  const [chosenRole, setChosenRole] = useState<User["role"] | null>(null);
+  const scalaris = profile?.code === "SCALARIS";
+  const role = chosenRole ?? (scalaris ? "MARKETING" : "SALES");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -1382,9 +1424,10 @@ function UsersPanel({ currentUser }: { currentUser: SessionUser }) {
           </label>
           <label>
             Rol
-            <select value={role} onChange={(event) => setRole(event.target.value as User["role"])}>
+            <select value={role} onChange={(event) => setChosenRole(event.target.value as User["role"])}>
               <option value="ADMIN">Administrador</option>
               <option value="MANAGER">Responsable comercial</option>
+              {scalaris && <option value="MARKETING">Marketing</option>}
               <option value="SALES">Ventas</option>
               <option value="VIEWER">Solo lectura</option>
             </select>
@@ -1514,14 +1557,13 @@ function Login({ onAuthenticated }: { onAuthenticated: (session: SessionUser) =>
     <main className="login-page">
       <form className="login-card" onSubmit={(event) => void submit(event)}>
         <div className="brand login-brand">
-          <span className="brand-mark">G</span>
           <div>
-            <strong>Gestudio CRM</strong>
-            <small>Sesión segura de la organización</small>
+            <img className="scalaris-logo" src="/scalaris-logo-light.svg" alt="SCALARIS" />
+            <small>CRM de Marketing · Tu tecnología, en buenas manos</small>
           </div>
         </div>
         <h1>Ingresar</h1>
-        <p>La contraseña se usa solo para autenticar y no se conserva en el navegador.</p>
+        <p>Gestioná consultas, campañas y oportunidades de Servicio técnico, Desarrollo y Venta a pedido. Usá la cuenta que te entregó el administrador.</p>
         {error && <div className="alert error" role="alert">{error}</div>}
         <label>
           Usuario
@@ -1640,6 +1682,7 @@ function MessagesPanel({
           : "Los envíos reales están bloqueados. Esta pantalla solo permite preparar borradores, simular resultados o abrir una aplicación externa de forma manual."}
       </div>
       {error && <div className="alert error" role="alert">{error}</div>}
+      <details className="disclosure-panel" open={session.role === "ADMIN" || undefined}><summary>Estado de las comunicaciones</summary><div className="disclosure-content">
       <div className="control-grid">
         <Control label="Correo electrónico" value={labelFor(safety?.selectedEmailProvider ?? "NOOP")} />
         <Control label="WhatsApp" value={safety?.selectedWhatsAppProvider ?? "Consultando…"} />
@@ -1663,6 +1706,7 @@ function MessagesPanel({
         <Control label="Cuota interna restante" value={String(safety?.remainingToday ?? 0)} />
         <Control label="Reautenticación" value={safety?.gmailReauthRequired ? "Requerida" : "No requerida"} />
       </div>
+      </div></details>
       {(canDraft || canSimulate) && (
         <Panel title="Borrador seguro o simulación">
           <form className="form-grid" onSubmit={(event) => event.preventDefault()}>
@@ -1792,14 +1836,13 @@ function CampaignsPanel({
 }) {
   const [templateName, setTemplateName] = useState("");
   const [templateChannel, setTemplateChannel] = useState<CampaignChannel>("EMAIL");
-  const [subject, setSubject] = useState("Hola {{prospect.displayName}}");
+  const [subject, setSubject] = useState("Scalaris · Consulta sobre tecnología");
   const [textBody, setTextBody] = useState(
-    "Hola {{contact.firstName}}, te contactamos por {{campaign.name}}.",
+    "Hola, soy de Scalaris. Trabajo en servicio técnico de PC y notebooks, desarrollo y venta a pedido. Si hay una necesidad concreta en {{prospect.displayName}}, contame y revisamos el alcance. Gracias.",
   );
-  const [htmlBody, setHtmlBody] = useState(
-    "<p>Hola <strong>{{contact.firstName}}</strong>, te contactamos por {{campaign.name}}.</p>",
-  );
+  const [htmlBody, setHtmlBody] = useState("");
   const [campaignName, setCampaignName] = useState("");
+  const [campaignObjective, setCampaignObjective] = useState("");
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   const [templateVersionId, setTemplateVersionId] = useState("");
   const [executionMode, setExecutionMode] = useState<CampaignExecutionMode>("SIMULATION");
@@ -1816,6 +1859,9 @@ function CampaignsPanel({
   const [maxAttempts, setMaxAttempts] = useState(3);
   const [province, setProvince] = useState("");
   const [scoreAtLeast, setScoreAtLeast] = useState("");
+  const [audienceStatus, setAudienceStatus] = useState<ProspectStatus | "">("");
+  const [audienceTagId, setAudienceTagId] = useState("");
+  const [audienceTags, setAudienceTags] = useState<CrmTag[]>([]);
   const [audience, setAudience] = useState<AudienceRecipient[]>([]);
   const [preview, setPreview] = useState<RenderedTemplate | null>(null);
   const [simulation, setSimulation] = useState<CampaignSimulation | null>(null);
@@ -1838,6 +1884,7 @@ function CampaignsPanel({
   );
 
   useEffect(() => {
+    void listTags().then(setAudienceTags).catch((caught) => setError(message(caught)));
     void listSenderAccounts()
       .then((accounts) => {
         setSenderAccounts(accounts);
@@ -1886,7 +1933,7 @@ function CampaignsPanel({
         channel: templateChannel,
         subject,
         textBody,
-        htmlBody,
+        htmlBody: htmlBody.trim() || `<p>${escapeText(textBody).replaceAll("\n", "<br />")}</p>`,
       });
       setTemplateName("");
       setTemplateVersionId(created.versionId);
@@ -1933,7 +1980,7 @@ function CampaignsPanel({
         ? await updateCampaignDelivery(editingCampaign, delivery)
         : await createCampaign({
             name: campaignName,
-            objective: executionMode === "LIVE" ? "Campaña comercial real controlada" : "Prospección comercial simulada",
+            objective: campaignObjective.trim() || "Consultas y oportunidades para Scalaris",
             channel: selected.channel,
             ...delivery,
           });
@@ -1975,7 +2022,7 @@ function CampaignsPanel({
     await run(async () => {
       setPreview(
         await previewTemplate(template.versionId, {
-          "prospect.displayName": "Institución de ejemplo",
+          "prospect.displayName": "Cliente de ejemplo",
           "prospect.city": "Rosario",
           "contact.firstName": "Ana",
           "contact.lastName": "Pérez",
@@ -1998,6 +2045,8 @@ function CampaignsPanel({
       const frozen = await freezeCampaignAudience(campaign, {
         province: province || undefined,
         scoreAtLeast: scoreAtLeast ? Number(scoreAtLeast) : undefined,
+        status: audienceStatus || undefined,
+        tagId: audienceTagId || undefined,
       });
       setAudience(await getCampaignAudience(frozen.id));
       setNotice(
@@ -2157,10 +2206,7 @@ function CampaignsPanel({
                 Texto
                 <textarea required value={textBody} onChange={(event) => setTextBody(event.target.value)} />
               </label>
-              <label className="full-width">
-                HTML seguro
-                <textarea required value={htmlBody} onChange={(event) => setHtmlBody(event.target.value)} />
-              </label>
+              <details className="technical-details full-width"><summary>Formato avanzado (opcional)</summary><label>HTML seguro<textarea value={htmlBody} onChange={(event) => setHtmlBody(event.target.value)} placeholder="Si lo dejás vacío, se genera desde el texto del mensaje." /></label></details>
               <button className="primary-button" type="submit">Crear versión 1</button>
             </form>
           </Panel>
@@ -2170,6 +2216,7 @@ function CampaignsPanel({
                 Nombre
                 <input required disabled={editingCampaign !== null} value={campaignName} onChange={(event) => setCampaignName(event.target.value)} />
               </label>
+              {!editingCampaign && <label className="full-width">Objetivo<input value={campaignObjective} onChange={(event) => setCampaignObjective(event.target.value)} placeholder="Ej.: consultas sobre mantenimiento o un desarrollo web" /></label>}
               <fieldset className="mode-selector full-width">
                 <legend>Modo de ejecución</legend>
                 <label>
@@ -2216,14 +2263,6 @@ function CampaignsPanel({
                   <label>Máximo de intentos<input type="number" min="1" max="20" value={maxAttempts} onChange={(event) => setMaxAttempts(Number(event.target.value))} /></label>
                 </>
               )}
-              <label>
-                Provincia (opcional)
-                <input value={province} onChange={(event) => setProvince(event.target.value)} />
-              </label>
-              <label>
-                Puntuación mínima
-                <input type="number" min="0" max="100" value={scoreAtLeast} onChange={(event) => setScoreAtLeast(event.target.value)} />
-              </label>
               <div className="action-row full-width">
                 <button className="primary-button" type="submit" disabled={executionMode === "LIVE" && (!senderAccountId || businessDays.length === 0)}>
                   {editingCampaign ? "Guardar configuración" : executionMode === "LIVE" ? "Crear borrador real" : "Crear borrador"}
@@ -2254,6 +2293,7 @@ function CampaignsPanel({
         )}
       </Panel>
       <Panel title="Campañas y audiencias">
+        {writable && <fieldset className="form-grid audience-filters"><legend>Filtros para confirmar audiencia</legend><p className="full-width muted">Se aplican cuando confirmás la audiencia de una campaña. Combiná servicio o público con estado y provincia; las exclusiones y los clientes siguen teniendo prioridad.</p><label>Servicio, público o zona<select value={audienceTagId} onChange={(event) => setAudienceTagId(event.target.value)}><option value="">Todas las etiquetas</option>{audienceTags.filter((tag) => tag.active).map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select></label><label>Estado del prospecto<select value={audienceStatus} onChange={(event) => setAudienceStatus(event.target.value as ProspectStatus | "")}><option value="">Todos los estados</option>{prospectStatuses.filter((status) => !["CUSTOMER", "ARCHIVED", "DO_NOT_CONTACT", "UNSUBSCRIBED"].includes(status)).map((status) => <option key={status} value={status}>{prospectStatusLabel(status)}</option>)}</select></label><label>Provincia (opcional)<input value={province} onChange={(event) => setProvince(event.target.value)} /></label><label>Puntuación mínima (opcional)<input type="number" min="0" max="100" value={scoreAtLeast} onChange={(event) => setScoreAtLeast(event.target.value)} /></label></fieldset>}
         <div className="card-grid">
           {campaigns.map((campaign) => (
             <article className={selectedCampaignId === campaign.id ? "entity-card selected-card" : "entity-card"} key={campaign.id}>
@@ -2850,7 +2890,7 @@ function ImportsPanel({
                 <header><div><strong>Hoja {review.sourceSheet}, fila {review.rowNumber}</strong><span><Badge value={review.matchType} /> · {Math.round(review.confidence * 100)}% de coincidencia</span></div><small>{review.matchReasons ?? "La similitud requiere una decisión humana."}</small></header>
                 <div className="duplicate-comparison">
                   <section><h3>Registro importado</h3><dl className="detail-grid">{duplicateSourceSummary(review.sourceData).map(([label, value]) => <Detail key={label} label={label} value={value} />)}<Detail label="Canal normalizado" value={review.normalizedEmail ?? review.normalizedPhone ?? "Sin canal utilizable"} /></dl><details className="technical-details"><summary>Ver evidencia técnica</summary><pre className="preview-box">{safeTechnicalJson(review.sourceData)}</pre></details></section>
-                  <section><h3>Candidato existente</h3>{review.existingProspect ? <dl className="detail-grid"><Detail label="Institución" value={review.existingProspect.displayName} /><Detail label="Localidad" value={review.existingProspect.locality ?? "Sin localidad cargada"} /><Detail label="Sitio web" value={review.existingProspect.website ?? "Sin sitio cargado"} /><Detail label="Estado" value={labelFor(review.existingProspect.status)} /></dl> : <EmptyState text="No hay un candidato existente vinculado." />}</section>
+                  <section><h3>Candidato existente</h3>{review.existingProspect ? <dl className="detail-grid"><Detail label="Persona o negocio" value={review.existingProspect.displayName} /><Detail label="Localidad" value={review.existingProspect.locality ?? "Sin localidad cargada"} /><Detail label="Sitio web" value={review.existingProspect.website ?? "Sin sitio cargado"} /><Detail label="Estado" value={labelFor(review.existingProspect.status)} /></dl> : <EmptyState text="No hay un candidato existente vinculado." />}</section>
                 </div>
                 <div className="review-actions">
                   <button className="secondary-button" disabled={resolvingId === review.id || !review.existingProspectId} onClick={() => void resolve(review, "LINK_TO_EXISTING")}>Vincular con el existente</button>
@@ -2928,7 +2968,7 @@ function ExclusionsPanel({
               <option value="INVALID_CONTACT">Contacto inválido</option>
               <option value="EXISTING_CUSTOMER">Cliente existente</option>
               <option value="EXISTING_CONVERSATION">Conversación existente</option>
-              <option value="IRRELEVANT_INSTITUTION">Institución no pertinente</option>
+              <option value="IRRELEVANT_INSTITUTION">No corresponde al público objetivo</option>
             </select>
           </label>
           <button className="danger-button">Excluir</button>
@@ -2962,11 +3002,16 @@ function ExclusionsPanel({
   );
 }
 
-function CreateProspectForm({ onCreated }: { onCreated: (prospect: Prospect) => Promise<void> }) {
+function CreateProspectForm({ onCreated, serviceLines }: { onCreated: (prospect: Prospect) => Promise<void>; serviceLines: string[] }) {
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
+  const [source, setSource] = useState<string>("MANUAL");
+  const [serviceTagId, setServiceTagId] = useState("");
+  const [tags, setTags] = useState<CrmTag[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { void listTags().then(setTags).catch((caught) => setError(message(caught))); }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2977,10 +3022,15 @@ function CreateProspectForm({ onCreated }: { onCreated: (prospect: Prospect) => 
         institutionName: name,
         locality: city || undefined,
         country: "Argentina",
-        source: "MANUAL",
+        source,
       });
       setName("");
       setCity("");
+      setServiceTagId("");
+      if (serviceTagId) {
+        try { await assignTag(serviceTagId, created.id); }
+        catch { setError("El prospecto se creó. No se pudo asignar el servicio; completalo desde la sección Servicio, público y zona de su ficha."); }
+      }
       await onCreated(created);
     } catch (caught) {
       setError(message(caught));
@@ -2992,9 +3042,11 @@ function CreateProspectForm({ onCreated }: { onCreated: (prospect: Prospect) => 
   return (
     <form className="inline-form compact-form" onSubmit={(event) => void submit(event)}>
       <label className="grow">
-        Nueva institución
-        <input value={name} onChange={(event) => setName(event.target.value)} required />
+        Nuevo prospecto
+        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre de la persona o del negocio" maxLength={200} required />
       </label>
+      <label>Origen<select value={source} onChange={(event) => setSource(event.target.value)}>{prospectSources.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      {serviceLines.length > 0 && <label>Servicio de interés<select value={serviceTagId} onChange={(event) => setServiceTagId(event.target.value)}><option value="">A definir</option>{tags.filter((tag) => tag.active && serviceLines.includes(tag.name)).map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select></label>}
       <label>
         Localidad
         <input value={city} onChange={(event) => setCity(event.target.value)} />
@@ -3021,6 +3073,14 @@ function ProspectDetail({
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [name, setName] = useState(prospect.displayName);
   const [city, setCity] = useState(prospect.city ?? "");
+  const [legalName, setLegalName] = useState(prospect.legalName ?? "");
+  const [province, setProvince] = useState(prospect.province ?? "");
+  const [website, setWebsite] = useState(prospect.website ?? "");
+  const [source, setSource] = useState(prospect.source ?? "MANUAL");
+  const [sourceDetail, setSourceDetail] = useState(prospect.sourceDetail ?? "");
+  const [need, setNeed] = useState(prospect.notesSummary ?? "");
+  const [priority, setPriority] = useState(prospect.priority?.toString() ?? "");
+  const [assignToMe, setAssignToMe] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [contactRole, setContactRole] = useState("");
@@ -3034,6 +3094,8 @@ function ProspectDetail({
   const [activitySummary, setActivitySummary] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDueAt, setTaskDueAt] = useState("");
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const canWrite = session.permissions.includes("PROSPECT_WRITE");
@@ -3053,10 +3115,16 @@ function ProspectDetail({
   useEffect(() => {
     setName(prospect.displayName);
     setCity(prospect.city ?? "");
+    setLegalName(prospect.legalName ?? ""); setProvince(prospect.province ?? ""); setWebsite(prospect.website ?? "");
+    setSource(prospect.source ?? "MANUAL"); setSourceDetail(prospect.sourceDetail ?? "");
+    setNeed(prospect.notesSummary ?? ""); setPriority(prospect.priority?.toString() ?? ""); setAssignToMe(false);
     void loadRelated();
-  }, [prospect.displayName, prospect.city, loadRelated]);
+  }, [prospect, loadRelated]);
 
   async function run(action: () => Promise<unknown>, success: string) {
+    if (busyRef.current) return false;
+    busyRef.current = true;
+    setBusy(true);
     setError(null);
     setNotice(null);
     try {
@@ -3064,12 +3132,17 @@ function ProspectDetail({
       setNotice(success);
       await onChanged();
       await loadRelated();
+      return true;
     } catch (caught) {
       setError(message(caught));
       if (isConflict(caught)) {
         await onChanged();
         await loadRelated();
       }
+      return false;
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
   }
 
@@ -3078,20 +3151,20 @@ function ProspectDetail({
     await run(() => updateProspect(prospect.id, {
       version: prospect.version,
       displayName: name,
-      legalName: prospect.legalName,
-      priority: prospect.priority,
+      legalName: legalName || null,
+      priority: priority ? Number(priority) : null,
       score: prospect.score,
       estimatedStudents: prospect.estimatedStudents,
-      source: prospect.source,
-      sourceDetail: prospect.sourceDetail,
-      ownerUserId: prospect.ownerUserId,
-      website: prospect.website,
+      source,
+      sourceDetail: sourceDetail || null,
+      ownerUserId: assignToMe ? session.userId : prospect.ownerUserId,
+      website: website || null,
       address: prospect.address,
       city,
-      province: prospect.province,
+      province: province || null,
       country: prospect.country,
       timezone: prospect.timezone,
-      notesSummary: prospect.notesSummary,
+      notesSummary: need || null,
       nextActionAt: prospect.nextActionAt,
     }), "Prospecto actualizado.");
   }
@@ -3102,7 +3175,7 @@ function ProspectDetail({
       setError("Cargá al menos un correo, teléfono o WhatsApp para que el contacto sea utilizable.");
       return;
     }
-    await run(() => createContact(prospect.id, {
+    const saved = await run(() => createContact(prospect.id, {
       firstName,
       lastName: lastName || undefined,
       role: contactRole || undefined,
@@ -3112,7 +3185,34 @@ function ProspectDetail({
       preferredChannel,
       consent,
     }), "Contacto agregado y elegibilidad actualizada.");
-    setFirstName(""); setLastName(""); setContactRole(""); setEmail(""); setPhone(""); setWhatsapp(""); setConsent("UNKNOWN");
+    if (saved) {
+      setFirstName(""); setLastName(""); setContactRole(""); setEmail(""); setPhone(""); setWhatsapp(""); setConsent("UNKNOWN");
+    }
+  }
+
+  async function changeProspectStatus(status: ProspectStatus) {
+    const details: { reason?: string; comment?: string; scheduledAt?: string; proposalException?: boolean } = {};
+    if (status === "DEMO_SCHEDULED") {
+      const date = await openDecisionDialog({ title: "Programar demostración", description: "Registrá la fecha y hora acordada con el prospecto. Se usará como próxima acción.", confirmLabel: "Guardar fecha", input: { label: "Fecha y hora acordada", type: "datetime-local" } });
+      if (!date) return;
+      details.scheduledAt = zonedLocalDateTimeToIso(date, prospect.timezone || "America/Argentina/Buenos_Aires");
+    }
+    if (status === "LOST") {
+      const reason = await openDecisionDialog({ title: "Registrar motivo de pérdida", description: "Contá por qué no avanzó esta consulta para conservar el contexto y medir los resultados.", confirmLabel: "Guardar motivo", input: { label: "Motivo", placeholder: "Ej.: presupuesto, momento o alcance" } });
+      if (!reason) return;
+      details.reason = "OTHER"; details.comment = reason;
+    }
+    if (status === "DO_NOT_CONTACT") {
+      const reason = await openDecisionDialog({ title: "Marcar como no contactar", description: "El prospecto quedará bloqueado para nuevos contactos. Registrá la solicitud o el motivo.", confirmLabel: "Bloquear contacto", input: { label: "Motivo del bloqueo" } });
+      if (!reason) return;
+      details.comment = reason;
+    }
+    if (status === "PROPOSAL") {
+      const note = await openDecisionDialog({ title: "Registrar propuesta enviada", description: "Dejá el detalle de la propuesta. Si todavía no hay una oportunidad, este registro documentará la excepción; después completá valor y alcance en Oportunidades.", confirmLabel: "Registrar propuesta", input: { label: "Detalle de la propuesta" } });
+      if (!note) return;
+      details.proposalException = true; details.comment = note;
+    }
+    await run(() => transitionProspect(prospect.id, prospect.version, status, details), `Estado cambiado a ${prospectStatusLabel(status)}.`);
   }
 
   const transitions = allowedTransitions(prospect.status);
@@ -3122,6 +3222,7 @@ function ProspectDetail({
     <div className="stack detail-workspace">
       {error && <div className="alert error" role="alert">{error}</div>}
       {notice && <div className="alert success" role="status">{notice}</div>}
+      {busy && <p className="muted" role="status">Guardando cambios…</p>}
       <section className="prospect-hero">
         <div><span className="eyebrow">Prospecto</span><h2>{prospect.displayName}</h2><p>{[prospect.city, prospect.province].filter(Boolean).join(", ") || "Sin ubicación cargada"}</p></div>
         <div className="hero-badges"><Badge value={prospect.status} /><Badge value={prospect.eligibility} /></div>
@@ -3133,15 +3234,31 @@ function ProspectDetail({
         <Detail label="Canal principal" value={primaryChannels[0] ? `${channelLabel(primaryChannels[0].type)}: ${primaryChannels[0].value}` : "Sin correo, teléfono o WhatsApp utilizable"} />
       </dl>
 
+      <ProspectTagsPanel prospectId={prospect.id} canWrite={canWrite} />
+
       <details className="disclosure-panel" open><summary>Resumen y datos administrativos</summary><div className="disclosure-content">
         <dl className="detail-grid">
-          <Detail label="Institución" value={prospect.displayName} /><Detail label="Razón social" value={prospect.legalName ?? "Sin razón social cargada"} />
+          <Detail label="Persona o negocio" value={prospect.displayName} /><Detail label="Razón social" value={prospect.legalName ?? "Sin razón social cargada"} />
           <Detail label="Ubicación" value={[prospect.city, prospect.province].filter(Boolean).join(", ") || "Sin ubicación cargada"} /><Detail label="Estado" value={prospectStatusLabel(prospect.status)} />
           <Detail label="Elegibilidad" value={labelFor(prospect.eligibility)} /><Detail label="Prioridad" value={prospect.priority === null ? "Sin prioridad definida" : String(prospect.priority)} />
           <Detail label="Puntuación" value={prospect.score === null ? "Sin puntuación" : `${prospect.score}/100`} /><Detail label="Sitio web" value={prospect.website ?? "Sin sitio cargado"} />
+          <Detail label="Origen" value={labelFor(prospect.source)} /><Detail label="Detalle del origen" value={prospect.sourceDetail ?? "Sin detalle cargado"} />
+          <div className="full-width"><Detail label="Necesidad y alcance" value={prospect.notesSummary ?? "Describí qué necesita resolver y qué falta confirmar."} /></div>
         </dl>
-        {canWrite && <form className="inline-form compact-form" onSubmit={(event) => void save(event)}><label className="grow">Nombre visible<input value={name} onChange={(event) => setName(event.target.value)} required /></label><label>Localidad<input value={city} onChange={(event) => setCity(event.target.value)} /></label><button className="secondary-button">Guardar cambios</button></form>}
-        {canWrite && transitions.length > 0 && <div className="action-row" aria-label="Cambios de estado disponibles">{transitions.map((status) => <button className="secondary-button" type="button" key={status} onClick={() => void run(() => transitionProspect(prospect.id, prospect.version, status), `Estado cambiado a ${prospectStatusLabel(status)}.`)}>Pasar a {prospectStatusLabel(status)}</button>)}</div>}
+        {canWrite && <form className="form-grid compact-form" onSubmit={(event) => void save(event)}>
+          <label>Nombre visible<input value={name} onChange={(event) => setName(event.target.value)} maxLength={200} required /></label>
+          <label>Razón social (opcional)<input value={legalName} onChange={(event) => setLegalName(event.target.value)} /></label>
+          <label>Localidad<input value={city} onChange={(event) => setCity(event.target.value)} /></label>
+          <label>Provincia<input value={province} onChange={(event) => setProvince(event.target.value)} /></label>
+          <label>Origen<select value={source} onChange={(event) => setSource(event.target.value)}>{!prospectSources.some(([value]) => value === source) && <option value={source}>{labelFor(source)}</option>}{prospectSources.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label>Detalle del origen<input value={sourceDetail} onChange={(event) => setSourceDetail(event.target.value)} placeholder="Ej.: campaña, recomendación o consulta recibida" /></label>
+          <label>Sitio web<input type="url" value={website} onChange={(event) => setWebsite(event.target.value)} placeholder="https://…" /></label>
+          <label>Prioridad<select value={priority} onChange={(event) => setPriority(event.target.value)}><option value="">Sin definir</option><option value="0">0 · Sin prioridad</option><option value="1">1 · Baja</option><option value="2">2 · Normal</option><option value="3">3 · Media</option><option value="4">4 · Alta</option><option value="5">5 · Urgente</option></select></label>
+          <label className="full-width">Necesidad y alcance<textarea value={need} onChange={(event) => setNeed(event.target.value)} rows={3} placeholder="Equipo o proceso, servicio requerido, objetivo y condiciones a confirmar." /></label>
+          {session.permissions.includes("PROSPECT_ASSIGN") && prospect.ownerUserId !== session.userId && <label className="checkbox-field full-width"><input type="checkbox" checked={assignToMe} onChange={(event) => setAssignToMe(event.target.checked)} />Asignarme el seguimiento de este prospecto</label>}
+          <button className="secondary-button full-width" disabled={busy}>Guardar cambios</button>
+        </form>}
+        {canWrite && transitions.length > 0 && <div className="action-row" aria-label="Cambios de estado disponibles">{transitions.map((status) => <button className="secondary-button" type="button" disabled={busy} key={status} onClick={() => void changeProspectStatus(status)}>Pasar a {prospectStatusLabel(status)}</button>)}</div>}
       </div></details>
 
       <details className="disclosure-panel" open><summary>Contactos y canales</summary><div className="disclosure-content">
@@ -3152,13 +3269,13 @@ function ProspectDetail({
 
       <details className="disclosure-panel"><summary>Tareas de seguimiento</summary><div className="disclosure-content">
         {tasks.length === 0 ? <EmptyState text="No hay tareas. Creá una para dejar claro el próximo paso." /> : tasks.map((task) => <article className="timeline-item" key={task.id}><strong>{task.title}</strong><span>{labelFor(task.status)} · vence {dateTime(task.dueAt)}</span>{canWriteActivity && !["COMPLETED", "CANCELLED"].includes(task.status) && <button className="secondary-button" type="button" onClick={() => void run(() => changeTaskStatus(task, "COMPLETED"), "Tarea completada.")}>Marcar como completada</button>}</article>)}
-        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createTask(prospect.id, { ownerUserId: session.userId, title: taskTitle, dueAt: new Date(taskDueAt).toISOString() }), "Tarea creada.").then(() => { setTaskTitle(""); setTaskDueAt(""); }); }}><label className="grow">Nueva tarea<input value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required /></label><label>Vencimiento<input type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} required /></label><button className="secondary-button">Crear tarea</button></form>}
+        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createTask(prospect.id, { ownerUserId: session.userId, title: taskTitle, dueAt: new Date(taskDueAt).toISOString() }), "Tarea creada.").then((saved) => { if (saved) { setTaskTitle(""); setTaskDueAt(""); } }); }}><label className="grow">Nueva tarea<input value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required /></label><label>Vencimiento<input type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} required /></label><button className="secondary-button">Crear tarea</button></form>}
       </div></details>
 
       <details className="disclosure-panel"><summary>Actividad y notas</summary><div className="disclosure-content">
-        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createActivity(prospect.id, { type: activityType, summary: activitySummary }), "Actividad registrada.").then(() => setActivitySummary("")); }}><label>Tipo de actividad<select value={activityType} onChange={(event) => setActivityType(event.target.value as typeof activityType)}><option value="PHONE_CALL">Llamada</option><option value="MEETING">Reunión</option><option value="DEMO">Demostración</option><option value="EMAIL_SENT_MANUALLY">Correo enviado manualmente</option><option value="WHATSAPP_SENT_MANUALLY">WhatsApp enviado manualmente</option></select></label><label className="grow">Resumen<input value={activitySummary} onChange={(event) => setActivitySummary(event.target.value)} required /></label><button className="secondary-button">Registrar actividad</button></form>}
-        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createNote(prospect.id, note), "Nota registrada.").then(() => setNote("")); }}><label className="grow">Nota<input value={note} onChange={(event) => setNote(event.target.value)} required /></label><button className="secondary-button">Agregar nota</button></form>}
-        {timeline.length === 0 ? <EmptyState text="Todavía no hay actividad registrada." /> : timeline.map((item) => <article className="timeline-item" key={`${item.eventType}-${item.id}`}><small>{dateTime(item.eventAt)} · {labelFor(item.eventType)}</small><strong>{item.title}</strong>{item.detail && <span>{item.detail}</span>}</article>)}
+        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createActivity(prospect.id, { type: activityType, summary: activitySummary }), "Actividad registrada.").then((saved) => { if (saved) setActivitySummary(""); }); }}><label>Tipo de actividad<select value={activityType} onChange={(event) => setActivityType(event.target.value as typeof activityType)}><option value="PHONE_CALL">Llamada</option><option value="MEETING">Reunión</option><option value="DEMO">Demostración</option><option value="EMAIL_SENT_MANUALLY">Correo enviado manualmente</option><option value="WHATSAPP_SENT_MANUALLY">WhatsApp enviado manualmente</option></select></label><label className="grow">Resumen<input value={activitySummary} onChange={(event) => setActivitySummary(event.target.value)} required /></label><button className="secondary-button">Registrar actividad</button></form>}
+        {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createNote(prospect.id, note), "Nota registrada.").then((saved) => { if (saved) setNote(""); }); }}><label className="grow">Nota<input value={note} onChange={(event) => setNote(event.target.value)} required /></label><button className="secondary-button">Agregar nota</button></form>}
+        {timeline.length === 0 ? <EmptyState text="Todavía no hay actividad registrada." /> : timeline.map((item) => <article className="timeline-item" key={`${item.eventType}-${item.id}`}><small>{dateTime(item.eventAt)} · {labelFor(item.eventType)}</small><strong>{item.eventType === "STATUS" ? item.title.split(" → ").map(labelFor).join(" → ") : item.eventType === "TASK" ? item.title.replace(/^[A-Z_]+:\s*/, "") : labelFor(item.title)}</strong>{item.detail && item.eventType !== "AUDIT" && <span>{item.eventType === "TASK" ? item.detail.replace(/^[A-Z_]+/, (status) => labelFor(status)) : item.detail}</span>}</article>)}
       </div></details>
     </div>
   );
@@ -3171,11 +3288,13 @@ function allowedTransitions(status: ProspectStatus): ProspectStatus[] {
     READY_TO_CONTACT: ["CONTACTED", "DO_NOT_CONTACT"],
     CONTACTED: ["REPLIED", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
     REPLIED: ["INTERESTED", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
+    FOLLOW_UP: ["CONTACTED", "INTERESTED", "DEMO_PROPOSED", "LOST", "DO_NOT_CONTACT"],
     INTERESTED: ["DEMO_PROPOSED", "PROPOSAL", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
     DEMO_PROPOSED: ["DEMO_SCHEDULED", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
     DEMO_SCHEDULED: ["PROPOSAL", "FOLLOW_UP", "LOST", "DO_NOT_CONTACT"],
     PROPOSAL: ["NEGOTIATION", "LOST", "DO_NOT_CONTACT"],
     NEGOTIATION: ["CUSTOMER", "LOST", "DO_NOT_CONTACT"],
+    LOST: ["FOLLOW_UP", "DO_NOT_CONTACT"],
   };
   return transitions[status] ?? [];
 }
@@ -3261,7 +3380,7 @@ function NavButton({
   children: React.ReactNode;
 }) {
   return (
-    <button className={active ? "nav-button active" : "nav-button"} onClick={onClick}>
+    <button className={active ? "nav-button active" : "nav-button"} aria-current={active ? "page" : undefined} onClick={onClick}>
       {children}
     </button>
   );
@@ -3270,10 +3389,12 @@ function NavButton({
 function title(tab: Tab): string {
   return {
     dashboard: "Resumen comercial",
+    agenda: "Agenda",
+    help: "Guía de Marketing",
     prospects: "Prospectos",
     pipeline: "Oportunidades",
     campaigns: "Campañas y plantillas",
-    messages: "Mensajes e integraciones",
+    messages: "Borradores y contacto manual",
     outbox: "Bandeja de salida",
     inbound: "Mensajes recibidos",
     imports: "Importaciones",
@@ -3283,6 +3404,27 @@ function title(tab: Tab): string {
     settings: "Configuración, etiquetas e integraciones",
     users: "Usuarios",
     account: "Mi cuenta",
+  }[tab];
+}
+
+function subtitle(tab: Tab): string {
+  return {
+    dashboard: "Consultas, seguimiento y oportunidades para hacer crecer Scalaris.",
+    agenda: "Organizá los próximos pasos de cada consulta, con responsable y vencimiento.",
+    help: "Una guía práctica para gestionar Servicio técnico, Desarrollo y Venta a pedido.",
+    prospects: "Particulares y empresas: registrá la necesidad, el origen y la próxima acción.",
+    pipeline: "Seguimiento de presupuestos y proyectos, desde la calificación hasta el cierre.",
+    campaigns: "Prepará el mensaje, revisá la audiencia y comprobá el recorrido con una simulación.",
+    messages: "Prepará el contacto y guardá el contexto de cada conversación.",
+    outbox: "Revisión de los procesos de mensajes y sus resultados registrados.",
+    inbound: "Recepción y asociación de mensajes del entorno de prueba.",
+    imports: "Revisá los datos antes de incorporarlos. Resolvé coincidencias y exclusiones.",
+    exclusions: "Respetá bajas, datos inválidos y solicitudes de no contactar.",
+    audit: "Trazabilidad de los cambios y acciones de la organización.",
+    reports: "Medí consultas, respuestas, oportunidades y seguimientos con datos registrados.",
+    settings: "Configuración de la organización, catálogo e integraciones administradas.",
+    users: "Cuentas individuales y permisos para cada integrante.",
+    account: "Datos de acceso y contraseña de tu cuenta.",
   }[tab];
 }
 

@@ -25,7 +25,7 @@ describe("etiquetas visibles para el operador", () => {
     const source = JSON.stringify({ institucion: "Flores", email: "hola@flores.test", localidad: "Palermo" });
     expect(suggestedDuplicateName(source)).toBe("Flores");
     expect(duplicateSourceSummary(source)).toEqual([
-      ["Institución", "Flores"],
+      ["Persona o negocio", "Flores"],
       ["Correo", "hola@flores.test"],
       ["Localidad", "Palermo"],
     ]);

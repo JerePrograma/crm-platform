@@ -1,4 +1,82 @@
-# Gestudio CRM Platform
+# Scalaris CRM
+
+CRM local para el trabajo de Marketing de **Scalaris**: servicio técnico, desarrollo y venta a pedido. Centraliza personas y negocios, contactos, consultas, seguimientos, oportunidades, etiquetas, importaciones y campañas preparadas o simuladas. PostgreSQL conserva los datos y el historial comercial.
+
+La edición Scalaris utiliza una organización propia y una cuenta de Marketing con permisos operativos separados de administración. La referencia vigente es **11 7278-9289**, con cobertura en **Zona Oeste, CABA y Mar del Plata**. El retiro y la entrega se coordinan según servicio, localidad y caso.
+
+## Abrir el CRM en Windows
+
+La [guía de instalación y uso para Marketing](docs/scalaris-marketing-local.md) explica el primer ingreso, el trabajo diario, los respaldos, la recuperación y las actualizaciones.
+
+| Modalidad | Abrir | Detener | Respaldar | Requisito |
+|---|---|---|---|---|
+| Paquete Windows | Extraer el ZIP completo y abrir `AbrirCRMScalarisPortable.cmd` | `DetenerCRMScalarisPortable.cmd` | `RespaldarCRMScalarisPortable.cmd` | Windows de 64 bits; Java, Node y PostgreSQL incluidos |
+| Repositorio con Docker | `AbrirCRMScalaris.cmd` | `DetenerCRMScalaris.cmd` | `RespaldarCRMScalaris.cmd` | Docker Desktop con contenedores Linux |
+
+Los archivos se abren con doble clic. La primera apertura prepara la configuración y las cuentas locales, espera que el CRM esté disponible y abre el navegador. Las claves iniciales se guardan en un archivo privado fuera del proyecto. Cerrar el navegador conserva los datos; los archivos de detener cierran los servicios sin borrar la base.
+
+El paquete Windows se genera desde los binarios compilados mediante `scripts/package-scalaris-portable.ps1`; los wrappers con sufijo `Portable` están dentro de esa entrega. Su operación se implementa en `scripts/scalaris-portable.ps1` y `scripts/scalaris-web-server.mjs`. El camino Docker utiliza `scripts/scalaris-local.ps1` y `docker-compose.scalaris.yml`.
+
+## Estado de la edición Scalaris — 2026-10-14
+
+`main` sigue siendo la rama canónica. **SCALARIS-001 tiene validación funcional local aprobada** para el paquete Windows. La publicación GitHub fue autorizada explícitamente y está en curso (`AUTHORIZED_IN_PROGRESS`); CI queda `PENDING_POST_PUSH`. El registro de esta fase es [publicación GitHub Scalaris](docs/validation/scalaris-github-publication-2026-10-14.md). Todavía no se afirma push exitoso ni cierre integral remoto.
+
+| Control de la edición Scalaris | Estado |
+|---|---|
+| Backend Java 21: unitarias e integración focalizada | `EXECUTED_PASS`, 62 unitarias y 6 de integración; 68 en total |
+| Launcher Docker: regresión PowerShell 5.1 | `EXECUTED_PASS`, 55 aserciones; Docker simulado para respaldo |
+| Docker real, Compose, imágenes y servicios | `BLOCKED_EXTERNAL`: Docker no está instalado en este equipo |
+| Paquete Windows: Java 21, PostgreSQL 18 y Node 24 | `EXECUTED_PASS`, 18 comprobaciones reales en PowerShell 5.1, incluida recuperación en base nueva |
+| Frontend | `EXECUTED_PASS`: 16 unitarias, typecheck, build y audit sin vulnerabilidades; E2E conjunto 4/4, sin omitidos ni flaky |
+| Manual de Marketing | Revisado visualmente en desktop 1440 px y móviles 390/320 px; sin desborde horizontal |
+| ZIP de entrega definitivo | `EXECUTED_PASS`: manifiesto/checksum revisados, 2.243 entradas y ningún archivo privado |
+| Instalación de uso | Activa en `http://127.0.0.1:8787`, perfil/rol correctos, 0 prospectos, 18 etiquetas y 7 plantillas |
+| Dos validaciones integrales limpias de esta edición | `BLOCKED_EXTERNAL`: requieren Docker; el resultado histórico no cubre estos cambios |
+| Publicación GitHub de esta edición | `AUTHORIZED_IN_PROGRESS`: add, revisión de diff, commit y push autorizados |
+| CI de esta edición | `PENDING_POST_PUSH` |
+| Producción de esta edición | No desplegada; permanece fuera de autorización |
+| Comunicaciones reales y datos de contactos reales | Deshabilitadas; no cargados en esta misión |
+
+El detalle se mantiene en [SCALARIS-001](docs/segments/SCALARIS-001.md), [estado actual](docs/status.md) y [matriz de validación](docs/validation/COMPLETE-CRM-matrix.md). Un script implementado, un respaldo legible o una prueba unitaria aprobada no equivalen por sí solos a un recorrido operativo completo.
+
+## Trabajo diario de Marketing
+
+- Organizar la jornada desde el resumen y la agenda de seguimientos.
+- Registrar particulares, comercios, empresas y profesionales, conservando el origen de cada consulta.
+- Clasificar intereses por servicio, localidad y tipo de cliente mediante etiquetas.
+- Registrar notas, actividades y próximas acciones; actualizar oportunidades y presupuestos.
+- Importar CSV/XLSX después de revisar la vista previa, los excluidos y los duplicados.
+- Preparar plantillas y audiencias con las referencias de Scalaris; comprobarlas mediante simulación.
+- Respetar bajas y exclusiones desde **Exclusiones**.
+
+La cuenta de Marketing opera el CRM sin administrar usuarios ni habilitar envíos reales. La cuenta de administración queda para el responsable. El bootstrap prepara cuentas, etiquetas y plantillas propias del negocio; la entrega no agrega prospectos reales.
+
+## Datos y respaldos locales
+
+| Modalidad | Carpeta privada | Persistencia |
+|---|---|---|
+| Paquete Windows | `%LOCALAPPDATA%\ScalarisCRM\portable` | PostgreSQL local y configuración propia del usuario de Windows |
+| Docker | `%LOCALAPPDATA%\ScalarisCRM` | Proyecto `scalaris-crm-local` y volumen PostgreSQL independiente |
+
+El puerto habitual de la pantalla es `8787`, publicado únicamente en `127.0.0.1`; la primera configuración puede elegir otro puerto libre. Consultar la dirección efectiva en `Acceso-inicial.txt`.
+
+Los respaldos y sus checksums contienen información privada y quedan fuera de Git. Conservar también la configuración de la instalación y la versión anterior del paquete hasta comprobar una actualización. La [guía operativa](docs/scalaris-marketing-local.md) distingue la recuperación Windows de la modalidad Docker.
+
+El recorrido portable real comprobó primera apertura, claves/permisos privados, rol Marketing, servicios en loopback, 18 etiquetas y 7 plantillas, un prospecto ficticio que persistió al reabrir, checksum, recuperación en una base nueva y conservación de la anterior. El conteo de mensajes `SENT`, `DELIVERED` o `READ` permaneció en cero. La evidencia local se guarda fuera de Git en `validation-output/scalaris-portable-latest.json`.
+
+El ZIP definitivo quedó revisado y la instalación de uso inicia sin prospectos de prueba. Los entornos QA están detenidos. La validación específica conserva la ruta/checksum del artefacto; la evidencia técnica local está en `validation-output/scalaris-release-latest.json` y `validation-output/scalaris-installed-local.json`. El siguiente paso es comenzar un piloto de uso local siguiendo la guía, sin regenerar el paquete ni importar contactos reales automáticamente.
+
+## Configuración y continuidad
+
+El perfil `CRM_BUSINESS_PROFILE=SCALARIS` selecciona el negocio local. El comportamiento anterior se conserva como perfil `LEGACY` para compatibilidad. Backend Java 21/Spring Boot 4.1 y Flyway V1–V14 permanecen; Docker utiliza PostgreSQL 17 y el paquete Windows se prepara con PostgreSQL 18 y Node 24.
+
+Leer [AGENTS.md](AGENTS.md), el [índice de continuidad](docs/continuity/README.md), [estado](docs/status.md), [próximo paso](docs/next-step.md) y [backlog](docs/backlog.md) antes de modificar o actualizar el proyecto. La fase Git actual autoriza add, revisión de diff, commit y push a GitHub, con resultado pendiente de verificar. Producción, PR y comunicaciones reales permanecen fuera de alcance.
+
+Las guardas de envío real permanecen cerradas. Los caminos locales fijan `SENDING_ENABLED=false`, `SENDING_DRY_RUN=true`, límite cero, kill switch activo, red real bloqueada, email `NOOP`, WhatsApp `DEEPLINK_ONLY` y workers deshabilitados. Preparar o simular un mensaje no lo envía. No se conectaron proveedores reales ni se cargaron contactos operativos en esta misión.
+
+## Historial de la plataforma Gestudio — hasta 2026-07-30
+
+El registro siguiente conserva los resultados históricos de la plataforma. El commit **`d6bfe64283cd3bab8dce441e4b01e348f9a55d5e`** se publicó por fast-forward `9995b3e..d6bfe64`, pasó dos validaciones integrales limpias y la CI **`30530515993`**, con **22/22** jobs verdes. Estos resultados corresponden al baseline anterior y a Google falso; no cubren los cambios Scalaris de octubre. Las instrucciones históricas siguientes se consultan junto con el próximo paso actual.
 
 CRM comercial para importar, revisar y administrar prospectos de Gestudio con PostgreSQL como fuente de verdad, aislamiento por organización y controles fail-closed.
 

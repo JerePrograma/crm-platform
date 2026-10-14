@@ -1,8 +1,51 @@
 # Estado actual
 
-Actualizado: 2026-07-30
+Actualizado: 2026-10-14
 
-## SEG-001 Gmail — validado y publicado
+## SCALARIS-001 — operación local Windows comprobada
+
+La misión actual adapta el CRM al trabajo de Marketing de Scalaris: servicio técnico, desarrollo y venta a pedido. La referencia vigente es WhatsApp **11 7278-9289**, con cobertura en **Zona Oeste, CABA y Mar del Plata** y retiro/entrega a coordinar según el caso.
+
+Se implementaron localmente el perfil y la organización Scalaris, cuenta de Marketing separada de administración, etiquetas/plantillas, agenda y referencias comerciales en español, importación con encabezados comerciales y dos caminos de apertura por doble clic: Docker y paquete Windows portable. La [guía de uso](scalaris-marketing-local.md) y [SCALARIS-001](segments/SCALARIS-001.md) describen la entrega.
+
+```text
+SCALARIS_STATE=LOCAL_OPERATIONAL_PASS
+SOURCE_STATE=AUTHORIZED_GITHUB_PUBLICATION_IN_PROGRESS
+BACKEND_UNIT=EXECUTED_PASS_62
+BACKEND_FOCUSED_INTEGRATION=EXECUTED_PASS_6
+BACKEND_TOTAL=EXECUTED_PASS_68
+DOCKER_LAUNCHER_PS51=EXECUTED_PASS_55_ASSERTIONS
+DOCKER_REAL=BLOCKED_EXTERNAL_NOT_INSTALLED
+PORTABLE_WINDOWS=EXECUTED_PASS_18_ASSERTIONS_PS51
+PORTABLE_RUNTIMES=JAVA_21_POSTGRESQL_18_NODE_24
+FRONTEND_UNIT_TYPECHECK_BUILD=EXECUTED_PASS_16_UNIT
+FRONTEND_AUDIT=EXECUTED_PASS_ZERO_VULNERABILITIES
+FRONTEND_E2E=EXECUTED_PASS_4_OF_4_ZERO_SKIPPED_UNEXPECTED_FLAKY
+SOURCE_FOR_DELIVERY=REVIEWED_LOCAL_SOURCE_PUBLICATION_IN_PROGRESS
+FINAL_ZIP=EXECUTED_PASS_MANIFEST_CHECKSUM_PRIVATE_FILES_ZERO
+USE_INSTALLATION=EXECUTED_PASS_LOOPBACK_8787_PROSPECTS_ZERO
+USE_CATALOG=TAGS_18_TEMPLATES_7
+QA_PROCESSES=STOPPED
+MANUAL_VISUAL_QA=EXECUTED_PASS_1440_390_320_PX
+CURRENT_COMPLETE_VALIDATOR=BLOCKED_EXTERNAL_DOCKER_NOT_INSTALLED
+CURRENT_CI=PENDING_POST_PUSH
+CURRENT_PUBLICATION=AUTHORIZED_IN_PROGRESS
+REAL_CONTACTS=NOT_IMPORTED
+REAL_COMMUNICATIONS=DISABLED_BY_POLICY
+PRODUCTION=NOT_DEPLOYED
+```
+
+La validación local del backend incluye 62 pruebas unitarias y 6 de integración focalizada. Frontend aprobó 16 unitarias, typecheck, build y audit con cero vulnerabilidades. La corrida E2E conjunta final del 2026-10-14, 13:03:29 Argentina, aprobó 4/4 casos (flujo integral, responsive, Gmail desconectado y Marketing Scalaris), sin omitidos, inesperados ni flaky, en aproximadamente 24 segundos. La fuente local quedó congelada para la entrega. Estos controles no sustituyen el validador integral repetido ni la suite histórica completa Testcontainers.
+
+El paquete Windows real aprobó 18 comprobaciones en PowerShell 5.1: primera apertura, claves privadas/ACL, Marketing, loopback, 18 etiquetas y 7 plantillas, persistencia de un prospecto ficticio tras reapertura, respaldo/checksum, recuperación en base nueva con ID/nombre conservados, existencia de la base anterior, cero estados enviados y parada conservando datos. Evidencia: `validation-output/scalaris-portable-latest.json`, ignorada por Git.
+
+Los 55 controles del launcher Docker incluyen ACL y puertos reales, con Docker simulado para el respaldo. Este host no tiene Docker: Compose, imágenes, health y recuperación Docker reales siguen bloqueados. El manual se revisó visualmente a 1440/390/320 px; se corrigió un desborde de nombres de archivos en 320 px y se volvió a renderizar sin overflow.
+
+El ZIP definitivo y su manifiesto/checksum están revisados, con 2.243 entradas y cero archivos privados. La instalación de uso está activa en `http://127.0.0.1:8787`, con perfil Scalaris y rol Marketing correctos, cero prospectos, 18 etiquetas y 7 plantillas, todos los servicios en loopback. Los entornos QA quedaron detenidos. La ruta y el checksum concretos se registran en la validación específica; evidencia local: `validation-output/scalaris-release-latest.json` y `validation-output/scalaris-installed-local.json`.
+
+Los cambios de octubre no heredan la doble validación ni la CI del SHA publicado en julio. El usuario autorizó explícitamente add, revisión de diff, commit y push a GitHub: publicación `AUTHORIZED_IN_PROGRESS` y CI `PENDING_POST_PUSH`. La autoridad de esta fase es [publicación GitHub Scalaris](validation/scalaris-github-publication-2026-10-14.md); no se afirma push exitoso hasta verificarlo. No se conectaron proveedores, enviaron mensajes ni importaron contactos reales.
+
+## Historial: SEG-001 Gmail — validado y publicado el 2026-07-30
 
 ```text
 base de publicación: 9995b3e71278d069e3d17afb1c36cdfc995a0bf2
@@ -29,7 +72,7 @@ implica conexión a Google, correo real ni despliegue; la publicación Git sí f
 verificada. El registro detallado está en
 `docs/implementation/SEG-001-gmail-campaign-delivery.md`.
 
-## Repositorio canónico
+## Historial: repositorio canónico y hardening de julio
 
 ```text
 repositorio: JerePrograma/crm-platform
@@ -262,7 +305,4 @@ El nuevo candidato local que añadía métricas tenant-wide, paginación adicion
 
 ## Próximo paso obligatorio
 
-Crear el commit documental de cierre, repetir las dos corridas integrales sobre
-ese SHA definitivo, ejecutar el fetch final y publicar por fast-forward solo si
-`origin/main` continúa sin commits exclusivos. No conectar Google real ni
-habilitar flags de envío/red.
+Completar la publicación GitHub autorizada y verificar el remoto y su CI según `docs/next-step.md`. El uso/piloto local puede continuar con la instalación preparada. No importar contactos reales automáticamente. Docker real y el validador integral histórico permanecen bloqueados mientras no esté disponible Docker; producción no está autorizada.

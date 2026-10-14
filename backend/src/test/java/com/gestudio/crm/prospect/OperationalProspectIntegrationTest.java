@@ -324,6 +324,7 @@ class OperationalProspectIntegrationTest {
     var after = prospectOperationsService.dashboardMetrics();
     assertThat(after.interested() - before.interested()).isEqualTo(5);
     assertThat(after.blocked() - before.blocked()).isEqualTo(98);
+    assertThat(after.total() - before.total()).isEqualTo(105);
   }
 
   @Test

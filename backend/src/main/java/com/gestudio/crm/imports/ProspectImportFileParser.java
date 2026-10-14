@@ -169,6 +169,7 @@ public class ProspectImportFileParser {
                   value(headers, row, "proxima accion"),
                   value(headers, row, "ultimo asunto"),
                   value(headers, row, "senales etiquetas"),
+                  value(headers, row, "servicio de interes"),
                   value(headers, row, "observaciones"),
                   value(headers, row, "observacion de control"),
                   value(headers, row, "lote"))));
@@ -235,7 +236,7 @@ public class ProspectImportFileParser {
 
   private String masterExclusionReason(String commercialStatus, String delivery) {
     return joinEvidence(
-        "Existing conversation or non-contactable record from Gestudio master",
+        "Existing conversation or non-contactable record from imported master",
         commercialStatus,
         delivery);
   }
@@ -353,6 +354,7 @@ public class ProspectImportFileParser {
                   value(headers, row, "proxima accion"),
                   value(headers, row, "ultimo asunto"),
                   value(headers, row, "senales etiquetas"),
+                  value(headers, row, "servicio de interes"),
                   value(headers, row, "observaciones"),
                   value(headers, row, "observacion de control"),
                   value(headers, row, "lote"))));
@@ -391,6 +393,18 @@ public class ProspectImportFileParser {
     if (key == null) {
       return;
     }
+    key =
+        switch (key) {
+          case "empresa",
+                  "persona o negocio",
+                  "empresa o persona",
+                  "negocio",
+                  "cliente potencial" ->
+              "institucion";
+          case "segmento" -> "categoria";
+          case "necesidad", "necesidad detectada" -> "motivo de encaje";
+          default -> key;
+        };
     if (headers.putIfAbsent(key, index) != null) {
       throw new IllegalArgumentException("Duplicate normalized import column: " + key);
     }

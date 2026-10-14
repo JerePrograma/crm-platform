@@ -40,8 +40,23 @@ export type Page<T> = {
 };
 
 export type ProspectDashboardMetrics = {
+  total?: number;
   interested: number;
   blocked: number;
+};
+
+export type BusinessProfile = {
+  code: string;
+  organizationName: string;
+  tagline: string;
+  descriptor: string;
+  website: string;
+  whatsappDisplay: string;
+  whatsappUrl: string;
+  coverage: string;
+  serviceLines: string[];
+  operatingGuidance: string[];
+  manualCommunicationsOnly: boolean;
 };
 
 export type CurrencyTotal = {
@@ -296,7 +311,7 @@ export type SessionUser = {
   organizationId: string;
   username: string;
   displayName: string;
-  role: "ADMIN" | "MANAGER" | "SALES" | "VIEWER";
+  role: "ADMIN" | "MANAGER" | "MARKETING" | "SALES" | "VIEWER";
   permissions: string[];
 };
 
@@ -304,7 +319,7 @@ export type User = {
   id: string;
   username: string;
   displayName: string;
-  role: "ADMIN" | "MANAGER" | "SALES" | "VIEWER";
+  role: "ADMIN" | "MANAGER" | "MARKETING" | "SALES" | "VIEWER";
   active: boolean;
   createdAt: string;
   lastLoginAt: string | null;

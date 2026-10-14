@@ -13,6 +13,31 @@ class ProspectImportFileParserTest {
       new ProspectImportFileParser(new NormalizationService());
 
   @Test
+  void acceptsScalarisBusinessHeadersAndPreservesCanonicalDuplicateEvidence() {
+    byte[] csv =
+        ("Persona o negocio;Segmento;Necesidad;Servicio de interés;Correo publicado\n"
+                + "Comercio sintético;Comercios;Organizar pedidos;Desarrollo;consulta@example.test\n")
+            .getBytes(StandardCharsets.UTF_8);
+    var candidate = parser.parse("scalaris.csv", csv).prospects().getFirst();
+    assertThat(candidate.institutionName()).isEqualTo("Comercio sintético");
+    assertThat(candidate.category()).isEqualTo("Comercios");
+    assertThat(candidate.administrativePain()).isEqualTo("Organizar pedidos");
+    assertThat(candidate.evidence()).isEqualTo("Desarrollo");
+    assertThat(candidate.rawData())
+        .containsEntry("institucion", "Comercio sintético")
+        .containsEntry("categoria", "Comercios")
+        .containsEntry("motivo de encaje", "Organizar pedidos");
+  }
+
+  @Test
+  void rejectsAmbiguousBusinessNameHeadersInsteadOfDroppingOneColumn() {
+    byte[] csv = "Empresa;Institución\nUno;Dos\n".getBytes(StandardCharsets.UTF_8);
+    assertThatThrownBy(() -> parser.parse("ambiguous.csv", csv))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Duplicate normalized import column");
+  }
+
+  @Test
   void parsesOneHundredProspectsAndSixteenExclusionsByHeader() {
     ProspectImportFileParser.ParsedImport parsed =
         parser.parse("prospectos-fixture.xlsx", TestProspectWorkbookFactory.workbook(100, 16));

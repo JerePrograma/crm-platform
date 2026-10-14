@@ -314,7 +314,8 @@ public class CampaignController {
       @Size(max = 160) String province,
       UUID ownerId,
       boolean excludeCustomers,
-      boolean requireActiveOpportunity) {
+      boolean requireActiveOpportunity,
+      UUID tagId) {
     AudienceFilter filter() {
       return new AudienceFilter(
           status,
@@ -324,7 +325,8 @@ public class CampaignController {
           province,
           ownerId,
           excludeCustomers,
-          requireActiveOpportunity);
+          requireActiveOpportunity,
+          tagId);
     }
   }
 

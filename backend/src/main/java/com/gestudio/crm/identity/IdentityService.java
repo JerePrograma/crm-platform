@@ -74,6 +74,13 @@ public class IdentityService implements UserDetailsService {
 
   @Transactional
   public void bootstrapIfRequired() {
+    bootstrapIfRequired(com.gestudio.crm.common.TenantIds.BOOTSTRAP_ORGANIZATION_ID);
+  }
+
+  @Transactional
+  public void bootstrapIfRequired(UUID organizationId) {
+    jdbcTemplate.queryForObject(
+        "SELECT id FROM organization WHERE id = ? FOR UPDATE", UUID.class, organizationId);
     Integer administrators =
         jdbcTemplate.queryForObject(
             """
@@ -81,9 +88,10 @@ public class IdentityService implements UserDetailsService {
             FROM app_user u
             JOIN organization_membership m ON m.user_id = u.id AND m.active = TRUE
             JOIN crm_role r ON r.id = m.role_id
-            WHERE u.active = TRUE AND r.name = 'ADMIN'
+            WHERE u.active = TRUE AND r.name = 'ADMIN' AND m.organization_id = ?
             """,
-            Integer.class);
+            Integer.class,
+            organizationId);
     if (administrators != null && administrators > 0) {
       return;
     }
@@ -91,7 +99,7 @@ public class IdentityService implements UserDetailsService {
       return;
     }
     createUser(
-        com.gestudio.crm.common.TenantIds.BOOTSTRAP_ORGANIZATION_ID,
+        organizationId,
         bootstrapProperties.username(),
         bootstrapProperties.username(),
         bootstrapProperties.password(),

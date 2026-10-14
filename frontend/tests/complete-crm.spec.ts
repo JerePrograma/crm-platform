@@ -26,8 +26,14 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
 
   await login(page, adminUser, adminPassword);
   await expect(page.getByText("Los envíos reales están bloqueados", { exact: true })).toBeVisible();
+  const businessProfileResponse = await page.request.get("/api/v1/business-profile");
+  expect(businessProfileResponse.ok()).toBeTruthy();
+  const businessProfile = await businessProfileResponse.json();
 
   await page.getByRole("button", { name: "Usuarios" }).click();
+  const roleSelector = page.getByRole("combobox", { name: "Rol", exact: true });
+  await expect(roleSelector).toHaveValue(businessProfile.code === "SCALARIS" ? "MARKETING" : "SALES");
+  await expect(roleSelector.locator('option[value="MARKETING"]')).toHaveCount(businessProfile.code === "SCALARIS" ? 1 : 0);
   await page.getByRole("main").getByLabel("Usuario").fill(viewerUser);
   await page.getByLabel("Nombre visible").fill(`Viewer ${suffix}`);
   await page.getByLabel("Contraseña inicial").fill(viewerPassword);
@@ -36,7 +42,7 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
   await expect(page.getByText("Usuario creado.")).toBeVisible();
 
   await page.getByRole("button", { name: "Prospectos" }).click();
-  await page.getByLabel("Nueva institución").fill(prospectName);
+  await page.getByLabel("Nuevo prospecto").fill(prospectName);
   await page.getByLabel("Localidad").first().fill("Rosario");
   await page.getByRole("button", { name: "Crear prospecto" }).click();
   await expect(page.getByRole("cell", { name: prospectName })).toBeVisible();
@@ -68,7 +74,7 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
   await expect(page.getByText("Nota registrada.")).toBeVisible();
 
   await page.getByRole("button", { name: "Prospectos" }).click();
-  await page.getByLabel("Nueva institución").fill(opportunityProspectName);
+  await page.getByLabel("Nuevo prospecto").fill(opportunityProspectName);
   await page.getByLabel("Localidad").first().fill("Córdoba");
   await page.getByRole("button", { name: "Crear prospecto" }).click();
   await expect(page.getByRole("cell", { name: opportunityProspectName })).toBeVisible();
@@ -246,7 +252,7 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
   await expect(page.getByRole("heading", { name: "Ingresar" })).toBeVisible();
   await login(page, viewerUser, viewerPassword);
   await page.getByRole("button", { name: "Prospectos" }).click();
-  await expect(page.getByLabel("Nueva institución")).toHaveCount(0);
+  await expect(page.getByLabel("Nuevo prospecto")).toHaveCount(0);
   await page.getByLabel("Buscar prospectos").fill(prospectName);
   await page.getByRole("button", { name: "Buscar" }).click();
   await expect(page.getByRole("cell", { name: prospectName })).toBeVisible();
@@ -269,9 +275,13 @@ test("responsive shell and primary navigation remain keyboard operable", async (
   await page.getByLabel("Usuario").fill(adminUser);
   await page.getByLabel("Contraseña").fill(adminPassword);
   await page.getByRole("button", { name: "Ingresar" }).click();
+  await expect(page.getByRole("button", { name: "Abrir menú" })).toHaveAttribute("aria-expanded", "false");
+  await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("navigation", { name: "Navegación principal" })).toBeVisible();
   await page.getByRole("button", { name: "Reportes" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Reportes" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Reportes" })).toBeFocused();
+  await expect(page.getByRole("navigation", { name: "Navegación principal" })).not.toBeVisible();
   await expect(page.locator("body")).not.toHaveCSS("overflow-x", "scroll");
 });

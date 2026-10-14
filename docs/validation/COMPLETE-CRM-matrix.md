@@ -1,9 +1,44 @@
 # Matriz de validación integral del CRM
 
-Actualizado: 2026-07-30
+Actualizado: 2026-10-14
 
 Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUTED_PASS`,
 `EXECUTED_FAIL`, `BLOCKED_EXTERNAL`, `NOT_APPLICABLE`.
+
+## SCALARIS-001 — evidencia de la edición local de octubre
+
+La publicación GitHub actual está `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_POST_PUSH`: add, revisión de diff, commit y push autorizados explícitamente. Su autoridad es [publicación GitHub Scalaris](scalaris-github-publication-2026-10-14.md), sin afirmar aún éxito remoto. Esta tabla describe solamente la edición Scalaris; los PASS históricos del baseline de julio no cubren los nuevos archivos ni el runtime portable.
+
+| Capacidad | Estado | Evidencia actual y límites |
+|---|---|---|
+| Perfil/organización Scalaris y cuenta Marketing | EXECUTED_PASS | Bootstrap y rol comprobados en portable real e integración focalizada; sin administración/envío real |
+| Referencias, etiquetas y plantillas Scalaris | EXECUTED_PASS | Runtime real: 18 etiquetas y 7 plantillas; sin prospectos reales |
+| Backend unitario Java 21 | EXECUTED_PASS | 62 pruebas; no sustituye integración PostgreSQL |
+| Backend integración focalizada | EXECUTED_PASS | 6 pruebas de integración; total backend 68, sin sustituir suite histórica completa |
+| Frontend typecheck/unit/build/audit | EXECUTED_PASS | 16 unitarias, compilación aprobada, audit sin vulnerabilidades |
+| Pantalla/agenda/ayuda Marketing y E2E | EXECUTED_PASS | Corrida conjunta final 4/4: integral, responsive, Gmail desconectado y Marketing Scalaris; cero omitidos/inesperados/flaky, 2026-10-14 13:03:29 Argentina |
+| Launcher Docker PowerShell 5.1 | EXECUTED_PASS | 55 aserciones: ACL, claves persistentes, carpetas seguras, puertos y respaldo simulado |
+| Mensaje Docker no instalado | EXECUTED_PASS | Falla explicativa sin instalación automática ni credenciales nuevas |
+| Compose/build/health Docker Scalaris | BLOCKED_EXTERNAL | Docker no instalado en el host actual |
+| Respaldo/restauración Docker Scalaris | BLOCKED_EXTERNAL | Orquestación probada con mock; no hay PostgreSQL Docker real |
+| Paquete Windows Java 21/PostgreSQL 18/Node 24 | EXECUTED_PASS | 18 comprobaciones reales PowerShell 5.1; `validation-output/scalaris-portable-latest.json` |
+| Persistencia y parada portable | EXECUTED_PASS | Prospecto ficticio conservado al reabrir; parada conserva datos y apunta a procesos propios |
+| Respaldo/recuperación portable | EXECUTED_PASS | Checksum, recuperación en base nueva, ID/nombre preservados y base anterior existente |
+| Cero estados enviados portable | EXECUTED_PASS | `SENT|DELIVERED|READ=0` en la base restaurada |
+| Manual visual desktop/móvil | EXECUTED_PASS | Render e inspección individual a 1440/390/320 px; sin overflow tras corrección focal CSS |
+| ZIP final, manifiesto y checksum | EXECUTED_PASS | Manifiesto/checksum coincidentes, 2.243 entradas y cero archivos privados; evidencia `scalaris-release-latest.json` |
+| Instalación preparada para uso | EXECUTED_PASS | Loopback 8787, perfil/rol correctos, 0 prospectos, 18 etiquetas y 7 plantillas; evidencia `scalaris-installed-local.json`; QA detenido |
+| Validador integral repetido de esta edición | BLOCKED_EXTERNAL | Docker no instalado; sin dos corridas limpias sobre el contenido final Scalaris |
+| Publicación GitHub de esta edición | IN_PROGRESS | `AUTHORIZED_IN_PROGRESS`; verificar commit/push y coincidencia local/remota |
+| CI de esta edición | IN_PROGRESS | `PENDING_POST_PUSH`; verificar CI sobre el SHA efectivamente publicado |
+| Contactos reales y comunicaciones reales | NOT_APPLICABLE | No importados ni enviados en esta misión; guardas cerradas |
+| Producción de esta edición | NOT_APPLICABLE | No desplegada |
+
+Consultas canónicas: `docs/segments/SCALARIS-001.md`, `docs/status.md` y `docs/scalaris-marketing-local.md`. Los nuevos resultados se incorporan con evidencia ejecutada; implementado no equivale a PASS funcional.
+
+## Historial validado — baseline publicado hasta 2026-07-30
+
+El commit `d6bfe64283cd3bab8dce441e4b01e348f9a55d5e` tuvo dos corridas integrales limpias y CI `30530515993`, 22/22. La tabla siguiente conserva esos resultados y sus antecedentes sobre sus commits originales.
 
 | Capacidad | Estado | Evidencia actual |
 |---|---|---|

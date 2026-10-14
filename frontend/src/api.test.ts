@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getImportRows, getProspectDashboardMetrics, listProspects } from "./api";
+import { getBusinessProfile, getImportRows, getProspectDashboardMetrics, listProspects } from "./api";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -56,6 +56,17 @@ describe("getProspectDashboardMetrics", () => {
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(String(url)).toBe("/api/v1/prospects/metrics");
     expect(init).toMatchObject({ credentials: "same-origin" });
+  });
+});
+
+describe("getBusinessProfile", () => {
+  it("lee el perfil de la organización autenticada con la sesión existente", async () => {
+    const response = { code: "SCALARIS", serviceLines: ["Servicio técnico", "Desarrollo", "Venta a pedido"], manualCommunicationsOnly: true };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(response), {
+      status: 200, headers: { "content-type": "application/json" },
+    }));
+    await expect(getBusinessProfile()).resolves.toEqual(response);
+    expect(fetchMock.mock.calls[0]).toEqual(["/api/v1/business-profile", expect.objectContaining({ credentials: "same-origin" })]);
   });
 });
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-14 — SCALARIS-001 Marketing y operación local Windows
+
+Estado: `LOCAL_OPERATIONAL_PASS`; publicación GitHub `AUTHORIZED_IN_PROGRESS`, CI `PENDING_POST_PUSH`, ZIP de entrega local revisado e instalación de uso preparada.
+
+- agrega perfil y organización Scalaris, conservando compatibilidad `LEGACY` y los contratos históricos;
+- prepara cuenta Marketing con permisos comerciales, separada de administración y sin envío real;
+- incorpora referencias vigentes para servicio técnico, desarrollo y venta a pedido, etiquetas y plantillas sin contactos reales;
+- adapta lenguaje, resumen, agenda, oportunidades, importación y ayuda al trabajo de Marketing;
+- facilita apertura/parada/respaldo por doble clic con Compose Scalaris propio, loopback y volumen independiente;
+- agrega camino Windows portable con Java 21, PostgreSQL 18 y Node 24 incluidos, configuración privada y recuperación en base nueva;
+- incorpora guía operativa, manual y documentación canónica de SCALARIS-001;
+- registra 62 pruebas unitarias y 6 de integración focalizada backend aprobadas, junto con 55 aserciones del launcher PowerShell 5.1 con respaldo simulado;
+- aprueba frontend: 16 unitarias, typecheck, build, audit sin vulnerabilidades y corrida E2E conjunta final 4/4, sin omitidos, inesperados ni flaky;
+- comprueba el paquete Windows real mediante 18 controles PowerShell 5.1, incluido checksum, recuperación en base nueva, conservación de la anterior y cero estados enviados;
+- revisa el manual visualmente a 1440/390/320 px y corrige únicamente el desborde de nombres de archivos en móvil estrecho;
+- revisa el ZIP definitivo y su manifiesto/checksum: 2.243 entradas y cero archivos privados;
+- prepara instalación de uso activa en loopback 8787, sin prospectos de prueba, con 18 etiquetas y 7 plantillas; detiene QA;
+- fija como siguiente paso uso/piloto local, sin volver a empaquetar ni importar contactos reales automáticamente;
+- registra Docker real como bloqueado por ausencia de Docker; no atribuye PASS a Compose, health ni restauración Docker;
+- conserva la historia exacta del baseline `d6bfe642` sin trasladar su doble validación/CI a la nueva edición;
+- registra autorización explícita de add, revisión de diff, commit y push a GitHub, con publicación en curso y CI pendiente tras el push; no afirma éxito remoto hasta verificarlo;
+- conserva [publicación GitHub Scalaris](docs/validation/scalaris-github-publication-2026-10-14.md) como autoridad de esa fase;
+- mantiene PR, producción, conexiones de proveedores y comunicaciones reales fuera de alcance.
+
 ## 2026-07-30 — SEG-001 Gmail OAuth y campañas LIVE controladas
 
 - recupera el working tree parcial mediante snapshot externo verificable y

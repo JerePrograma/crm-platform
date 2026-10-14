@@ -1,8 +1,33 @@
 # Operación local, validación y despliegue
 
-Actualizado: 2026-07-24
+Actualizado: 2026-10-14
 
-## Requisitos
+## Uso local de Scalaris para Marketing
+
+La publicación GitHub actual está `AUTHORIZED_IN_PROGRESS`, con CI `PENDING_POST_PUSH`: el usuario autorizó add, revisión de diff, commit y push. La autoridad de esa fase es [publicación GitHub Scalaris](../validation/scalaris-github-publication-2026-10-14.md). Esta autorización no habilita PR, producción ni comunicaciones reales; el resultado remoto todavía debe verificarse.
+
+La guía vigente es [Scalaris CRM para Marketing](../scalaris-marketing-local.md). Distingue dos modalidades:
+
+| Modalidad | Abrir | Datos privados | Requisitos |
+|---|---|---|---|
+| Paquete Windows | Extraer ZIP completo y ejecutar `AbrirCRMScalarisPortable.cmd` | `%LOCALAPPDATA%\ScalarisCRM\portable` | Windows de 64 bits; Java 21, PostgreSQL 18 y Node 24 incluidos |
+| Docker desde repositorio | `AbrirCRMScalaris.cmd` | `%LOCALAPPDATA%\ScalarisCRM`; PostgreSQL en volumen propio | Docker Desktop y contenedores Linux |
+
+Los archivos `Detener...cmd` conservan la base y `Respaldar...cmd` crean copias privadas con checksum. La pantalla se abre después de comprobar salud y escucha en loopback, habitualmente puerto 8787; la primera configuración elige puertos libres cuando sea necesario. El acceso inicial se guarda en un archivo privado y separa Marketing de administración.
+
+El camino Docker utiliza `docker-compose.scalaris.yml` y proyecto `scalaris-crm-local`, sin compartir el volumen del CRM histórico. El paquete portable incluye su propio runtime y guarda los datos fuera de la aplicación. Copiar el ZIP no transfiere contactos ni reemplaza respaldar la instalación.
+
+El backend usa `CRM_BUSINESS_PROFILE=SCALARIS` y `SPRING_PROFILES_ACTIVE=scalaris`. Ninguna modalidad local conecta proveedores ni abre las guardas. No regenerar claves si ya existe una base y falta la configuración: recuperar la copia privada.
+
+SCALARIS-001 tiene operación portable local aprobada con Java 21/PostgreSQL 18/Node 24: 18 comprobaciones reales PowerShell 5.1, incluida primera apertura, Marketing, loopback, persistencia, checksum, recuperación en base nueva y conservación de la anterior. Backend aprobó 62 unitarias y 6 de integración focalizada; frontend, 16 unitarias, typecheck/build/audit sin vulnerabilidades y E2E conjunto 4/4 sin omitidos, inesperados ni flaky. La fuente local está congelada y el ZIP definitivo tiene manifiesto/checksum revisados, 2.243 entradas y cero archivos privados.
+
+La instalación de uso está activa en `http://127.0.0.1:8787`, con perfil Scalaris/rol Marketing correctos, cero prospectos, 18 etiquetas y 7 plantillas; todo escucha en loopback. QA quedó detenido. Evidencias locales: `validation-output/scalaris-release-latest.json` y `validation-output/scalaris-installed-local.json`. El siguiente paso es uso/piloto local; no recrear el paquete ni importar contactos reales automáticamente.
+
+El launcher Docker aprobó 55 aserciones, con respaldo simulado. Docker/Compose real y el validador integral histórico están bloqueados porque Docker no está instalado. Evidencia portable ignorada por Git: `validation-output/scalaris-portable-latest.json`; manual revisado visualmente en desktop/móviles de 1440/390/320 px.
+
+La recuperación portable crea una base nueva, verifica el checksum y conserva la anterior. El responsable técnico debe comprobar el resultado y las credenciales restauradas. Conservar paquete anterior, configuración y respaldo antes de actualizar; un cambio de versión mayor de PostgreSQL exige migración revisada.
+
+## Requisitos técnicos del desarrollo y validación históricos
 
 - Git;
 - Docker Desktop o Docker Engine con Compose;
@@ -23,7 +48,7 @@ git rev-parse HEAD
 git rev-parse origin/main
 ```
 
-El validador integral exige ahora la rama `main`. Detenerse ante cambios no relacionados, conflicto, divergencia o remoto inesperado.
+El validador integral exige `main` y preservación del working tree. En la edición Scalaris actual hay cambios locales: no cambiar de rama ni actualizar sobrescribiéndolos. Detenerse ante conflicto, divergencia o remoto inesperado.
 
 ## Self-test del parser de contenedores
 
@@ -149,7 +174,7 @@ Solo omitir una fase cuando:
 4. el entorno es equivalente;
 5. la omisión queda registrada.
 
-Los scripts de validación cambiaron en la consolidación del 24 de julio; por eso `productionProfileSmoke`, `finalTreeClean` y el cierre integral deben volver a ejecutarse.
+Los cambios Scalaris de octubre no están cubiertos por la validación del 24/30 de julio. El recorrido portable se registra con su runtime propio; el cierre integral del repositorio requiere repetir sus fases sobre el commit definitivo y Docker disponible.
 
 ## Despliegue
 

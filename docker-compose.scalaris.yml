@@ -1,0 +1,97 @@
+name: scalaris-crm-local
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: scalaris_crm
+      POSTGRES_USER: scalaris
+      POSTGRES_PASSWORD: ${SCALARIS_DATABASE_PASSWORD:?Use AbrirCRMScalaris.cmd to create the local configuration}
+    volumes:
+      - scalaris_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scalaris -d scalaris_crm"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    networks: [private]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: scalaris
+      CRM_BUSINESS_PROFILE: SCALARIS
+      DATABASE_URL: jdbc:postgresql://postgres:5432/scalaris_crm
+      DATABASE_USER: scalaris
+      DATABASE_PASSWORD: ${SCALARIS_DATABASE_PASSWORD:?Missing local configuration}
+      CRM_BOOTSTRAP_USERNAME: ${SCALARIS_BOOTSTRAP_USERNAME:?Missing local administrator}
+      CRM_BOOTSTRAP_PASSWORD: ${SCALARIS_BOOTSTRAP_PASSWORD:?Missing local administrator credential}
+      CRM_MARKETING_USERNAME: ${SCALARIS_MARKETING_USERNAME:?Missing local marketing user}
+      CRM_MARKETING_PASSWORD: ${SCALARIS_MARKETING_PASSWORD:?Missing local marketing credential}
+      CRM_MARKETING_DISPLAY_NAME: ${SCALARIS_MARKETING_DISPLAY_NAME:-Marketing Scalaris}
+      CRM_MINIMUM_PASSWORD_LENGTH: "12"
+      SESSION_COOKIE_SECURE: "false"
+      SENDING_ENABLED: "false"
+      SENDING_DRY_RUN: "true"
+      SENDING_DAILY_LIMIT: "0"
+      SENDING_KILL_SWITCH: "true"
+      EMAIL_PROVIDER_MODE: NOOP
+      WHATSAPP_PROVIDER_MODE: DEEPLINK_ONLY
+      MESSAGING_REAL_NETWORK_ALLOWED: "false"
+      OUTBOX_WORKER_ENABLED: "false"
+      FAKE_INBOUND_ENABLED: "false"
+      SPRINGDOC_API_DOCS_ENABLED: "false"
+      SPRINGDOC_SWAGGER_UI_ENABLED: "false"
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75 -Djava.io.tmpdir=/tmp
+      PORT: "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "java", "-cp", "/app/healthcheck", "RuntimeHealthCheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    networks: [private]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    stop_grace_period: 30s
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${SCALARIS_FRONTEND_PORT:?Missing local port}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    networks: [edge, private]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+networks:
+  edge:
+  private:
+    internal: true
+
+volumes:
+  scalaris_postgres:

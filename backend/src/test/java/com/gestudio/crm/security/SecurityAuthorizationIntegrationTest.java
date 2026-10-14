@@ -409,6 +409,7 @@ class SecurityAuthorizationIntegrationTest {
         .perform(get("/api/v1/prospects/metrics").session(tenantB))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.interested").value(0))
+        .andExpect(jsonPath("$.total").value(0))
         .andExpect(jsonPath("$.blocked").value(0));
   }
 

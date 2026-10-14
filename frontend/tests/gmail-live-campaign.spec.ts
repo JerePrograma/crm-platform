@@ -131,7 +131,7 @@ async function createUser(page: Page, username: string, password: string) {
 
 async function createProspectWithEmail(page: Page, name: string, email: string, consent: "GRANTED" | "DENIED" = "GRANTED") {
   await page.getByRole("button", { name: "Prospectos" }).click();
-  await page.getByLabel("Nueva institución").fill(name);
+  await page.getByLabel("Nuevo prospecto").fill(name);
   await page.getByLabel("Localidad").first().fill("Ciudad Sintética");
   await page.getByRole("button", { name: "Crear prospecto" }).click();
   await expect(page.getByRole("cell", { name })).toBeVisible();
@@ -269,7 +269,7 @@ test("Gmail OAuth and controlled live campaigns run end to end against the local
   await connectSyntheticGoogle(page);
   reduceSyntheticSenderInterval();
 
-  await page.getByRole("button", { name: "Mensajes e integraciones" }).click();
+  await page.getByRole("button", { name: "Borradores y contacto manual" }).click();
   await expect(page.getByText("Gmail real controlado", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("campaigns@gestudio.test").first()).toBeVisible();
   await capture(page, "09-mensajes-integraciones.png");
@@ -289,6 +289,7 @@ test("Gmail OAuth and controlled live campaigns run end to end against the local
   await templatePanel.getByLabel("Nombre").fill(templateName);
   await templatePanel.getByLabel("Asunto").fill("Una propuesta sintética para {{prospect.displayName}}");
   await templatePanel.getByLabel("Texto").fill("Hola {{contact.firstName}}, este mensaje sintético corresponde a {{campaign.name}}.");
+  await templatePanel.getByText("Formato avanzado (opcional)", { exact: true }).click();
   await templatePanel.getByLabel("HTML seguro").fill("<p>Hola <strong>{{contact.firstName}}</strong>, este mensaje es sintético.</p>");
   await templatePanel.getByRole("button", { name: "Crear versión 1" }).click();
   await expect(page.getByText(/Plantilla .* v1 creada\./)).toBeVisible();

@@ -84,6 +84,11 @@ messaging:
     max-text-length: ${WHATSAPP_MAX_TEXT_LENGTH:4096}
 
 crm:
+  business:
+    profile: ${CRM_BUSINESS_PROFILE:LEGACY}
+    marketing-username: ${CRM_MARKETING_USERNAME:}
+    marketing-password: ${CRM_MARKETING_PASSWORD:}
+    marketing-display-name: ${CRM_MARKETING_DISPLAY_NAME:Marketing Scalaris}
   gmail:
     authorization-url: ${GMAIL_OAUTH_AUTHORIZATION_URL:https://accounts.google.com/o/oauth2/v2/auth}
     token-url: ${GMAIL_OAUTH_TOKEN_URL:https://oauth2.googleapis.com/token}

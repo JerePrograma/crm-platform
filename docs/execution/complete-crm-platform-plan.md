@@ -1,8 +1,26 @@
 # Plan integral de ejecución del CRM
 
-Actualizado: 2026-07-22
+Actualizado: 2026-10-14
 
-## Alcance
+## Ejecución activa: SCALARIS-001
+
+Adaptar y comprobar el CRM local para una persona de Marketing de Scalaris, con servicio técnico, desarrollo y venta a pedido como referencias del negocio. El alcance activo está en `docs/segments/SCALARIS-001.md` y la operación en `docs/scalaris-marketing-local.md`.
+
+Se conserva Java 21/Spring Boot 4.1, PostgreSQL, Flyway V1–V14, sesión/CSRF, RBAC y aislamiento. El perfil Scalaris prepara organización, cuenta de Marketing y catálogo propios; `LEGACY` conserva compatibilidad. No hay importación de contactos reales ni habilitación de comunicaciones.
+
+| Fase de octubre | Resultado esperado | Estado |
+|---|---|---|
+| Negocio y permisos | Referencias Scalaris y cuenta Marketing separada | Runtime portable local aprobado |
+| Pantalla y flujo diario | Consultas, agenda, oportunidades, etiquetas, importación y ayuda | Frontend 16 unitarias, typecheck/build/audit y E2E conjunto 4/4 aprobados |
+| Docker local | Doble clic, loopback, persistencia y respaldo | Launcher focal PASS 55 aserciones; Docker real bloqueado |
+| Windows portable | Java 21/PostgreSQL 18/Node 24 incluidos, apertura sin Docker | 18 comprobaciones PowerShell 5.1 reales aprobadas |
+| Recuperación y entrega | Checksum, base restaurada independiente y ZIP revisado | Recuperación y ZIP definitivos aprobados; instalación de uso preparada |
+
+Backend Java 21: 62 pruebas unitarias y 6 de integración focalizada aprobadas. El cierre operativo local comprobó primera apertura, roles, loopback, persistencia, parada, respaldo/restauración y conservación de la base anterior, con datos sintéticos. El manual se revisó visualmente a 1440/390/320 px. E2E conjunto aprobó 4/4, sin omitidos/inesperados/flaky. El ZIP definitivo quedó revisado, con manifiesto/checksum coincidentes y cero archivos privados; la instalación de uso está activa sin prospectos de prueba, con catálogo Scalaris. El siguiente paso es uso/piloto local, sin volver a empaquetar ni importar contactos reales automáticamente.
+
+Docker no está instalado en este host. Las dos corridas integrales y CI del baseline `d6bfe64283cd3bab8dce441e4b01e348f9a55d5e` son históricas y no cubren la edición actual. La publicación GitHub de octubre está `AUTHORIZED_IN_PROGRESS`: add, revisión de diff, commit y push autorizados explícitamente; CI `PENDING_POST_PUSH`. La autoridad es [publicación GitHub Scalaris](../validation/scalaris-github-publication-2026-10-14.md), sin afirmar push exitoso hasta verificarlo. PR, producción y comunicaciones reales permanecen fuera de alcance.
+
+## Alcance histórico SEG-002–SEG-011 — julio de 2026
 
 Esta ejecución completó SEG-002–SEG-009, implementó el candidato SEG-010 y
 activó SEG-011 para su validación limpia repetida. El objetivo sigue siendo una
@@ -14,7 +32,7 @@ timeline, tareas, duplicados, oportunidades, campañas simuladas, mensajería fa
 inbound sintético, reportes, seguridad, observabilidad, backup/restore, perfil productivo local,
 CI, documentación y validación reproducible.
 
-## Arquitectura actual
+## Arquitectura del checkpoint histórico de julio
 
 - monolito modular Spring Boot 4.1 sobre Java 21;
 - PostgreSQL 17, Flyway V1–V13 y Hibernate `validate`;
