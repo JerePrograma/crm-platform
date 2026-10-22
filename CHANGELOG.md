@@ -5,7 +5,9 @@
 - actualiza Spring Boot a 4.1.2 y usa sus versiones coherentes de Spring, Tomcat, Jackson y PostgreSQL JDBC;
 - fija un runtime Temurin Java 21 actualizado por digest, conservando ejecución sin root;
 - agrega consultas paginadas de tareas con filtros previos al límite para agenda y ficha, manteniendo el endpoint histórico;
+- bloquea las cuatro acciones de la ficha durante el guardado para impedir clics descartados y agrega una regresión con actualización retenida;
 - prepara Scalaris/Marketing en Compose productivo, límites de importación coherentes y forwarding HTTPS sujeto a allowlist del edge;
+- actualiza la dirección interna del backend desde el proxy después de reemplazar su contenedor, con regresión de IP distinta sin reinicio del frontend;
 - hace explícito el destino Compose de backup/restore y verifica checksum antes de restaurar;
 - incorpora Marketing Scalaris, importaciones grandes y escaneo de ambas imágenes a los gates;
 - habilita Prometheus solo para administración y mantiene las guardas de comunicación cerradas;

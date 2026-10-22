@@ -20,7 +20,7 @@ El tag público `cgr.dev/chainguard/jre:latest` resuelve actualmente a Java 27.0
 | Repository safety inicial | EXECUTED_PASS | git diff --check y rutas privadas |
 | Sintaxis PowerShell inicial | EXECUTED_PASS | 28 scripts de la base auditada |
 | Resolución del BOM actualizado | EXECUTED_PASS | dependency:tree; evidencia local en validation-output |
-| Backend focalizado, integración y formato | EXECUTED_PASS | rerun de las tres clases afectadas aprobó 18/18; falta gate integral final limpio |
+| Backend focalizado, integración y formato | EXECUTED_PASS | rerun focal 18/18 y dos suites completas 126/126 sin fallos/errores/omitidos; falta gate integral final limpio |
 | Frontend typecheck/unit/build/audit | EXECUTED_PASS | Vite 8.1.6, Vitest 4.1.12; 21 unitarias y audit cero vulnerabilidades |
 | Regresiones de agenda >200 y ficha | EXECUTED_PASS | 2 integración PostgreSQL y 2 recorridos de navegador; incluye respuestas tardías y retorno tras completar última tarea |
 | Proxy y configuración productiva | EXECUTED_PASS | 57 aserciones reales nginx/Caddy TLS, login/cookies, límites, spoofing, privacidad de logs y Compose Hostinger |
@@ -28,9 +28,9 @@ El tag público `cgr.dev/chainguard/jre:latest` resuelve actualmente a Java 27.0
 | E2E Marketing Scalaris/importación grande | EXECUTED_PASS | wrapper Windows PS5.1, 5/5 sin omitidos/flaky, ~1.28MiB accepted2/dryRun, guardas y cleanup |
 | Perfil productivo local por Bash | EXECUTED_PASS | 5/5, readiness/runtime/guardas/cero enviados/cleanup; Git Bash en Windows, no host Unix nativo |
 | Política de release Hostinger | EXECUTED_PASS | 7 regresiones: commit/referencias/IDs verificados, PostgreSQL por digest, puertos privados y cookie segura |
-| Migraciones V11/V13/empty a V14 | NOT_RUN | pendiente |
+| Migraciones V11/V13/empty a V14 | EXECUTED_PASS | intento integral 20261022-145115: vacío→V14, V11→V12→V13→V14, V13→V14 y Hibernate validate |
 | Grype backend/frontend | EXECUTED_PASS | ambos high/critical cero; backend medium15/low11 y frontend medium3; falta confirmar las imágenes de las corridas finales |
-| Validador integral corrida 1/2 | NOT_RUN | pendiente de commit limpio definitivo |
+| Validador integral corrida 1/2 | NOT_RUN | pareja pendiente; los dos intentos sobre a809216 fallaron y se conservan debajo |
 | CI del código modificado | NOT_RUN | no publicado |
 | Producción real | NOT_DEPLOYED | destino elegido; activación y secretos operativos pendientes |
 
@@ -47,6 +47,32 @@ El scan repetido después de retirarlos terminó con exit0 y high/critical cero 
 La primera suite de desarrollo se conserva como fallo: 124 casos contabilizados, un fallo y tres errores. Dos eran del nuevo fixture JPA/JDBC (faltaba flush), uno fue un timeout de arranque PostgreSQL durante concurrencia de builds/scans, y el fallo de seguridad ejecutó producción compilada antes del cambio de su test. Después de sincronizar el fixture y recompilar, las tres clases afectadas aprobaron 18/18. Este rerun focalizado no reemplaza las dos corridas integrales del commit limpio.
 
 El build Maven usa caché de dependencias descargadas, no de clases/JAR: `mvn clean package` se ejecuta en cada reconstrucción sin caché de capas. Los gates integrales siguen exigiendo build limpio y pruebas, y el Dockerfile sigue sin sustituir Maven verify.
+
+## Intentos integrales conservados y corrección de la ficha
+
+Los intentos `complete-crm-20261022-143156.json` y `complete-crm-20261022-145115.json` ejecutaron la fuente limpia `a809216e53325fb4bb6ecca813053a3c32fa7ae8`. Ninguno integra una pareja aprobada.
+
+El primero terminó `EXECUTED_FAIL` porque faltaba `.env`, requisito local documentado. Se creó el archivo ignorado desde `.env.example`, sin credenciales operativas ni cambios de fuente, antes de repetir. SHA-256 del resumen: `7fa735ad0516e0e22cf6385b383a0c91fa6874fc37151db46834e8f6c6d7cf4e`.
+
+El segundo duró 1.688,911 s. Pasó backend 126/126, interfaz 21/21, typecheck/build, reconstrucción sin caché de capas, arranque/smoke, npm audit cero, Grype de ambos runtimes sin high/critical y las tres rutas de migración. Falló después en el recorrido general al esperar «Nota registrada.»; los otros dos casos de navegador pasaron. SHA-256 del resumen: `b129322fe1e7ef71b30c8db80f348326c5570019f0322241135a142b865c543e`; transcript: `f6c1541831c35787c16c3daa0e5eec09c9a6c4dc2c4112c4948a3892f5ac7732`.
+
+El trace confirma tres cambios de estado HTTP200 y ninguna solicitud POST de nota. Los cuatro botones de contacto, tarea, actividad y nota seguían activos mientras `run()` descartaba nuevas operaciones por `busyRef`; la actualización anterior aún no terminaba. Se agrega `disabled={busy}` a esos botones y una regresión que retiene la actualización, comprueba bloqueo y conservación del texto, libera la respuesta y exige una sola nota persistida. No se aumentan timeouts ni se habilitan reintentos. La corrección requiere un nuevo commit y reiniciar ambas validaciones integrales; el resultado focal y la pareja definitiva se registrarán al ejecutarse.
+
+El recorrido focal corregido aprobó 6/6 casos generales, responsive, NOOP, paginación y ficha ocupada, sin omitidos ni flaky (`focused-gates-1792683461912-389e6a7d/general-playwright.json`). El fixture inicial de la regresión se conserva como fallo de desarrollo: creaba un prospecto sin localidad/canal que quedaba `NEEDS_DATA`, por lo que no existía la transición elegida; se completaron sus datos sintéticos. No se modificó el CSV histórico: el perfil del recorrido general es `LEGACY`, comprobado en el trace, y su importación pasó. SQL y API confirmaron guardas cerradas y límites efectivos/persistidos cero antes y después.
+
+El siguiente gate focal Gmail pasó NOOP y detectó HTTP502 tras recrear el backend mientras el frontend continuaba en ejecución. El proxy resolvía `backend:8080` sólo al iniciar. Se prepara resolución dinámica mediante el DNS interno de Docker y una regresión con IP nueva y el mismo frontend, antes de repetir Gmail y el perfil productivo. Nginx requiere un upstream con memoria compartida y resolución configurada para seguir esos cambios; esa capacidad está disponible en la versión fijada, según su [documentación oficial](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server). Este fallo no se convierte en PASS reiniciando el frontend desde la prueba.
+
+El repro negativo confirmó backend `172.21.0.3→172.21.0.5`, acceso directo HTTP200 y proxy HTTP502 con el mismo frontend (`crm-gmail-fake-dns-repro-1792683981549.json`). La imagen corregida `sha256:2940013173d8cb0652f7506962c1fcb483790e64c5821df833951c7fd6a9c00a` aprobó 73 aserciones del proxy con su configuración empaquetada, reservando la IP antigua con un servidor HTTP503. Ambas rutas `/api` y `/actuator` recuperaron HTTP200 dentro de 15 segundos, conservando ID, hora de inicio y contador de reinicios del frontend. Esa regresión queda integrada en los validadores completos Windows y Unix.
+
+La repetición focal detectó además una carrera del test Gmail: tras cerrar sesión volvía a aceptar el panel de la sesión anterior antes de completar el logout. El harness ahora espera «Ingresar» y verifica `/auth/me` contra el usuario solicitado, sin reintentos ni mayores timeouts. El fallo queda conservado en `focused-gates-1792684164440-6fde4882/gmail-logout-diagnosis.json`.
+
+La repetición final `focused-gates-1792684758906-29bbf760/summary.json` aprobó Gmail completo (NOOP 1/1, OAuth/campaña simulada 1/1 en 38,634 s, permisos, revocación, cifrado y comprobaciones de base) y producción Scalaris 6/6 en 28,4 s. El recorrido general 6/6 había pasado sobre la misma imagen frontend, sin cambios posteriores de aplicación. Los IDs exactos backend/frontend, guardas cerradas, cero enviados y cleanup se verificaron; el consolidado `final-focused-release-summary-2026-10-22.json` tiene SHA-256 `6b61606d6cc403fe005ffd435a9a53f66777275d574c297a10b5c304ed6b726e`. Son ejecuciones focalizadas sobre fuente en desarrollo: faltan el scan de la imagen nueva y las dos corridas integrales consecutivas sobre el siguiente commit limpio.
+
+## Copia cifrada elegida por el usuario
+
+El destino externo será esta PC. El helper está instalado fuera del repositorio en `%LOCALAPPDATA%\ScalarisCRM\hostinger-backup`: AES-256-GCM streaming, metadatos autenticados, verificación MAC/SHA-256 y clave DPAPI CurrentUser con ACL privada. Aprobó 12/12 pruebas sintéticas y 7/7 controles de ACL; recuperar las copias depende de conservar el perfil Windows y `backup-key.dpapi`. No se exportó la clave en texto plano.
+
+La tarea diaria de las 04:15 de Buenos Aires está preparada, sin registrar ni habilitar: usuario actual interactivo, sin elevación, sin solapamiento, ejecución al volver a estar disponible y límite de 30 minutos. Sus siete regresiones pasaron, incluidos fallos SSH, copia alterada y verificación de copias ya existentes. El VPS tendrá el respaldo diario de las 03:15 según el runbook preparado. Todavía no hay copias operativas descargadas ni conexión SSH del helper; instalarlo y probarlo con datos sintéticos no acredita un respaldo externo del VPS.
 
 ## Límites
 

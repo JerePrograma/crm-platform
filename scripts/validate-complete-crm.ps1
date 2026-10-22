@@ -213,7 +213,16 @@ try {
     if ($sent -ne '0') { throw "Forbidden sent state count: $sent" }
   }
   Run-Phase 'backupRestore' { & (Join-Path $PSScriptRoot 'verify-backup-restore.ps1') }
-  Run-Phase 'productionProfileSmoke' { & (Join-Path $PSScriptRoot 'verify-production-profile.ps1') -FrontendPort $ProductionFrontendPort }
+  Run-Phase 'productionProfileSmoke' {
+    $previousProxyTestNginxImage = $env:CRM_PROXY_TEST_NGINX_IMAGE
+    try {
+      $env:CRM_PROXY_TEST_NGINX_IMAGE = $frontendImage
+      Invoke-Checked 'node' @('scripts/test-production-proxy.js')
+    } finally {
+      $env:CRM_PROXY_TEST_NGINX_IMAGE = $previousProxyTestNginxImage
+    }
+    & (Join-Path $PSScriptRoot 'verify-production-profile.ps1') -FrontendPort $ProductionFrontendPort
+  }
   if (-not $KeepRunning) { Invoke-Checked 'docker' @('compose','--profile','app','--profile','smoke','down','-v','--remove-orphans') }
   Run-Phase 'finalTreeClean' {
     & (Join-Path $PSScriptRoot 'check-repository-safety.ps1')

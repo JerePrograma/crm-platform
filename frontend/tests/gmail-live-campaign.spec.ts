@@ -34,6 +34,9 @@ async function login(page: Page, username = adminUser, password = adminPassword)
     await loginButton.click();
   }
   await expect(page.getByRole("heading", { name: "Resumen comercial" })).toBeVisible();
+  const identityResponse = await page.request.get("/api/v1/auth/me");
+  expect(identityResponse.ok()).toBeTruthy();
+  expect((await identityResponse.json()).username).toBe(username);
 }
 
 function requireIsolatedDatabase() {
@@ -474,6 +477,7 @@ test("Gmail OAuth and controlled live campaigns run end to end against the local
 
   await createUser(page, salesUsername, salesPassword);
   await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page.getByRole("heading", { name: "Ingresar", exact: true })).toBeVisible();
   await login(page, salesUsername, salesPassword);
   await page.getByRole("button", { name: "Campañas" }).click();
   await expect(page.getByRole("button", { name: "Iniciar campaña real" })).toHaveCount(0);
@@ -481,6 +485,7 @@ test("Gmail OAuth and controlled live campaigns run end to end against the local
   await capture(page, "32-falta-permisos.png");
 
   await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page.getByRole("heading", { name: "Ingresar", exact: true })).toBeVisible();
   await login(page);
   await page.getByRole("button", { name: "Configuración" }).click();
   expect(sqlScalar(`

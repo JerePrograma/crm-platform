@@ -163,3 +163,74 @@ test("La ficha pagina sus propias 230 tareas sin depender del lote global", asyn
   expect(selectedRequests.every((url) => !url.searchParams.has("statuses"))).toBeTruthy();
   expect(api.legacyRequests()).toBe(0);
 });
+
+test("La ficha mantiene bloqueados los envíos mientras actualiza una operación", async ({ page }) => {
+  await signIn(page);
+  const suffix = Date.now();
+  const name = `Ficha ocupada sintética ${suffix}`;
+  const note = `Nota conservada durante la actualización ${suffix}`;
+  await page.getByRole("button", { name: "Prospectos", exact: true }).click();
+  await page.getByLabel("Nuevo prospecto", { exact: true }).fill(name);
+  await page.getByLabel("Localidad", { exact: true }).first().fill("Rosario");
+  const createdResponse = page.waitForResponse((response) =>
+    response.request().method() === "POST" && new URL(response.url()).pathname === "/api/v1/prospects",
+  );
+  await page.getByRole("button", { name: "Crear prospecto", exact: true }).click();
+  const prospect = await (await createdResponse).json() as { id: string };
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  await page.getByLabel("Nombre", { exact: true }).fill("Contacto sintético");
+  await page.getByLabel("Correo electrónico", { exact: true }).fill(`busy-${suffix}@example.test`);
+  await page.getByRole("button", { name: "Agregar contacto", exact: true }).click();
+  await expect(page.getByText("Contacto agregado y elegibilidad actualizada.", { exact: true })).toBeVisible();
+  const qualify = page.getByRole("button", { name: "Pasar a En calificación", exact: true });
+  await expect(qualify).toBeEnabled();
+  const tasksPanel = page.locator("details.disclosure-panel").filter({ has: page.locator("summary", { hasText: "Tareas de seguimiento" }) });
+  const activityPanel = page.locator("details.disclosure-panel").filter({ has: page.locator("summary", { hasText: "Actividad y notas" }) });
+  await tasksPanel.locator("summary").click();
+  await activityPanel.locator("summary").click();
+  const noteInput = activityPanel.getByLabel("Nota", { exact: true });
+  await noteInput.fill(note);
+
+  const noteRequests: unknown[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === `/api/v1/prospects/${prospect.id}/notes`) {
+      noteRequests.push(request.postDataJSON());
+    }
+  });
+  let notifyRefresh!: () => void;
+  let releaseRefresh!: () => void;
+  const refreshHeld = new Promise<void>((resolve) => { notifyRefresh = resolve; });
+  const refreshReleased = new Promise<void>((resolve) => { releaseRefresh = resolve; });
+  let holdNextRefresh = true;
+  await page.route("**/api/v1/prospects?*", async (route) => {
+    if (holdNextRefresh) {
+      holdNextRefresh = false;
+      notifyRefresh();
+      await refreshReleased;
+    }
+    await route.continue();
+  });
+  const submits = [
+    page.getByRole("button", { name: "Agregar contacto", exact: true }),
+    tasksPanel.getByRole("button", { name: "Crear tarea", exact: true }),
+    activityPanel.getByRole("button", { name: "Registrar actividad", exact: true }),
+    activityPanel.getByRole("button", { name: "Agregar nota", exact: true }),
+  ];
+  await qualify.click();
+  try {
+    await refreshHeld;
+    // El estado nuevo ya llegó; la actualización general sigue pendiente.
+    await expect(page.getByRole("button", { name: "Pasar a Listo para contactar", exact: true })).toBeVisible();
+    for (const submit of submits) await expect(submit).toBeDisabled();
+    await expect(noteInput).toHaveValue(note);
+    expect(noteRequests).toHaveLength(0);
+  } finally {
+    releaseRefresh();
+  }
+  for (const submit of submits) await expect(submit).toBeEnabled();
+  await activityPanel.getByRole("button", { name: "Agregar nota", exact: true }).click();
+  await expect(page.getByText("Nota registrada.", { exact: true })).toBeVisible();
+  await expect(noteInput).toHaveValue("");
+  await expect(activityPanel.getByText(note, { exact: true })).toBeVisible();
+  expect(noteRequests).toEqual([{ body: note }]);
+});

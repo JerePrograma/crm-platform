@@ -11,6 +11,8 @@ Un elemento solo puede declararse `COMPLETE` con evidencia ejecutada sobre el co
 La misión actual implementa la remediación `SCALARIS-SEC-001` y `SCALARIS-AGENDA-001`, configuración Scalaris/Marketing productiva, proxy HTTPS/importaciones, backup/restore por stack y gates específicos. El estado funcional local y de publicación está en [la validación del 2026-10-22](validation/scalaris-production-readiness-2026-10-22.md). Los fallos originales registrados debajo se conservan como evidencia histórica y no se convierten en PASS por modificar archivos.
 
 - [ ] Cerrar validación ejecutada de dependencias, ambas imágenes, tareas, proxy, E2E y backup/restore.
+- [ ] Confirmar la regresión de las cuatro acciones de ficha bloqueadas durante el guardado, detectada por el recorrido integral del 22 de octubre.
+- [ ] Confirmar recuperación del proxy tras reemplazar el backend con IP distinta, sin reiniciar el frontend, y repetir Gmail simulado.
 - [ ] Completar dos recorridos limpios del mismo commit y registrar sus resúmenes.
 - [ ] Publicar el código validado y verificar CI del SHA exacto cuando exista autorización de publicación.
 - [ ] Concretar acceso HTTPS, secretos, respaldos externos, alertas y puesta en servicio del VPS elegido.

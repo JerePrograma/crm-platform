@@ -108,6 +108,7 @@ database_user=$(docker exec "$postgres" printenv POSTGRES_USER)
 phase=backup-restore
 bash scripts/verify-backup-restore.sh
 phase=production-profile
+CRM_PROXY_TEST_NGINX_IMAGE="$frontend_image" node scripts/test-production-proxy.js
 bash scripts/verify-production-profile.sh "$production_frontend_port"
 phase=final-safety
 bash scripts/check-repository-safety.sh

@@ -12,6 +12,7 @@ const network = `crm-proxy-test-${process.pid}-${Date.now()}`;
 const backend = `${network}-backend`;
 const frontend = `${network}-frontend`;
 const edge = `${network}-edge`;
+const oldBackendAddress = `${network}-old-backend-address`;
 const caddyImage = 'caddy@sha256:685ae3d7c34d9b5f8caeddc5d14051db7bbd88ff1f5a2fa0c16bd8ca328fb7af';
 const docker = (...args) => execFileSync('docker', args, { encoding: 'utf8', timeout: 180000, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const pause = () => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 150);
@@ -19,8 +20,23 @@ const mount = (source, target) => `type=bind,source=${source},target=${target},r
 let checks = 0;
 function check(condition, message) { assert.ok(condition, message); checks++; }
 
-function request(bytes = 0, trusted = false, separateClient = false, uri = '/api/probe') {
-  const script = `let responded=false;const req=require('node:http').request(${JSON.stringify('http://frontend:8080' + uri)},{method:'POST',headers:{Host:'crm.test:9443','Content-Length':'${bytes}','X-Forwarded-Proto':'https',Forwarded:'for=attacker;proto=https;host=attacker.invalid','X-Forwarded-Host':'attacker.invalid','X-Forwarded-Port':'9999','X-Forwarded-Prefix':'/spoof','X-Forwarded-Ssl':'on','X-Forwarded-For':'198.51.100.77'}},res=>{responded=true;let body='';res.on('data',chunk=>body+=chunk);res.on('end',()=>console.log(JSON.stringify({status:res.statusCode,headers:res.headers,body})));});req.on('error',error=>{if(!responded){console.error(error);process.exitCode=1;}});req.end(Buffer.alloc(${bytes},120));`;
+function createNetwork() {
+  // Explicit IPAM lets the replacement test reserve the previous backend IP.
+  // Retry only pool collisions so concurrent synthetic runs remain independent.
+  for (let attempt = 0; attempt < 16; attempt++) {
+    const subnet = `10.240.${(Date.now() + process.pid + attempt) % 256}.0/24`;
+    try { docker('network', 'create', '--subnet', subnet, network); return; }
+    catch (error) { if (!String(error.stderr).includes('Pool overlaps')) throw error; }
+  }
+  throw new Error('No isolated subnet was available for the proxy regression.');
+}
+
+function startBackend() {
+  return docker('run', '-d', '--name', backend, '--network', network, '--network-alias', 'backend', '--read-only', '--user', '1000:1000', '--mount', mount(temporary, '/test'), 'node:22-alpine', 'node', '/test/backend.cjs');
+}
+
+function request(bytes = 0, trusted = false, separateClient = false, uri = '/api/probe', timeoutMs = 0) {
+  const script = `let responded=false;const req=require('node:http').request(${JSON.stringify('http://frontend:8080' + uri)},{method:'POST',timeout:${timeoutMs},headers:{Host:'crm.test:9443','Content-Length':'${bytes}','X-Forwarded-Proto':'https',Forwarded:'for=attacker;proto=https;host=attacker.invalid','X-Forwarded-Host':'attacker.invalid','X-Forwarded-Port':'9999','X-Forwarded-Prefix':'/spoof','X-Forwarded-Ssl':'on','X-Forwarded-For':'198.51.100.77'}},res=>{responded=true;let body='';res.on('data',chunk=>body+=chunk);res.on('end',()=>console.log(JSON.stringify({status:res.statusCode,headers:res.headers,body})));});req.on('timeout',()=>req.destroy(new Error('Synthetic proxy request timed out.')));req.on('error',error=>{if(!responded){console.error(error);process.exitCode=1;}});req.end(Buffer.alloc(${bytes},120));`;
   const result = JSON.parse(separateClient
     ? docker('run', '--rm', '--network', network, 'node:22-alpine', 'node', '-e', script)
     : docker('exec', backend, 'node', '-e', script));
@@ -41,9 +57,11 @@ try {
   fs.writeFileSync(path.join(temporary, 'nginx.conf'), 'pid /tmp/nginx.pid;\nerror_log /dev/stderr warn;\nevents {}\nhttp { access_log off; include /etc/nginx/mime.types; include /etc/nginx/conf.d/default.conf; }\n');
   const allowlist = path.join(temporary, 'trusted-edge.conf');
   fs.writeFileSync(allowlist, '# No trusted peers.\n');
-  docker('network', 'create', network);
-  docker('run', '-d', '--name', backend, '--network', network, '--network-alias', 'backend', '--read-only', '--user', '1000:1000', '--mount', mount(temporary, '/test'), 'node:22-alpine', 'node', '/test/backend.cjs');
-  docker('run', '-d', '--name', frontend, '--network', network, '--network-alias', 'frontend', '--network-alias', 'scalaris-crm-frontend', '--read-only', '--user', '101:101', '--tmpfs', '/tmp:rw,noexec,nosuid,size=32m,mode=1777', '--mount', mount(temporary, '/test'), '--mount', mount(path.join(root, 'frontend', 'nginx.conf'), '/etc/nginx/conf.d/default.conf'), '--mount', mount(allowlist, '/etc/nginx/crm-trusted-edge.conf'), '--entrypoint', 'nginx', nginxImage, '-c', '/test/nginx.conf', '-g', 'daemon off;');
+  createNetwork();
+  startBackend();
+  // A reviewed build must prove its packaged config, without a source override.
+  const sourceConfigMount = process.env.CRM_PROXY_TEST_NGINX_IMAGE ? [] : ['--mount', mount(path.join(root, 'frontend', 'nginx.conf'), '/etc/nginx/conf.d/default.conf')];
+  docker('run', '-d', '--name', frontend, '--network', network, '--network-alias', 'frontend', '--network-alias', 'scalaris-crm-frontend', '--read-only', '--user', '101:101', '--tmpfs', '/tmp:rw,noexec,nosuid,size=32m,mode=1777', '--mount', mount(temporary, '/test'), ...sourceConfigMount, '--mount', mount(allowlist, '/etc/nginx/crm-trusted-edge.conf'), '--entrypoint', 'nginx', nginxImage, '-c', '/test/nginx.conf', '-g', 'daemon off;');
   docker('exec', frontend, 'nginx', '-t', '-c', '/test/nginx.conf');
   let ready = false;
   let readinessError;
@@ -98,14 +116,39 @@ try {
     docker('exec', frontend, 'sh', '-ec', '! command -v curl && ! apk info --exists libcurl');
     check(true, 'The built frontend runtime must not retain unused curl/libcurl.');
   }
+
+  // Replace only the backend and occupy its old address with a distinct HTTP
+  // sentinel. A proxy that still caches its startup IP cannot pass either route.
+  const frontendBeforeReplacement = JSON.parse(docker('inspect', frontend))[0];
+  const backendBeforeReplacement = JSON.parse(docker('inspect', backend))[0];
+  const previousIp = backendBeforeReplacement.NetworkSettings.Networks[network].IPAddress;
+  docker('rm', '-f', backend);
+  docker('run', '-d', '--name', oldBackendAddress, '--network', network, '--ip', previousIp, '--read-only', '--user', '1000:1000', 'node:22-alpine', 'node', '-e', "require('node:http').createServer((req,res)=>{res.statusCode=503;res.end('STALE_BACKEND_ADDRESS');}).listen(8080,'0.0.0.0');");
+  const replacementId = startBackend();
+  const replacementIp = JSON.parse(docker('inspect', backend))[0].NetworkSettings.Networks[network].IPAddress;
+  check(replacementId !== backendBeforeReplacement.Id && replacementIp !== previousIp, 'The replacement backend must have a new container ID and a different IP.');
+  const recoveryStarted = Date.now();
+  let recovered = false;
+  let recoveryError;
+  while (Date.now() - recoveryStarted < 15000) {
+    try {
+      const api = request(0, false, false, '/api/probe', 1000);
+      const actuator = request(0, false, false, '/actuator/health', 1000);
+      if (api.status === 200 && actuator.status === 200) { recovered = true; break; }
+    } catch (error) { recoveryError = error; }
+    pause();
+  }
+  check(recovered && Date.now() - recoveryStarted < 15000, `Both /api and /actuator must recover within 15 seconds after backend replacement. ${recoveryError || ''}`);
+  const frontendAfterReplacement = JSON.parse(docker('inspect', frontend))[0];
+  check(frontendAfterReplacement.Id === frontendBeforeReplacement.Id && frontendAfterReplacement.State.StartedAt === frontendBeforeReplacement.State.StartedAt && frontendAfterReplacement.RestartCount === frontendBeforeReplacement.RestartCount, 'The frontend must recover without a restart, reload or container replacement.');
   console.log(`Production proxy regression passed: ${checks} assertions; synthetic resources only.`);
 } catch (error) {
-  for (const name of [edge, frontend, backend]) {
+  for (const name of [edge, frontend, backend, oldBackendAddress]) {
     try { console.error(`${name}:\n${docker('logs', name)}`); } catch {}
   }
   throw error;
 } finally {
-  for (const name of [edge, frontend, backend]) { try { docker('rm', '-f', name); } catch {} }
+  for (const name of [edge, frontend, backend, oldBackendAddress]) { try { docker('rm', '-f', name); } catch {} }
   try { docker('network', 'rm', network); } catch {}
   if (path.resolve(temporary).startsWith(path.resolve(os.tmpdir()) + path.sep) && path.basename(temporary).startsWith('crm-proxy-test-')) fs.rmSync(temporary, { recursive: true, force: true });
 }
