@@ -20,6 +20,12 @@ La corrida local iniciada a las 18:41:29 UTC sobre `ac7417f` se interrumpió del
 
 CI `39833584024` terminó con 20/23 jobs aprobados y esos tres fallos conservados. La reproducción Linux confirmó EACCES para UID 101 y 1000 con modo 0700 y lectura correcta de ambos con 0755, usando sólo fixtures sintéticos y un volumen propio luego retirado. El proxy real focalizado con la corrección aprobó 72 aserciones contra nginx base; el control adicional de la imagen empaquetada corresponde a la integral. Los permisos de producción no cambian.
 
+## Continuidad del candidato 99a674d
+
+La continuación `99a674dd55de034eddfff991928f0c1ef41ca9c8` aprobó [CI 39835807630](https://github.com/JerePrograma/crm-platform/actions/runs/39835807630): 23/23 jobs success en attempt 1, incluido proxy Linux y perfil productivo 7/7. Raw CI SHA-256 `1d7313eefadd1366a3a2f7b417d816c569ab149f85ff95853113afbb9caf1a09`. Su primera integral local `complete-crm-20261022-185650.json` terminó `EXECUTED_FAIL`: 15 fases aprobadas, backend 126/126 y frontend 21/21; E2E general 7 PASS, 1 FAIL, sin omitidos ni flaky. Duración 1130,938 segundos. No se inició la segunda.
+
+La traza demuestra la carrera del test: webhook 202 y replay 200 devolvieron PENDING; el segundo POST `/outbox/worker/run-once` empezó a las 19:14:31.714 UTC y respondió 200 a las 19:14:32.113, con `claimed=1`, `completed=1`, `executed=true`. Los dos GET de inbound terminaron antes de esa respuesta y mostraron PENDING; no hubo recarga posterior. El GET de outbox posterior mostró SUCCEEDED. La bandeja es un snapshot con recarga manual; no se demostró fallo del backend. Se preservaron diez archivos, incluido el trace, y la cronología sanitizada `99a674d-inbound-failure-timeline.json` (SHA-256 `bc5f2cfd4dcb873d3c197806da181b71ee08d326765fc6c871f3f58dc64e3b4e`). La corrección del harness espera HTTP 200 y ejecución del worker antes de navegar, manteniendo las aserciones de Procesado y Respondió. No aumenta timeouts, no reintenta trabajo y no modifica el runtime. El candidato resultante requiere su propia pareja limpia, CI exacta y artefactos.
+
 ## Dependencias y runtime
 
 Spring Boot `4.1.2` se verificó en [Maven Central](https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-dependencies/4.1.2/spring-boot-dependencies-4.1.2.pom). Su BOM resuelve Spring Framework `7.0.10`, Tomcat `11.0.27`, Jackson 3 `3.1.7`, Jackson 2 `2.21.7` y PostgreSQL JDBC `42.7.14`. Se retiraron los pins antiguos de PostgreSQL/Jackson y el BOM Jackson 2 duplicado.

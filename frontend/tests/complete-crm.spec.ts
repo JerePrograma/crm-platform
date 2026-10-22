@@ -15,6 +15,22 @@ async function login(page: Page, username: string, password: string) {
   await expect(page.getByRole("heading", { name: "Resumen comercial" })).toBeVisible();
 }
 
+async function runOnceAndWait(page: Page, minimumEvents = 0) {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/api/v1/outbox/worker/run-once",
+  );
+  await page.getByRole("button", { name: "Ejecutar una vez" }).click();
+  const response = await responsePromise;
+  expect(response.status()).toBe(200);
+  const result = (await response.json()) as { executed: boolean; claimed: number; completed: number };
+  expect(result.executed).toBe(true);
+  expect(result.claimed).toBeGreaterThanOrEqual(minimumEvents);
+  expect(result.completed).toBeGreaterThanOrEqual(minimumEvents);
+  await expect(page.getByText("Ejecución manual finalizada.", { exact: true })).toBeVisible();
+}
+
 test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async ({ page }) => {
   test.setTimeout(180_000);
   const suffix = `${Date.now()}`;
@@ -163,8 +179,7 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
 
   await page.getByRole("button", { name: "Bandeja de salida" }).click();
   await expect(page.getByText("No existe una acción para forzar proveedores externos")).toBeVisible();
-  await page.getByRole("button", { name: "Ejecutar una vez" }).click();
-  await expect(page.getByText(/Ejecución manual finalizada\./)).toBeVisible();
+  await runOnceAndWait(page);
 
   const meResponse = await page.request.get("/api/v1/auth/me");
   expect(meResponse.ok()).toBeTruthy();
@@ -201,7 +216,7 @@ test("complete synthetic CRM journey stays tenant-scoped and fail-closed", async
     data: inboundBody,
   });
   expect(replay.status()).toBe(200);
-  await page.getByRole("button", { name: "Ejecutar una vez" }).click();
+  await runOnceAndWait(page, 1);
 
   await page.getByRole("button", { name: "Mensajes recibidos" }).click();
   await expect(page.getByRole("heading", { name: "Recepción de prueba", exact: true })).toBeVisible();
