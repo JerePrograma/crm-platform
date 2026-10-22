@@ -4,7 +4,18 @@ Actualizado: 2026-10-22
 
 ## SCALARIS-DEPLOY-001 — matriz vigente
 
-La evidencia actual, con resultados ejecutados y límites por control, está en [preparación productiva 2026-10-22](scalaris-production-readiness-2026-10-22.md). La base de entrada es `2a22e4b`; Docker/motor Linux ya están disponibles. Se exige repetir el gate integral sobre el commit definitivo y mantener la diferencia entre resultados locales, CI del SHA publicado y despliegue real. Las secciones siguientes son evidencia histórica y no cubren la preparación actual.
+La evidencia actual está en [preparación productiva 2026-10-22](scalaris-production-readiness-2026-10-22.md). La fuente funcional `4b556a5c6e91e42325ed12c393c8003d7914d48a` aprobó dos integrales canónicas limpias consecutivas: 23/23 fases por corrida, en 1.061,617 s y 1.185,842 s. Este cierre documental se registra como descendiente separado. Las secciones siguientes conservan evidencia histórica y no cubren esta entrega.
+
+| Control vigente | Estado | Alcance local |
+|---|---|---|
+| Backend / frontend unitario | EXECUTED_PASS | 126/126 y 21/21 por corrida; typecheck/build y npm audit cero |
+| E2E general / Scalaris / productivo | EXECUTED_PASS | 8/8, 7/7 y 7/7 por corrida; cero omitidos/inesperados/flaky |
+| Gmail simulado / compatibilidad PowerShell | EXECUTED_PASS | 10 fases canónicas y 23 aserciones PS5.1/PS7 |
+| Proxy / migraciones / backup-restore | EXECUTED_PASS | 73 aserciones, vacío/V11/V13→V14 y recuperación real aislada |
+| Artefactos exactos del productivo final | EXECUTED_PASS | Grype high/critical cero, DB válida, cero exclusiones; cadena OCI y export 8+12 capas verificados |
+| Copia cifrada externa en esta PC | IMPLEMENTED_NOT_RUN | helper instalado y probado sintéticamente; tarea 04:15 preparada, sin registrar ni primera copia real |
+| Publicación / CI actual | NOT_STARTED | tras autorización, primero fuente 4b556a5 y sus 23 jobs con headSha exacto; descendiente documental por separado |
+| Producción Hostinger | NOT_STARTED | destino elegido y release preparado; DNS/TLS, secretos, timers y puesta en servicio pendientes |
 
 Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUTED_PASS`,
 `EXECUTED_FAIL`, `BLOCKED_EXTERNAL`, `NOT_APPLICABLE`.

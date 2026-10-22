@@ -6,7 +6,7 @@ Actualizado: 2026-10-22
 
 El usuario autorizó completar los pendientes de preparación productiva y eligió el VPS Hostinger con `crm.scalaris.com.ar`. Leer primero [el segmento actual](../segments/SCALARIS-DEPLOY-001.md), [su validación](../validation/scalaris-production-readiness-2026-10-22.md), status, next-step y backlog. La misión reemplaza las restricciones de alcance del cierre documental anterior para las correcciones identificadas; mantiene contactos y comunicaciones reales fuera de las pruebas.
 
-Docker Desktop y su motor Linux 29.8.2 están disponibles. Se implementan remediación de dependencias/Java 21, tareas completas por filtros/páginas, perfil Scalaris/Marketing productivo, proxy/importaciones, respaldo explícito y gates de Marketing/seguridad de ambas imágenes. Los resultados de ejecución, commit y límites tienen una única autoridad en la validación actual. El estado histórico de julio/octubre 14 siguiente no prueba el cierre de esta entrega.
+La fuente funcional `4b556a5c6e91e42325ed12c393c8003d7914d48a` aprobó dos integrales limpias consecutivas, 23/23 fases cada una. Scans controlados sin high/critical ni exclusiones y export verifican los IDs productivos exactos. Este cierre documental se registra como descendiente separado. Publicación/push, CI actual de 23 jobs y producción siguen pendientes de autorización final; no se activaron DNS, credenciales ni timers. Esta PC fue elegida para la copia cifrada: helper instalado, tarea 04:15 BA preparada sin registrar y primera copia real pendiente. La validación actual es la autoridad de resultados y límites; el historial siguiente conserva su alcance original.
 
 ## Historial de misión: SCALARIS-001
 

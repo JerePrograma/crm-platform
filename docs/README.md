@@ -3,8 +3,8 @@
 ## Preparación productiva vigente — 2026-10-22
 
 - [SCALARIS-DEPLOY-001](segments/SCALARIS-DEPLOY-001.md) — alcance y límites de la entrega.
-- [Validación de preparación](validation/scalaris-production-readiness-2026-10-22.md) — evidencia ejecutada y pendientes.
-- [Hostinger y crm.scalaris.com.ar](production/hostinger.md) — configuración y operación concretas.
+- [Validación de preparación](validation/scalaris-production-readiness-2026-10-22.md) — pareja integral limpia 23/23 sobre la fuente funcional 4b556a5, imágenes exactas y pendientes de publicación/CI/producción.
+- [Hostinger y crm.scalaris.com.ar](production/hostinger.md) — release preparado y copia cifrada en esta PC; activación y primera copia real pendientes de aprobación final.
 - [ADR-0011](adr/0011-java-21-runtime-and-managed-security-updates.md) — runtime Java 21 y actualizaciones de seguridad.
 
 ## Continuidad

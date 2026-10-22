@@ -13,6 +13,10 @@
 - incorpora Marketing Scalaris, importaciones grandes y escaneo de ambas imágenes a los gates;
 - mantiene la limpieza de evidencia Gmail compatible con PowerShell 5.1 y protege sus rutas mediante regresiones de carpetas existentes;
 - habilita Prometheus solo para administración y mantiene las guardas de comunicación cerradas;
+- valida la fuente funcional `4b556a5` en dos integrales limpias consecutivas, 23/23 fases cada una: backend 126, frontend unitario 21, general 8, Scalaris/productivo 7 y proxy 73 aserciones;
+- vincula scans controlados sin high/critical ni exclusiones y export a los IDs productivos exactos mediante el gate operativo ignorado de identidad OCI y capas verificadas;
+- registra esta PC como destino cifrado externo, con helper instalado y tarea diaria 04:15 BA preparada, sin registrar ni primera copia real;
+- separa el cierre documental de la fuente funcional; publicación/push, CI actual de 23 jobs y producción siguen pendientes de autorización final;
 - registra resultados y límites en [la validación de preparación](docs/validation/scalaris-production-readiness-2026-10-22.md), sin trasladar PASS históricos ni modificar la instalación portable anterior.
 
 ## 2026-10-14 — SCALARIS-001 Marketing y operación local Windows

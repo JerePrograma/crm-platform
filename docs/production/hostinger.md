@@ -37,6 +37,8 @@ docker inspect scalaris-proxy-caddy-1 --format '{{(index .NetworkSettings.Networ
 
 El formato nginx es `dirección/32 1;`. No permitir `0.0.0.0/0`, `::/0` ni toda `172.18.0.0/16`: otras aplicaciones comparten esa red. El script de preflight exige la dirección exacta y rechaza entradas adicionales.
 
+La allowlist no contiene secretos y debe quedar legible por nginx sin root: modo 0644. `production.env` y `operations.conf` conservan modo privado 0600.
+
 Desde `/srv/apps/crm/current`, revisar sin iniciar servicios:
 
 ```sh
@@ -46,6 +48,8 @@ docker compose --env-file /srv/apps/crm/config/production.env --project-name sca
 ```
 
 La selección de imágenes usa registry con digest o archivos transferidos cuyo checksum, tag `release-<commit completo>` e ID se verificaron previamente. Configurar `CRM_RELEASE_COMMIT`, `CRM_BACKEND_IMAGE_ID` y `CRM_FRONTEND_IMAGE_ID` desde el inventario de artefactos aprobado. El preflight exige que ambas imágenes estén presentes localmente, compara sus IDs SHA-256 y verifica cualquier label OCI de revisión. Rechaza referencias `local`/`latest`, etiquetas de otro commit, imágenes ausentes o IDs distintos. PostgreSQL queda fijado en el override a `17.11-alpine@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb`. La transferencia y carga no sustituyen los scans del artefacto exacto. Mantener la versión anterior disponible.
+
+La fuente funcional preparada es `4b556a5c6e91e42325ed12c393c8003d7914d48a`, con dos integrales limpias 23/23 y scans controlados de los IDs productivos exactos. El export y la cadena OCI/capas quedaron verificados; los hashes están en [la autoridad de validación](../validation/scalaris-production-readiness-2026-10-22.md). Este cierre documental se registra como descendiente separado: conservar `4b556a5` en fuente, tags y referencias de estos artefactos. Tras autorización final, publicar primero la fuente exacta `4b556a5` en `main` y esperar 23 jobs CI con `headSha` completo `4b556a5c6e91e42325ed12c393c8003d7914d48a` antes de aceptar el bundle. Publicar el descendiente documental por separado; su CI no acredita la de la fuente funcional. Manifiesto aceptado, publicación y despliegue siguen pendientes.
 
 ## Arranque y publicación autorizados
 
@@ -82,10 +86,16 @@ sudo systemctl enable --now scalaris-crm-backup.timer scalaris-crm-health.timer
 systemctl list-timers scalaris-crm-backup.timer scalaris-crm-health.timer
 ```
 
-La copia corre aproximadamente a las 03:15 de Argentina, con zona `America/Argentina/Buenos_Aires` explícita; el chequeo, cada cinco minutos. Revisar los resultados de los servicios y `/srv/apps/crm/state/health.json`. Los timers no realizan automáticamente una recuperación ni borran copias. La copia local no es un backup externo: siguen pendientes destino cifrado externo, retención, RPO/RTO y monitoreo independiente del VPS. Ninguna notificación externa se habilita al preparar el release.
+La programación preparada del VPS prevé copia a las 03:15 de Argentina, con zona `America/Argentina/Buenos_Aires` explícita, y chequeo cada cinco minutos. Los timers aún no están instalados ni habilitados: requieren aprobación final y verificación real. Revisar entonces los servicios y `/srv/apps/crm/state/health.json`. No realizan recuperación automática ni borran copias.
+
+El destino externo elegido es esta PC. El helper está instalado fuera de Git en `%LOCALAPPDATA%\ScalarisCRM\hostinger-backup`, con AES-256-GCM streaming, metadatos autenticados, verificación MAC/SHA-256 y clave DPAPI CurrentUser bajo ACL privada. Sus 12 pruebas sintéticas y 7 controles de ACL aprobaron; todavía no hay copia descargada del VPS ni recuperación operativa acreditada. El helper restaura sólo a un archivo nuevo explícito, nunca directamente a la base.
+
+La tarea PC diaria 04:15 BA está preparada y vinculada a la fuente funcional `4b556a5`: el wrapper no está instalado y la tarea no está registrada ni habilitada. Sus siete regresiones pasaron. Ejecutará Node por ruta absoluta, como usuario actual interactivo sin elevación, sin solapamientos y con límite de 30 minutos; recuperará el horario perdido al volver a estar disponible. La PC debe estar encendida y el usuario con sesión iniciada. Guarda resultados privados y no envía alertas externas.
+
+La copia cifrada protege ante pérdida del VPS; recuperarla requiere conservar este perfil Windows y `backup-key.dpapi`. No se exportó una clave en texto plano ni se acredita recuperación ante pérdida de esta PC/perfil. Primera copia real, prueba de recuperación, retención, RPO/RTO y monitoreo independiente permanecen pendientes. Ninguna notificación externa se habilita al preparar el release.
 
 El edge público permite health mínimo y bloquea las demás rutas `/actuator/*`. Prometheus requiere sesión administrativa con `SETTINGS_MANAGE` mediante acceso privado; elegir un sistema de métricas no autoriza abrirlo públicamente. Revalidar la IP de confianza después de recrear Caddy y antes de cualquier release del CRM.
 
 ## Evidencia y límites
 
-`scripts/test-production-proxy.js` verifica la cadena Caddy→nginx con TLS interno desechable, redirección, cookie de sesión sintética, límites y cabeceras. No solicita un certificado público ni usa usuarios/datos reales. La CI, doble validación integral, backend/E2E y restore reales del release exacto son gates adicionales. Registrar por separado lo preparado, lo probado localmente y lo ejecutado en Hostinger; no convertir este runbook en una afirmación de despliegue.
+`scripts/test-production-proxy.js` aprobó 73 aserciones de la cadena Caddy→nginx con TLS interno desechable, redirección, cookie sintética, límites, cabeceras y sustitución del backend sin reiniciar frontend. No solicita un certificado público ni usa usuarios/datos reales. La pareja integral, backend/E2E, recuperación aislada y artefactos exactos están validados localmente; CI y operación real en Hostinger siguen pendientes. Registrar por separado lo preparado, lo probado localmente y lo ejecutado en el VPS.

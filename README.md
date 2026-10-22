@@ -19,9 +19,9 @@ El paquete Windows se genera desde los binarios compilados mediante `scripts/pac
 
 ## Preparación productiva — 2026-10-22
 
-La misión [SCALARIS-DEPLOY-001](docs/segments/SCALARIS-DEPLOY-001.md) corrige dependencias e imagen Java 21, agenda/fichas paginadas, configuración Scalaris/Marketing, importaciones por nginx, confianza del proxy HTTPS y operaciones de respaldo con destino explícito. Agrega gates de Marketing y seguridad de las dos imágenes. Los resultados ejecutados, commit cubierto y límites se mantienen en [la validación de esta entrega](docs/validation/scalaris-production-readiness-2026-10-22.md).
+La misión [SCALARIS-DEPLOY-001](docs/segments/SCALARIS-DEPLOY-001.md) corrige seguridad Java 21, agenda/fichas paginadas, Scalaris/Marketing productivo, proxy/importaciones y respaldos. La fuente funcional `4b556a5` aprobó dos integrales limpias consecutivas, 23/23 fases cada una; los scans y el export verifican las imágenes productivas exactas. Los resultados y hashes están en [la validación de esta entrega](docs/validation/scalaris-production-readiness-2026-10-22.md); este cierre documental se registra como descendiente separado.
 
-El destino elegido es el VPS Hostinger del usuario con `crm.scalaris.com.ar`. Los procedimientos concretos están en `docs/production/`. La instalación portable previa conserva su versión; esta preparación no la reemplaza. Producción y comunicaciones reales conservan estados separados de la validación local.
+El destino elegido es el VPS Hostinger con `crm.scalaris.com.ar` y la copia externa será cifrada en esta PC. El helper está instalado y la tarea 04:15 BA preparada sin registrar; aún no hay copia real. Publicación, CI actual de 23 jobs y puesta en servicio siguen pendientes de autorización final; [la guía Hostinger](docs/production/hostinger.md) describe el procedimiento. La instalación portable anterior conserva su versión y las comunicaciones reales siguen bloqueadas.
 
 ## Historial de la edición Scalaris — 2026-10-14
 

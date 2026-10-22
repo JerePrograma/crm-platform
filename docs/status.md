@@ -6,7 +6,9 @@ Actualizado: 2026-10-22
 
 El usuario autorizó cerrar los pendientes de preparación y eligió VPS Hostinger con `crm.scalaris.com.ar`. La fuente de entrada fue `2a22e4b`, sincronizada y limpia. Docker Desktop/motor Linux 29.8.2 ya están disponibles; «Docker no instalado» es un bloqueo histórico resuelto.
 
-La entrega corrige dependencias/runtime Java 21, tareas paginadas por estado/responsable/prospecto, perfil productivo Scalaris/Marketing, proxy HTTPS/importaciones y selección/integridad de respaldos. Se amplían los gates de Marketing y escaneo backend/frontend. La evidencia y el estado de ejecución de cada control son [los de esta misión](validation/scalaris-production-readiness-2026-10-22.md); no se atribuye CI verde al código aún no publicado.
+La fuente funcional `4b556a5c6e91e42325ed12c393c8003d7914d48a` aprobó dos integrales canónicas limpias consecutivas, 23/23 fases cada una: backend 126/126, frontend unitario 21/21, E2E general 8/8, Scalaris/productivo 7/7, Gmail diez fases y proxy 73 aserciones. Los scans controlados de los IDs productivos exactos aprobaron sin high/critical, exclusiones ni matches ignorados, con DB válida; el export verifica las mismas 8+12 capas. La autoridad es [la validación de esta misión](validation/scalaris-production-readiness-2026-10-22.md).
+
+Este cierre documental se registra como descendiente separado de la fuente funcional. Push/publicación y CI actual de 23 jobs siguen pendientes de autorización final: primero publicar y validar CI con `headSha` exacto `4b556a5`, luego publicar el descendiente documental por separado. Producción Hostinger continúa `NOT_DEPLOYED`, con DNS/TLS, credenciales y timers sin activar. El destino de copia cifrada elegido es esta PC: helper instalado, tarea 04:15 BA preparada sin registrar, primera copia real y recuperación operativa pendientes. La preparación local aprobada no cierra la misión de despliegue.
 
 La instalación portable anterior, los contactos operativos y proveedores reales quedan fuera de las pruebas sintéticas. El historial siguiente mantiene su alcance original y no describe la entrega actual.
 

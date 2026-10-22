@@ -4,7 +4,9 @@ Actualizado: 2026-10-22
 
 ## Ejecución actual: SCALARIS-DEPLOY-001
 
-Completar los bloqueos identificados sobre `2a22e4b`: dependencias/imágenes, agenda y fichas completas, perfil Scalaris/Marketing, HTTPS/importaciones, backup/restore por stack y gates actuales. El destino es VPS Hostinger con `crm.scalaris.com.ar`. La autoridad es [el segmento](../segments/SCALARIS-DEPLOY-001.md) y [su validación](../validation/scalaris-production-readiness-2026-10-22.md). Se conserva la arquitectura monolítica y V1–V14; no se conecta mensajería real.
+La preparación local de dependencias/imágenes, agenda/fichas, Scalaris/Marketing, proxy/importaciones y backup/restore aprobó dos integrales limpias de `4b556a5c6e91e42325ed12c393c8003d7914d48a`, 23/23 fases cada una. Scans y export están ligados a los IDs productivos exactos. La autoridad es [el segmento](../segments/SCALARIS-DEPLOY-001.md) y [su validación](../validation/scalaris-production-readiness-2026-10-22.md); se conserva el monolito y V1–V14.
+
+Este cierre se registra como descendiente exclusivamente documental. La siguiente etapa es obtener autorización final para publicar primero la fuente exacta `4b556a5` en `main`, esperar sus 23 jobs CI con ese `headSha` antes de aceptar el bundle y publicar el descendiente documental por separado. El despliegue en VPS Hostinger con `crm.scalaris.com.ar` requiere aprobación final. La copia externa elegida es cifrada en esta PC: helper instalado y tarea 04:15 BA preparada sin registrar. DNS/TLS, secretos, timers, primera copia/recuperación real y aceptación productiva siguen pendientes. No se conecta mensajería real ni se declara completa la misión por validar localmente.
 
 ## Historial de ejecución: SCALARIS-001
 

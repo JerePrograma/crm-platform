@@ -4,9 +4,9 @@ Actualizado: 2026-10-22
 
 ## Misión actual: SCALARIS-DEPLOY-001
 
-Completar [la preparación productiva](segments/SCALARIS-DEPLOY-001.md) para el VPS Hostinger y `crm.scalaris.com.ar`. Consultar [la matriz ejecutada de esta misión](validation/scalaris-production-readiness-2026-10-22.md) antes de retomar: contiene los controles pendientes, resultados reales y commit cubierto. Mantener separados validación local, publicación remota y puesta en servicio.
+Presentar para autorización final el release concreto de [la preparación productiva](segments/SCALARIS-DEPLOY-001.md). Este cierre documental se registra como descendiente separado de la fuente funcional `4b556a5c6e91e42325ed12c393c8003d7914d48a`, que aprobó dos integrales limpias consecutivas de 23/23 fases. Los scans controlados y el export están vinculados a los IDs productivos exactos; la autoridad es [la validación de esta misión](validation/scalaris-production-readiness-2026-10-22.md).
 
-El cierre exige regresiones de agenda/ficha, proxy/importación grande, backup/restore con destino explícito, migraciones V14, Grype de ambas imágenes y dos validaciones integrales limpias del mismo commit. El motor Docker está disponible. La conexión de proveedores y los envíos reales permanecen bloqueados. Los próximos pasos concretos se actualizan en el documento de validación al finalizar cada gate.
+Después de la aprobación, publicar primero la fuente exacta `4b556a5c6e91e42325ed12c393c8003d7914d48a` en `main` y esperar sus 23 jobs CI con ese `headSha` antes de aceptar el bundle. Publicar el descendiente documental por separado: hacer push sólo de ese descendiente dispararía su CI, sin acreditar la de `4b556a5`. La puesta en servicio en Hostinger con `crm.scalaris.com.ar`, DNS/TLS, credenciales y timers requieren la aprobación final del resultado concreto. La copia cifrada en esta PC fue elegida y el helper está instalado; la tarea 04:15 BA sigue preparada sin registrar y la primera copia real/restauración operativa está pendiente. La conexión de proveedores y los envíos reales permanecen bloqueados.
 
 El resto de este archivo conserva la continuidad del 14 de octubre y sus límites históricos; no impide las correcciones ahora autorizadas.
 

@@ -20,19 +20,49 @@ El tag público `cgr.dev/chainguard/jre:latest` resuelve actualmente a Java 27.0
 | Repository safety inicial | EXECUTED_PASS | git diff --check y rutas privadas |
 | Sintaxis PowerShell inicial | EXECUTED_PASS | 28 scripts de la base auditada |
 | Resolución del BOM actualizado | EXECUTED_PASS | dependency:tree; evidencia local en validation-output |
-| Backend focalizado, integración y formato | EXECUTED_PASS | rerun focal 18/18 y dos suites completas 126/126 sin fallos/errores/omitidos; falta gate integral final limpio |
+| Backend, integración y formato | EXECUTED_PASS | 126/126 en cada integral final limpia, sin fallos/errores/omitidos |
 | Frontend typecheck/unit/build/audit | EXECUTED_PASS | Vite 8.1.6, Vitest 4.1.12; 21 unitarias y audit cero vulnerabilidades |
-| Regresiones de agenda >200 y ficha | EXECUTED_PASS | 2 integración PostgreSQL y 2 recorridos de navegador; incluye respuestas tardías y retorno tras completar última tarea |
-| Proxy y configuración productiva | EXECUTED_PASS | 57 aserciones reales nginx/Caddy TLS, login/cookies, límites, spoofing, privacidad de logs y Compose Hostinger |
+| Regresiones de agenda >200 y ficha | EXECUTED_PASS | 2 integración PostgreSQL y 4 E2E de tareas; además, ficha ocupada cubierta con backend real en el recorrido CRM |
+| Proxy y configuración productiva | EXECUTED_PASS | 73 aserciones reales nginx/Caddy TLS, cookies, límites, spoofing, logs y sustitución del backend sin reiniciar frontend |
 | Backup/restore y destinos Compose | EXECUTED_PASS | 29 aserciones PS5.1, paridad Unix (rutas sin padres/symlink/cleanup propiedad) y restore PostgreSQL17 real aislado |
-| E2E Marketing Scalaris/importación grande | EXECUTED_PASS | wrapper Windows PS5.1, 5/5 sin omitidos/flaky, ~1.28MiB accepted2/dryRun, guardas y cleanup |
-| Perfil productivo local por Bash | EXECUTED_PASS | 5/5, readiness/runtime/guardas/cero enviados/cleanup; Git Bash en Windows, no host Unix nativo |
+| E2E Marketing Scalaris/importación grande | EXECUTED_PASS | 7/7 en cada integral Windows PS5.1, cero omitidos/inesperados/flaky, ~1.28MiB accepted2/dryRun, guardas y cleanup |
+| Perfil productivo local | EXECUTED_PASS_LOCALLY | 7/7 en cada integral Windows PS5.1; readiness, IDs exactos, guardas, cero enviados y cleanup |
+| Recorrido general y Gmail simulado | EXECUTED_PASS | general 8/8 y Gmail canónico 10/10 fases en cada integral; proveedor falso, manual/render y seguridad de evidencia |
+| Compatibilidad de limpieza/probe Gmail | EXECUTED_PASS | 23 aserciones PS5.1/PS7, carpeta existente, stderr de versión y fallo real de render |
 | Política de release Hostinger | EXECUTED_PASS | 7 regresiones: commit/referencias/IDs verificados, PostgreSQL por digest, puertos privados y cookie segura |
-| Migraciones V11/V13/empty a V14 | EXECUTED_PASS | intento integral 20261022-145115: vacío→V14, V11→V12→V13→V14, V13→V14 y Hibernate validate |
-| Grype backend/frontend | EXECUTED_PASS | ambos high/critical cero; backend medium15/low11 y frontend medium3; falta confirmar las imágenes de las corridas finales |
-| Validador integral corrida 1/2 | NOT_RUN | pareja pendiente; los intentos sobre a809216, b041299 y eb2a5ea fallaron y se conservan debajo |
-| CI del código modificado | NOT_RUN | no publicado |
+| Migraciones V11/V13/empty a V14 | EXECUTED_PASS | ambas integrales finales de 4b556a5: vacío→V14, V11→V12→V13→V14, V13→V14 y Hibernate validate |
+| Grype de las imágenes elegidas | EXECUTED_PASS | mismos IDs del perfil productivo final: high/critical cero, backend medium15/low11 y frontend medium3; DB válida y cero exclusiones |
+| Validador integral corridas 1 y 2 | EXECUTED_PASS | 2/2 limpias consecutivas, 23/23 fases cada una, fuente funcional 4b556a5; evidencia detallada debajo |
+| Publicación y CI de la fuente funcional | NOT_RUN | pendientes de autorización final: publicar primero 4b556a5 en main y exigir 23 jobs con headSha exacto; cierre documental por separado |
 | Producción real | NOT_DEPLOYED | destino elegido; activación y secretos operativos pendientes |
+
+## Pareja final e identidad de los artefactos
+
+La fuente funcional es `4b556a5c6e91e42325ed12c393c8003d7914d48a`. Ambas corridas canónicas usaron Windows PowerShell 5.1, comenzaron y terminaron con el árbol versionado limpio y aprobaron 23/23 fases. Cada una pasó backend 126/126, frontend unitario 21/21, typecheck/build, npm audit cero, migraciones vacío/V11/V13→V14, recuperación real, proxy 73 aserciones, general 8/8, Gmail 10 fases, Scalaris 7/7 y producción local 7/7. No hubo E2E omitidos, inesperados ni flaky; guardas antes/después, cero estados enviados y cleanup propio pasaron.
+
+| Corrida del 2026-10-22 (UTC) | Duración | Resumen preservado | SHA-256 del resumen |
+|---|---|---|---|
+| 17:14:53–17:32:35 | 1.061,617 s | `4b556a5-run1-preserved/complete-crm-20261022-171453.json` | `1f71b2d61c30e990dc7c72a7d6be712cf8634fce3c08c06e9604f51a1d59d07a` |
+| 17:33:32–17:53:18 | 1.185,842 s | `4b556a5-run2-preserved/complete-crm-20261022-173332.json` | `22e134a211cf6bb531e2a95850f8da2fdf26a1a3a8b11feb80a10f020c0556b4` |
+
+Los transcripts homónimos `.log` tienen SHA-256 `940f29af4f2ec3bb06b4ddf569840faf28b75fb7e478c67f0b4b60a28dc2c36c` y `9a11409e132df2ccf3c5376b8393e595d568816eafee25c26c358d84c71d2d9a`. El consolidado `validation-output/canonical-pair-4b556a5-proof-2026-10-22.json`, SHA-256 `dcc0c3a417fbde9c15c41a3f2e413a6a1d41638deae56c964ada312f5e2e6d9c`, conserva los hashes de reportes y manifiestos de ambas corridas.
+
+Después de la pareja se escanearon de forma controlada los IDs exactos del perfil productivo de la segunda corrida. Los scans principales y los productivos construyen imágenes propias: no se deduce igualdad por compartir commit o tag. `validation-output/hostinger-release/artifact-proof.json`, SHA-256 `ab6707b9a8e17637b65e59bff435c4483b89b9dc017378009d4cf90ae4d5ad10`, vincula los seis JSON íntegros: dos reportes Grype, sus dos metadatos y resumen/reporte Playwright productivos. Esta prueba posterior cierra el pendiente de identidad registrado en el consolidado original, que se conserva sin reescribir.
+
+| Imagen productiva elegida | ID exacto | Capas verificadas | Grype controlado |
+|---|---|---|---|
+| Backend | `sha256:1ebe81a3a98970ae6d6b1044e285193f74e4f8f6844f38c6621bd4761a0ee1a9` | 8 | 0 high/critical, 15 medium, 11 low |
+| Frontend | `sha256:0c9a7c74f607e5f8bd2e87cd3b6b7fe47a0e0955aabb79b78ed851bd317d3abe` | 12 | 0 high/critical, 3 medium |
+
+Ambos scans terminaron exit0 con DB Grype válida, `ignore: []`, `match-upstream-kernel-headers: true` y cero matches ignorados. El gate operativo ignorado verifica la cadena OCI índice→manifest→config por bytes, hashes y tamaños, y cada capa comprimida y su `diff_id` descomprimido; así vincula el ID de Docker con la representación normalizada de Grype sin confiar sólo en tags. Sus regresiones aprobaron 10/10 de identidad, 12/12 de artefactos y 11/11 de orquestación. Este ajuste pertenece al empaquetado operativo ignorado y no cambia la fuente funcional ni sustituye la pareja canónica.
+
+El export `images.tar` tiene 174.558.720 bytes y SHA-256 `593e3c204bab8e90447dfc94c22c6826e75668958e03b98888bc90d0bfb74413`: `images-export-proof.json` verifica las mismas 8+12 capas e IDs. El archivo fuente de `4b556a5` conserva SHA-256 `1236673430b7f7c3f78dd96c8f6bdce55adf0b6bb5aeecd36075d02ad68eb513`. El manifiesto aceptado de despliegue sigue pendiente de CI y aprobación humana.
+
+Este cierre documental se registra como descendiente separado, con diff exclusivamente documental. Fuente, archivo fuente, tags y aprobaciones de artefactos conservan el SHA funcional `4b556a5`. Tras la autorización final, publicar primero `4b556a5c6e91e42325ed12c393c8003d7914d48a` en `main` y esperar los 23 jobs CI con ese `headSha` exacto antes de aceptar el bundle. Publicar el descendiente documental por separado: una CI disparada sólo sobre ese descendiente no acredita la CI de `4b556a5`. Publicación/push, CI y autorización de producción siguen pendientes. No se activaron DNS/TLS, secretos, timers ni copia real del VPS; `SCALARIS-DEPLOY-001` no está `COMPLETE`.
+
+## Antecedentes focalizados
+
+Los resultados siguientes documentan el desarrollo previo a la pareja final. Sus pendientes y futuros se refieren a esa etapa; los resultados vigentes son los de las dos secciones anteriores. El PASS productivo Bash previo cubre 5/5 en Git Bash sobre Windows y no acredita una integral Unix nativa.
 
 Las pruebas focalizadas de infraestructura se registran en `validation-output/scalaris-deployment-infrastructure-2026-10-22.json`. El gate Marketing aprobado es `crm-scalaris-scalaris-e2e-1792678333794-57af9ab7.json` con su reporte Playwright. Se ejecutó sobre un working tree en desarrollo, no sustituye las dos corridas finales limpias.
 
@@ -90,8 +120,10 @@ El destino externo será esta PC. El helper está instalado fuera del repositori
 
 La tarea diaria de las 04:15 de Buenos Aires está preparada, sin registrar ni habilitar: usuario actual interactivo, sin elevación, sin solapamiento, ejecución al volver a estar disponible y límite de 30 minutos. Sus siete regresiones pasaron, incluidos fallos SSH, copia alterada y verificación de copias ya existentes. El VPS tendrá el respaldo diario de las 03:15 según el runbook preparado. Todavía no hay copias operativas descargadas ni conexión SSH del helper; instalarlo y probarlo con datos sintéticos no acredita un respaldo externo del VPS.
 
+La preparación PC está vinculada al SHA funcional `4b556a5`; su reporte es `validation-output/offsite-backup/task-preparation/rebind-4b556a5/validation-summary.json`, SHA-256 `1827034f507d1a62dd22b8f3c0679396077da0f964d647d0290b165734354d9a`. El wrapper sigue preparado, sin instalar. La tarea requiere esta PC encendida y el usuario con sesión iniciada; no envía alertas externas. Las copias cifradas protegen ante pérdida del VPS, pero no se acredita recuperación ante pérdida de la PC/perfil. Retención, RPO/RTO y monitoreo independiente siguen pendientes.
+
 ## Límites
 
-La inspección estática del proxy predijo el rechazo 413 para archivos mayores de 1 MiB: el [default nginx es 1m](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size), frente a 10 MB de archivo y 11 MB de request en backend. La corrección requiere una ejecución E2E a través de nginx; leer el archivo no cuenta como PASS.
+El rechazo 413 previsto por el [default nginx de 1m](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size) quedó corregido y cubierto por la importación E2E de ~1,28 MiB a través de nginx: accepted2/dryRun en ambos perfiles finales. Se mantienen los límites backend de 10 MB de archivo y 11 MB de request; esta prueba no acredita todos los tamaños límite posibles.
 
 Evidencia local, logs y reportes se guardan en `validation-output/`, ignorado por Git, y se revisan antes de compartir. Las pruebas no usan contactos ni credenciales operativas. Una vulnerabilidad o un scanner bloqueado se registra como fallo o `BLOCKED_EXTERNAL`, nunca como PASS.

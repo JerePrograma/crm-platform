@@ -10,13 +10,19 @@ Un elemento solo puede declararse `COMPLETE` con evidencia ejecutada sobre el co
 
 La misión actual implementa la remediación `SCALARIS-SEC-001` y `SCALARIS-AGENDA-001`, configuración Scalaris/Marketing productiva, proxy HTTPS/importaciones, backup/restore por stack y gates específicos. El estado funcional local y de publicación está en [la validación del 2026-10-22](validation/scalaris-production-readiness-2026-10-22.md). Los fallos originales registrados debajo se conservan como evidencia histórica y no se convierten en PASS por modificar archivos.
 
-- [ ] Cerrar validación ejecutada de dependencias, ambas imágenes, tareas, proxy, E2E y backup/restore.
-- [ ] Confirmar la regresión de las cuatro acciones de ficha bloqueadas durante el guardado, detectada por el recorrido integral del 22 de octubre.
-- [ ] Confirmar recuperación del proxy tras reemplazar el backend con IP distinta, sin reiniciar el frontend, y repetir Gmail simulado.
-- [ ] Confirmar las regresiones de campañas/configuración con actualizaciones retenidas, conservación de etiquetas fallidas y tareas completadas en paralelo.
-- [ ] Completar dos recorridos limpios del mismo commit y registrar sus resúmenes.
-- [ ] Publicar el código validado y verificar CI del SHA exacto cuando exista autorización de publicación.
-- [ ] Concretar acceso HTTPS, secretos, respaldos externos, alertas y puesta en servicio del VPS elegido.
+- [x] Validar localmente dependencias, IDs exactos de ambas imágenes, tareas, proxy, E2E y backup/restore aislado.
+- [x] Confirmar la regresión de las cuatro acciones de ficha bloqueadas durante el guardado.
+- [x] Confirmar recuperación del proxy con IP nueva sin reiniciar frontend (73 aserciones) y Gmail simulado.
+- [x] Confirmar campañas/configuración con actualizaciones retenidas, conservación de etiquetas fallidas y tareas completadas en paralelo.
+- [x] Completar dos integrales limpias de `4b556a5c6e91e42325ed12c393c8003d7914d48a`, 23/23 fases por corrida, y registrar sus hashes.
+- [x] Elegir esta PC como destino cifrado externo, instalar el helper y preparar la tarea diaria 04:15 BA con pruebas sintéticas.
+- [x] Registrar este cierre exclusivamente documental como descendiente separado de la fuente funcional.
+- [ ] Tras autorización final, publicar primero 4b556a5 en main y esperar sus 23 jobs CI con headSha exacto antes de aceptar el bundle; publicar el descendiente documental por separado.
+- [ ] Aprobar y ejecutar el release concreto: DNS/HTTPS, secretos, VPS y timers, preservando las otras aplicaciones.
+- [ ] Registrar la tarea PC sólo tras aprobación final y acreditar primera copia cifrada real y recuperación operativa.
+- [ ] Definir retención, RPO/RTO y monitoreo independiente; habilitar alertas únicamente con destino autorizado.
+
+Los checks anteriores acreditan controles locales ejecutados; el segmento no está `COMPLETE`, publicado ni desplegado.
 
 ## SCALARIS-001 — Marketing Scalaris y entrega local Windows
 

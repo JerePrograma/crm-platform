@@ -4,7 +4,9 @@ Actualizado: 2026-10-22
 
 ## CHECKPOINT_16_SCALARIS_DEPLOYMENT_PREPARATION
 
-La misión [SCALARIS-DEPLOY-001](../segments/SCALARIS-DEPLOY-001.md) prepara el VPS Hostinger y `crm.scalaris.com.ar`. Docker Desktop/motor Linux están disponibles. Se implementan correcciones de seguridad, tareas paginadas, configuración productiva Scalaris, proxy y respaldos; se ejecutan gates con datos sintéticos. El resultado real de cada fase y commit cubierto están en [la validación vigente](../validation/scalaris-production-readiness-2026-10-22.md). Los checkpoints siguientes conservan su alcance histórico.
+La misión [SCALARIS-DEPLOY-001](../segments/SCALARIS-DEPLOY-001.md) alcanzó preparación funcional local validada: `4b556a5c6e91e42325ed12c393c8003d7914d48a`, dos integrales limpias consecutivas de 23/23 fases, 1.061,617 s y 1.185,842 s. Cada corrida pasó backend 126/126, frontend unitario 21/21, general 8/8, Scalaris/productivo 7/7, Gmail diez fases y proxy 73 aserciones. Los scans controlados sin high/critical ni exclusiones y el export verifican los IDs productivos exactos. La evidencia y hashes están en [la validación vigente](../validation/scalaris-production-readiness-2026-10-22.md).
+
+Este cierre documental se registra como descendiente separado; publicación/push y CI de la fuente funcional exacta (23 jobs con `headSha` 4b556a5) están pendientes de autorización final, antes de aceptar el bundle y de publicar el descendiente documental por separado. Hostinger y `crm.scalaris.com.ar` siguen `NOT_DEPLOYED`, con DNS/TLS, credenciales y timers sin activar. Copia externa elegida en esta PC, helper instalado, tarea 04:15 BA preparada sin registrar y primera copia/recuperación real pendientes. El checkpoint acredita preparación local, no cierre completo del despliegue. Los siguientes conservan su alcance histórico.
 
 ## CHECKPOINT_15_SCALARIS_LOCAL_OPERATIONAL_PASS
 
