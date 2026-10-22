@@ -891,6 +891,8 @@ function SettingsPanel({
   const [prospectTags, setProspectTags] = useState<CrmTag[]>([]);
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState("#2563EB");
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const canManage = session.permissions.includes("SETTINGS_MANAGE");
@@ -898,30 +900,56 @@ function SettingsPanel({
 
   const refreshSettings = useCallback(async () => {
     setError(null);
-    try {
-      const [organization, tagList, assigned] = await Promise.all([
-        getOrganizationSettings(),
-        listTags(canManage),
-        selectedProspect ? listProspectTags(selectedProspect.id) : Promise.resolve([]),
-      ]);
-      setSettings(organization);
-      setTags(tagList);
-      setProspectTags(assigned);
-    } catch (caught) {
-      setError(message(caught));
-    }
+    const [organization, tagList, assigned] = await Promise.all([
+      getOrganizationSettings(),
+      listTags(canManage),
+      selectedProspect ? listProspectTags(selectedProspect.id) : Promise.resolve([]),
+    ]);
+    setSettings(organization);
+    setTags(tagList);
+    setProspectTags(assigned);
   }, [canManage, selectedProspect?.id]);
 
-  useEffect(() => { void refreshSettings(); }, [refreshSettings]);
+  useEffect(() => { void refreshSettings().catch((caught) => setError(message(caught))); }, [refreshSettings]);
 
   async function run(action: () => Promise<unknown>, success: string) {
+    if (busyRef.current) return false;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    busyRef.current = true;
+    setBusy(true);
     setError(null); setNotice(null);
-    try { await action(); setNotice(success); await refreshSettings(); }
-    catch (caught) { setError(message(caught)); }
+    try {
+      if (await action() === false) return false;
+      await refreshSettings();
+      setNotice(success);
+      return true;
+    } catch (caught) {
+      setError(message(caught));
+      return false;
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+      window.requestAnimationFrame(() => {
+        if (previousFocus?.isConnected && document.activeElement === document.body) previousFocus.focus();
+      });
+    }
+  }
+
+  async function deactivate(tag: CrmTag) {
+    await run(async () => {
+      const answer = await openDecisionDialog({
+        title: "Desactivar etiqueta",
+        description: `La etiqueta “${tag.name}” dejará de estar disponible para nuevas asignaciones. El historial se conservará.`,
+        confirmLabel: "Desactivar etiqueta",
+      });
+      if (!answer) return false;
+      const updated = await deactivateTag(tag);
+      setTags((current) => current.map((item) => item.id === updated.id ? updated : item));
+    }, "Etiqueta desactivada sin borrar historial.");
   }
 
   return (
-    <section className="stack">
+    <section className="stack" aria-busy={busy}>
       <div className="alert safety">
         {safety?.campaignExecutionAvailable
           ? "Los envíos reales solo pueden ejecutarse desde una campaña aprobada y continúan sujetos a límites, exclusiones y protección de emergencia."
@@ -938,39 +966,35 @@ function SettingsPanel({
           <Metric label="Protección de emergencia" value={(safety?.killSwitch ?? settings.sending.environmentKillSwitch) ? "Activa" : "Inactiva"} />
         </div>
         <Panel title="Organización">
-          <form className="form-grid" onSubmit={(event) => { event.preventDefault(); if (settings) void run(() => updateOrganizationSettings(settings), "Configuración actualizada; bloqueos de envío preservados."); }}>
-            <label>Nombre<input disabled={!canManage} value={settings.name} onChange={(event) => setSettings({ ...settings, name: event.target.value })} /></label>
-            <label>Zona horaria<input disabled={!canManage} value={settings.timezone} onChange={(event) => setSettings({ ...settings, timezone: event.target.value })} /></label>
-            <label>Moneda<input disabled={!canManage} maxLength={3} value={settings.currency} onChange={(event) => setSettings({ ...settings, currency: event.target.value.toUpperCase() })} /></label>
-            <label>Idioma<select disabled={!canManage} value={settings.locale} onChange={(event) => setSettings({ ...settings, locale: event.target.value })}><option value="es-AR">Español Argentina</option><option value="es">Español</option><option value="en-US">Inglés (Estados Unidos)</option><option value="en">Inglés</option></select></label>
-            <label>Color principal<input disabled={!canManage} type="color" value={settings.brandingPrimaryColor} onChange={(event) => setSettings({ ...settings, brandingPrimaryColor: event.target.value })} /></label>
-            <label>Seguimiento (días)<input disabled={!canManage} type="number" min="1" max="365" value={settings.followUpDays} onChange={(event) => setSettings({ ...settings, followUpDays: Number(event.target.value) })} /></label>
-            <label>Límite diario de campañas<input disabled={!canManage} type="number" min="0" max="10" value={settings.campaignDailyLimit} onChange={(event) => setSettings({ ...settings, campaignDailyLimit: Number(event.target.value) })} /></label>
-            <label>Inicio operativo<input disabled={!canManage} type="time" value={settings.operatingWindowStart} onChange={(event) => setSettings({ ...settings, operatingWindowStart: event.target.value })} /></label>
-            <label>Fin operativo<input disabled={!canManage} type="time" value={settings.operatingWindowEnd} onChange={(event) => setSettings({ ...settings, operatingWindowEnd: event.target.value })} /></label>
-            {canManage && <button className="primary-button" type="submit">Guardar configuración</button>}
+          <form className="form-grid" onSubmit={(event) => { event.preventDefault(); if (settings) void run(async () => setSettings(await updateOrganizationSettings(settings)), "Configuración actualizada; bloqueos de envío preservados."); }}>
+            <label>Nombre<input disabled={busy || !canManage} value={settings.name} onChange={(event) => setSettings({ ...settings, name: event.target.value })} /></label>
+            <label>Zona horaria<input disabled={busy || !canManage} value={settings.timezone} onChange={(event) => setSettings({ ...settings, timezone: event.target.value })} /></label>
+            <label>Moneda<input disabled={busy || !canManage} maxLength={3} value={settings.currency} onChange={(event) => setSettings({ ...settings, currency: event.target.value.toUpperCase() })} /></label>
+            <label>Idioma<select disabled={busy || !canManage} value={settings.locale} onChange={(event) => setSettings({ ...settings, locale: event.target.value })}><option value="es-AR">Español Argentina</option><option value="es">Español</option><option value="en-US">Inglés (Estados Unidos)</option><option value="en">Inglés</option></select></label>
+            <label>Color principal<input disabled={busy || !canManage} type="color" value={settings.brandingPrimaryColor} onChange={(event) => setSettings({ ...settings, brandingPrimaryColor: event.target.value })} /></label>
+            <label>Seguimiento (días)<input disabled={busy || !canManage} type="number" min="1" max="365" value={settings.followUpDays} onChange={(event) => setSettings({ ...settings, followUpDays: Number(event.target.value) })} /></label>
+            <label>Límite diario de campañas<input disabled={busy || !canManage} type="number" min="0" max="10" value={settings.campaignDailyLimit} onChange={(event) => setSettings({ ...settings, campaignDailyLimit: Number(event.target.value) })} /></label>
+            <label>Inicio operativo<input disabled={busy || !canManage} type="time" value={settings.operatingWindowStart} onChange={(event) => setSettings({ ...settings, operatingWindowStart: event.target.value })} /></label>
+            <label>Fin operativo<input disabled={busy || !canManage} type="time" value={settings.operatingWindowEnd} onChange={(event) => setSettings({ ...settings, operatingWindowEnd: event.target.value })} /></label>
+            {canManage && <button className="primary-button" type="submit" disabled={busy}>Guardar configuración</button>}
           </form>
         </Panel>
       </> : <EmptyState text="Cargando configuración." />}
       <section className="two-column equal">
         <Panel title="Etiquetas">
-          {canManage && <form className="inline-form" onSubmit={(event) => { event.preventDefault(); void run(() => createTag(newTagName, newTagColor), "Etiqueta creada.").then(() => setNewTagName("")); }}>
-            <label>Nombre<input required maxLength={80} value={newTagName} onChange={(event) => setNewTagName(event.target.value)} /></label>
-            <label>Color<input type="color" value={newTagColor} onChange={(event) => setNewTagColor(event.target.value)} /></label>
-            <button className="secondary-button" type="submit">Crear</button>
+          {canManage && <form className="inline-form" onSubmit={(event) => { event.preventDefault(); void run(() => createTag(newTagName, newTagColor), "Etiqueta creada.").then((saved) => { if (saved) setNewTagName(""); }); }}>
+            <label>Nombre<input disabled={busy} required maxLength={80} value={newTagName} onChange={(event) => setNewTagName(event.target.value)} /></label>
+            <label>Color<input disabled={busy} type="color" value={newTagColor} onChange={(event) => setNewTagColor(event.target.value)} /></label>
+            <button className="secondary-button" type="submit" disabled={busy}>Crear</button>
           </form>}
-          {tags.length ? <ul className="plain-list">{tags.map((tag) => <li key={tag.id}><span className="tag-swatch" style={{ background: tag.color }} aria-hidden="true" /><strong>{tag.name}</strong> · {tag.usageCount} usos {!tag.active && "· inactiva"}{canManage && tag.active && <button className="link-button" onClick={() => void openDecisionDialog({
-                  title: "Desactivar etiqueta",
-                  description: `La etiqueta “${tag.name}” dejará de estar disponible para nuevas asignaciones. El historial se conservará.`,
-                  confirmLabel: "Desactivar etiqueta",
-                }).then((answer) => { if (answer) return run(() => deactivateTag(tag), "Etiqueta desactivada sin borrar historial."); })}>Desactivar</button>}</li>)}</ul> : <EmptyState text="No hay etiquetas." />}
+          {tags.length ? <ul className="plain-list">{tags.map((tag) => <li key={tag.id}><span className="tag-swatch" style={{ background: tag.color }} aria-hidden="true" /><strong>{tag.name}</strong> · {tag.usageCount} usos {!tag.active && "· inactiva"}{canManage && tag.active && <button className="link-button" type="button" disabled={busy} onClick={() => void deactivate(tag)}>Desactivar</button>}</li>)}</ul> : <EmptyState text="No hay etiquetas." />}
         </Panel>
         <Panel title="Asignación al prospecto seleccionado">
           {selectedProspect ? <>
             <p><strong>{selectedProspect.displayName}</strong></p>
             <div className="button-row">{tags.filter((tag) => tag.active).map((tag) => {
               const assigned = prospectTags.some((item) => item.id === tag.id);
-              return <button key={tag.id} disabled={!canWriteProspects} className={assigned ? "secondary-button" : "link-button"} onClick={() => void run(() => assigned ? unassignTag(tag.id, selectedProspect.id) : assignTag(tag.id, selectedProspect.id), assigned ? "Etiqueta removida." : "Etiqueta asignada.")}>{assigned ? `Quitar ${tag.name}` : `Asignar ${tag.name}`}</button>;
+              return <button key={tag.id} disabled={busy || !canWriteProspects} className={assigned ? "secondary-button" : "link-button"} onClick={() => void run(() => assigned ? unassignTag(tag.id, selectedProspect.id) : assignTag(tag.id, selectedProspect.id), assigned ? "Etiqueta removida." : "Etiqueta asignada.")}>{assigned ? `Quitar ${tag.name}` : `Asignar ${tag.name}`}</button>;
             })}</div>
           </> : <EmptyState text="Seleccioná un prospecto en la ficha y volvé a Configuración para asignar etiquetas." />}
         </Panel>
@@ -1866,6 +1890,8 @@ function CampaignsPanel({
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [deliveryProgress, setDeliveryProgress] = useState<CampaignProgress | null>(null);
   const [results, setResults] = useState<CampaignRecipientResult[]>([]);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -1913,12 +1939,22 @@ function CampaignsPanel({
   }, [selectedCampaign?.id, selectedCampaign?.status, loadResults, onChanged]);
 
   async function run(action: () => Promise<void>) {
+    if (busyRef.current) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    busyRef.current = true;
+    setBusy(true);
     setError(null);
     setNotice(null);
     try {
       await action();
     } catch (caught) {
       setError(message(caught));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+      window.requestAnimationFrame(() => {
+        if (previousFocus?.isConnected && document.activeElement === document.body) previousFocus.focus();
+      });
     }
   }
 
@@ -2032,13 +2068,13 @@ function CampaignsPanel({
   }
 
   async function freeze(campaign: Campaign) {
-    const answer = await openDecisionDialog({
-      title: "Confirmar audiencia",
-      description: "Se guardará una copia de los destinatarios que cumplen los filtros actuales. Las exclusiones seguirán teniendo prioridad.",
-      confirmLabel: "Confirmar audiencia",
-    });
-    if (!answer) return;
     await run(async () => {
+      const answer = await openDecisionDialog({
+        title: "Confirmar audiencia",
+        description: "Se guardará una copia de los destinatarios que cumplen los filtros actuales. Las exclusiones seguirán teniendo prioridad.",
+        confirmLabel: "Confirmar audiencia",
+      });
+      if (!answer) return;
       const frozen = await freezeCampaignAudience(campaign, {
         province: province || undefined,
         scoreAtLeast: scoreAtLeast ? Number(scoreAtLeast) : undefined,
@@ -2055,15 +2091,15 @@ function CampaignsPanel({
 
   async function approve(campaign: Campaign) {
     const live = campaign.executionMode === "LIVE";
-    const answer = await openDecisionDialog({
-      title: live ? "Aprobar para envío real" : "Aprobar para simulación",
-      description: live
-        ? `Se aprobarán ${campaign.recipientCount} destinatarios para envío real desde ${campaign.senderEmail ?? "la cuenta seleccionada"}. Todo cambio material invalidará esta aprobación.`
-        : "La campaña quedará habilitada únicamente para generar una simulación. Esto no habilita envíos reales.",
-      confirmLabel: live ? "Aprobar campaña real" : "Aprobar simulación",
-    });
-    if (!answer) return;
     await run(async () => {
+      const answer = await openDecisionDialog({
+        title: live ? "Aprobar para envío real" : "Aprobar para simulación",
+        description: live
+          ? `Se aprobarán ${campaign.recipientCount} destinatarios para envío real desde ${campaign.senderEmail ?? "la cuenta seleccionada"}. Todo cambio material invalidará esta aprobación.`
+          : "La campaña quedará habilitada únicamente para generar una simulación. Esto no habilita envíos reales.",
+        confirmLabel: live ? "Aprobar campaña real" : "Aprobar simulación",
+      });
+      if (!answer) return;
       const approved = await approveCampaign(campaign);
       setNotice(live
         ? `Campaña ${approved.name} aprobada para ejecución real controlada.`
@@ -2113,9 +2149,9 @@ function CampaignsPanel({
   }
 
   async function startLive(campaign: Campaign) {
-    const confirmation = await liveConfirmation(campaign, "start");
-    if (!confirmation) return;
     await run(async () => {
+      const confirmation = await liveConfirmation(campaign, "start");
+      if (!confirmation) return;
       const progress = await startCampaign(campaign, confirmation);
       setSelectedCampaignId(progress.campaignId);
       setNotice(`Campaña ${campaign.name} iniciada. El outbox procesará un destinatario por mensaje.`);
@@ -2133,9 +2169,9 @@ function CampaignsPanel({
       setError("Definí una fecha y hora antes de programar la campaña.");
       return;
     }
-    const confirmation = await liveConfirmation(campaign, "schedule");
-    if (!confirmation) return;
     await run(async () => {
+      const confirmation = await liveConfirmation(campaign, "schedule");
+      if (!confirmation) return;
       const progress = await scheduleCampaign(campaign, target, confirmation);
       setSelectedCampaignId(progress.campaignId);
       setNotice(`Campaña ${campaign.name} programada.`);
@@ -2149,14 +2185,14 @@ function CampaignsPanel({
     success: string,
     confirmation?: { title: string; description: string; danger?: boolean },
   ) {
-    if (confirmation) {
-      const answer = await openDecisionDialog({
-        ...confirmation,
-        confirmLabel: confirmation.title,
-      });
-      if (!answer) return;
-    }
     await run(async () => {
+      if (confirmation) {
+        const answer = await openDecisionDialog({
+          ...confirmation,
+          confirmLabel: confirmation.title,
+        });
+        if (!answer) return;
+      }
       const progress = await action();
       setSelectedCampaignId(progress.campaignId);
       setNotice(success);
@@ -2204,7 +2240,7 @@ function CampaignsPanel({
                 <textarea required value={textBody} onChange={(event) => setTextBody(event.target.value)} />
               </label>
               <details className="technical-details full-width"><summary>Formato avanzado (opcional)</summary><label>HTML seguro<textarea value={htmlBody} onChange={(event) => setHtmlBody(event.target.value)} placeholder="Si lo dejás vacío, se genera desde el texto del mensaje." /></label></details>
-              <button className="primary-button" type="submit">Crear versión 1</button>
+              <button className="primary-button" type="submit" disabled={busy}>Crear versión 1</button>
             </form>
           </Panel>
           <Panel title={editingCampaign ? "Editar configuración de campaña" : "Nueva campaña"}>
@@ -2261,10 +2297,10 @@ function CampaignsPanel({
                 </>
               )}
               <div className="action-row full-width">
-                <button className="primary-button" type="submit" disabled={executionMode === "LIVE" && (!senderAccountId || businessDays.length === 0)}>
+                <button className="primary-button" type="submit" disabled={busy || (executionMode === "LIVE" && (!senderAccountId || businessDays.length === 0))}>
                   {editingCampaign ? "Guardar configuración" : executionMode === "LIVE" ? "Crear borrador real" : "Crear borrador"}
                 </button>
-                {editingCampaign && <button className="secondary-button" type="button" onClick={cancelEditing}>Cancelar edición</button>}
+                {editingCampaign && <button className="secondary-button" type="button" disabled={busy} onClick={cancelEditing}>Cancelar edición</button>}
               </div>
             </form>
           </Panel>
@@ -2277,7 +2313,7 @@ function CampaignsPanel({
               <div><strong>{template.name}</strong><span className="badge">{channelLabel(template.channel)} · v{template.versionNumber}</span></div>
               <p>{template.subject}</p>
               <small>Variables: {template.variables.join(", ") || "ninguna"}</small>
-              <button className="secondary-button" type="button" onClick={() => void showPreview(template)}>Previsualizar</button>
+              <button className="secondary-button" type="button" disabled={busy} onClick={() => void showPreview(template)}>Previsualizar</button>
             </article>
           ))}
           {templates.length === 0 && <EmptyState text="Todavía no hay plantillas." />}
@@ -2300,21 +2336,21 @@ function CampaignsPanel({
               {campaign.scheduledAt && <small>Programada para {dateTime(campaign.scheduledAt)} · {campaign.timezone}</small>}
               <div className="action-row">
                 {writable && ["DRAFT", "READY_FOR_REVIEW", "APPROVED", "SIMULATED"].includes(campaign.status) && (
-                  <button className="secondary-button" type="button" onClick={() => editCampaign(campaign)}>Editar configuración</button>
+                  <button className="secondary-button" type="button" disabled={busy} onClick={() => editCampaign(campaign)}>Editar configuración</button>
                 )}
                 {writable && ["DRAFT", "READY_FOR_REVIEW"].includes(campaign.status) && (
-                  <button className="secondary-button" type="button" onClick={() => void freeze(campaign)}>Congelar audiencia</button>
+                  <button className="secondary-button" type="button" disabled={busy} onClick={() => void freeze(campaign)}>Congelar audiencia</button>
                 )}
                 {writable && campaign.status === "DRAFT" && (
-                  <button className="secondary-button" type="button" onClick={() => void configureSequence(campaign)}>Configurar secuencia segura</button>
+                  <button className="secondary-button" type="button" disabled={busy} onClick={() => void configureSequence(campaign)}>Configurar secuencia segura</button>
                 )}
-                <button className="secondary-button" type="button" onClick={() => void run(async () => setAudience(await getCampaignAudience(campaign.id)))}>Ver audiencia</button>
-                <button className="secondary-button" type="button" onClick={() => void run(async () => setSequence(await getCampaignSequence(campaign.id)))}>Ver secuencia</button>
+                <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(async () => setAudience(await getCampaignAudience(campaign.id)))}>Ver audiencia</button>
+                <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(async () => setSequence(await getCampaignSequence(campaign.id)))}>Ver secuencia</button>
                 {campaign.status === "READY_FOR_REVIEW" && session.permissions.includes("CAMPAIGN_APPROVE") && (
-                  <button className="primary-button" type="button" onClick={() => void approve(campaign)}>Aprobar</button>
+                  <button className="primary-button" type="button" disabled={busy} onClick={() => void approve(campaign)}>Aprobar</button>
                 )}
                 {(campaign.executionMode ?? "SIMULATION") === "SIMULATION" && ["APPROVED", "SIMULATED"].includes(campaign.status) && session.permissions.includes("MESSAGE_SIMULATE") && (
-                  <button className="primary-button" type="button" onClick={() => void simulate(campaign)}>Simular</button>
+                  <button className="primary-button" type="button" disabled={busy} onClick={() => void simulate(campaign)}>Simular</button>
                 )}
                 {campaign.executionMode === "LIVE" && campaign.status === "APPROVED" && canExecute && (
                   <>
@@ -2322,21 +2358,21 @@ function CampaignsPanel({
                       Fecha y hora para programar
                       <input aria-label={`Fecha y hora para ${campaign.name}`} type="datetime-local" value={scheduleTimes[campaign.id] ?? ""} onChange={(event) => setScheduleTimes((current) => ({ ...current, [campaign.id]: event.target.value }))} />
                     </label>
-                    <button className="secondary-button" type="button" disabled={safety?.campaignExecutionAvailable === false} onClick={() => void scheduleLive(campaign)}>Programar campaña real</button>
-                    <button className="danger-button" type="button" disabled={safety?.campaignExecutionAvailable === false} onClick={() => void startLive(campaign)}>Iniciar campaña real</button>
+                    <button className="secondary-button" type="button" disabled={busy || safety?.campaignExecutionAvailable === false} onClick={() => void scheduleLive(campaign)}>Programar campaña real</button>
+                    <button className="danger-button" type="button" disabled={busy || safety?.campaignExecutionAvailable === false} onClick={() => void startLive(campaign)}>Iniciar campaña real</button>
                   </>
                 )}
                 {campaign.executionMode === "LIVE" && ["SCHEDULED", "RUNNING"].includes(campaign.status) && canExecute && (
-                  <button className="secondary-button" type="button" onClick={() => void changeCampaignState(() => pauseCampaign(campaign), "Campaña pausada.")}>Pausar</button>
+                  <button className="secondary-button" type="button" disabled={busy} onClick={() => void changeCampaignState(() => pauseCampaign(campaign), "Campaña pausada.")}>Pausar</button>
                 )}
                 {campaign.executionMode === "LIVE" && campaign.status === "PAUSED" && canExecute && (
-                  <button className="primary-button" type="button" onClick={() => void changeCampaignState(() => resumeCampaign(campaign), "Campaña reanudada.")}>Reanudar</button>
+                  <button className="primary-button" type="button" disabled={busy} onClick={() => void changeCampaignState(() => resumeCampaign(campaign), "Campaña reanudada.")}>Reanudar</button>
                 )}
                 {campaign.executionMode === "LIVE" && ["APPROVED", "SCHEDULED", "RUNNING", "PAUSED"].includes(campaign.status) && canExecute && (
-                  <button className="secondary-button" type="button" onClick={() => void changeCampaignState(() => cancelCampaign(campaign), "Campaña cancelada; los mensajes pendientes conservarán trazabilidad.", { title: "Cancelar campaña", description: "Se cancelarán los mensajes pendientes. Los resultados ya aceptados por Gmail no pueden retirarse.", danger: true })}>Cancelar campaña</button>
+                  <button className="secondary-button" type="button" disabled={busy} onClick={() => void changeCampaignState(() => cancelCampaign(campaign), "Campaña cancelada; los mensajes pendientes conservarán trazabilidad.", { title: "Cancelar campaña", description: "Se cancelarán los mensajes pendientes. Los resultados ya aceptados por Gmail no pueden retirarse.", danger: true })}>Cancelar campaña</button>
                 )}
                 {campaign.executionMode === "LIVE" && ["SCHEDULED", "RUNNING", "PAUSED", "COMPLETED", "FAILED", "CANCELLED"].includes(campaign.status) && (
-                  <button className="secondary-button" type="button" onClick={() => void run(async () => { setSelectedCampaignId(campaign.id); await loadResults(campaign.id); })}>Ver resultados</button>
+                  <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(async () => { setSelectedCampaignId(campaign.id); await loadResults(campaign.id); })}>Ver resultados</button>
                 )}
               </div>
               {campaign.executionMode === "LIVE" && !safety?.campaignExecutionAvailable && ["APPROVED", "SCHEDULED"].includes(campaign.status) && <small className="inline-error">La configuración operativa mantiene bloqueada la ejecución real.</small>}
@@ -2365,7 +2401,7 @@ function CampaignsPanel({
           </div>
           <div className="toolbar">
             {session.permissions.includes("REPORT_READ") && <a className="secondary-button" href={campaignResultsCsvUrl(selectedCampaign.id)}>Exportar resultados seguros</a>}
-            <button className="secondary-button" type="button" onClick={() => void loadResults(selectedCampaign.id)}>Actualizar resultados</button>
+            <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(async () => { await loadResults(selectedCampaign.id); })}>Actualizar resultados</button>
           </div>
           <div className="table-scroll"><table><thead><tr><th>Prospecto</th><th>Destinatario</th><th>Estado</th><th>Intentos</th><th>Próximo intento</th><th>Aceptación</th><th>ID Gmail</th><th>HTTP</th><th>Resultado</th></tr></thead><tbody>
             {results.map((result) => <tr key={result.messageId}><td>#{result.prospectId.slice(0, 8)}</td><td>{result.maskedRecipient}</td><td><Badge value={result.status === "AMBIGUOUS" ? "RESULT_AMBIGUOUS" : result.status} /></td><td>{result.attempts}</td><td>{result.nextAttemptAt ? dateTime(result.nextAttemptAt) : "—"}</td><td>{result.acceptedAt ? dateTime(result.acceptedAt) : "—"}</td><td>{result.providerMessageId ?? "—"}</td><td>{result.httpStatus ?? "—"}</td><td>{result.error ?? result.acceptanceDisclaimer ?? (result.resultCategory ? labelFor(result.resultCategory) : "—")}</td></tr>)}

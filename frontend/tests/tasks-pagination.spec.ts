@@ -234,3 +234,64 @@ test("La ficha mantiene bloqueados los envíos mientras actualiza una operación
   await expect(activityPanel.getByText(note, { exact: true })).toBeVisible();
   expect(noteRequests).toEqual([{ body: note }]);
 });
+
+test("La agenda conserva el bloqueo de cada tarea mientras termina otra", async ({ page }) => {
+  const tasks = [task(0, syntheticProspect, "synthetic-owner", "Seguimiento concurrente"), task(1, syntheticProspect, "synthetic-owner", "Seguimiento concurrente")];
+  const completed = new Set<string>();
+  const statusRequests: Array<{ id: string; body: unknown }> = [];
+  const holds = new Map(tasks.map((item) => {
+    let release!: () => void;
+    let notify!: () => void;
+    const released = new Promise<void>((resolve) => { release = resolve; });
+    const started = new Promise<void>((resolve) => { notify = resolve; });
+    return [item.id, { released, started, release, notify }] as const;
+  }));
+  await page.route(`**/api/v1/prospects/${syntheticProspect}`, (route) => route.fulfill({
+    json: { id: syntheticProspect, displayName: "Prospecto sintético de agenda" },
+  }));
+  await page.route("**/api/v1/tasks/page?*", async (route) => {
+    const content = tasks.filter((item) => !completed.has(item.id));
+    const size = Number(new URL(route.request().url()).searchParams.get("size"));
+    await route.fulfill({ json: { content, number: 0, size, totalElements: content.length, totalPages: content.length ? 1 : 0, first: true, last: true } });
+  });
+  await page.route("**/api/v1/tasks/*/status", async (route) => {
+    const id = new URL(route.request().url()).pathname.split("/").at(-2)!;
+    const item = tasks.find((candidate) => candidate.id === id)!;
+    statusRequests.push({ id, body: route.request().postDataJSON() });
+    const hold = holds.get(id)!;
+    hold.notify();
+    await hold.released;
+    completed.add(id);
+    await route.fulfill({ json: { ...item, status: "COMPLETED", version: 1 } });
+  });
+  await signIn(page);
+  await page.getByRole("button", { name: "Agenda", exact: true }).click();
+  const agenda = page.getByRole("region", { name: "Agenda de seguimiento", exact: true });
+  const first = agenda.locator("article.agenda-item").filter({ has: page.getByRole("heading", { name: tasks[0].title, exact: true }) });
+  const second = agenda.locator("article.agenda-item").filter({ has: page.getByRole("heading", { name: tasks[1].title, exact: true }) });
+  const firstSubmit = first.getByRole("button", { name: /^(Completar tarea|Guardando…)$/ });
+  const secondSubmit = second.getByRole("button", { name: /^(Completar tarea|Guardando…)$/ });
+  try {
+    await firstSubmit.click();
+    await holds.get(tasks[0].id)!.started;
+    await secondSubmit.click();
+    await holds.get(tasks[1].id)!.started;
+    await expect(firstSubmit).toBeDisabled();
+    await expect(secondSubmit).toBeDisabled();
+
+    holds.get(tasks[0].id)!.release();
+    await expect(first).toHaveCount(0);
+    await expect(agenda.getByRole("navigation", { name: "Páginas de agenda", exact: true })).toContainText("de 1 tareas");
+    await expect(secondSubmit).toBeDisabled();
+    await expect(secondSubmit).toHaveText("Guardando…");
+    await secondSubmit.dispatchEvent("click");
+    expect(statusRequests).toEqual(tasks.map((item) => ({ id: item.id, body: { version: 0, status: "COMPLETED" } })));
+
+    holds.get(tasks[1].id)!.release();
+    await expect(second).toHaveCount(0);
+    await expect(agenda.getByText("No tenés tareas pendientes.", { exact: true })).toBeVisible();
+    expect(statusRequests).toHaveLength(2);
+  } finally {
+    for (const hold of holds.values()) hold.release();
+  }
+});

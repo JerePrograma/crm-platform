@@ -69,7 +69,7 @@ function assertBackendEnvironment(entries) {
 }
 
 function assertPlaywrightReport(report) {
-  assert.ok(report.stats.expected >= 5, 'All five Scalaris and task pagination E2E tests must execute');
+  assert.ok(report.stats.expected >= 7, 'All seven Scalaris and task pagination E2E tests must execute');
   assert.equal(report.stats.unexpected, 0, 'Unexpected E2E failures');
   assert.equal(report.stats.skipped, 0, 'Scalaris E2E must not skip a test');
   assert.equal(report.stats.flaky, 0, 'Scalaris E2E must not be flaky');

@@ -36,12 +36,12 @@ test('runtime checks fail closed for a LEGACY profile, missing or unsafe sending
 });
 
 test('a skipped, flaky, incomplete or failed Scalaris suite cannot pass the release gate', () => {
-  const report = { stats: { expected: 5, unexpected: 0, skipped: 0, flaky: 0 }, errors: [] };
+  const report = { stats: { expected: 7, unexpected: 0, skipped: 0, flaky: 0 }, errors: [] };
   assertPlaywrightReport(report);
   for (const field of ['unexpected', 'skipped', 'flaky']) {
     assert.throws(() => assertPlaywrightReport({ ...report, stats: { ...report.stats, [field]: 1 } }));
   }
-  assert.throws(() => assertPlaywrightReport({ ...report, stats: { ...report.stats, expected: 4 } }));
+  assert.throws(() => assertPlaywrightReport({ ...report, stats: { ...report.stats, expected: 6 } }));
   assert.throws(() => assertPlaywrightReport({ ...report, errors: [{}] }));
 });
 

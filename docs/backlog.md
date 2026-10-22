@@ -13,6 +13,7 @@ La misión actual implementa la remediación `SCALARIS-SEC-001` y `SCALARIS-AGEN
 - [ ] Cerrar validación ejecutada de dependencias, ambas imágenes, tareas, proxy, E2E y backup/restore.
 - [ ] Confirmar la regresión de las cuatro acciones de ficha bloqueadas durante el guardado, detectada por el recorrido integral del 22 de octubre.
 - [ ] Confirmar recuperación del proxy tras reemplazar el backend con IP distinta, sin reiniciar el frontend, y repetir Gmail simulado.
+- [ ] Confirmar las regresiones de campañas/configuración con actualizaciones retenidas, conservación de etiquetas fallidas y tareas completadas en paralelo.
 - [ ] Completar dos recorridos limpios del mismo commit y registrar sus resúmenes.
 - [ ] Publicar el código validado y verificar CI del SHA exacto cuando exista autorización de publicación.
 - [ ] Concretar acceso HTTPS, secretos, respaldos externos, alertas y puesta en servicio del VPS elegido.

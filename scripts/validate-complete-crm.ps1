@@ -180,6 +180,7 @@ try {
     Invoke-Checked 'npx' @(
       'playwright','test',
       'tests/complete-crm.spec.ts',
+      'tests/settings-pending.spec.ts',
       'tests/gmail-no-oauth.spec.ts'
     ) (Join-Path $repoRoot 'frontend')
   }

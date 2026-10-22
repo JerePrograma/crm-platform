@@ -285,3 +285,113 @@ test("responsive shell and primary navigation remain keyboard operable", async (
   await expect(page.getByRole("navigation", { name: "Navegación principal" })).not.toBeVisible();
   await expect(page.locator("body")).not.toHaveCSS("overflow-x", "scroll");
 });
+
+test("campaign actions wait for refreshed versions and reserve their confirmation", async ({ page }) => {
+  const suffix = Date.now();
+  const prospectName = `Audience pending prospect ${suffix}`;
+  const templateName = `Audience pending template ${suffix}`;
+  const campaignName = `Audience pending campaign ${suffix}`;
+  await login(page, adminUser, adminPassword);
+  await page.getByRole("button", { name: "Prospectos", exact: true }).click();
+  await page.getByLabel("Nuevo prospecto", { exact: true }).fill(prospectName);
+  await page.getByLabel("Localidad", { exact: true }).first().fill("Rosario");
+  await page.getByRole("button", { name: "Crear prospecto", exact: true }).click();
+  await expect(page.getByRole("heading", { name: prospectName, exact: true })).toBeVisible();
+  await page.getByLabel("Nombre", { exact: true }).fill("Contacto sintético");
+  await page.getByLabel("Correo electrónico", { exact: true }).fill(`audience-${suffix}@example.test`);
+  await page.getByRole("button", { name: "Agregar contacto", exact: true }).click();
+  await expect(page.getByText("Contacto agregado y elegibilidad actualizada.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Agregar contacto", exact: true })).toBeEnabled();
+
+  await page.getByRole("button", { name: "Campañas", exact: true }).click();
+  const templatePanel = page.getByRole("heading", { name: "Nueva plantilla versionada", exact: true }).locator("..");
+  await templatePanel.getByLabel("Nombre", { exact: true }).fill(templateName);
+  await templatePanel.getByRole("button", { name: "Crear versión 1", exact: true }).click();
+  await expect(page.getByText(`Plantilla ${templateName} v1 creada.`, { exact: true })).toBeVisible();
+  const campaignPanel = page.getByRole("heading", { name: "Nueva campaña", exact: true }).locator("..");
+  await campaignPanel.getByLabel("Nombre", { exact: true }).fill(campaignName);
+  const templateSelector = campaignPanel.getByRole("combobox", { name: "Plantilla", exact: true });
+  const templateValue = await templateSelector.locator("option").filter({ hasText: templateName }).getAttribute("value");
+  expect(templateValue).not.toBeNull();
+  await templateSelector.selectOption(templateValue!);
+  const createdResponse = page.waitForResponse((response) =>
+    response.request().method() === "POST" && new URL(response.url()).pathname === "/api/v1/campaigns",
+  );
+  await campaignPanel.getByRole("button", { name: "Crear borrador", exact: true }).click();
+  const campaign = await (await createdResponse).json() as { id: string };
+  const card = page.locator("article.entity-card").filter({ hasText: campaignName });
+  const configure = card.getByRole("button", { name: "Configurar secuencia segura", exact: true });
+  const freeze = card.getByRole("button", { name: "Congelar audiencia", exact: true });
+  await expect(configure).toBeEnabled();
+
+  const freezeVersions: number[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === `/api/v1/campaigns/${campaign.id}/audience/freeze`) {
+      freezeVersions.push((request.postDataJSON() as { version: number }).version);
+    }
+  });
+  let notifyRefresh!: () => void;
+  let releaseRefresh!: () => void;
+  const refreshHeld = new Promise<void>((resolve) => { notifyRefresh = resolve; });
+  const refreshReleased = new Promise<void>((resolve) => { releaseRefresh = resolve; });
+  let holdNextRefresh = true;
+  let refreshedVersion: number | undefined;
+  await page.route("**/api/v1/campaigns", async (route) => {
+    if (route.request().method() !== "GET" || !holdNextRefresh) {
+      await route.continue();
+      return;
+    }
+    holdNextRefresh = false;
+    const response = await route.fetch();
+    const records = await response.json() as Array<{ id: string; version: number }>;
+    refreshedVersion = records.find((record) => record.id === campaign.id)?.version;
+    notifyRefresh();
+    await refreshReleased;
+    await route.fulfill({ response });
+  });
+  const refreshResponse = page.waitForResponse((response) =>
+    response.request().method() === "GET" && new URL(response.url()).pathname === "/api/v1/campaigns",
+  );
+  await configure.click();
+  try {
+    await refreshHeld;
+    await expect(page.getByText("Secuencia declarativa de contacto, espera y parada configurada.", { exact: true })).toBeVisible();
+    expect(refreshedVersion).toBe(1);
+    for (const button of await card.getByRole("button").all()) await expect(button).toBeDisabled();
+    await expect(templatePanel.getByRole("button", { name: "Crear versión 1", exact: true })).toBeDisabled();
+    await expect(campaignPanel.getByRole("button", { name: "Crear borrador", exact: true })).toBeDisabled();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(freezeVersions).toHaveLength(0);
+  } finally {
+    releaseRefresh();
+    await refreshResponse;
+  }
+  await expect(freeze).toBeEnabled();
+  await freeze.click();
+  let dialog = page.getByRole("dialog", { name: "Confirmar audiencia", exact: true });
+  await expect(dialog).toHaveCount(1);
+  await expect(freeze).toBeDisabled();
+  await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(freeze).toBeEnabled();
+  await expect(freeze).toBeFocused();
+  expect(freezeVersions).toHaveLength(0);
+
+  // Two immediate native clicks must reserve only one confirmation and operation.
+  await freeze.evaluate((element) => { const button = element as HTMLButtonElement; button.click(); button.click(); });
+  dialog = page.getByRole("dialog", { name: "Confirmar audiencia", exact: true });
+  await expect(dialog).toHaveCount(1);
+  const frozenResponse = page.waitForResponse((response) =>
+    response.request().method() === "POST" && new URL(response.url()).pathname === `/api/v1/campaigns/${campaign.id}/audience/freeze`,
+  );
+  await dialog.getByRole("button", { name: "Confirmar audiencia", exact: true }).click();
+  expect((await frozenResponse).status()).toBe(200);
+  await expect(card).toContainText("Listo para revisión");
+  await expect(card.getByRole("button", { name: "Aprobar", exact: true })).toBeEnabled();
+  expect(freezeVersions).toEqual([1]);
+  const records = await (await page.request.get("/api/v1/campaigns")).json() as Array<{ id: string; version: number; status: string; recipientCount: number }>;
+  const persisted = records.find((record) => record.id === campaign.id)!;
+  expect(persisted.status).toBe("READY_FOR_REVIEW");
+  expect(persisted.version).toBeGreaterThan(1);
+  expect(persisted.recipientCount).toBeGreaterThan(0);
+});

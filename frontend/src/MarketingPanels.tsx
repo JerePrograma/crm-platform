@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { changeTaskStatus, getProspect } from "./api";
 import { humanizeError, labelFor } from "./uiLabels";
 import { agendaTaskFilters, taskTiming } from "./marketingWork";
@@ -50,7 +50,8 @@ export function MarketingAgenda({
   const [timing, setTiming] = useState("");
   const [number, setNumber] = useState(0);
   const [names, setNames] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState<string | null>(null);
+  const busyTasks = useRef(new Set<string>());
+  const [busy, setBusy] = useState<ReadonlySet<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const { page, loading, error: loadError, retry } = useTaskPage(
@@ -73,14 +74,19 @@ export function MarketingAgenda({
   }, [shownIds]);
 
   async function complete(task: Task) {
-    setBusy(task.id); setError(null); setNotice(null);
+    if (busyTasks.current.has(task.id)) return;
+    busyTasks.current.add(task.id);
+    setBusy(new Set(busyTasks.current)); setError(null); setNotice(null);
     try {
       await changeTaskStatus(task, "COMPLETED");
       setNotice("Tarea completada. Registrá la respuesta o el resultado en la ficha del prospecto.");
       await onChanged();
       retry();
     } catch (caught) { setError(humanizeError(caught instanceof Error ? caught.message : String(caught))); }
-    finally { setBusy(null); }
+    finally {
+      busyTasks.current.delete(task.id);
+      setBusy(new Set(busyTasks.current));
+    }
   }
 
   return (
@@ -96,7 +102,7 @@ export function MarketingAgenda({
       {loadError && <div className="alert error" role="alert">{loadError} <button type="button" className="link-button" onClick={retry}>Reintentar</button></div>}
       {page && (shown.length ? <div className="agenda-list">{shown.map((task) => <article className="agenda-item" key={task.id}>
         <div><span className={`badge badge-${taskTiming(task)}`}>{({ overdue: "Vencida", today: "Hoy", upcoming: "Próxima" })[taskTiming(task)]}</span><h3>{task.title}</h3><p>{names[task.prospectId] ?? "Prospecto vinculado"} · {new Date(task.dueAt).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "medium", timeStyle: "short" })}</p><small>{labelFor(task.priority)} prioridad · {labelFor(task.status)}</small>{task.description && <p>{task.description}</p>}</div>
-        <div className="action-row"><button className="secondary-button" onClick={() => void onOpenProspect(task.prospectId)}>Abrir ficha</button>{session.permissions.includes("ACTIVITY_WRITE") && <button className="link-button" disabled={busy === task.id} onClick={() => void complete(task)}>{busy === task.id ? "Guardando…" : "Completar tarea"}</button>}</div>
+        <div className="action-row"><button className="secondary-button" onClick={() => void onOpenProspect(task.prospectId)}>Abrir ficha</button>{session.permissions.includes("ACTIVITY_WRITE") && <button className="link-button" disabled={busy.has(task.id)} onClick={() => void complete(task)}>{busy.has(task.id) ? "Guardando…" : "Completar tarea"}</button>}</div>
       </article>)}</div> : <div className="empty-state"><strong>{timing ? "No hay tareas con ese vencimiento." : onlyMine ? "No tenés tareas pendientes." : "No hay seguimientos pendientes."}</strong><p>Creá una tarea desde la ficha de un prospecto, con responsable y vencimiento, para dejar registrado el próximo paso.</p></div>)}
       {page && <TaskPagination page={page} onPage={setNumber} label="Páginas de agenda" />}
     </section>
