@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const nginxImage = process.env.CRM_PROXY_TEST_NGINX_IMAGE || fs.readFileSync(path.join(root, 'frontend', 'Dockerfile'), 'utf8').match(/^FROM (nginx:\S+)/m)[1];
@@ -53,6 +53,7 @@ function request(bytes = 0, trusted = false, separateClient = false, uri = '/api
 }
 
 try {
+  fs.chmodSync(temporary, 0o755);
   fs.writeFileSync(path.join(temporary, 'backend.cjs'), `require('node:http').createServer((req,res)=>{let bytes=0;req.on('data',chunk=>bytes+=chunk.length);req.on('end',()=>{res.setHeader('Content-Type','application/json');if(req.url==='/api/v1/auth/login'){if(req.headers['x-forwarded-proto']!=='https'){res.statusCode=400;res.end('{}');return;}res.setHeader('Set-Cookie','SYNTHETIC_SESSION=synthetic-test-only; Secure; HttpOnly; SameSite=Lax; Path=/');}if(req.url==='/api/v1/auth/me'&&!String(req.headers.cookie).includes('SYNTHETIC_SESSION=')){res.statusCode=401;}res.end(JSON.stringify({headers:req.headers,bytes}));});}).listen(8080,'0.0.0.0');`);
   fs.writeFileSync(path.join(temporary, 'nginx.conf'), 'pid /tmp/nginx.pid;\nerror_log /dev/stderr warn;\nevents {}\nhttp { access_log off; include /etc/nginx/mime.types; include /etc/nginx/conf.d/default.conf; }\n');
   const allowlist = path.join(temporary, 'trusted-edge.conf');
@@ -144,7 +145,10 @@ try {
   console.log(`Production proxy regression passed: ${checks} assertions; synthetic resources only.`);
 } catch (error) {
   for (const name of [edge, frontend, backend, oldBackendAddress]) {
-    try { console.error(`${name}:\n${docker('logs', name)}`); } catch {}
+    try {
+      const logs = spawnSync('docker', ['logs', name], { encoding: 'utf8', timeout: 180000, stdio: ['ignore', 'pipe', 'pipe'] });
+      console.error(`${name}:\n${logs.stdout || ''}${logs.stderr || ''}${logs.error ? logs.error.message : ''}`);
+    } catch {}
   }
   throw error;
 } finally {
