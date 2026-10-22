@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: gestudio_crm
       POSTGRES_USER: gestudio
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set a synthetic local drill password}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Inject the database credential outside Git}
     volumes:
       - production_postgres:/var/lib/postgresql/data
     healthcheck:
@@ -17,17 +17,32 @@ services:
     networks: [private]
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
+    mem_limit: 1024m
+    cpus: 1.0
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
 
   backend:
+    image: ${CRM_BACKEND_IMAGE:-scalaris-crm-backend:local}
     build:
       context: ..
       dockerfile: Dockerfile
     environment:
+      SPRING_PROFILES_ACTIVE: scalaris
+      CRM_BUSINESS_PROFILE: SCALARIS
       DATABASE_URL: jdbc:postgresql://postgres:5432/gestudio_crm
       DATABASE_USER: gestudio
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set a synthetic local drill password}
-      CRM_BOOTSTRAP_USERNAME: ${CRM_BOOTSTRAP_USERNAME:?Set a synthetic local drill username}
-      CRM_BOOTSTRAP_PASSWORD: ${CRM_BOOTSTRAP_PASSWORD:?Set a synthetic local drill password}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Inject the database credential outside Git}
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-10}
+      DATABASE_MIN_IDLE: ${DATABASE_MIN_IDLE:-1}
+      CRM_BOOTSTRAP_USERNAME: ${CRM_BOOTSTRAP_USERNAME:?Inject the administrator username outside Git}
+      CRM_BOOTSTRAP_PASSWORD: ${CRM_BOOTSTRAP_PASSWORD:?Inject the administrator credential outside Git}
+      CRM_MARKETING_USERNAME: ${CRM_MARKETING_USERNAME:?Inject the Marketing username outside Git}
+      CRM_MARKETING_PASSWORD: ${CRM_MARKETING_PASSWORD:?Inject the Marketing credential outside Git}
+      CRM_MARKETING_DISPLAY_NAME: ${CRM_MARKETING_DISPLAY_NAME:-Marketing Scalaris}
+      CRM_MINIMUM_PASSWORD_LENGTH: "12"
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
       SENDING_ENABLED: "false"
       SENDING_DRY_RUN: "true"
@@ -59,8 +74,12 @@ services:
     mem_limit: 768m
     cpus: 1.0
     stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
 
   frontend:
+    image: ${CRM_FRONTEND_IMAGE:-scalaris-crm-frontend:local}
     build:
       context: ../frontend
       dockerfile: Dockerfile
@@ -76,6 +95,13 @@ services:
       retries: 12
       start_period: 10s
     read_only: true
+    volumes:
+      - type: bind
+        source: ${TRUSTED_EDGE_CONFIG_FILE:-../frontend/nginx-trusted-edge.conf}
+        target: /etc/nginx/crm-trusted-edge.conf
+        read_only: true
+        bind:
+          create_host_path: false
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m,mode=1777
     networks: [edge, private]
@@ -84,6 +110,9 @@ services:
     mem_limit: 128m
     cpus: 0.5
     stop_grace_period: 15s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
 
 networks:
   edge:

@@ -1,8 +1,14 @@
 # Continuidad canónica del proyecto
 
-Actualizado: 2026-10-14
+Actualizado: 2026-10-22
 
-## Misión activa: SCALARIS-001
+## Misión actual: SCALARIS-DEPLOY-001
+
+El usuario autorizó completar los pendientes de preparación productiva y eligió el VPS Hostinger con `crm.scalaris.com.ar`. Leer primero [el segmento actual](../segments/SCALARIS-DEPLOY-001.md), [su validación](../validation/scalaris-production-readiness-2026-10-22.md), status, next-step y backlog. La misión reemplaza las restricciones de alcance del cierre documental anterior para las correcciones identificadas; mantiene contactos y comunicaciones reales fuera de las pruebas.
+
+Docker Desktop y su motor Linux 29.8.2 están disponibles. Se implementan remediación de dependencias/Java 21, tareas completas por filtros/páginas, perfil Scalaris/Marketing productivo, proxy/importaciones, respaldo explícito y gates de Marketing/seguridad de ambas imágenes. Los resultados de ejecución, commit y límites tienen una única autoridad en la validación actual. El estado histórico de julio/octubre 14 siguiente no prueba el cierre de esta entrega.
+
+## Historial de misión: SCALARIS-001
 
 La edición actual prepara el CRM para Marketing de Scalaris: servicio técnico, desarrollo y venta a pedido. Incluye perfil/organización propios, cuenta Marketing, agenda, referencias comerciales, etiquetas/plantillas y apertura local Windows mediante paquete portable o Docker. Los datos y claves de la instalación quedan fuera de Git.
 

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Scalaris CRM backup at 03:15 Argentina
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 America/Argentina/Buenos_Aires
+RandomizedDelaySec=300
+Persistent=true
+Unit=scalaris-crm-backup.service
+
+[Install]
+WantedBy=timers.target

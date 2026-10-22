@@ -160,7 +160,35 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: node scripts/test-production-proxy.js
       - run: bash scripts/verify-production-profile.sh 18080
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scalaris-production-profile-evidence
+          path: validation-output/crm-scalaris-production-e2e-*
+          retention-days: 7
+
+  scalaris-marketing-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: sh scripts/validate-scalaris-e2e.sh 18787
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scalaris-marketing-evidence
+          path: validation-output/crm-scalaris-scalaris-e2e-*
+          retention-days: 7
 
   fake-messaging:
     runs-on: ubuntu-latest
@@ -195,6 +223,9 @@ jobs:
     env: *synthetic-env
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: node scripts/test-database-restore.js
       - run: docker compose --profile app up -d --build --wait
       - run: bash scripts/verify-backup-restore.sh
       - if: always()
@@ -206,12 +237,19 @@ jobs:
       - uses: actions/checkout@v4
       - shell: powershell
         run: ./scripts/check-powershell-syntax.ps1
+      - shell: powershell
+        run: ./scripts/test-database-operations.ps1
 
   scripts-unix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: for script in scripts/*.sh; do bash -n "$script"; done
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: for script in scripts/*.sh deploy/hostinger/*.sh; do bash -n "$script"; done
+      - run: sh scripts/test-database-operations.sh
+      - run: python3 -B scripts/test-hostinger-preflight.py
+      - run: node --test scripts/test-validate-scalaris-e2e.js
       - run: make -n repository-safety backend-verify-container validate-seg001 validate-complete-crm
 
   dependency-scan:
@@ -224,9 +262,23 @@ jobs:
       - run: npm ci --no-fund && npm audit --audit-level=high
         working-directory: frontend
       - run: docker build --pull -t crm-platform-backend:ci .
+      - run: docker build --pull -t crm-platform-frontend:ci frontend
+      - run: docker volume create crm_grype_cache
       - name: Scan backend runtime for high or critical vulnerabilities
         run: |
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
+            -v crm_grype_cache:/.cache/grype \
+            -e GRYPE_DB_CACHE_DIR=/.cache/grype/db \
+            -e GRYPE_LOG_LEVEL=info \
             anchore/grype@sha256:fd4ab4d1042b522c896e73bdf09ab8bf384fa417df99d6dd0d6e1008c7e7c821 \
             crm-platform-backend:ci --fail-on high
+      - name: Scan frontend runtime for high or critical vulnerabilities
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v crm_grype_cache:/.cache/grype \
+            -e GRYPE_DB_CACHE_DIR=/.cache/grype/db \
+            -e GRYPE_LOG_LEVEL=info \
+            anchore/grype@sha256:fd4ab4d1042b522c896e73bdf09ab8bf384fa417df99d6dd0d6e1008c7e7c821 \
+            crm-platform-frontend:ci --fail-on high

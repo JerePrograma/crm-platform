@@ -1,5 +1,12 @@
 # Índice de documentación
 
+## Preparación productiva vigente — 2026-10-22
+
+- [SCALARIS-DEPLOY-001](segments/SCALARIS-DEPLOY-001.md) — alcance y límites de la entrega.
+- [Validación de preparación](validation/scalaris-production-readiness-2026-10-22.md) — evidencia ejecutada y pendientes.
+- [Hostinger y crm.scalaris.com.ar](production/hostinger.md) — configuración y operación concretas.
+- [ADR-0011](adr/0011-java-21-runtime-and-managed-security-updates.md) — runtime Java 21 y actualizaciones de seguridad.
+
 ## Continuidad
 
 - `../AGENTS.md` — reglas obligatorias y rama canónica;

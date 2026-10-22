@@ -9,10 +9,14 @@ RUN if [ -f package-lock.json ]; then \
 COPY . .
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.30.6-alpine@sha256:c59d1f8b1e0e42da75be973424cd72e23f7f8adfb54e982f4d1cd0216a5a5576
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx-trusted-edge.conf /etc/nginx/crm-trusted-edge.conf
 COPY --from=frontend-build /workspace/frontend/dist /usr/share/nginx/html
-RUN sed -i 's#^pid .*;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf
+RUN apk del --no-network curl \
+    && ! apk info --exists curl \
+    && ! apk info --exists libcurl \
+    && sed -i 's#^pid .*;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf
 USER 101
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=12 \

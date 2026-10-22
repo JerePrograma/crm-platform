@@ -75,6 +75,8 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/actuator/metrics", "/actuator/metrics/**")
                     .authenticated()
+                    .requestMatchers("/actuator/prometheus")
+                    .hasAuthority("SETTINGS_MANAGE")
                     .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login")
                     .permitAll()
                     .requestMatchers("/api/v1/webhooks/fake-inbound")

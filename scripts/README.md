@@ -1,5 +1,13 @@
 # Automatización local
 
+## Preparación productiva — 2026-10-22
+
+- `validate-scalaris-e2e.ps1` / `.sh` crean un stack Scalaris sintético exclusivo y ejecutan los cinco recorridos obligatorios de Marketing/importación/paginación; resumen y reporte quedan en `validation-output/`.
+- `verify-production-profile.ps1` / `.sh` usan el mismo gate con el Compose productivo; no constituyen un despliegue real.
+- `test-production-proxy.js` comprueba Caddy/nginx con TLS local desechable, cabeceras, límites y logs; `test-database-restore.js` hace un respaldo/restauración PostgreSQL aislado.
+- Backup/restore acepta selección explícita de archivo, proyecto y entorno Compose. Ver [operación Hostinger](../docs/production/hostinger.md) para el proyecto `scalaris-crm`.
+- Los validadores integrales escanean backend y frontend con Grype high/critical y caché explícita, además de npm audit. Consultar [la evidencia actual](../docs/validation/scalaris-production-readiness-2026-10-22.md); los resultados históricos siguientes conservan su alcance original.
+
 ## Objetivo
 
 Scripts reproducibles para configurar, construir, verificar y operar Gestudio CRM localmente.

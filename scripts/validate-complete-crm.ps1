@@ -3,6 +3,7 @@ param(
   [ValidateRange(1, 65535)][int]$BackendPort = 8080,
   [ValidateRange(1, 65535)][int]$FrontendPort = 5173,
   [ValidateRange(1, 65535)][int]$ProductionFrontendPort = 18080,
+  [ValidateRange(1, 65535)][int]$ScalarisFrontendPort = 18787,
   [switch]$KeepRunning
 )
 
@@ -29,14 +30,14 @@ $summary = [ordered]@{
   startedAtUtc = $started.ToString('o')
   finishedAtUtc = $null
   durationSeconds = $null
-  ports = [ordered]@{ postgres = $PostgresPort; backend = $BackendPort; frontend = $FrontendPort; productionFrontend = $ProductionFrontendPort }
+  ports = [ordered]@{ postgres = $PostgresPort; backend = $BackendPort; frontend = $FrontendPort; productionFrontend = $ProductionFrontendPort; scalarisFrontend = $ScalarisFrontendPort }
   sendingBoundary = [ordered]@{ enabled = $false; dryRun = $true; dailyLimit = 0; killSwitch = $true; realNetwork = $false }
   phases = [ordered]@{}
   generatedEvidence = [ordered]@{ transcript = $transcriptPath; summary = $summaryPath; e2e = 'validation-output/complete-crm-e2e-latest.json' }
   error = $null
 }
 
-$phaseNames = @('trackedTreeClean','tooling','repositorySafety','scriptSyntax','secretScan','backendFormatUnitIntegrationArchitectureSecurity','frontendInstall','frontendTypecheck','frontendUnit','frontendBuild','composeNoCacheHealthSmoke','dependencyScan','migrationFromEmpty','migrationFromV11','outboxWorkersInboundWebhook','frontendE2E','gmailLiveFakeE2E','effectiveSendingBlockade','zeroSent','backupRestore','productionProfileSmoke','finalTreeClean')
+$phaseNames = @('trackedTreeClean','tooling','repositorySafety','scriptSyntax','secretScan','backendFormatUnitIntegrationArchitectureSecurity','frontendInstall','frontendTypecheck','frontendUnit','frontendBuild','composeNoCacheHealthSmoke','dependencyScan','migrationFromEmpty','migrationFromV11','outboxWorkersInboundWebhook','frontendE2E','gmailLiveFakeE2E','scalarisMarketingE2E','effectiveSendingBlockade','zeroSent','backupRestore','productionProfileSmoke','finalTreeClean')
 foreach ($name in $phaseNames) { $summary.phases[$name] = [ordered]@{ status = 'NOT_RUN'; durationSeconds = $null } }
 
 function Run-Phase([string]$Name, [scriptblock]$Action) {
@@ -75,11 +76,13 @@ try {
     foreach ($command in @('git','docker','node','npm','mvn')) { if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command missing: $command" } }
     Invoke-Checked 'docker' @('info')
     Invoke-Checked 'docker' @('compose','version')
+    if (@($PostgresPort, $BackendPort, $FrontendPort, $ProductionFrontendPort) -contains $ScalarisFrontendPort) { throw 'Scalaris frontend port must be distinct from other validation ports.' }
     & (Join-Path $PSScriptRoot 'check-host-ports.ps1') `
       -PostgresPort $PostgresPort `
       -BackendPort $BackendPort `
       -FrontendPort $FrontendPort `
       -ProductionFrontendPort $ProductionFrontendPort
+    Invoke-Checked 'node' @('scripts/check-host-ports.js', "Scalaris frontend=$ScalarisFrontendPort")
   }
   Run-Phase 'repositorySafety' { & (Join-Path $PSScriptRoot 'check-repository-safety.ps1') }
   Run-Phase 'scriptSyntax' {
@@ -88,9 +91,14 @@ try {
     & (Join-Path $PSScriptRoot 'test-check-host-ports.ps1')
     Invoke-Checked 'node' @('scripts/test-container-env-assertions.js')
     Invoke-Checked 'node' @('scripts/test-check-host-ports.js')
+    Invoke-Checked 'node' @('--test','scripts/test-validate-scalaris-e2e.js')
+    Invoke-Checked 'docker' @('run','--rm','--mount',"type=bind,source=$repoRoot,target=/workspace,readonly",'--workdir','/workspace','python:3.12-alpine','python','-B','scripts/test-hostinger-preflight.py')
     if (Get-Command bash -ErrorAction SilentlyContinue) {
       Get-ChildItem scripts -Filter '*.sh' | ForEach-Object {
         Invoke-Checked 'bash' @('-n', ("scripts/{0}" -f $_.Name))
+      }
+      Get-ChildItem deploy/hostinger -Filter '*.sh' | ForEach-Object {
+        Invoke-Checked 'bash' @('-n', ("deploy/hostinger/{0}" -f $_.Name))
       }
     }
     else { Write-Host 'Bash functional/syntax validation: BLOCKED_PLATFORM' }
@@ -139,17 +147,23 @@ try {
   }
   $backendContainer = (& docker compose --profile app ps -q backend).Trim()
   $backendImage = (& docker inspect $backendContainer --format '{{.Config.Image}}').Trim()
+  $frontendContainer = (& docker compose --profile app ps -q frontend).Trim()
+  $frontendImage = (& docker inspect $frontendContainer --format '{{.Config.Image}}').Trim()
   Run-Phase 'dependencyScan' {
     Invoke-Checked 'npm' @('audit','--audit-level=high') (Join-Path $repoRoot 'frontend')
     Invoke-Checked 'docker' @('volume','create','crm_grype_cache')
-    Invoke-Checked 'docker' @(
-      'run','--rm',
-      '-v','/var/run/docker.sock:/var/run/docker.sock',
-      '-v','crm_grype_cache:/root/.cache/grype',
-      'anchore/grype@sha256:fd4ab4d1042b522c896e73bdf09ab8bf384fa417df99d6dd0d6e1008c7e7c821',
-      $backendImage,
-      '--fail-on','high'
-    )
+    foreach ($runtimeImage in @($backendImage, $frontendImage)) {
+      Invoke-Checked 'docker' @(
+        'run','--rm',
+        '-v','/var/run/docker.sock:/var/run/docker.sock',
+        '-v','crm_grype_cache:/.cache/grype',
+        '-e','GRYPE_DB_CACHE_DIR=/.cache/grype/db',
+        '-e','GRYPE_LOG_LEVEL=info',
+        'anchore/grype@sha256:fd4ab4d1042b522c896e73bdf09ab8bf384fa417df99d6dd0d6e1008c7e7c821',
+        $runtimeImage,
+        '--fail-on','high'
+      )
+    }
   }
   Run-Phase 'migrationFromEmpty' { & (Join-Path $PSScriptRoot 'verify-migrations.ps1') -BackendImage $backendImage }
   $summary.phases.migrationFromV11.status = $summary.phases.migrationFromEmpty.status
@@ -170,6 +184,9 @@ try {
   }
   Run-Phase 'gmailLiveFakeE2E' {
     & (Join-Path $PSScriptRoot 'validate-gmail-live-fake.ps1')
+  }
+  Run-Phase 'scalarisMarketingE2E' {
+    & (Join-Path $PSScriptRoot 'validate-scalaris-e2e.ps1') -FrontendPort $ScalarisFrontendPort
   }
   Run-Phase 'effectiveSendingBlockade' {
     $environment = & docker inspect $backendContainer --format '{{json .Config.Env}}'

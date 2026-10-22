@@ -1,0 +1,18 @@
+[Unit]
+Description=Scalaris CRM public HTTPS readiness check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=1min
+User=deploy
+Group=deploy
+EnvironmentFile=-/srv/apps/crm/config/operations.conf
+ExecStart=/bin/sh /srv/apps/crm/current/deploy/hostinger/healthcheck.sh
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/apps/crm/state

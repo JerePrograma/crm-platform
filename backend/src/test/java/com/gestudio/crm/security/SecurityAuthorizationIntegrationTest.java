@@ -73,6 +73,7 @@ class SecurityAuthorizationIntegrationTest {
         .andExpect(jsonPath("$.token").isNotEmpty());
     mockMvc.perform(get("/api/v1/prospects")).andExpect(status().isUnauthorized());
     mockMvc.perform(get("/actuator/metrics")).andExpect(status().isUnauthorized());
+    mockMvc.perform(get("/actuator/prometheus")).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -92,6 +93,7 @@ class SecurityAuthorizationIntegrationTest {
 
     mockMvc.perform(get("/api/v1/prospects").session(session)).andExpect(status().isOk());
     mockMvc.perform(get("/actuator/metrics").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/actuator/prometheus").session(session)).andExpect(status().isOk());
     mockMvc
         .perform(post("/api/v1/auth/logout").session(session).with(csrf()))
         .andExpect(status().isOk());
@@ -158,6 +160,7 @@ class SecurityAuthorizationIntegrationTest {
     MockHttpSession session = session(login("read-only-user", "viewer-password-1").andReturn());
 
     mockMvc.perform(get("/api/v1/prospects").session(session)).andExpect(status().isOk());
+    mockMvc.perform(get("/actuator/prometheus").session(session)).andExpect(status().isForbidden());
     mockMvc
         .perform(get("/api/v1/prospects/metrics").session(session))
         .andExpect(status().isOk())

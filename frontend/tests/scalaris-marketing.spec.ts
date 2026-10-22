@@ -1,9 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
+import { Buffer } from "node:buffer";
 
 const adminUser = process.env.CRM_E2E_USERNAME ?? "complete-admin";
 const adminPassword = process.env.CRM_E2E_PASSWORD ?? "complete-admin-password";
-const screenshotDirectory = path.resolve("../validation-output/scalaris-marketing/screenshots");
+const screenshotDirectory = process.env.CRM_SCALARIS_SCREENSHOTS_DIR ?? path.resolve("../validation-output/scalaris-marketing/screenshots");
 test.use({ actionTimeout: 15_000 });
 
 async function capture(page: Page, file: string) {
@@ -31,6 +32,7 @@ async function addProspect(page: Page, name: string, service: string, email: str
   await page.getByRole("combobox", { name: "Consentimiento", exact: true }).selectOption("GRANTED");
   await page.getByRole("button", { name: "Agregar contacto", exact: true }).click();
   await expect(page.getByText("Contacto agregado y elegibilidad actualizada.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Guardando cambios…", { exact: true })).toHaveCount(0);
 }
 
 test("El perfil LEGACY conserva Ventas como rol predeterminado y oculta Marketing", async ({ page }) => {
@@ -45,6 +47,7 @@ test("El perfil LEGACY conserva Ventas como rol predeterminado y oculta Marketin
   await expect(role).toHaveValue("SALES");
   await expect(role.locator('option[value="MARKETING"]')).toHaveCount(0);
   await expect(role.locator('option[value="SALES"]')).toHaveCount(1);
+  await page.unrouteAll({ behavior: "wait" });
 });
 
 test("Marketing gestiona Scalaris con datos persistentes, segmentación y contacto manual", async ({ page }) => {
@@ -53,7 +56,7 @@ test("Marketing gestiona Scalaris con datos persistentes, segmentación y contac
   const profileResponse = await page.request.get("/api/v1/business-profile");
   expect(profileResponse.ok()).toBeTruthy();
   const profile = await profileResponse.json();
-  test.skip(profile.code !== "SCALARIS", "Este recorrido requiere el perfil local SCALARIS; el recorrido genérico continúa en complete-crm.spec.ts.");
+  expect(profile.code, "El gate Marketing debe ejecutarse contra un backend SCALARIS real").toBe("SCALARIS");
   expect(profile.serviceLines).toEqual(["Servicio técnico", "Desarrollo", "Venta a pedido"]);
   await expect(page.getByText("WhatsApp oficial: 11 7278-9289", { exact: true })).toBeVisible();
   await expect(page.getByText("Zona Oeste, CABA y Mar del Plata", { exact: true })).toBeVisible();
@@ -89,6 +92,7 @@ test("Marketing gestiona Scalaris con datos persistentes, segmentación y contac
   await page.getByLabel("Asignarme el seguimiento de este prospecto").check();
   await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
   await expect(page.getByText("Prospecto actualizado.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Guardando cambios…", { exact: true })).toHaveCount(0);
   const notesPanel = page.locator("details.disclosure-panel").filter({ hasText: "Actividad y notas" });
   await notesPanel.locator("summary").click();
   const noteText = `Conservar nota ante rechazo sintético ${suffix}`;
@@ -169,4 +173,44 @@ test("Marketing gestiona Scalaris con datos persistentes, segmentación y contac
   expect(criteria).not.toBeNull();
   expect(criteria!.y).toBeGreaterThanOrEqual(offering!.y + offering!.height);
   await capture(page, "06-guia-movil.png");
+});
+
+test("Marketing puede previsualizar un CSV sintético mayor a 1 MiB a través del proxy", async ({ page }) => {
+  test.setTimeout(120_000);
+  const marketingUser = process.env.CRM_E2E_MARKETING_USERNAME;
+  const marketingPassword = process.env.CRM_E2E_MARKETING_PASSWORD;
+  expect(marketingUser, "El gate requiere la cuenta Marketing bootstrap sintética").toBeTruthy();
+  expect(marketingPassword).toBeTruthy();
+  await signIn(page, marketingUser!, marketingPassword!);
+  const profileResponse = await page.request.get("/api/v1/business-profile");
+  expect(profileResponse.ok()).toBeTruthy();
+  expect((await profileResponse.json()).code).toBe("SCALARIS");
+  const me = await page.request.get("/api/v1/auth/me");
+  expect(me.ok()).toBeTruthy();
+  expect((await me.json()).role).toBe("MARKETING");
+  const suffix = Date.now();
+  const extraHeaders = Array.from({ length: 80 }, (_, index) => `Dato sintético ${index}`);
+  const rows = Array.from({ length: 2 }, (_, index) =>
+    [`Carga sintética ${suffix} ${index}`, "Mar del Plata", `large-upload-${suffix}-${index}@example.test`, ...extraHeaders.map(() => "x".repeat(8_000))].join(","),
+  );
+  const csv = Buffer.from(`Empresa o persona,Localidad,Correo,${extraHeaders.join(",")}\n${rows.join("\n")}\n`, "utf8");
+  expect(csv.byteLength).toBeGreaterThan(1024 * 1024);
+  expect(csv.byteLength).toBeLessThan(10 * 1024 * 1024);
+  await page.getByRole("button", { name: "Importaciones", exact: true }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: `large-synthetic-${suffix}.csv`, mimeType: "text/csv", buffer: csv,
+  });
+  const previewResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/v1/imports/prospects/preview") && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Generar vista previa", exact: true }).click();
+  const response = await previewResponse;
+  expect(response.status(), "El proxy debe permitir el CSV dentro del límite del backend").toBe(200);
+  const summary = await response.json();
+  expect(summary.status).toBe("COMPLETED");
+  expect(summary.dryRun).toBe(true);
+  expect(summary.totalRows).toBe(2);
+  expect(summary.acceptedRows).toBe(2);
+  expect(summary.rejectedRows).toBe(0);
+  await expect(page.getByText("Vista previa", { exact: true })).toBeVisible();
 });

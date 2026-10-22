@@ -1,8 +1,16 @@
 # Continuidad y próximos pasos
 
-Actualizado: 2026-10-14
+Actualizado: 2026-10-22
 
-## Misión activa: SCALARIS-001
+## Misión actual: SCALARIS-DEPLOY-001
+
+Completar [la preparación productiva](segments/SCALARIS-DEPLOY-001.md) para el VPS Hostinger y `crm.scalaris.com.ar`. Consultar [la matriz ejecutada de esta misión](validation/scalaris-production-readiness-2026-10-22.md) antes de retomar: contiene los controles pendientes, resultados reales y commit cubierto. Mantener separados validación local, publicación remota y puesta en servicio.
+
+El cierre exige regresiones de agenda/ficha, proxy/importación grande, backup/restore con destino explícito, migraciones V14, Grype de ambas imágenes y dos validaciones integrales limpias del mismo commit. El motor Docker está disponible. La conexión de proveedores y los envíos reales permanecen bloqueados. Los próximos pasos concretos se actualizan en el documento de validación al finalizar cada gate.
+
+El resto de este archivo conserva la continuidad del 14 de octubre y sus límites históricos; no impide las correcciones ahora autorizadas.
+
+## Historial de misión: SCALARIS-001
 
 La edición Windows local de Marketing Scalaris está entregada y comprobada. La implementación se publicó por fast-forward en `331b3e7be5ad52b93b285a0ff9654abedce79b7d`; HEAD, `origin/main` y `ls-remote` coincidentes y divergencia `0 0`. Este cierre documental registra la publicación y el resultado CI; continúa uso/piloto local siguiendo la [guía operativa](scalaris-marketing-local.md) y [SCALARIS-001](segments/SCALARIS-001.md).
 

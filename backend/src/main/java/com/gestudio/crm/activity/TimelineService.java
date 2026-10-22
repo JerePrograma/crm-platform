@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -268,6 +270,65 @@ public class TimelineService {
         timestamp(dueBefore),
         timestamp(dueBefore),
         Math.min(Math.max(limit, 1), 500));
+  }
+
+  @Transactional(readOnly = true)
+  public TaskPage searchTasks(
+      List<TaskStatus> statuses,
+      UUID ownerUserId,
+      UUID prospectId,
+      Instant dueFrom,
+      Instant dueUntil,
+      int page,
+      int size) {
+    if (prospectId != null) {
+      requireProspect(prospectId);
+    }
+    if (dueFrom != null && dueUntil != null && !dueFrom.isBefore(dueUntil)) {
+      throw new IllegalArgumentException("Task due range must have an end after its start");
+    }
+    StringBuilder where = new StringBuilder(" WHERE organization_id = ?");
+    List<Object> parameters = new ArrayList<>();
+    parameters.add(currentActor.organizationId());
+    if (statuses != null && !statuses.isEmpty()) {
+      where
+          .append(" AND status IN (")
+          .append(String.join(", ", Collections.nCopies(statuses.size(), "?")))
+          .append(")");
+      statuses.forEach(status -> parameters.add(status.name()));
+    }
+    if (ownerUserId != null) {
+      where.append(" AND owner_user_id = ?");
+      parameters.add(ownerUserId);
+    }
+    if (prospectId != null) {
+      where.append(" AND prospect_id = ?");
+      parameters.add(prospectId);
+    }
+    if (dueFrom != null) {
+      where.append(" AND due_at >= ?");
+      parameters.add(timestamp(dueFrom));
+    }
+    if (dueUntil != null) {
+      where.append(" AND due_at < ?");
+      parameters.add(timestamp(dueUntil));
+    }
+    Long count =
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM crm_task" + where, Long.class, parameters.toArray());
+    long total = count == null ? 0 : count;
+    int safeSize = Math.min(Math.max(size, 1), 100);
+    int totalPages = (int) Math.ceil((double) total / safeSize);
+    int safePage = Math.min(Math.max(page, 0), Math.max(totalPages - 1, 0));
+    parameters.add(safeSize);
+    parameters.add((long) safePage * safeSize);
+    List<TaskView> content =
+        jdbcTemplate.query(
+            "SELECT * FROM crm_task" + where + " ORDER BY due_at, id LIMIT ? OFFSET ?",
+            this::mapTask,
+            parameters.toArray());
+    return new TaskPage(
+        content, total, totalPages, safePage, safeSize, safePage == 0, safePage + 1 >= totalPages);
   }
 
   @Transactional(readOnly = true)
@@ -634,4 +695,13 @@ public class TimelineService {
 
   public record TimelinePage(
       List<TimelineItem> content, long totalElements, int number, int size) {}
+
+  public record TaskPage(
+      List<TaskView> content,
+      long totalElements,
+      int totalPages,
+      int number,
+      int size,
+      boolean first,
+      boolean last) {}
 }

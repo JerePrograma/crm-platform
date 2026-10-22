@@ -1,8 +1,48 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getBusinessProfile, getImportRows, getProspectDashboardMetrics, listProspects } from "./api";
+import { getBusinessProfile, getImportRows, getProspectDashboardMetrics, getTaskPage, listProspects, listTasks } from "./api";
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe("getTaskPage", () => {
+  it("requests pending tasks with server-side ownership and date filters and preserves all page totals", async () => {
+    const response = { content: [], totalElements: 205, totalPages: 9, number: 8, size: 25, first: false, last: true };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(response), {
+      status: 200, headers: { "content-type": "application/json" },
+    }));
+    await expect(getTaskPage({
+      statuses: ["OPEN", "IN_PROGRESS"], ownerUserId: "marketing", page: 8, size: 25,
+      dueFrom: "2026-10-22T03:00:00.000Z", dueUntil: "2026-10-23T03:00:00.000Z",
+    })).resolves.toEqual(response);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    const parameters = new URL(String(url), "http://localhost").searchParams;
+    expect(String(url)).toContain("/api/v1/tasks/page?");
+    expect(parameters.getAll("statuses")).toEqual(["OPEN", "IN_PROGRESS"]);
+    expect(parameters.get("ownerUserId")).toBe("marketing");
+    expect(parameters.get("page")).toBe("8");
+    expect(parameters.get("dueFrom")).toBe("2026-10-22T03:00:00.000Z");
+    expect(parameters.get("dueUntil")).toBe("2026-10-23T03:00:00.000Z");
+    expect(init).toMatchObject({ credentials: "same-origin" });
+  });
+
+  it("requests only the selected prospect's tasks without a global task batch or a client-side filter", async () => {
+    const response = { content: [], totalElements: 230, totalPages: 10, number: 9, size: 25, first: false, last: true };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(response), { status: 200 }));
+    await expect(getTaskPage({ prospectId: "selected-prospect", page: 9 })).resolves.toEqual(response);
+    const parameters = new URL(String(fetchMock.mock.calls[0]![0]), "http://localhost").searchParams;
+    expect(parameters.get("prospectId")).toBe("selected-prospect");
+    expect(parameters.get("page")).toBe("9");
+    expect(parameters.has("statuses")).toBe(false);
+  });
+
+  it("bounds page sizes and preserves the legacy array endpoint", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response("[]", { status: 200 }));
+    await getTaskPage({ page: -3, size: 500 });
+    expect(String(fetchMock.mock.calls[0]![0])).toContain("page=0&size=100");
+    await listTasks("OPEN");
+    expect(fetchMock.mock.calls[1]).toEqual(["/api/v1/tasks?status=OPEN", expect.objectContaining({ credentials: "same-origin" })]);
+  });
 });
 
 describe("listProspects", () => {

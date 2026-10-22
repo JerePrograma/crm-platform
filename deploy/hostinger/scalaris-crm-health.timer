@@ -1,0 +1,10 @@
+[Unit]
+Description=Check Scalaris CRM readiness every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=scalaris-crm-health.service
+
+[Install]
+WantedBy=timers.target

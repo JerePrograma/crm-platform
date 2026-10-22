@@ -1,0 +1,19 @@
+[Unit]
+Description=Scalaris CRM private PostgreSQL backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=30min
+User=deploy
+Group=deploy
+WorkingDirectory=/srv/apps/crm/current
+EnvironmentFile=-/srv/apps/crm/config/operations.conf
+ExecStart=/bin/sh /srv/apps/crm/current/deploy/hostinger/backup.sh
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/apps/crm/backups

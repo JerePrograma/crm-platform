@@ -1,6 +1,10 @@
 # Configuración, entornos y clasificación de datos
 
-Actualizado: 2026-07-24
+Actualizado: 2026-10-22
+
+## Configuración de la preparación vigente
+
+El destino elegido es VPS Hostinger con `crm.scalaris.com.ar`. La configuración y los procedimientos se mantienen en `deploy/` y `docs/production/`; los secretos se inyectan fuera de Git. [SCALARIS-DEPLOY-001](../segments/SCALARIS-DEPLOY-001.md) y [su validación](../validation/scalaris-production-readiness-2026-10-22.md) registran el estado ejecutado. La elección del destino no convierte el perfil sintético en producción desplegada ni habilita comunicaciones reales.
 
 ## Principio general
 

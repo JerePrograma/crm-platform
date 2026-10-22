@@ -47,7 +47,6 @@ import {
   listProspects,
   listSenderAccounts,
   listContacts,
-  listTasks,
   listUsers,
   login,
   logout,
@@ -120,7 +119,6 @@ import type {
   ProspectStatus,
   RenderedTemplate,
   SessionUser,
-  Task,
   TimelineItem,
   User,
   InboundMessage,
@@ -139,6 +137,7 @@ import { openDecisionDialog } from "./decisionDialog";
 import { GmailSenderAccountsPanel } from "./GmailSenderAccountsPanel";
 import { MarketingAgenda, MarketingHelp, MarketingOverview, ScalarisBusinessCard } from "./MarketingPanels";
 import { ProspectTagsPanel } from "./ProspectTagsPanel";
+import { ProspectTaskList } from "./TaskPanels";
 import { prospectSources } from "./marketingWork";
 import {
   campaignProgress,
@@ -226,7 +225,7 @@ export function App() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
   const [dashboardReport, setDashboardReport] = useState<DashboardReport | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskRefreshKey, setTaskRefreshKey] = useState(0);
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [exclusions, setExclusions] = useState<Exclusion[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -279,7 +278,6 @@ export function App() {
           safety,
           business,
           report,
-          taskList,
         ] =
           await Promise.all([
           listProspects(filter || undefined, query || undefined, page),
@@ -304,7 +302,6 @@ export function App() {
             : Promise.resolve(null),
           getBusinessProfile(),
           session?.permissions.includes("REPORT_READ") ? getDashboardReport() : Promise.resolve(null),
-          listTasks(),
         ]);
         setProspects(prospectPage.content);
         setProspectDashboardMetrics(prospectMetrics);
@@ -327,7 +324,7 @@ export function App() {
         setMessagingSafety(safety);
         setBusinessProfile(business);
         setDashboardReport(report);
-        setTasks(taskList);
+        setTaskRefreshKey((key) => key + 1);
       } catch (caught) {
         setError(message(caught));
       } finally {
@@ -576,7 +573,7 @@ export function App() {
               {pipelineMetrics && <Metric label="Oportunidades activas" value={pipelineMetrics.activeCount} />}
               {dashboardReport && <Metric label="Campañas en borrador" value={dashboardReport.campaigns.draft ?? 0} />}
             </div>
-            <MarketingAgenda compact tasks={tasks} session={session} onChanged={refreshView} onOpenProspect={openProspectFromAgenda} />
+            <MarketingAgenda compact refreshKey={taskRefreshKey} session={session} onChanged={refreshView} onOpenProspect={openProspectFromAgenda} />
             {session.permissions.includes("AUDIT_READ") && (
               <Panel title="Actividad reciente">
                 <AuditTable events={auditEvents.slice(0, 8)} />
@@ -585,7 +582,7 @@ export function App() {
           </section>
         )}
 
-        {tab === "agenda" && <MarketingAgenda tasks={tasks} session={session} onChanged={refreshView} onOpenProspect={openProspectFromAgenda} />}
+        {tab === "agenda" && <MarketingAgenda refreshKey={taskRefreshKey} session={session} onChanged={refreshView} onOpenProspect={openProspectFromAgenda} />}
         {tab === "help" && <MarketingHelp profile={businessProfile} session={session} onNavigate={navigateTab} />}
 
         {tab === "prospects" && (
@@ -3069,7 +3066,6 @@ function ProspectDetail({
   onChanged: () => Promise<void>;
 }) {
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [name, setName] = useState(prospect.displayName);
   const [city, setCity] = useState(prospect.city ?? "");
@@ -3103,9 +3099,8 @@ function ProspectDetail({
 
   const loadRelated = useCallback(async () => {
     try {
-      const [contactList, taskList, timelinePage] = await Promise.all([listContacts(prospect.id), listTasks(), getTimeline(prospect.id)]);
+      const [contactList, timelinePage] = await Promise.all([listContacts(prospect.id), getTimeline(prospect.id)]);
       setContacts(contactList);
-      setTasks(taskList.filter((task) => task.prospectId === prospect.id));
       setTimeline(timelinePage.content);
     } catch (caught) {
       setError(message(caught));
@@ -3268,7 +3263,7 @@ function ProspectDetail({
       </div></details>
 
       <details className="disclosure-panel"><summary>Tareas de seguimiento</summary><div className="disclosure-content">
-        {tasks.length === 0 ? <EmptyState text="No hay tareas. Creá una para dejar claro el próximo paso." /> : tasks.map((task) => <article className="timeline-item" key={task.id}><strong>{task.title}</strong><span>{labelFor(task.status)} · vence {dateTime(task.dueAt)}</span>{canWriteActivity && !["COMPLETED", "CANCELLED"].includes(task.status) && <button className="secondary-button" type="button" onClick={() => void run(() => changeTaskStatus(task, "COMPLETED"), "Tarea completada.")}>Marcar como completada</button>}</article>)}
+        <ProspectTaskList key={prospect.id} prospectId={prospect.id} refreshKey={prospect.version} busy={busy} onComplete={canWriteActivity ? (task) => run(() => changeTaskStatus(task, "COMPLETED"), "Tarea completada.") : undefined} />
         {canWriteActivity && <form className="inline-form compact-form" onSubmit={(event) => { event.preventDefault(); void run(() => createTask(prospect.id, { ownerUserId: session.userId, title: taskTitle, dueAt: new Date(taskDueAt).toISOString() }), "Tarea creada.").then((saved) => { if (saved) { setTaskTitle(""); setTaskDueAt(""); } }); }}><label className="grow">Nueva tarea<input value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required /></label><label>Vencimiento<input type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} required /></label><button className="secondary-button">Crear tarea</button></form>}
       </div></details>
 

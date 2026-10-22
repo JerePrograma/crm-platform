@@ -5,12 +5,14 @@ postgres_port=25432
 backend_port=8080
 frontend_port=5173
 production_frontend_port=18080
+scalaris_frontend_port=18787
 while (($#)); do
   case "$1" in
     --postgres-port) postgres_port=$2; shift 2 ;;
     --backend-port) backend_port=$2; shift 2 ;;
     --frontend-port) frontend_port=$2; shift 2 ;;
     --production-frontend-port) production_frontend_port=$2; shift 2 ;;
+    --scalaris-frontend-port) scalaris_frontend_port=$2; shift 2 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; exit 1 ;;
   esac
 done
@@ -42,13 +44,17 @@ node scripts/check-host-ports.js \
   "PostgreSQL=$postgres_port" \
   "Backend=$backend_port" \
   "Frontend=$frontend_port" \
-  "Production frontend=$production_frontend_port"
+  "Production frontend=$production_frontend_port" \
+  "Scalaris frontend=$scalaris_frontend_port"
 phase=repository-safety
 bash scripts/check-repository-safety.sh
 phase=script-syntax
-for script in scripts/*.sh; do bash -n "$script"; done
+for script in scripts/*.sh deploy/hostinger/*.sh; do bash -n "$script"; done
 node scripts/test-container-env-assertions.js
 node scripts/test-check-host-ports.js
+node --test scripts/test-validate-scalaris-e2e.js
+docker run --rm --mount "type=bind,source=$repo_root,target=/workspace,readonly" --workdir /workspace \
+  python:3.12-alpine python -B scripts/test-hostinger-preflight.py
 phase=backend
 bash scripts/verify-backend-container.sh
 phase=frontend
@@ -65,6 +71,8 @@ docker compose --profile app up -d --wait
 bash scripts/smoke-test.sh
 backend_container=$(docker compose --profile app ps -q backend)
 backend_image=$(docker inspect "$backend_container" --format '{{.Config.Image}}')
+frontend_container=$(docker compose --profile app ps -q frontend)
+frontend_image=$(docker inspect "$frontend_container" --format '{{.Config.Image}}')
 environment=$(docker inspect "$backend_container" --format '{{json .Config.Env}}')
 printf '%s' "$environment" | node scripts/assert-container-env.js \
   SENDING_ENABLED=false \
@@ -77,15 +85,21 @@ printf '%s' "$environment" | node scripts/assert-container-env.js \
 phase=dependency-scan
 (cd frontend && npm audit --audit-level=high)
 docker volume create crm_grype_cache >/dev/null
-docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v crm_grype_cache:/root/.cache/grype \
-  anchore/grype@sha256:fd4ab4d1042b522c896e73bdf09ab8bf384fa417df99d6dd0d6e1008c7e7c821 \
-  "$backend_image" --fail-on high
+for runtime_image in "$backend_image" "$frontend_image"; do
+  docker run --rm \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v crm_grype_cache:/.cache/grype \
+    -e GRYPE_DB_CACHE_DIR=/.cache/grype/db \
+    -e GRYPE_LOG_LEVEL=info \
+    anchore/grype@sha256:fd4ab4d1042b522c896e73bdf09ab8bf384fa417df99d6dd0d6e1008c7e7c821 \
+    "$runtime_image" --fail-on high
+done
 phase=migrations
 bash scripts/verify-migrations.sh "$backend_image"
 phase=e2e
 (cd frontend && CRM_E2E_BASE_URL="http://127.0.0.1:$frontend_port" CRM_E2E_USERNAME=complete-admin CRM_E2E_PASSWORD=complete-admin-password CRM_E2E_INBOUND_SECRET=synthetic-complete-crm-inbound-secret npx playwright test tests/complete-crm.spec.ts tests/gmail-no-oauth.spec.ts)
+phase=scalaris-marketing-e2e
+sh scripts/validate-scalaris-e2e.sh "$scalaris_frontend_port"
 phase=zero-sent
 postgres=$(docker compose ps -q postgres)
 database=$(docker exec "$postgres" printenv POSTGRES_DB)

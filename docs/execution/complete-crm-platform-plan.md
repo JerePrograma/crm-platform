@@ -1,8 +1,12 @@
 # Plan integral de ejecución del CRM
 
-Actualizado: 2026-10-14
+Actualizado: 2026-10-22
 
-## Ejecución activa: SCALARIS-001
+## Ejecución actual: SCALARIS-DEPLOY-001
+
+Completar los bloqueos identificados sobre `2a22e4b`: dependencias/imágenes, agenda y fichas completas, perfil Scalaris/Marketing, HTTPS/importaciones, backup/restore por stack y gates actuales. El destino es VPS Hostinger con `crm.scalaris.com.ar`. La autoridad es [el segmento](../segments/SCALARIS-DEPLOY-001.md) y [su validación](../validation/scalaris-production-readiness-2026-10-22.md). Se conserva la arquitectura monolítica y V1–V14; no se conecta mensajería real.
+
+## Historial de ejecución: SCALARIS-001
 
 Adaptar y comprobar el CRM local para una persona de Marketing de Scalaris, con servicio técnico, desarrollo y venta a pedido como referencias del negocio. El alcance activo está en `docs/segments/SCALARIS-001.md` y la operación en `docs/scalaris-marketing-local.md`.
 

@@ -1,6 +1,10 @@
 # Propósito, producto y arquitectura
 
-Actualizado: 2026-10-14
+Actualizado: 2026-10-22
+
+## Preparación productiva vigente
+
+[SCALARIS-DEPLOY-001](../segments/SCALARIS-DEPLOY-001.md) prepara el VPS Hostinger y `crm.scalaris.com.ar`, con dependencias Spring Boot 4.1.2, runtime Temurin Java 21 por digest, tareas paginadas, proxy HTTPS/importaciones y respaldos explícitos. Consultar [la evidencia actual](../validation/scalaris-production-readiness-2026-10-22.md) para distinguir controles ejecutados, publicación y producción. El ZIP/instalación portable del 14 de octubre conserva su versión.
 
 ## Distinción esencial
 
@@ -86,7 +90,7 @@ Centralizar el ciclo comercial de Scalaris, facilitar la instalación local por 
 - imágenes runtime no-root;
 - PostgreSQL privado en el perfil productivo;
 - frontend nginx no-root;
-- backend JRE Chainguard fijada por digest;
+- backend JRE Temurin Java 21 fijada por digest ([ADR-0011](../adr/0011-java-21-runtime-and-managed-security-updates.md));
 - GitHub Actions para gates de backend, frontend, migraciones, seguridad y E2E.
 
 ## Límites de dominio

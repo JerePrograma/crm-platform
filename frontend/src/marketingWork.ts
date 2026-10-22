@@ -1,4 +1,4 @@
-import type { Task } from "./types";
+import type { Task, TaskFilters } from "./types";
 
 export function localDate(value: string | Date, timezone = "America/Argentina/Buenos_Aires"): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -19,6 +19,25 @@ export function pendingTasks(tasks: Task[], ownerId?: string): Task[] {
   return tasks
     .filter((task) => ["OPEN", "IN_PROGRESS"].includes(task.status) && (!ownerId || task.ownerUserId === ownerId))
     .sort((left, right) => Date.parse(left.dueAt) - Date.parse(right.dueAt));
+}
+
+export function agendaTaskFilters(
+  ownerUserId: string | undefined,
+  timing: string,
+  page = 0,
+  size = 25,
+  now = new Date(),
+): TaskFilters {
+  const today = new Date(`${localDate(now)}T00:00:00-03:00`);
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  return {
+    statuses: ["OPEN", "IN_PROGRESS"],
+    ownerUserId,
+    dueFrom: timing === "today" ? today.toISOString() : timing === "upcoming" ? tomorrow.toISOString() : undefined,
+    dueUntil: timing === "overdue" ? today.toISOString() : timing === "today" ? tomorrow.toISOString() : undefined,
+    page,
+    size,
+  };
 }
 
 export const prospectSources = [

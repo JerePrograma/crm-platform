@@ -4,6 +4,7 @@ import com.gestudio.crm.activity.TimelineService.ActivityView;
 import com.gestudio.crm.activity.TimelineService.CreateActivityCommand;
 import com.gestudio.crm.activity.TimelineService.CreateTaskCommand;
 import com.gestudio.crm.activity.TimelineService.NoteView;
+import com.gestudio.crm.activity.TimelineService.TaskPage;
 import com.gestudio.crm.activity.TimelineService.TaskView;
 import com.gestudio.crm.activity.TimelineService.TimelinePage;
 import com.gestudio.crm.activity.TimelineService.UpdateTaskCommand;
@@ -101,6 +102,20 @@ public class TimelineController {
       @RequestParam(required = false) Instant dueBefore,
       @RequestParam(defaultValue = "200") int limit) {
     return timelineService.listTasks(status, ownerUserId, dueBefore, limit);
+  }
+
+  @GetMapping("/tasks/page")
+  @PreAuthorize("hasAuthority('PROSPECT_READ')")
+  public TaskPage taskPage(
+      @RequestParam(required = false) List<TaskStatus> statuses,
+      @RequestParam(required = false) UUID ownerUserId,
+      @RequestParam(required = false) UUID prospectId,
+      @RequestParam(required = false) Instant dueFrom,
+      @RequestParam(required = false) Instant dueUntil,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "25") int size) {
+    return timelineService.searchTasks(
+        statuses, ownerUserId, prospectId, dueFrom, dueUntil, page, size);
   }
 
   public record NoteRequest(@NotBlank String body) {}

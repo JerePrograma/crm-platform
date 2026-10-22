@@ -207,6 +207,16 @@ export type Task = {
   updatedAt: string;
 };
 
+export type TaskFilters = {
+  statuses?: Task["status"][];
+  ownerUserId?: string;
+  prospectId?: string;
+  dueFrom?: string;
+  dueUntil?: string;
+  page?: number;
+  size?: number;
+};
+
 export type TimelineItem = {
   id: string;
   eventAt: string;

@@ -1,6 +1,10 @@
 # Matriz de validación integral del CRM
 
-Actualizado: 2026-10-14
+Actualizado: 2026-10-22
+
+## SCALARIS-DEPLOY-001 — matriz vigente
+
+La evidencia actual, con resultados ejecutados y límites por control, está en [preparación productiva 2026-10-22](scalaris-production-readiness-2026-10-22.md). La base de entrada es `2a22e4b`; Docker/motor Linux ya están disponibles. Se exige repetir el gate integral sobre el commit definitivo y mantener la diferencia entre resultados locales, CI del SHA publicado y despliegue real. Las secciones siguientes son evidencia histórica y no cubren la preparación actual.
 
 Estados permitidos: `NOT_STARTED`, `IN_PROGRESS`, `IMPLEMENTED_NOT_RUN`, `EXECUTED_PASS`,
 `EXECUTED_FAIL`, `BLOCKED_EXTERNAL`, `NOT_APPLICABLE`.

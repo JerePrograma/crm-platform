@@ -1,8 +1,16 @@
 # Estado actual
 
-Actualizado: 2026-10-14
+Actualizado: 2026-10-22
 
-## SCALARIS-001 — operación local Windows comprobada
+## SCALARIS-DEPLOY-001 — preparación productiva actual
+
+El usuario autorizó cerrar los pendientes de preparación y eligió VPS Hostinger con `crm.scalaris.com.ar`. La fuente de entrada fue `2a22e4b`, sincronizada y limpia. Docker Desktop/motor Linux 29.8.2 ya están disponibles; «Docker no instalado» es un bloqueo histórico resuelto.
+
+La entrega corrige dependencias/runtime Java 21, tareas paginadas por estado/responsable/prospecto, perfil productivo Scalaris/Marketing, proxy HTTPS/importaciones y selección/integridad de respaldos. Se amplían los gates de Marketing y escaneo backend/frontend. La evidencia y el estado de ejecución de cada control son [los de esta misión](validation/scalaris-production-readiness-2026-10-22.md); no se atribuye CI verde al código aún no publicado.
+
+La instalación portable anterior, los contactos operativos y proveedores reales quedan fuera de las pruebas sintéticas. El historial siguiente mantiene su alcance original y no describe la entrega actual.
+
+## Historial SCALARIS-001 — operación local Windows comprobada
 
 La misión actual adapta el CRM al trabajo de Marketing de Scalaris: servicio técnico, desarrollo y venta a pedido. La referencia vigente es WhatsApp **11 7278-9289**, con cobertura en **Zona Oeste, CABA y Mar del Plata** y retiro/entrega a coordinar según el caso.
 

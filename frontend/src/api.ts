@@ -25,6 +25,7 @@ import type {
   ProspectStatus,
   Contact,
   Task,
+  TaskFilters,
   TimelineItem,
   SessionUser,
   RenderedTemplate,
@@ -313,6 +314,18 @@ export function changeTaskStatus(task: Task, status: Task["status"]): Promise<Ta
 
 export function listTasks(status?: Task["status"]): Promise<Task[]> {
   return request(`/api/v1/tasks${status ? `?status=${status}` : ""}`);
+}
+
+export function getTaskPage(filters: TaskFilters = {}): Promise<Page<Task>> {
+  const parameters = new URLSearchParams({
+    page: String(Math.max(filters.page ?? 0, 0)),
+    size: String(Math.min(Math.max(filters.size ?? 25, 1), 100)),
+  });
+  filters.statuses?.forEach((status) => parameters.append("statuses", status));
+  for (const key of ["ownerUserId", "prospectId", "dueFrom", "dueUntil"] as const) {
+    if (filters[key]) parameters.set(key, filters[key]);
+  }
+  return request(`/api/v1/tasks/page?${parameters}`);
 }
 
 export function getTimeline(prospectId: string): Promise<Page<TimelineItem>> {

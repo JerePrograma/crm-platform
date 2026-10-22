@@ -1,6 +1,10 @@
 # Progreso de ejecución integral del CRM
 
-Actualizado: 2026-10-14
+Actualizado: 2026-10-22
+
+## CHECKPOINT_16_SCALARIS_DEPLOYMENT_PREPARATION
+
+La misión [SCALARIS-DEPLOY-001](../segments/SCALARIS-DEPLOY-001.md) prepara el VPS Hostinger y `crm.scalaris.com.ar`. Docker Desktop/motor Linux están disponibles. Se implementan correcciones de seguridad, tareas paginadas, configuración productiva Scalaris, proxy y respaldos; se ejecutan gates con datos sintéticos. El resultado real de cada fase y commit cubierto están en [la validación vigente](../validation/scalaris-production-readiness-2026-10-22.md). Los checkpoints siguientes conservan su alcance histórico.
 
 ## CHECKPOINT_15_SCALARIS_LOCAL_OPERATIONAL_PASS
 

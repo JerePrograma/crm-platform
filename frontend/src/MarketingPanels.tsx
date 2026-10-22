@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { changeTaskStatus, getProspect } from "./api";
 import { humanizeError, labelFor } from "./uiLabels";
-import { pendingTasks, taskTiming } from "./marketingWork";
+import { agendaTaskFilters, taskTiming } from "./marketingWork";
+import { TaskPagination, useTaskPage } from "./TaskPanels";
 import type { BusinessProfile, DashboardReport, SessionUser, Task } from "./types";
 
 export type MarketingDestination = "prospects" | "pipeline" | "campaigns" | "messages" | "imports" | "reports" | "help" | "agenda";
@@ -37,9 +38,9 @@ export function MarketingOverview({
 }
 
 export function MarketingAgenda({
-  tasks, session, onChanged, onOpenProspect, compact = false,
+  refreshKey, session, onChanged, onOpenProspect, compact = false,
 }: {
-  tasks: Task[];
+  refreshKey: number;
   session: SessionUser;
   onChanged: () => Promise<void>;
   onOpenProspect: (id: string) => Promise<void>;
@@ -47,14 +48,16 @@ export function MarketingAgenda({
 }) {
   const [onlyMine, setOnlyMine] = useState(true);
   const [timing, setTiming] = useState("");
-  const [visibleCount, setVisibleCount] = useState(compact ? 5 : 25);
+  const [number, setNumber] = useState(0);
   const [names, setNames] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const pending = pendingTasks(tasks, onlyMine ? session.userId : undefined);
-  const filtered = pending.filter((task) => !timing || taskTiming(task) === timing);
-  const shown = filtered.slice(0, visibleCount);
+  const { page, loading, error: loadError, retry } = useTaskPage(
+    agendaTaskFilters(onlyMine ? session.userId : undefined, timing, number, compact ? 5 : 25),
+    refreshKey,
+  );
+  const shown = page?.content ?? [];
   const shownIds = [...new Set(shown.map((task) => task.prospectId))].join(",");
 
   useEffect(() => {
@@ -75,6 +78,7 @@ export function MarketingAgenda({
       await changeTaskStatus(task, "COMPLETED");
       setNotice("Tarea completada. Registrá la respuesta o el resultado en la ficha del prospecto.");
       await onChanged();
+      retry();
     } catch (caught) { setError(humanizeError(caught instanceof Error ? caught.message : String(caught))); }
     finally { setBusy(null); }
   }
@@ -83,16 +87,18 @@ export function MarketingAgenda({
     <section className="panel" aria-label="Agenda de seguimiento">
       <div className="panel-heading"><div><h2>{compact ? "Seguimientos prioritarios" : "Agenda de seguimiento"}</h2><p className="muted">Abrí la ficha para ver el contexto antes de realizar el contacto.</p></div></div>
       <div className="toolbar agenda-filters">
-        <label>Responsable<select value={onlyMine ? "mine" : "all"} onChange={(event) => setOnlyMine(event.target.value === "mine")}><option value="mine">Mis tareas</option><option value="all">Todas las tareas</option></select></label>
-        <label>Vencimiento<select value={timing} onChange={(event) => setTiming(event.target.value)}><option value="">Todos los pendientes</option><option value="overdue">Vencidas</option><option value="today">Para hoy</option><option value="upcoming">Próximas</option></select></label>
+        <label>Responsable<select value={onlyMine ? "mine" : "all"} onChange={(event) => { setOnlyMine(event.target.value === "mine"); setNumber(0); }}><option value="mine">Mis tareas</option><option value="all">Todas las tareas</option></select></label>
+        <label>Vencimiento<select value={timing} onChange={(event) => { setTiming(event.target.value); setNumber(0); }}><option value="">Todos los pendientes</option><option value="overdue">Vencidas</option><option value="today">Para hoy</option><option value="upcoming">Próximas</option></select></label>
       </div>
       {error && <p className="alert error" role="alert">{error}</p>}
       {notice && <p className="alert success" role="status">{notice}</p>}
-      {shown.length ? <div className="agenda-list">{shown.map((task) => <article className="agenda-item" key={task.id}>
+      {loading && <p className="muted" role="status">Cargando tareas…</p>}
+      {loadError && <div className="alert error" role="alert">{loadError} <button type="button" className="link-button" onClick={retry}>Reintentar</button></div>}
+      {page && (shown.length ? <div className="agenda-list">{shown.map((task) => <article className="agenda-item" key={task.id}>
         <div><span className={`badge badge-${taskTiming(task)}`}>{({ overdue: "Vencida", today: "Hoy", upcoming: "Próxima" })[taskTiming(task)]}</span><h3>{task.title}</h3><p>{names[task.prospectId] ?? "Prospecto vinculado"} · {new Date(task.dueAt).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "medium", timeStyle: "short" })}</p><small>{labelFor(task.priority)} prioridad · {labelFor(task.status)}</small>{task.description && <p>{task.description}</p>}</div>
         <div className="action-row"><button className="secondary-button" onClick={() => void onOpenProspect(task.prospectId)}>Abrir ficha</button>{session.permissions.includes("ACTIVITY_WRITE") && <button className="link-button" disabled={busy === task.id} onClick={() => void complete(task)}>{busy === task.id ? "Guardando…" : "Completar tarea"}</button>}</div>
-      </article>)}</div> : <div className="empty-state"><strong>{timing ? "No hay tareas con ese vencimiento." : onlyMine ? "No tenés tareas pendientes." : "No hay seguimientos pendientes."}</strong><p>Creá una tarea desde la ficha de un prospecto, con responsable y vencimiento, para dejar registrado el próximo paso.</p></div>}
-      {filtered.length > shown.length && <div className="pagination"><span>Mostrando {shown.length} de {filtered.length} pendientes</span>{!compact && <button className="secondary-button" onClick={() => setVisibleCount((count) => count + 25)}>Ver más tareas</button>}</div>}
+      </article>)}</div> : <div className="empty-state"><strong>{timing ? "No hay tareas con ese vencimiento." : onlyMine ? "No tenés tareas pendientes." : "No hay seguimientos pendientes."}</strong><p>Creá una tarea desde la ficha de un prospecto, con responsable y vencimiento, para dejar registrado el próximo paso.</p></div>)}
+      {page && <TaskPagination page={page} onPage={setNumber} label="Páginas de agenda" />}
     </section>
   );
 }

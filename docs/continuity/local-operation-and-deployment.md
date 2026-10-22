@@ -1,6 +1,12 @@
 # Operación local, validación y despliegue
 
-Actualizado: 2026-10-14
+Actualizado: 2026-10-22
+
+## Preparación vigente del despliegue
+
+El motor Docker Linux 29.8.2 está disponible. La misión [SCALARIS-DEPLOY-001](../segments/SCALARIS-DEPLOY-001.md) prepara `crm.scalaris.com.ar` en el VPS Hostinger, con servicios y persistencia independientes. Los runbooks están en `docs/production/`; los resultados y próximos gates están en [la validación actual](../validation/scalaris-production-readiness-2026-10-22.md). Las referencias a Docker ausente y al alcance del cierre documental del 14 de octubre son históricas.
+
+Los cambios actuales no actualizan la instalación portable anterior ni habilitan proveedores reales. El gate de Marketing comprueba un stack sintético Scalaris separado del recorrido histórico.
 
 ## Uso local de Scalaris para Marketing
 

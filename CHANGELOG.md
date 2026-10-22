@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-22 — SCALARIS-DEPLOY-001 preparación productiva
+
+- actualiza Spring Boot a 4.1.2 y usa sus versiones coherentes de Spring, Tomcat, Jackson y PostgreSQL JDBC;
+- fija un runtime Temurin Java 21 actualizado por digest, conservando ejecución sin root;
+- agrega consultas paginadas de tareas con filtros previos al límite para agenda y ficha, manteniendo el endpoint histórico;
+- prepara Scalaris/Marketing en Compose productivo, límites de importación coherentes y forwarding HTTPS sujeto a allowlist del edge;
+- hace explícito el destino Compose de backup/restore y verifica checksum antes de restaurar;
+- incorpora Marketing Scalaris, importaciones grandes y escaneo de ambas imágenes a los gates;
+- habilita Prometheus solo para administración y mantiene las guardas de comunicación cerradas;
+- registra resultados y límites en [la validación de preparación](docs/validation/scalaris-production-readiness-2026-10-22.md), sin trasladar PASS históricos ni modificar la instalación portable anterior.
+
 ## 2026-10-14 — SCALARIS-001 Marketing y operación local Windows
 
 Estado: `LOCAL_OPERATIONAL_PASS`; implementación `PUBLISHED_FAST_FORWARD` en `331b3e7be5ad52b93b285a0ff9654abedce79b7d`, CI `FAILED_DEPENDENCY_SCAN`; ZIP de entrega local anterior revisado e instalación de uso preparada.

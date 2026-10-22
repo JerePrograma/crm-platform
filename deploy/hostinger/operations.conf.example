@@ -1,0 +1,8 @@
+# Copy outside Git to /srv/apps/crm/config/operations.conf, owned by deploy 0600.
+CRM_ENV_FILE=/srv/apps/crm/config/production.env
+CRM_BACKUP_DIRECTORY=/srv/apps/crm/backups
+CRM_STATE_DIRECTORY=/srv/apps/crm/state
+CRM_HEALTH_URL=https://crm.scalaris.com.ar/actuator/health/readiness
+CRM_ALERTING_ENABLED=false
+# Leave external notifications disabled until an approved destination exists.
+# CRM_ALERT_WEBHOOK_URL is configured only in the private operations file.

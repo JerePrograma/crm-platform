@@ -1,0 +1,31 @@
+# Apply after ../docker-compose.production.yml. Never reuse another app's project.
+services:
+  postgres:
+    image: postgres:17.11-alpine@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb
+    mem_limit: 512m
+    cpus: 0.5
+  backend:
+    image: ${CRM_BACKEND_IMAGE:?Set the exact reviewed backend release image}
+    labels:
+      org.scalaris.release.commit: ${CRM_RELEASE_COMMIT:?Set the full reviewed release commit}
+      org.scalaris.release.image-id: ${CRM_BACKEND_IMAGE_ID:?Set the reviewed backend image ID}
+    environment:
+      SESSION_COOKIE_SECURE: "true"
+    mem_limit: 768m
+    cpus: 0.75
+  frontend:
+    image: ${CRM_FRONTEND_IMAGE:?Set the exact reviewed frontend release image}
+    labels:
+      org.scalaris.release.commit: ${CRM_RELEASE_COMMIT:?Set the full reviewed release commit}
+      org.scalaris.release.image-id: ${CRM_FRONTEND_IMAGE_ID:?Set the reviewed frontend image ID}
+    mem_limit: 128m
+    cpus: 0.25
+    networks:
+      proxy:
+        aliases: [scalaris-crm-frontend]
+      private: {}
+
+networks:
+  proxy:
+    external: true
+    name: proxy

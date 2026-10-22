@@ -7,6 +7,10 @@
 **/dist/
 *.tsbuildinfo
 
+# Python operation checks
+__pycache__/
+*.py[cod]
+
 # Editors and operating systems
 *.iml
 .idea/

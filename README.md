@@ -17,7 +17,13 @@ Los archivos se abren con doble clic. La primera apertura prepara la configuraci
 
 El paquete Windows se genera desde los binarios compilados mediante `scripts/package-scalaris-portable.ps1`; los wrappers con sufijo `Portable` están dentro de esa entrega. Su operación se implementa en `scripts/scalaris-portable.ps1` y `scripts/scalaris-web-server.mjs`. El camino Docker utiliza `scripts/scalaris-local.ps1` y `docker-compose.scalaris.yml`.
 
-## Estado de la edición Scalaris — 2026-10-14
+## Preparación productiva — 2026-10-22
+
+La misión [SCALARIS-DEPLOY-001](docs/segments/SCALARIS-DEPLOY-001.md) corrige dependencias e imagen Java 21, agenda/fichas paginadas, configuración Scalaris/Marketing, importaciones por nginx, confianza del proxy HTTPS y operaciones de respaldo con destino explícito. Agrega gates de Marketing y seguridad de las dos imágenes. Los resultados ejecutados, commit cubierto y límites se mantienen en [la validación de esta entrega](docs/validation/scalaris-production-readiness-2026-10-22.md).
+
+El destino elegido es el VPS Hostinger del usuario con `crm.scalaris.com.ar`. Los procedimientos concretos están en `docs/production/`. La instalación portable previa conserva su versión; esta preparación no la reemplaza. Producción y comunicaciones reales conservan estados separados de la validación local.
+
+## Historial de la edición Scalaris — 2026-10-14
 
 `main` sigue siendo la rama canónica. **SCALARIS-001 tiene validación funcional local aprobada** y su implementación se publicó por fast-forward en [331b3e7](https://github.com/JerePrograma/crm-platform/commit/331b3e7be5ad52b93b285a0ff9654abedce79b7d). HEAD, `origin/main` y `ls-remote` coincidieron, con divergencia `0 0`. La [CI 38600419532](https://github.com/JerePrograma/crm-platform/actions/runs/38600419532) tiene un fallo real `FAILED_DEPENDENCY_SCAN`: Grype detectó vulnerabilidades high/critical en dependencias Java y la imagen runtime. Resultado final: 21/22 jobs success y solo dependency-scan failure; no hay PASS integral. El registro es [publicación GitHub Scalaris](docs/validation/scalaris-github-publication-2026-10-14.md); este cierre documental registra los resultados post-push.
 
