@@ -10,6 +10,7 @@
 - actualiza la dirección interna del backend desde el proxy después de reemplazar su contenedor, con regresión de IP distinta sin reinicio del frontend;
 - hace explícito el destino Compose de backup/restore y verifica checksum antes de restaurar;
 - incorpora Marketing Scalaris, importaciones grandes y escaneo de ambas imágenes a los gates;
+- mantiene la limpieza de evidencia Gmail compatible con PowerShell 5.1 y protege sus rutas mediante regresiones de carpetas existentes;
 - habilita Prometheus solo para administración y mantiene las guardas de comunicación cerradas;
 - registra resultados y límites en [la validación de preparación](docs/validation/scalaris-production-readiness-2026-10-22.md), sin trasladar PASS históricos ni modificar la instalación portable anterior.
 

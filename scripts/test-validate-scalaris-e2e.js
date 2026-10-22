@@ -6,7 +6,8 @@ test('the isolated drill overrides inherited operational credentials, Compose se
   const source = {
     CRM_BOOTSTRAP_USERNAME: 'operational', CRM_BOOTSTRAP_PASSWORD: 'private',
     CRM_MARKETING_PASSWORD: 'private', SCALARIS_DATABASE_PASSWORD: 'private',
-    COMPOSE_FILE: 'operational.yml', COMPOSE_PROJECT_NAME: 'existing-installation',
+    COMPOSE_FILE: 'operational.yml', COMPOSE_ENV_FILES: '/private/operational.env',
+    COMPOSE_PROJECT_NAME: 'existing-installation',
     CRM_BACKEND_IMAGE: 'operational/backend:live', CRM_FRONTEND_IMAGE: 'operational/frontend:live',
     TRUSTED_EDGE_CONFIG_FILE: '/private/operational/trusted-edge.conf',
     SENDING_ENABLED: 'true', SENDING_KILL_SWITCH: 'false', MESSAGING_REAL_NETWORK_ALLOWED: 'true',
@@ -14,6 +15,7 @@ test('the isolated drill overrides inherited operational credentials, Compose se
   const environment = syntheticEnvironment(source, { frontendPort: 18787 }, 'crm-isolated-test', '/tmp/report.json');
   assert.equal(source.CRM_BOOTSTRAP_PASSWORD, 'private', 'The parent environment must remain unchanged');
   assert.equal(environment.COMPOSE_FILE, undefined);
+  assert.equal(environment.COMPOSE_ENV_FILES, undefined);
   assert.equal(environment.COMPOSE_PROJECT_NAME, 'crm-isolated-test');
   assert.equal(environment.CRM_BACKEND_IMAGE, 'crm-isolated-test-backend');
   assert.equal(environment.CRM_FRONTEND_IMAGE, 'crm-isolated-test-frontend');

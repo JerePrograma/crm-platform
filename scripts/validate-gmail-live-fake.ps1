@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'gmail-evidence-paths.ps1')
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $baseCompose = Join-Path $repoRoot 'docker-compose.yml'
 $fakeCompose = Join-Path $repoRoot 'docker-compose.gmail-fake.yml'
@@ -154,14 +155,21 @@ function PsqlScalar([string]$ContainerId, [string]$Sql) {
   return ($value | Out-String).Trim()
 }
 
+function Test-PdfRendererVersion([string]$Command, [string[]]$Arguments = @('-v')) {
+  $probePreference = $ErrorActionPreference
+  try {
+    # pdftoppm prints its version to stderr even on success in Windows PowerShell 5.1.
+    $ErrorActionPreference = 'Continue'
+    & $Command @Arguments 2>$null | Out-Null
+    return ($LASTEXITCODE -eq 0)
+  } finally {
+    $ErrorActionPreference = $probePreference
+  }
+}
+
 New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 if (Test-Path -LiteralPath $screenshotDirectory) {
-  $resolvedOutput = [System.IO.Path]::GetFullPath($outputDirectory)
-  $resolvedScreenshots = [System.IO.Path]::GetFullPath($screenshotDirectory)
-  $relativeScreenshots = [System.IO.Path]::GetRelativePath($resolvedOutput, $resolvedScreenshots)
-  if ($relativeScreenshots.StartsWith('..') -or [System.IO.Path]::IsPathRooted($relativeScreenshots)) {
-    throw 'Refusing to remove a screenshot directory outside validation-output'
-  }
+  $resolvedScreenshots = Get-ValidatedGmailScreenshotDirectory -OutputDirectory $outputDirectory -ScreenshotDirectory $screenshotDirectory
   Remove-Item -LiteralPath $resolvedScreenshots -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $screenshotDirectory | Out-Null
@@ -333,10 +341,7 @@ WHERE organization_id = '$organizationId' AND type = 'EMAIL'
       throw "Expected 32 manual screenshots, found $($screenshots.Count)"
     }
     $pdfRenderer = Get-Command pdftoppm -ErrorAction SilentlyContinue
-    if ($pdfRenderer) {
-      & $pdfRenderer.Source -v 2>$null | Out-Null
-    }
-    if ($pdfRenderer -and $LASTEXITCODE -eq 0) {
+    if ($pdfRenderer -and (Test-PdfRendererVersion $pdfRenderer.Source)) {
       $renderPrefix = Join-Path $outputDirectory 'gmail-manual-render'
       Invoke-Checked $pdfRenderer.Source @('-f', '1', '-singlefile', '-png', '-r', '96', (Join-Path $manualDirectory 'SEG-001-gmail-campaign-user-manual.pdf'), $renderPrefix)
     }

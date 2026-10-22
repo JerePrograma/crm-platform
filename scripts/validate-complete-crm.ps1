@@ -87,6 +87,7 @@ try {
   Run-Phase 'repositorySafety' { & (Join-Path $PSScriptRoot 'check-repository-safety.ps1') }
   Run-Phase 'scriptSyntax' {
     & (Join-Path $PSScriptRoot 'check-powershell-syntax.ps1')
+    & (Join-Path $PSScriptRoot 'test-gmail-evidence-paths.ps1')
     & (Join-Path $PSScriptRoot 'test-container-env-assertions.ps1')
     & (Join-Path $PSScriptRoot 'test-check-host-ports.ps1')
     Invoke-Checked 'node' @('scripts/test-container-env-assertions.js')

@@ -55,6 +55,7 @@ function syntheticEnvironment(source, options, project, reportPath) {
     CRM_E2E_BROWSER_CHANNEL: 'bundled', PLAYWRIGHT_JSON_OUTPUT_FILE: reportPath,
   };
   delete environment.COMPOSE_FILE;
+  delete environment.COMPOSE_ENV_FILES;
   for (const entry of requiredGuards) {
     const separator = entry.indexOf('=');
     environment[entry.slice(0, separator)] = entry.slice(separator + 1);

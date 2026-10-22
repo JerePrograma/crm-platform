@@ -239,6 +239,8 @@ jobs:
         run: ./scripts/check-powershell-syntax.ps1
       - shell: powershell
         run: ./scripts/test-database-operations.ps1
+      - shell: powershell
+        run: ./scripts/test-gmail-evidence-paths.ps1
 
   scripts-unix:
     runs-on: ubuntu-latest
