@@ -112,3 +112,6 @@ try {
     Remove-Item -LiteralPath $validatedFixture -Recurse -Force
   }
 }
+
+# Expected native failures must not escape a successful assertions and cleanup run.
+$global:LASTEXITCODE = 0

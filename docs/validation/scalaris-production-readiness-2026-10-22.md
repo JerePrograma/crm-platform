@@ -6,6 +6,12 @@
 - Última CI remota observada de esa base: [38602265455](https://github.com/JerePrograma/crm-platform/actions/runs/38602265455), 21/22 jobs success, fallo real de [Grype](https://github.com/JerePrograma/crm-platform/actions/runs/38602265455/job/115984193896). Ese fallo se conserva; una reparación local no cambia su resultado histórico.
 - Docker Desktop se inició durante esta misión: cliente/motor Linux 29.8.2, API 1.56. El bloqueo histórico «Docker no instalado» dejó de describir este host.
 
+## Continuidad vigente tras publicación de 4b556a5
+
+El usuario aprobó explícitamente despliegue, DNS/TLS, cuentas privadas, respaldos VPS, copia cifrada PC y tarea 04:15 BA. `4b556a5c6e91e42325ed12c393c8003d7914d48a` ya se publicó. [CI 39831418039](https://github.com/JerePrograma/crm-platform/actions/runs/39831418039) no está aprobada: el test Windows pasó 23 aserciones, pero dejó `LASTEXITCODE=7` de un probe negativo esperado y el proceso terminó con ese código residual. El fix cambia sólo el epílogo del test a `$global:LASTEXITCODE = 0`; regresiones positiva, fallo de aserción y fallo de limpieza aprobaron, conservando los errores reales. No cambia producto.
+
+Falta fijar el nuevo candidato, ejecutar dos integrales completas limpias consecutivas y aprobar CI de sus 23 jobs con `headSha` exacto, además de vincular sus artefactos antes del despliegue. La pareja, scans y export de `4b556a5` siguientes se conservan como evidencia de esa fuente y no se transfieren automáticamente al candidato. La preparación PC ligada a `4b556a5` se preserva hasta revisar el nuevo SHA. Producción sigue `NOT_DEPLOYED`: la autorización humana está recibida y la ejecución permanece condicionada a los gates; no se inició el helper ni se registró la tarea.
+
 ## Dependencias y runtime
 
 Spring Boot `4.1.2` se verificó en [Maven Central](https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-dependencies/4.1.2/spring-boot-dependencies-4.1.2.pom). Su BOM resuelve Spring Framework `7.0.10`, Tomcat `11.0.27`, Jackson 3 `3.1.7`, Jackson 2 `2.21.7` y PostgreSQL JDBC `42.7.14`. Se retiraron los pins antiguos de PostgreSQL/Jackson y el BOM Jackson 2 duplicado.
@@ -33,8 +39,10 @@ El tag público `cgr.dev/chainguard/jre:latest` resuelve actualmente a Java 27.0
 | Migraciones V11/V13/empty a V14 | EXECUTED_PASS | ambas integrales finales de 4b556a5: vacío→V14, V11→V12→V13→V14, V13→V14 y Hibernate validate |
 | Grype de las imágenes elegidas | EXECUTED_PASS | mismos IDs del perfil productivo final: high/critical cero, backend medium15/low11 y frontend medium3; DB válida y cero exclusiones |
 | Validador integral corridas 1 y 2 | EXECUTED_PASS | 2/2 limpias consecutivas, 23/23 fases cada una, fuente funcional 4b556a5; evidencia detallada debajo |
-| Publicación y CI de la fuente funcional | NOT_RUN | pendientes de autorización final: publicar primero 4b556a5 en main y exigir 23 jobs con headSha exacto; cierre documental por separado |
-| Producción real | NOT_DEPLOYED | destino elegido; activación y secretos operativos pendientes |
+| Publicación de 4b556a5 | EXECUTED_PASS | fuente publicada; evidencia local preservada |
+| CI 39831418039 de 4b556a5 | EXECUTED_FAIL | job Windows: 23 aserciones PASS y salida residual 7; no hay CI aprobada |
+| Nuevo candidato y pareja/CI exacta | NOT_RUN | fix de epílogo probado; SHA y gates completos pendientes antes del despliegue |
+| Producción real | NOT_DEPLOYED | autorización humana recibida; ejecución condicionada a los gates del nuevo candidato |
 
 ## Pareja final e identidad de los artefactos
 
@@ -56,9 +64,9 @@ Después de la pareja se escanearon de forma controlada los IDs exactos del perf
 
 Ambos scans terminaron exit0 con DB Grype válida, `ignore: []`, `match-upstream-kernel-headers: true` y cero matches ignorados. El gate operativo ignorado verifica la cadena OCI índice→manifest→config por bytes, hashes y tamaños, y cada capa comprimida y su `diff_id` descomprimido; así vincula el ID de Docker con la representación normalizada de Grype sin confiar sólo en tags. Sus regresiones aprobaron 10/10 de identidad, 12/12 de artefactos y 11/11 de orquestación. Este ajuste pertenece al empaquetado operativo ignorado y no cambia la fuente funcional ni sustituye la pareja canónica.
 
-El export `images.tar` tiene 174.558.720 bytes y SHA-256 `593e3c204bab8e90447dfc94c22c6826e75668958e03b98888bc90d0bfb74413`: `images-export-proof.json` verifica las mismas 8+12 capas e IDs. El archivo fuente de `4b556a5` conserva SHA-256 `1236673430b7f7c3f78dd96c8f6bdce55adf0b6bb5aeecd36075d02ad68eb513`. El manifiesto aceptado de despliegue sigue pendiente de CI y aprobación humana.
+El export `images.tar` tiene 174.558.720 bytes y SHA-256 `593e3c204bab8e90447dfc94c22c6826e75668958e03b98888bc90d0bfb74413`: `images-export-proof.json` verifica las mismas 8+12 capas e IDs. El archivo fuente de `4b556a5` conserva SHA-256 `1236673430b7f7c3f78dd96c8f6bdce55adf0b6bb5aeecd36075d02ad68eb513`. El manifiesto aceptado de despliegue sigue pendiente de los gates del nuevo candidato descritos al inicio; la aprobación humana ya fue recibida.
 
-Este cierre documental se registra como descendiente separado, con diff exclusivamente documental. Fuente, archivo fuente, tags y aprobaciones de artefactos conservan el SHA funcional `4b556a5`. Tras la autorización final, publicar primero `4b556a5c6e91e42325ed12c393c8003d7914d48a` en `main` y esperar los 23 jobs CI con ese `headSha` exacto antes de aceptar el bundle. Publicar el descendiente documental por separado: una CI disparada sólo sobre ese descendiente no acredita la CI de `4b556a5`. Publicación/push, CI y autorización de producción siguen pendientes. No se activaron DNS/TLS, secretos, timers ni copia real del VPS; `SCALARIS-DEPLOY-001` no está `COMPLETE`.
+El cierre documental anterior se registró como descendiente separado de `4b556a5`; su CI no acredita la de la fuente funcional. La publicación exacta de `4b556a5` ya ocurrió y su CI fallida queda conservada. El nuevo candidato debe obtener su propia pareja, CI exacta y evidencia de artefactos antes de aceptar el bundle. La aprobación humana del lote ya está recibida; aún no se activaron DNS/TLS, secretos, timers ni copia real del VPS. `SCALARIS-DEPLOY-001` no está `COMPLETE`.
 
 ## Antecedentes focalizados
 
